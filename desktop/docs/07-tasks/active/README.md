@@ -38,7 +38,7 @@
 | [TASK-0027](TASK-0027-sidebar-mailbox-section.md) | 侧栏新增“我的邮箱”分组区域 | @Codex | 待评审 | P2 |
 | [TASK-0028](TASK-0028-settings-storage-section.md) | 设置页新增“存储情况”分类 | @Codex | 待评审 | P2 |
 | [TASK-0029](TASK-0029-scrollbar-fade-in.md) | 滚动条默认占位隐藏、悬停淡入 | @Codex | 待评审 | P1 |
-| [TASK-0030](TASK-0030-account-storage-foundation.md) | 多服务商账号与邮件存储基础 | @Codex | 待评审 | P0 |
+| [TASK-0030](../archive/2026/10/TASK-0030-account-storage-foundation.md) | 多服务商账号与邮件存储基础（已归档） | @Codex | 已完成 | P0 |
 | [TASK-0031](TASK-0031-messages-panel-offset.md) | 修消息面板与铃铛按钮脱开 | @Codex | 待评审 | P2 |
 
 ## 说明

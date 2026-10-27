@@ -1,7 +1,7 @@
 # ADR-0007 SQLite 驱动与多账号持久化基础
 
-> 状态：提议（已实现，待评审） | 最后更新：2026-10-27
-> 任务：[TASK-0030](../../07-tasks/active/TASK-0030-account-storage-foundation.md)
+> 状态：已生效（用户确认提交） | 最后更新：2026-10-27
+> 任务：[TASK-0030](../../07-tasks/archive/2026/10/TASK-0030-account-storage-foundation.md)
 
 ## 背景
 

@@ -1,7 +1,7 @@
 # 当前数据库结构：账号存储 v1
 
-> 状态：已实现，待评审 | 最后更新：2026-10-27
-> 任务：[TASK-0030](../../07-tasks/active/TASK-0030-account-storage-foundation.md)
+> 状态：已实现，TASK-0030 已完成 | 最后更新：2026-10-27
+> 任务：[TASK-0030](../../07-tasks/archive/2026/10/TASK-0030-account-storage-foundation.md)
 
 ## 1. 权威来源
 

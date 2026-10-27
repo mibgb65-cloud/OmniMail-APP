@@ -1,7 +1,7 @@
 # 多服务商账号与邮件存储实施设计
 
 > 状态：账号基础已实现，后续邮件模型提议 | 最后更新：2026-10-27
-> 任务：[TASK-0030](../../07-tasks/active/TASK-0030-account-storage-foundation.md)
+> 任务：[TASK-0030](../../07-tasks/archive/2026/10/TASK-0030-account-storage-foundation.md)
 > 相关：[ADR-0002](../adr/ADR-0002-local-storage.md) · [ADR-0004](../adr/ADR-0004-credential-storage.md)
 
 ## 1. 当前事实与范围
