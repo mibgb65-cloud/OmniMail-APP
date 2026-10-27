@@ -11,6 +11,7 @@
 ## [未发布]
 
 ### 新增
+- 新增 SQLite 账号存储基础：版本校验迁移、多服务商预设、独立 IMAP/SMTP 配置及内部账号仓储，应用启动/关闭接入数据库；尚未实现账号接入 UI、系统凭据保存或真实收发信，见 [TASK-0030](../07-tasks/active/TASK-0030-account-storage-foundation.md)。
 - 邮件区域增加通栏搜索与邮件操作工具条，下方采用列表和内容双列布局；当前仅 UI 预览，见 [TASK-0024](../07-tasks/active/TASK-0024-mail-workspace-toolbar.md)。
 - 分类标题后增加同步时间与未读邮件状态气泡，当前显示未接入数据的占位状态，见 [TASK-0023](../07-tasks/active/TASK-0023-mail-status-bubbles.md)。
 - 建立 `desktop/docs` 九大分区文档骨架（45 份文档），覆盖规范、产品、架构、设计、开发、测试、发布、任务与历史。

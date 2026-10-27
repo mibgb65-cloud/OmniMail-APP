@@ -15,12 +15,13 @@ ADR 记录**为什么**这样设计，以及当时否掉了哪些方案。代码
 | [ADR-0004](ADR-0004-credential-storage.md) | 凭据存储：系统钥匙串 + DPAPI 降级 | 已生效 | 2026-10-15 |
 | [ADR-0005](ADR-0005-html-sandbox.md) | 邮件 HTML 渲染隔离 | 草稿 | 2026-10-15 |
 | [ADR-0006](ADR-0006-i18n-framework.md) | 国际化框架：i18next + react-i18next | 已生效 | 2026-10-24 |
+| [ADR-0007](ADR-0007-sqlite-driver.md) | SQLite 驱动与多账号持久化基础 | 提议（已实现待评审） | 2026-10-27 |
 
 ## 待决策（未编号前先在此登记）
 
 | 议题 | 背景 | 目标决策时间 |
 | --- | --- | --- |
-| SQLite 驱动选择：`modernc.org/sqlite`（纯 Go）vs `mattn/go-sqlite3`（CGO） | 影响交叉编译与性能 | M1 前 |
+| SQLite 驱动方案评审 | 用户已确认 SQLite；纯 Go 实施方案见 ADR-0007 | TASK-0030 |
 | 富文本 → 纯文本转换规则 | 影响草稿一致性（FEAT-0003） | M1 前 |
 | OAuth2 无浏览器环境回退（设备码 / 手动粘贴） | 影响企业环境 | M2 前 |
 | 是否引入第三方中文分词（gojieba） | 影响索引体积与精度 | M3 前 |

@@ -38,9 +38,12 @@
 | [TASK-0027](TASK-0027-sidebar-mailbox-section.md) | 侧栏新增“我的邮箱”分组区域 | @Codex | 待评审 | P2 |
 | [TASK-0028](TASK-0028-settings-storage-section.md) | 设置页新增“存储情况”分类 | @Codex | 待评审 | P2 |
 | [TASK-0029](TASK-0029-scrollbar-fade-in.md) | 滚动条默认占位隐藏、悬停淡入 | @Codex | 待评审 | P1 |
+| [TASK-0030](TASK-0030-account-storage-foundation.md) | 多服务商账号与邮件存储基础 | @Codex | 待评审 | P0 |
 | [TASK-0031](TASK-0031-messages-panel-offset.md) | 修消息面板与铃铛按钮脱开 | @Codex | 待评审 | P2 |
 
 ## 说明
 
+- 2026-10-27 按用户授权整理 Git：工程与累计界面基线为 `b1c49ebe66c479ebdb6b5ea4724b4fe47e6a2033`。
+  旧任务记录中的“未提交”保留当轮历史含义；纳入基线不等于验收或归档，未完成项仍按各记录处理。
 - 满足任务管理规范的结案条件后，文件移动到 [archive/](../archive/) 下实际归档年月目录；未授权提交且未确认免提交结案时留在 active 待评审。
 - 每个任务文件的状态行必须与上表一致；不一致以文件为准并立即修正表格。

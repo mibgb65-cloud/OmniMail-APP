@@ -1,9 +1,27 @@
 # 数据库迁移与备份
 
-> 状态：草稿 | 负责人：@backend-lead | 最后更新：2026-10-15
+> 状态：当前迁移已实现，自动维护与恢复流程待实施 | 最后更新：2026-10-27
 > 相关：[数据库设计](README.md) · [Schema](schema.md) · [发布检查单](../../06-release/release-checklist.md)
 
 ---
+
+## 0. 当前运行实现（TASK-0030）
+
+- 代码为 `internal/repository/migrations.go`，实际 SQL 位于 `internal/repository/migrations/`；
+  当前只有 `0001_accounts.sql`。SQL 文件嵌入程序，不依赖运行目录。
+- 每个文件包含 `-- +up` / `-- +down`，只执行 up。文件完整内容归一化 CRLF 为 LF 后计算
+  SHA-256；首次初始化和版本登记同事务，已应用文件不可改写。
+- 启动先检查数据库身份；未知非空文件、丢失迁移历史、未知更高版本或校验不符均拒绝继续。
+- 非空已知库有待升级版本时，通过参数化 `VACUUM INTO` 创建
+  `backups/pre-migration-vNNNN-<随机标识>.db`。备份失败则不执行升级。
+- 升级前备份包含已提交 WAL 数据；普通启动不创建备份。自动每日备份、备份轮换、
+  导出与恢复 UI 均未实现，不能把下文目标当作已落地能力。
+- 真实 SQLite 测试覆盖初次初始化、重开、历史异常、升级、备份可读性、
+  SQL 失败完整回滚和跨平台换行校验；不依赖真实用户数据库。
+- 当前没有生产数据恢复演练，恢复必须先退出应用、保存现状并确认目标备份与 schema 版本，
+  不能用旧示例命令直接覆盖用户数据。
+
+下文保留较早规划；冲突时以当前代码、测试及 [当前 Schema](schema-current.md) 为准。
 
 ## 1. 迁移机制
 
@@ -51,21 +69,15 @@ func Migrate(ctx context.Context, db *sql.DB) error {
 
 ## 4. 恢复流程
 
-```bash
-# 1. 退出应用（确保不是最小化到托盘）
-# 2. 备份当前库（即使已损坏也保留）
-mv "%APPDATA%\OmniMail\omnimail.db" "%APPDATA%\OmniMail\omnimail.db.corrupt-YYYYMMDD"
+旧版本的混合 shell 覆盖示例已撤下：真实数据目录可能被配置覆盖，活动 WAL 不能任意删除。
+正式恢复工具尚未实现，不提供可直接执行的破坏性操作。人工恢复至少需要：
 
-# 3. 选取最近备份
-dir "%APPDATA%\OmniMail\backups"
-# 4. 复制回主路径
-copy "backups\omnimail-YYYYMMDD.db" "omnimail.db"
-
-# 5. 删除残留 WAL（否则会回放不匹配日志）
-del "omnimail.db-wal" "omnimail.db-shm"
-
-# 6. 启动应用，检查日志无 migration 报错，抽查最近 10 封邮件
-```
+1. 确认应用完全退出、没有进程使用数据库。
+2. 解析实际 `DataDir`，界定当前主库、WAL、SHM 与目标备份的绝对路径及权限。
+3. 保留当前主库及伴随文件的完整副本，再检查目标备份的身份、版本和完整性。
+4. 取得明确恢复授权后，在同一文件操作环境内执行替换，不混用 PowerShell 和 cmd。
+5. 确认不会回放旧库的 WAL；失败时保留现场，不自动继续清理或降级。
+6. 重开后验证账号配置；邮件恢复验收要等后续邮件存储实现。
 
 恢复后必须让用户知悉：备份之后的本地状态变更（已读标记、草稿）会丢失，服务器数据不受影响，
 下次同步会重新对齐。

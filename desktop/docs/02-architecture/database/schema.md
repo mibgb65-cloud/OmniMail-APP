@@ -3,6 +3,10 @@
 > 状态：草稿 | 负责人：@backend-lead | 最后更新：2026-10-15 | Schema 版本：v1
 > 相关：[数据库设计](README.md) · [迁移](migrations.md)
 
+> 历史草稿说明（2026-10-27）：本文 DDL 从未作为生产迁移落地，其中 Message-ID 唯一、
+> 邮件标志位、FTS rowid 等设计不能直接执行或照搬。当前版本只实现账号存储，真实结构见
+> [当前 Schema](schema-current.md) 与内置 SQL 迁移；后续邮件规则见 [实施设计](account-storage.md)。
+
 ---
 
 ## 1. 初始化 PRAGMA

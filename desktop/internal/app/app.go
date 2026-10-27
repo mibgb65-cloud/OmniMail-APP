@@ -1,17 +1,17 @@
 package app
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"sync"
+	"time"
 
 	"omnimail/desktop/internal/bridge"
 	"omnimail/desktop/internal/config"
-	"omnimail/desktop/internal/logger"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -21,26 +21,19 @@ func Run(assets fs.FS, icon []byte) (err error) {
 	if err != nil {
 		return err
 	}
-	log, closer, err := logger.New(cfg.DataDir, cfg.LogLevel)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	resources, err := openResources(ctx, cfg)
+	cancel()
 	if err != nil {
 		return err
 	}
-	var closeOnce sync.Once
-	var closeErr error
-	shutdown := func() {
-		closeOnce.Do(func() {
-			log.Info("应用关闭")
-			closeErr = closer.Close()
-		})
-	}
 	defer func() {
-		shutdown()
-		err = errors.Join(err, closeErr)
+		err = errors.Join(err, resources.Close())
 	}()
 
-	desktop := newApplication(assets, icon, cfg, log, shutdown)
+	desktop := newApplication(assets, icon, cfg, resources.log, resources.shutdown)
 	desktop.Window.NewWithOptions(mainWindowOptions())
-	log.Info("应用启动", "version", bridge.Version, "commit", bridge.Commit)
+	resources.log.Info("应用启动", "version", bridge.Version, "commit", bridge.Commit)
 	if err := desktop.Run(); err != nil {
 		return fmt.Errorf("桌面应用运行失败: %w", err)
 	}

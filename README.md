@@ -12,8 +12,8 @@ AI 开发先读根目录 [AGENTS.md](AGENTS.md)。所有修改类任务先创建
 
 ## 当前进度
 
-- 已实现：桌面窗口、单实例、React 调用 Go 获取版本、配置校验、按天轮转与脱敏日志、前后端测试。
-- 尚未实现：邮箱接入界面与认证、邮件收发与同步、数据库及邮件数据存储、系统凭据保存、托盘与通知、CI、安装包与签名。
+- 已实现：桌面窗口、单实例、React 调用 Go 获取版本、配置校验、按天轮转与脱敏日志、SQLite 账号仓储及生命周期、前后端测试。
+- 尚未实现：邮箱接入界面与认证、邮件收发与同步、邮件数据存储、系统凭据保存、托盘与通知、CI、安装包与签名。
 - `android/`、`ios/`、根目录 `docs/` 为预留目录，暂无独立应用或跨端实现。
 
 现有工程使用 `desktop/go.mod` 固定的 Wails v3 版本。早期文档采用 Wails v2，历史决策与后续设计的差异见 [ADR-0001](desktop/docs/02-architecture/adr/ADR-0001-tech-stack.md)。开发命令以本页和[快速开始](desktop/docs/04-development/getting-started.md)为准。
