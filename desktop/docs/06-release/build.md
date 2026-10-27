@@ -1,9 +1,49 @@
 # 构建与发布总则
 
-> 状态：草稿 | 负责人：@release-manager | 最后更新：2026-10-15
+> 状态：草稿 | 负责人：@release-manager | 最后更新：2026-10-25
 > 相关：[Windows](windows.md) · [macOS](macos.md) · [发布检查单](release-checklist.md) · [版本号规范](../00-guidelines/git-conventions.md#4-版本号semver)
 
 ---
+
+## 0. 当前可执行构建
+
+当前工程为 Wails v3 骨架，只实现当前平台独立可执行文件构建。在仓库根目录执行：
+
+```powershell
+cd desktop
+go tool wails3 task setup
+go tool wails3 task verify
+go tool wails3 task build
+go tool wails3 task run
+```
+
+产物为 `desktop/bin/OmniMail.exe`（Windows），或对应系统的 `desktop/bin/OmniMail`。构建任务重新生成绑定、构建前端，通过 `production` 标签嵌入静态资源，再注入提交号和构建时间；应用版本仍为 `0.1.0-dev`。
+
+`verify` 先执行统一检查，再构建到 `desktop/.task/verify-bin/`，不覆盖正在运行的常规产物。
+后续 `build` 才生成上文 `bin/` 程序供 `run` 使用；`check` 是不含构建的子集，不能替代完整门禁。
+
+Windows 原生构建在本次环境验证，macOS 构建尚待验证。Windows 图标与静态版本资源已接入；安装包、签名、公证、Git tag 版本注入和多平台发布流水线仍未实现。
+
+### Windows 图标与资源
+
+`go tool wails3 task build`（含 `DEV=true`）在 Go 编译前调用 `windows:resources`，使用已锁定的 `go tool wails3 generate syso`：
+
+- 图标来源：`frontend/public/brand/omnimail.ico`，16～256px 各图层均由统一的完整图标导出，不再混入简化版。
+- 图标主源为同目录的 `omnimail.svg`，使用图标包的完整标准版，圆角外透明，不附加白色底座或白边。同目录的 `omnimail-256.png` 恢复为原包对应 PNG，不另外增加边距；该 PNG 也通过 Go embed 嵌入，作为原生窗口备用图标。
+- 清单与文件信息：`build/windows/OmniMail.exe.manifest`、`build/windows/info.json`；采用普通用户权限和 Per-Monitor V2 DPI。静态资源版本为 `0.1.0.0`，展示版本为 `0.1.0-dev`，尚不从 Git tag 推导。
+- 生成物：`wails_windows_<GOARCH>.syso`，由 `.gitignore` 排除，按目标架构被 Go 自动链接；非 Windows 主机构建跳过该任务。
+
+可单独执行 `go tool wails3 task windows:resources` 验证资源生成。直接执行 `go build` 不会重新生成图标资源，完整图标验收应使用项目构建任务。
+
+图标 PNG 更新后，在 `desktop/` 使用锁定版本的工具重新生成全部 Windows 尺寸：
+
+```powershell
+go tool wails3 generate icons -input frontend/public/brand/omnimail-256.png -windowsfilename frontend/public/brand/omnimail.ico -macfilename= -sizes 256,128,64,48,32,24,16
+```
+
+`-macfilename=` 明确不额外生成尚未接入的 macOS 图标；生成后的 ICO 随仓库保存，常规构建只负责将其链接进 EXE。
+
+**下列章节是发布目标与历史 Wails v2 方案，不是当前可执行操作手册。** `wails build`、`wails.json` 与 `main.Version` 示例不适用于现有 v3 工程；发布前必须完成脚本适配及平台验证。
 
 ## 1. 构建流程
 

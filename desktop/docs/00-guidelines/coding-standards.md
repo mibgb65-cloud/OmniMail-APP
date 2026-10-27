@@ -1,6 +1,6 @@
 # 代码规范
 
-> 状态：已生效 | 最后更新：2026-10-15 | 适用：`desktop/internal/**` (Go)、`desktop/frontend/**` (TypeScript/React)
+> 状态：已生效 | 最后更新：2026-10-25 | 适用：`desktop/internal/**` (Go)、`desktop/frontend/**` (TypeScript/React)
 
 ---
 
@@ -160,13 +160,17 @@ src/
 
 ---
 
-## 4. 提交前自检（本地必跑）
+## 4. 统一质量门禁
 
-```bash
-# Go
-cd desktop && gofmt -l ./internal && go vet ./... && go test ./...
-# Frontend
-cd desktop/frontend && npm run lint && npm run typecheck && npm run test
+在仓库根目录执行：
+
+```powershell
+go -C desktop tool wails3 task verify
 ```
 
-任何一项失败，不得推送；CI 会重复执行并在失败时阻止合并。
+门禁包含只读格式检查、静态检查、类型检查、测试与独立目录构建，命令以 Taskfile 为唯一来源。
+不能仅运行 `gofmt -l` 就认为格式门禁会失败：它本身发现未格式化文件时仍可能返回 0，
+Task 中已显式将非空输出转为失败。
+
+任何一项失败不得写为验证通过。小改动的定向检查及跳过理由按 AGENTS.md 记录；
+本地通过不等于 CI 通过，CI 实际接入后应复用同一 verify。

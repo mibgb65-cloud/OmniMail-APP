@@ -3,6 +3,10 @@
 > 状态：草稿 | 负责人：@design-lead | 最后更新：2026-10-15
 > 相关：[FEAT-0002](../../01-product/features/FEAT-0002-unified-inbox.md) · [MailRow](../components/mail-row.md)
 
+当前已实现的是无真实邮件数据的 UI 预览：通栏搜索/操作工具条与下方列表、内容双列，
+见 [初始化工作区现状](startup.md)及 [TASK-0024](../../07-tasks/active/TASK-0024-mail-workspace-toolbar.md)。
+以下交互与数据规则仍为产品设计目标，不代表已经接入。
+
 ## 目标与入口
 
 应用启动后的默认页面。目标是让用户 3 秒内掌握"有哪些新邮件、来自哪些账号、我需要处理哪一封"。

@@ -1,0 +1,92 @@
+@import './tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+
+/* 兜底：未接入 ScrollArea 的滚动容器也使用细滚动条，避免露出系统默认滚动条。 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--line-height);
+}
+
+a {
+  color: inherit;
+}
+button {
+  font: inherit;
+}
+button,
+a {
+  touch-action: manipulation;
+}
+h1,
+h2,
+p {
+  margin: 0;
+}
+h1 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+}
+h2 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+}
+
+:focus-visible {
+  outline: var(--outline-width) solid var(--color-accent);
+  outline-offset: var(--outline-width);
+}
+
+button {
+  min-height: var(--control-height);
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+button:disabled {
+  background: var(--color-bg-sunken);
+  color: var(--color-text-secondary);
+  cursor: wait;
+}
+
+:root[data-theme-transition='circular']::view-transition-group(root) {
+  animation: none;
+}
+:root[data-theme-transition='circular']::view-transition-old(root),
+:root[data-theme-transition='circular']::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+:root[data-theme-transition='circular']::view-transition-old(root) {
+  z-index: 1;
+}
+:root[data-theme-transition='circular']::view-transition-new(root) {
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

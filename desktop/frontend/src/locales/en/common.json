@@ -1,0 +1,23 @@
+{
+  "languageLabel": "Language",
+  "changeLanguage": "Change language",
+  "simplifiedChinese": "简体中文",
+  "english": "English",
+  "developmentPreview": "Development preview",
+  "unknownValue": "Unknown",
+  "startupLabel": "OmniMail startup",
+  "startupPreparing": "Preparing your email workspace",
+  "skipAnimation": "Skip animation",
+  "replayAnimation": "Replay intro",
+  "windowBar": "Window toolbar",
+  "windowMinimize": "Minimize",
+  "windowMaximize": "Maximize",
+  "windowRestore": "Restore window",
+  "windowClose": "Close window",
+  "windowPreviewOnly": "Window controls are only available in the desktop app",
+  "windowActionError": "The window action could not be completed. Please try again.",
+  "themeToggle": "Dark mode",
+  "switchToLight": "Switch to light mode",
+  "switchToDark": "Switch to dark mode",
+  "documentDescription": "OmniMail, a local-first desktop email client."
+}

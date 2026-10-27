@@ -1,0 +1,81 @@
+.root {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  /* 始终预留滚动条占位：滑块出现或消失都不引起内容位移 */
+  padding-inline-end: var(--scrollbar-reserve);
+}
+
+.root[hidden] {
+  display: none;
+}
+
+.viewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 原生滚动条只保留占位，视觉交给覆盖层滑块 */
+  scrollbar-width: none;
+}
+
+.viewport::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.track {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: var(--scrollbar-reserve);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--scrollbar-fade) var(--ease-out);
+}
+
+.root[data-overflow='false'] .track {
+  visibility: hidden;
+}
+
+.root:hover .track,
+.root:focus-within .track,
+.root[data-dragging='true'] .track {
+  opacity: 1;
+}
+
+.thumb {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  width: var(--scrollbar-thickness);
+  height: 0;
+  margin-inline: auto;
+  border-radius: 999px;
+  background: var(--scrollbar-thumb);
+  cursor: default;
+  pointer-events: auto;
+  transition:
+    background-color var(--motion-interaction) var(--ease-out),
+    width var(--motion-interaction) var(--ease-out);
+}
+
+.root[data-overflow='false'] .thumb {
+  pointer-events: none;
+}
+
+.thumb:hover,
+.root[data-dragging='true'] .thumb {
+  width: calc(var(--scrollbar-thickness) + 2px);
+  background: var(--scrollbar-thumb-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .thumb {
+    transition: none;
+  }
+}

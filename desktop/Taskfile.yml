@@ -1,0 +1,130 @@
+version: '3'
+
+vars:
+  APP_NAME: OmniMail
+  BIN_DIR: bin
+  COMMIT:
+    sh: git rev-parse --short=12 HEAD
+  BUILD_TIME: '{{now | date "2006-01-02T15:04:05Z07:00"}}'
+  OUTPUT: '{{.BIN_DIR}}/{{.APP_NAME}}{{if eq OS "windows"}}.exe{{end}}'
+  LDFLAGS: '-s -w {{if eq OS "windows"}}-H windowsgui {{end}}-X omnimail/desktop/internal/bridge.Commit={{.COMMIT}} -X omnimail/desktop/internal/bridge.BuildTime={{.BUILD_TIME}}'
+
+tasks:
+  setup:
+    desc: 安装锁定依赖并生成前端绑定
+    cmds:
+      - go mod download
+      - task: frontend:install
+      - task: bindings
+
+  frontend:install:
+    dir: frontend
+    cmds:
+      - npm ci
+
+  bindings:
+    desc: 使用项目固定的 Wails v3 生成 TypeScript 绑定
+    cmds:
+      - go tool wails3 generate bindings -ts -i
+
+  frontend:build:
+    dir: frontend
+    cmds:
+      - task: bindings
+      - npm run build
+
+  build:
+    desc: 构建当前平台的独立可执行文件（不含安装包与签名）
+    cmds:
+      - task: frontend:build
+      - task: windows:resources
+      - 'go build {{if ne .DEV "true"}}-tags production -trimpath{{end}} -buildvcs=false -ldflags "{{.LDFLAGS}}" -o "{{.OUTPUT}}" .'
+
+  windows:resources:
+    desc: 为 Windows 可执行文件生成官方多尺寸图标、清单和版本资源
+    platforms: [windows]
+    vars:
+      GOARCH:
+        sh: go env GOARCH
+    cmds:
+      - 'go tool wails3 generate syso -arch "{{.GOARCH}}" -icon frontend/public/brand/omnimail.ico -manifest build/windows/OmniMail.exe.manifest -info build/windows/info.json -out "wails_windows_{{.GOARCH}}.syso"'
+
+  run:
+    desc: 运行已构建的桌面程序
+    cmds:
+      - '"./{{.OUTPUT}}"'
+
+  frontend:dev:
+    dir: frontend
+    cmds:
+      - npm run dev
+
+  frontend:check:
+    dir: frontend
+    cmds:
+      - npm run check
+
+  dev:
+    desc: 使用隔离的数据目录启动热更新开发
+    env:
+      OMNIMAIL_DATA_DIR: '{{.OMNIMAIL_DATA_DIR | default (printf "%s/.devdata" .ROOT_DIR)}}'
+    cmds:
+      - go tool wails3 dev -config ./build/config.yml
+
+  check:
+    desc: 格式、静态检查、类型检查和前后端测试（不含构建）
+    cmds:
+      - task: go:format:check
+      - task: frontend:format:check
+      - task: go:vet
+      - task: frontend:lint
+      - task: frontend:typecheck
+      - task: go:test
+      - task: frontend:test
+
+  verify:
+    desc: 完整质量门禁，验证构建输出到独立目录
+    cmds:
+      - task: check
+      - task: build
+        vars:
+          BIN_DIR: .task/verify-bin
+          OUTPUT: '.task/verify-bin/{{.APP_NAME}}{{if eq OS "windows"}}.exe{{end}}'
+
+  go:format:check:
+    desc: 只读检查根目录与 internal 下的 Go 源文件格式
+    cmds:
+      - |
+        unformatted=$(gofmt -l *.go internal) || exit $?
+        if [ -n "$unformatted" ]; then
+          printf 'Go 文件需要格式化：\n%s\n' "$unformatted"
+          exit 1
+        fi
+
+  frontend:format:check:
+    dir: frontend
+    cmds:
+      - npm run format:check
+
+  go:vet:
+    cmds:
+      - go vet . ./internal/...
+
+  frontend:lint:
+    dir: frontend
+    cmds:
+      - npm run lint
+
+  frontend:typecheck:
+    dir: frontend
+    cmds:
+      - npm run typecheck
+
+  go:test:
+    cmds:
+      - go test . ./internal/...
+
+  frontend:test:
+    dir: frontend
+    cmds:
+      - npm run test

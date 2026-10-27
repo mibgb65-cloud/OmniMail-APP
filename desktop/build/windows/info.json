@@ -1,0 +1,17 @@
+{
+  "fixed": {
+    "file_version": "0.1.0.0",
+    "product_version": "0.1.0.0"
+  },
+  "info": {
+    "0000": {
+      "CompanyName": "OmniMail",
+      "FileDescription": "OmniMail",
+      "FileVersion": "0.1.0-dev",
+      "InternalName": "OmniMail",
+      "OriginalFilename": "OmniMail.exe",
+      "ProductName": "OmniMail",
+      "ProductVersion": "0.1.0-dev"
+    }
+  }
+}

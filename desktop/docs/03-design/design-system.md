@@ -1,6 +1,6 @@
 # 设计系统
 
-> 状态：草稿 | 负责人：@design-lead | 最后更新：2026-10-15
+> 状态：草稿 | 负责人：@design-lead | 最后更新：2026-10-25
 > 相关：[组件规范](components/README.md) · [页面规格](pages/README.md) · [设计资源](assets/README.md)
 
 ---
@@ -165,8 +165,10 @@ CSS 变量命名：`--<layer>-<category>-<variant>`。只允许组件使用 `com
 
 ## 5. 图标
 
-- 单色线性图标，24×24 视框，线宽 1.5px，`stroke="currentColor"`。
-- 内联 SVG 组件化（`components/icons/`），不引入整套图标库。
+- 单色线性功能图标，24×24 视框、默认显示 18px，线宽统一 1.6，`stroke="currentColor"`。
+- 经用户确认接入 Morphicons，通过 `components/UiIcon/` 渲染静态按需引用的 Lucide 描边和本地实心图形数据；
+  不全量导入或使用远程图标。依赖、许可和添加规范见 [功能图标](components/icons.md)。
+- 软件品牌 SVG、PNG 和原生图标仍使用独立品牌资源，不随功能图标库替换。
 - 必用场景清单见 [组件规范 §4](components/README.md#4-图标)。
 
 ## 6. 可访问性基线

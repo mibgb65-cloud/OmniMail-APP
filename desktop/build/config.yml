@@ -1,0 +1,30 @@
+version: '3'
+
+info:
+  companyName: OmniMail
+  productName: OmniMail
+  productIdentifier: app.omnimail.desktop
+  description: 本地优先的桌面邮件客户端
+  version: 0.1.0
+
+dev_mode:
+  root_path: .
+  log_level: warn
+  debounce: 1000
+  ignore:
+    dir: [.git, .task, .devdata, node_modules, frontend, bin, docs]
+    file: ["*_test.go"]
+    watched_extension: ["*.go"]
+    git_ignore: true
+  executes:
+    - cmd: go tool wails3 task build DEV=true
+      type: blocking
+    - cmd: go tool wails3 task frontend:dev
+      type: background
+      readiness:
+        http: http://localhost:9245/
+        timeout: 60s
+        interval: 200ms
+    - cmd: go tool wails3 task run
+      type: primary
+      exit_policy: shutdown

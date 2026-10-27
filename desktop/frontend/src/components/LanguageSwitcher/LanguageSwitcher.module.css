@@ -1,0 +1,26 @@
+.switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.switcher label {
+  white-space: nowrap;
+}
+
+.compact {
+  position: relative;
+  gap: var(--space-2);
+}
+.compact label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.globe {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-secondary);
+}

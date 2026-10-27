@@ -2,6 +2,8 @@
 
 > 状态：已生效 | 最后更新：2026-10-15 | 决策人：@arch-lead
 
+> 实现核对：2026-10-24。本文保留原始 Wails v2 选型记录；工作区现有骨架实际使用 `go.mod` 锁定的 **Wails v3.0.0-beta.34 + Go 1.26.0 + React 18**，CLI 与运行库同版，TypeScript 绑定位于 `frontend/bindings/`。本次初始化收尾保留既有实现，不进行 v2/v3 迁移。v3 预发布版本的正式选型、macOS 兼容性及发布方案仍待评审；运行命令以[快速开始](../../04-development/getting-started.md)为准。
+
 ## 背景
 
 需要跨 Windows / macOS 的桌面邮件客户端，核心矛盾：
