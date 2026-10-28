@@ -1,18 +1,13 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import * as api from '../../lib/bridge/mail';
 import { useTranslation } from '../../lib/i18n/useTranslation';
 import type { ServerInput } from '../../../bindings/omnimail/desktop/internal/service/models';
+import { UiIcon } from '../UiIcon/UiIcon';
+import { getProviderLabel, ProviderSelection } from './ProviderSelection';
+import { useAccountForm, type AccountFormState } from './useAccountForm';
 import { useMailDialog } from './useMailDialog';
 import styles from './MailDialogs.module.css';
-
-const emptyServer = (port: number): ServerInput => ({
-  host: '',
-  port,
-  username: '',
-  password: '',
-  tlsMode: api.TLSMode.TLSImplicit,
-  authKind: api.AuthKind.AuthPassword,
-});
+import wizard from './AccountDialog.module.css';
 
 function ServerFields({
   label,
@@ -96,135 +91,64 @@ function ServerFields({
   );
 }
 
-function useAccountForm(onClose: () => void, onSaved: () => void) {
-  const [presets, setPresets] = useState<api.ProviderPreset[]>([]);
-  const [provider, setProvider] = useState('custom');
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [imap, setIMAP] = useState(emptyServer(993));
-  const [smtp, setSMTP] = useState(emptyServer(465));
-  const [same, setSame] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<unknown>();
-  const request = useRef<AbortController | null>(null);
-  const errorRef = useRef<HTMLParagraphElement>(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    api
-      .providers(controller.signal)
-      .then(setPresets)
-      .catch((error: unknown) => {
-        if (!controller.signal.aborted) setError(error);
-      });
-    return () => {
-      controller.abort();
-      request.current?.abort();
-    };
-  }, []);
-  useEffect(() => {
-    if (error) errorRef.current?.focus();
-  }, [error]);
-
-  const changeProvider = (code: string) => {
-    setProvider(code);
-    const preset = presets.find((preset) => preset.code === code);
-    const incoming = preset?.endpoints?.find((endpoint) => endpoint.protocol === 'imap');
-    const outgoing = preset?.endpoints?.find((endpoint) => endpoint.protocol === 'smtp');
-    setIMAP({
-      ...emptyServer(993),
-      host: incoming?.host ?? '',
-      port: incoming?.port ?? 993,
-      username: email,
-      tlsMode: incoming?.tlsMode ?? api.TLSMode.TLSImplicit,
-    });
-    setSMTP({
-      ...emptyServer(465),
-      host: outgoing?.host ?? '',
-      port: outgoing?.port ?? 465,
-      username: email,
-      tlsMode: outgoing?.tlsMode ?? api.TLSMode.TLSImplicit,
-    });
-  };
-  const changeEmail = (value: string) => {
-    if (!imap.username || imap.username === email) setIMAP({ ...imap, username: value });
-    if (!smtp.username || smtp.username === email) setSMTP({ ...smtp, username: value });
-    setEmail(value);
-  };
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const controller = new AbortController();
-    request.current = controller;
-    setBusy(true);
-    setError(undefined);
-    try {
-      await api.addAccount(
-        {
-          providerCode: provider,
-          email,
-          displayName: name,
-          imap,
-          smtp: same ? { ...smtp, username: imap.username, password: imap.password } : smtp,
-        },
-        controller.signal,
-      );
-      onSaved();
-      onClose();
-    } catch (error) {
-      if (!controller.signal.aborted) setError(error);
-    } finally {
-      if (!controller.signal.aborted) setBusy(false);
-    }
-  };
-  return {
-    presets,
-    provider,
-    email,
-    name,
-    setName,
-    imap,
-    setIMAP,
-    smtp,
-    setSMTP,
-    same,
-    setSame,
-    busy,
-    error,
-    request,
-    errorRef,
-    changeProvider,
-    changeEmail,
-    submit,
-  };
+function AccountFields({ form }: { form: Omit<AccountFormState, 'request' | 'errorRef'> }) {
+  const { t } = useTranslation('mail');
+  return (
+    <fieldset disabled={form.busy} className={styles.fields}>
+      <label>
+        {t('email')}
+        <input
+          type="email"
+          required
+          maxLength={254}
+          autoComplete="email"
+          value={form.email}
+          onChange={(event) => form.changeEmail(event.currentTarget.value)}
+        />
+      </label>
+      <label>
+        {t('displayName')}
+        <input
+          maxLength={256}
+          value={form.name}
+          onChange={(event) => form.setName(event.currentTarget.value)}
+        />
+      </label>
+      <ServerFields label="IMAP" value={form.imap} onChange={form.setIMAP} />
+      <label className={styles.check}>
+        <input
+          type="checkbox"
+          checked={form.same}
+          onChange={(event) => form.setSame(event.currentTarget.checked)}
+        />
+        {t('sameCredentials')}
+      </label>
+      <ServerFields
+        label="SMTP"
+        value={form.smtp}
+        onChange={form.setSMTP}
+        credentials={!form.same}
+      />
+    </fieldset>
+  );
 }
 
 export function AccountDialog({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation('mail');
   const ref = useMailDialog();
   const title = useId();
-  const {
-    presets,
-    provider,
-    email,
-    name,
-    setName,
-    imap,
-    setIMAP,
-    smtp,
-    setSMTP,
-    same,
-    setSame,
-    busy,
-    error,
-    request,
-    errorRef,
-    changeProvider,
-    changeEmail,
-    submit,
-  } = useAccountForm(onClose, onSaved);
+  const stepTitle = useRef<HTMLHeadingElement>(null);
+  const { request, errorRef, ...form } = useAccountForm(onClose, onSaved);
+  const selected = form.presets.find((preset) => preset.code === form.provider);
+  const step = selected ? 2 : 1;
+  useEffect(() => {
+    if (form.provider) ref.current?.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
+    else stepTitle.current?.focus();
+  }, [form.provider, ref]);
   return (
     <dialog
       ref={ref}
-      className={styles.dialog}
+      className={`${styles.dialog} ${wizard.dialog}`}
       aria-labelledby={title}
       onCancel={(event) => {
         event.preventDefault();
@@ -232,71 +156,86 @@ export function AccountDialog({ onClose, onSaved }: { onClose: () => void; onSav
         onClose();
       }}
     >
-      <form onSubmit={(event) => void submit(event)}>
+      <form className={wizard.form} onSubmit={(event) => void form.submit(event)}>
         <header>
-          <h2 id={title}>{t('addTitle')}</h2>
-          <button type="button" onClick={onClose}>
-            {t('close')}
+          <div className={wizard['header-copy']}>
+            <h2 id={title}>{t('addTitle')}</h2>
+            <ol className={wizard.steps} aria-label={t('accountSetupProgress')}>
+              {(['providerSelectionStep', 'providerSetupStep'] as const).map((key, index) => (
+                <li key={key} aria-current={step === index + 1 ? 'step' : undefined}>
+                  <span className={wizard['step-number']} aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  {t(key)}
+                </li>
+              ))}
+            </ol>
+          </div>
+          <button
+            type="button"
+            className={wizard.close}
+            aria-label={t('close')}
+            title={t('close')}
+            onClick={onClose}
+          >
+            <UiIcon name="close" />
           </button>
         </header>
         <div className={styles.content}>
-          <fieldset disabled={busy || presets.length === 0} className={styles.fields}>
-            <label>
-              {t('provider')}
-              <select
-                value={provider}
-                onChange={(event) => changeProvider(event.currentTarget.value)}
-              >
-                {presets.map((preset) => (
-                  <option key={preset.code} value={preset.code}>
-                    {preset.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              {t('email')}
-              <input
-                type="email"
-                required
-                maxLength={254}
-                autoComplete="email"
-                value={email}
-                onChange={(event) => changeEmail(event.currentTarget.value)}
-              />
-            </label>
-            <label>
-              {t('displayName')}
-              <input
-                maxLength={256}
-                value={name}
-                onChange={(event) => setName(event.currentTarget.value)}
-              />
-            </label>
-            <ServerFields label="IMAP" value={imap} onChange={setIMAP} />
-            <label className={styles.check}>
-              <input
-                type="checkbox"
-                checked={same}
-                onChange={(event) => setSame(event.currentTarget.checked)}
-              />
-              {t('sameCredentials')}
-            </label>
-            <ServerFields label="SMTP" value={smtp} onChange={setSMTP} credentials={!same} />
-          </fieldset>
-          <p className={styles.hint}>{t('accountHint')}</p>
-          {provider === 'gmail' && <p className={styles.hint}>{t('googleHint')}</p>}
-          {error != null && (
+          <h3 ref={stepTitle} tabIndex={-1} className={wizard['step-title']}>
+            {selected
+              ? t('configureProvider', { provider: getProviderLabel(selected, t) })
+              : t('chooseProviderHeading')}
+          </h3>
+          <p className={wizard.description}>
+            {t(selected ? 'providerSetupDescription' : 'chooseProviderDescription')}
+          </p>
+          {form.error != null && (
             <p ref={errorRef} tabIndex={-1} role="alert" className={styles.error}>
-              {t(api.errorKey(error))}
+              {t(api.errorKey(form.error))}
             </p>
+          )}
+          {selected ? (
+            <>
+              <AccountFields form={form} />
+              {selected.code === 'gmail' && <p className={styles.hint}>{t('googleHint')}</p>}
+              <p role="status" className={styles.hint}>
+                {form.busy ? t('verifying') : ''}
+              </p>
+            </>
+          ) : (
+            <ProviderSelection
+              presets={form.presets}
+              status={form.loadStatus}
+              onSelect={form.changeProvider}
+              onRetry={() => {
+                stepTitle.current?.focus();
+                form.retryProviders();
+              }}
+            />
           )}
         </div>
         <footer>
-          <span role="status">{busy ? t('verifying') : ''}</span>
-          <button type="submit" disabled={busy || presets.length === 0}>
-            {t('save')}
-          </button>
+          {selected ? (
+            <>
+              <button
+                type="button"
+                className={wizard.secondary}
+                disabled={form.busy}
+                onClick={form.backToProviders}
+              >
+                {t('backProviders')}
+              </button>
+              <button type="submit" disabled={form.busy}>
+                {t('save')}
+              </button>
+            </>
+          ) : (
+            <p className={wizard.privacy}>
+              <UiIcon name="about" />
+              {t('accountHint')}
+            </p>
+          )}
         </footer>
       </form>
     </dialog>

@@ -47,6 +47,7 @@
 | [TASK-0036](../archive/2026/10/TASK-0036-mail-account-ui-service.md) | 账号添加与收发同步界面集成（基础路径已归档） | @Codex | 已完成 | P0 |
 | [TASK-0037](TASK-0037-mail-advanced-followups.md) | 邮件高级能力与服务商兼容性后续清单 | 待分配 | 待开始 | P0 |
 | [TASK-0038](TASK-0038-language-hover-capsule.md) | 语言切换悬停横向展开胶囊 | @Codex | 进行中 | P1 |
+| [TASK-0039](TASK-0039-account-provider-selection.md) | 添加邮箱服务商卡片选择页 | @Codex | 进行中 | P1 |
 
 ## 说明
 

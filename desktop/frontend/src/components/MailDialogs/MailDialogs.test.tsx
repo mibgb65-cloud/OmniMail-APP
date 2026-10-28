@@ -58,9 +58,8 @@ describe('邮件账号和撰写弹窗', () => {
         <AccountDialog onClose={close} onSaved={saved} />
       </I18nProvider>,
     );
-    await screen.findByRole('option', { name: 'QQ' });
+    fireEvent.click(await screen.findByRole('button', { name: 'QQ 邮箱' }));
     fireEvent.change(screen.getByLabelText('邮箱地址'), { target: { value: account.email } });
-    fireEvent.change(screen.getByLabelText('邮箱服务商'), { target: { value: 'qq' } });
     fireEvent.change(screen.getByLabelText('密码 / 应用授权码'), {
       target: { value: 'test-only-app-code' },
     });
@@ -96,11 +95,12 @@ describe('邮件账号和撰写弹窗', () => {
         <AccountDialog onClose={close} onSaved={vi.fn()} />
       </I18nProvider>,
     );
-    await screen.findByRole('option', { name: 'QQ' });
+    fireEvent.click(await screen.findByRole('button', { name: '自定义 IMAP/SMTP' }));
     fireEvent.change(screen.getByLabelText('密码 / 应用授权码'), {
       target: { value: 'old-test-code' },
     });
-    fireEvent.change(screen.getByLabelText('邮箱服务商'), { target: { value: 'qq' } });
+    fireEvent.click(screen.getByRole('button', { name: '返回选择服务商' }));
+    fireEvent.click(screen.getByRole('button', { name: 'QQ 邮箱' }));
     expect(screen.getByLabelText('密码 / 应用授权码')).toHaveValue('');
     fireEvent.change(screen.getByLabelText('邮箱地址'), { target: { value: account.email } });
     fireEvent.change(screen.getByLabelText('密码 / 应用授权码'), {
@@ -118,7 +118,7 @@ describe('邮件账号和撰写弹窗', () => {
         <AccountDialog onClose={vi.fn()} onSaved={vi.fn()} />
       </I18nProvider>,
     );
-    await screen.findByRole('option', { name: 'QQ' });
+    fireEvent.click(await screen.findByRole('button', { name: '自定义 IMAP/SMTP' }));
     fireEvent.click(screen.getByRole('checkbox'));
     const outgoing = within(screen.getByRole('group', { name: 'SMTP' }));
     expect(outgoing.getByLabelText('登录用户名')).toBeVisible();
