@@ -5,6 +5,9 @@ import { TitleBar } from '../components/TitleBar/TitleBar';
 import { useTranslation } from '../lib/i18n/useTranslation';
 import { useTheme } from '../lib/theme/useTheme';
 import { MailWorkspace } from './MailWorkspace';
+import { AccountDialog } from '../components/MailDialogs/AccountDialog';
+import { ComposeDialog } from '../components/MailDialogs/ComposeDialog';
+import { useMail } from './useMail';
 import { useVersion } from './useVersion';
 import { WorkspaceSidebar, type MailFolder } from './WorkspaceSidebar';
 import styles from './App.module.css';
@@ -15,6 +18,8 @@ export function App() {
   const { theme, toggleTheme } = useTheme();
   const [startupVisible, setStartupVisible] = useState(true);
   const [selectedFolder, setSelectedFolder] = useState<MailFolder>('inbox');
+  const [mailDialog, setMailDialog] = useState<'account' | 'compose' | null>(null);
+  const mail = useMail(selectedFolder);
   const shellRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const dismissStartup = useCallback(() => setStartupVisible(false), []);
@@ -32,6 +37,19 @@ export function App() {
         onToggleTheme={toggleTheme}
         startupVisible={startupVisible}
         folderTitle={nav(selectedFolder)}
+        mailStatus={
+          mail.ready
+            ? {
+                lastSyncAt: Math.max(
+                  0,
+                  ...mail.accounts
+                    .filter((account) => !mail.accountId || account.id === mail.accountId)
+                    .map((account) => account.sync.lastSyncAt),
+                ),
+                unread: mail.messages.filter((message) => !message.read).length,
+              }
+            : undefined
+        }
       />
       {startupVisible && (
         <StartupScreen loading={state.status === 'loading'} onDismiss={dismissStartup} />
@@ -49,7 +67,20 @@ export function App() {
             theme={theme}
             onToggleTheme={toggleTheme}
             selectedFolder={selectedFolder}
-            onSelectFolder={setSelectedFolder}
+            onSelectFolder={(folder) => {
+              mail.resetView();
+              setSelectedFolder(folder);
+            }}
+            accounts={mail.accounts}
+            selectedAccount={mail.accountId}
+            onSelectAccount={mail.chooseAccount}
+            onAddAccount={mail.ready ? () => setMailDialog('account') : undefined}
+            onCompose={
+              mail.ready && mail.accounts.some((account) => account.status === 'configured')
+                ? () => setMailDialog('compose')
+                : undefined
+            }
+            onDisconnect={mail.disconnectAccount}
             versionInfo={state.status === 'success' ? state.info : undefined}
             connectionState={state}
             onRetryConnection={retry}
@@ -57,11 +88,22 @@ export function App() {
           />
           <div className={styles.workspace}>
             <main ref={mainRef} id="workspace" className={styles.main} tabIndex={-1}>
-              <MailWorkspace />
+              <MailWorkspace mail={mail} />
             </main>
           </div>
         </div>
       </div>
+      {mailDialog === 'account' && (
+        <AccountDialog onClose={() => setMailDialog(null)} onSaved={mail.refresh} />
+      )}
+      {mailDialog === 'compose' && (
+        <ComposeDialog
+          accounts={mail.accounts}
+          selectedAccount={mail.accountId}
+          onClose={() => setMailDialog(null)}
+          onSent={mail.refresh}
+        />
+      )}
     </>
   );
 }

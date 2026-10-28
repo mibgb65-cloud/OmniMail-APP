@@ -1,0 +1,217 @@
+package mailnet
+
+import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
+	"io"
+	"log/slog"
+	"mime"
+	"net"
+	"net/smtp"
+	"strconv"
+	"time"
+
+	"omnimail/desktop/internal/domain"
+
+	"github.com/emersion/go-imap/v2"
+	"github.com/emersion/go-imap/v2/imapclient"
+	"github.com/emersion/go-message/charset"
+)
+
+type Transport struct{ roots *x509.CertPool }
+
+func New() *Transport { return &Transport{} }
+
+type limitedConn struct {
+	net.Conn
+	remaining int64
+}
+
+func (c *limitedConn) Read(buffer []byte) (int, error) {
+	if c.remaining <= 0 {
+		return 0, io.ErrUnexpectedEOF
+	}
+	if int64(len(buffer)) > c.remaining {
+		buffer = buffer[:c.remaining]
+	}
+	n, err := c.Conn.Read(buffer)
+	c.remaining -= int64(n)
+	return n, err
+}
+func releaseConnection(conn net.Conn) {
+	if err := conn.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
+		slog.Warn("邮件连接清理失败", "code", "NETWORK_FAILED")
+	}
+}
+func closeIMAP(c *imapclient.Client) {
+	if err := c.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
+		slog.Warn("IMAP 连接清理失败", "code", "NETWORK_FAILED")
+	}
+}
+
+func (t *Transport) dial(ctx context.Context, endpoint domain.AccountEndpoint) (net.Conn, func() bool, error) {
+	if ctx.Err() != nil {
+		return nil, nil, ctx.Err()
+	}
+	conn, err := (&net.Dialer{Timeout: 10 * time.Second}).DialContext(ctx, "tcp",
+		net.JoinHostPort(endpoint.Host, strconv.Itoa(endpoint.Port)))
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, nil, ctx.Err()
+		}
+		return nil, nil, domain.ErrNetwork
+	}
+	// 总读取预算同时约束伪造的大 envelope 和字符串，不只限制正常正文 literal。
+	conn = &limitedConn{Conn: conn, remaining: 64 << 20}
+	stop := context.AfterFunc(ctx, func() { releaseConnection(conn) })
+	deadline := time.Now().Add(60 * time.Second)
+	if requested, ok := ctx.Deadline(); ok && requested.Before(deadline) {
+		deadline = requested
+	}
+	if err := conn.SetDeadline(deadline); err != nil {
+		stop()
+		releaseConnection(conn)
+		return nil, nil, domain.ErrNetwork
+	}
+	if endpoint.TLSMode == domain.TLSImplicit {
+		secure := tls.Client(conn, t.tlsConfig(endpoint.Host))
+		if err := secure.HandshakeContext(ctx); err != nil {
+			stop()
+			releaseConnection(conn)
+			if ctx.Err() != nil {
+				return nil, nil, ctx.Err()
+			}
+			return nil, nil, domain.ErrTLS
+		}
+		return secure, stop, nil
+	}
+	if endpoint.TLSMode != domain.TLSStartTLS {
+		stop()
+		releaseConnection(conn)
+		return nil, nil, domain.ErrTLS
+	}
+	return conn, stop, nil
+}
+
+func (t *Transport) tlsConfig(host string) *tls.Config {
+	return &tls.Config{ServerName: host, MinVersion: tls.VersionTLS12, RootCAs: t.roots}
+}
+
+func (t *Transport) Connect(ctx context.Context, endpoint domain.AccountEndpoint, secret []byte) (domain.MailSession, error) {
+	if endpoint.AuthKind != domain.AuthPassword {
+		return nil, domain.ErrOAuthConfig
+	}
+	conn, stop, err := t.dial(ctx, endpoint)
+	if err != nil {
+		return nil, err
+	}
+	options := &imapclient.Options{TLSConfig: t.tlsConfig(endpoint.Host), WordDecoder: &mime.WordDecoder{CharsetReader: charset.Reader}}
+	var c *imapclient.Client
+	if endpoint.TLSMode == domain.TLSStartTLS {
+		c, err = imapclient.NewStartTLS(conn, options)
+	} else {
+		c = imapclient.New(conn, options)
+	}
+	if err != nil || c.WaitGreeting() != nil {
+		stop()
+		releaseConnection(conn)
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		return nil, domain.ErrTLS
+	}
+	// 部分服务商要求 IMAP ID；只发送应用标识，不发送系统信息、账号或环境变量。
+	if c.Caps().Has(imap.CapID) {
+		if _, err := c.ID(&imap.IDData{Name: "OmniMail", Version: "0.1.0"}).Wait(); err != nil {
+			stop()
+			closeIMAP(c)
+			return nil, domain.ErrProtocol
+		}
+	}
+	if err := c.Login(endpoint.Username, string(secret)).Wait(); err != nil {
+		stop()
+		releaseConnection(conn)
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		var response *imap.Error
+		if errors.As(err, &response) && (response.Code == imap.ResponseCodeAuthenticationFailed || response.Code == "") {
+			return nil, domain.ErrAuthentication
+		}
+		return nil, domain.ErrNetwork
+	}
+	return &session{client: c, stop: stop}, nil
+}
+
+func (t *Transport) smtp(ctx context.Context, endpoint domain.AccountEndpoint, secret []byte) (*smtp.Client, func(), error) {
+	if endpoint.AuthKind != domain.AuthPassword {
+		return nil, nil, domain.ErrOAuthConfig
+	}
+	conn, stop, err := t.dial(ctx, endpoint)
+	if err != nil {
+		return nil, nil, err
+	}
+	closeConnection := func() { stop(); releaseConnection(conn) }
+	c, err := smtp.NewClient(conn, endpoint.Host)
+	if err != nil {
+		closeConnection()
+		return nil, nil, domain.ErrNetwork
+	}
+	if endpoint.TLSMode == domain.TLSStartTLS {
+		if err := c.StartTLS(t.tlsConfig(endpoint.Host)); err != nil {
+			closeConnection()
+			return nil, nil, domain.ErrTLS
+		}
+	}
+	if err := c.Auth(smtp.PlainAuth("", endpoint.Username, string(secret), endpoint.Host)); err != nil {
+		closeConnection()
+		return nil, nil, domain.ErrAuthentication
+	}
+	return c, closeConnection, nil
+}
+
+func (t *Transport) CheckSMTP(ctx context.Context, endpoint domain.AccountEndpoint, secret []byte) error {
+	c, closeConnection, err := t.smtp(ctx, endpoint, secret)
+	if err != nil {
+		return err
+	}
+	defer closeConnection()
+	if err := c.Quit(); err != nil {
+		return domain.ErrNetwork
+	}
+	return nil
+}
+
+func (t *Transport) Send(ctx context.Context, endpoint domain.AccountEndpoint, secret []byte,
+	from string, recipients []string, message []byte) error {
+	c, closeConnection, err := t.smtp(ctx, endpoint, secret)
+	if err != nil {
+		return err
+	}
+	defer closeConnection()
+	if err := c.Mail(from); err != nil {
+		return domain.ErrProtocol
+	}
+	for _, recipient := range recipients {
+		if err := c.Rcpt(recipient); err != nil {
+			return domain.ErrProtocol
+		}
+	}
+	writer, err := c.Data()
+	if err != nil {
+		return domain.ErrProtocol
+	}
+	if _, err := writer.Write(message); err != nil {
+		return domain.ErrSendUncertain
+	}
+	if err := writer.Close(); err != nil {
+		return domain.ErrSendUncertain
+	}
+	// DATA 已获成功确认；QUIT 失败不得诱导用户重发，底层连接由 defer 关闭。
+	if err := c.Quit(); err != nil {
+		return nil
+	}
+	return nil
+}

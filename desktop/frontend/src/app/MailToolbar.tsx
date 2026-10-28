@@ -12,8 +12,21 @@ const actions = [
   { label: 'markAllReadAction', icon: 'markAllRead' },
 ] as const;
 
-export function MailToolbar() {
+export function MailToolbar({
+  onSync,
+  syncBusy = false,
+  count,
+  query: controlledQuery,
+  onQuery,
+}: {
+  onSync?: () => void;
+  syncBusy?: boolean;
+  count?: number;
+  query?: string;
+  onQuery?: (query: string) => void;
+} = {}) {
   const { t } = useTranslation('workspace');
+  const { t: mail } = useTranslation('mail');
   const previewId = useId();
   // 搜索词只在本地 UI 预览，未接入邮箱检索
   const [query, setQuery] = useState('');
@@ -21,24 +34,27 @@ export function MailToolbar() {
   return (
     <div className={styles.toolbar} role="toolbar" aria-label={t('mailToolbarLabel')}>
       <p id={previewId} className={styles['screen-reader-only']}>
-        {t('mailActionsUnavailable')}
+        {count === undefined ? t('mailActionsUnavailable') : mail('pageSearchHint')}
       </p>
       <div className={styles['search-controls']}>
         <SearchField
           className={styles.search}
           label={t('searchMail')}
-          placeholder={t('searchMailPlaceholder')}
+          placeholder={
+            count === undefined ? t('searchMailPlaceholder') : mail('pageSearchPlaceholder')
+          }
           clearLabel={t('clearSearch')}
           describedBy={previewId}
-          value={query}
-          onValueChange={setQuery}
+          value={controlledQuery ?? query}
+          onValueChange={onQuery ?? setQuery}
         />
         <button
           type="button"
           className={styles['sync-button']}
           aria-label={t('syncAction')}
-          title={t('unavailableMailAction', { action: t('syncAction') })}
-          disabled
+          title={onSync ? t('syncAction') : t('unavailableMailAction', { action: t('syncAction') })}
+          disabled={!onSync || syncBusy}
+          onClick={onSync}
         >
           <UiIcon name="sync" size={16} />
           <span>{t('syncButton')}</span>
@@ -59,8 +75,11 @@ export function MailToolbar() {
             </button>
           ))}
         </div>
-        <span className={styles.count} aria-label={t('mailCountUnavailable')}>
-          {t('mailCountPlaceholder')}
+        <span
+          className={styles.count}
+          aria-label={count === undefined ? t('mailCountUnavailable') : mail('count', { count })}
+        >
+          {count === undefined ? t('mailCountPlaceholder') : mail('count', { count })}
         </span>
         <div className={styles.pagination}>
           {(

@@ -4,8 +4,10 @@ import { UiIcon } from '../components/UiIcon/UiIcon';
 import { useTranslation } from '../lib/i18n/useTranslation';
 import { MailToolbar } from './MailToolbar';
 import styles from './MailWorkspace.module.css';
+import { MailContent } from './MailContent';
+import type { MailController } from './useMail';
 
-export function MailWorkspace() {
+export function MailWorkspace({ mail }: { mail?: MailController } = {}) {
   const { t } = useTranslation('workspace');
   const [analysisOpen, setAnalysisOpen] = useState(true);
   const analysisId = useId();
@@ -13,34 +15,46 @@ export function MailWorkspace() {
   return (
     <div className={styles.layout}>
       <section className={styles.mail} aria-label={t('mailArea')}>
-        <MailToolbar />
+        <MailToolbar
+          onSync={mail?.ready && mail.accounts.length ? () => void mail.sync() : undefined}
+          syncBusy={mail?.accounts.some((account) => account.sync.running)}
+          count={mail?.ready ? mail.messages.length : undefined}
+          query={mail?.ready ? mail.filter : undefined}
+          onQuery={mail?.ready ? mail.setFilter : undefined}
+        />
         <div className={styles.panes}>
-          <section className={styles.list} aria-labelledby="mail-list-title">
-            <header className={styles['section-header']}>
-              <h2 id="mail-list-title">{t('mailListTitle')}</h2>
-            </header>
-            <div className={styles['list-empty']}>
-              <div className={styles['small-icon']}>
-                <UiIcon name="inbox" size={22} />
-              </div>
-              <strong>{t('mailListEmpty')}</strong>
-              <p>{t('mailListHint')}</p>
-            </div>
-            <div className={styles['list-footer']}>{t('previewLabel')}</div>
-          </section>
-          <section className={styles.reader} aria-label={t('readerTitle')}>
-            <header className={styles['reader-header']}>
-              <span>{t('readerTitle')}</span>
-              <span className={styles.badge}>{t('previewLabel')}</span>
-            </header>
-            <div className={styles['reader-empty']}>
-              <div className={styles['hero-icon']}>
-                <UiIcon name="mailOpen" size={28} />
-              </div>
-              <h2>{t('readerEmpty')}</h2>
-              <p>{t('readerHint')}</p>
-            </div>
-          </section>
+          {mail?.ready ? (
+            <MailContent mail={mail} />
+          ) : (
+            <>
+              <section className={styles.list} aria-labelledby="mail-list-title">
+                <header className={styles['section-header']}>
+                  <h2 id="mail-list-title">{t('mailListTitle')}</h2>
+                </header>
+                <div className={styles['list-empty']}>
+                  <div className={styles['small-icon']}>
+                    <UiIcon name="inbox" size={22} />
+                  </div>
+                  <strong>{t('mailListEmpty')}</strong>
+                  <p>{t('mailListHint')}</p>
+                </div>
+                <div className={styles['list-footer']}>{t('previewLabel')}</div>
+              </section>
+              <section className={styles.reader} aria-label={t('readerTitle')}>
+                <header className={styles['reader-header']}>
+                  <span>{t('readerTitle')}</span>
+                  <span className={styles.badge}>{t('previewLabel')}</span>
+                </header>
+                <div className={styles['reader-empty']}>
+                  <div className={styles['hero-icon']}>
+                    <UiIcon name="mailOpen" size={28} />
+                  </div>
+                  <h2>{t('readerEmpty')}</h2>
+                  <p>{t('readerHint')}</p>
+                </div>
+              </section>
+            </>
+          )}
         </div>
       </section>
       <aside className={styles.analysis} aria-label={t('analysisTitle')}>

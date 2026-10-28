@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"unicode"
 	"unicode/utf8"
 
@@ -23,7 +24,10 @@ var (
 )
 
 type Store struct {
-	db *sql.DB
+	db      *sql.DB
+	dataDir string
+	blobMu  sync.Mutex
+	staged  map[string]int
 }
 
 // Open 只接收本机数据目录，不接受外部 SQLite URI 或连接参数。
@@ -51,7 +55,7 @@ func Open(ctx context.Context, dataDir string) (*Store, error) {
 	if err := initialize(ctx, db, clean); err != nil {
 		return nil, errors.Join(err, storageError("关闭初始化失败的数据库", db.Close()))
 	}
-	return &Store{db: db}, nil
+	return &Store{db: db, dataDir: clean, staged: map[string]int{}}, nil
 }
 
 func databaseURI(path string) string {

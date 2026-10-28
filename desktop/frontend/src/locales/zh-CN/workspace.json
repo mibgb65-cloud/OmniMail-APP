@@ -42,7 +42,7 @@
   "intro": "桌面工程已就位。先确认基础连接，再逐步接入邮箱与邮件能力。",
   "nextEyebrow": "下一阶段",
   "nextTitle": "从一个邮箱，开始连接。",
-  "nextDescription": "当前尚未接入邮箱账号、收发邮件或本地数据库，不会读取设备上的邮件。",
+  "nextDescription": "已接入应用授权码账号、系统凭据存储、本地邮件缓存及收发轮询；仅在主动添加账号后连接服务器。OAuth、草稿自动保存和 IDLE 推送仍待完善。",
   "addAccountTitle": "添加邮箱",
   "addAccountDescription": "账号校验与安全凭据存储",
   "syncTitle": "同步邮件",

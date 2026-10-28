@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,7 +40,11 @@ func TestOpenAndReopen(t *testing.T) {
 		if err := store.db.QueryRow("SELECT max(version) FROM schema_migration").Scan(&version); err != nil {
 			t.Fatal(err)
 		}
-		if foreignKeys != 1 || version != 1 {
+		migrations, loadError := loadMigrations(migrationFiles)
+		if loadError != nil {
+			t.Fatal(loadError)
+		}
+		if foreignKeys != 1 || version != len(migrations) {
 			t.Fatalf("外键或迁移版本异常：%d / %d", foreignKeys, version)
 		}
 		if _, err := store.db.Exec("CREATE VIRTUAL TABLE temp.search_test USING fts5(body)"); err != nil {
@@ -90,15 +95,22 @@ func TestMigrationRefusesUnknownAndTamperedHistory(t *testing.T) {
 func TestMigrationUpgradeBackupAndRollback(t *testing.T) {
 	store := openTestStore(t)
 	createTestAccount(t, store, accountInput("custom"))
-	initial, err := migrationFiles.ReadFile("migrations/0001_accounts.sql")
+	source := fstest.MapFS{}
+	entries, err := migrationFiles.ReadDir("migrations")
 	if err != nil {
 		t.Fatal(err)
 	}
-	source := fstest.MapFS{
-		"migrations/0001_accounts.sql": {Data: initial},
-		"migrations/0002_test.sql": {Data: []byte(
-			"-- +up\nCREATE TABLE upgrade_probe(id INTEGER PRIMARY KEY);\n-- +down\nDROP TABLE upgrade_probe;")},
+	for _, entry := range entries {
+		name := "migrations/" + entry.Name()
+		data, err := migrationFiles.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		source[name] = &fstest.MapFile{Data: data}
 	}
+	baseVersion := len(entries)
+	source[fmt.Sprintf("migrations/%04d_test.sql", baseVersion+1)] = &fstest.MapFile{Data: []byte(
+		"-- +up\nCREATE TABLE upgrade_probe(id INTEGER PRIMARY KEY);\n-- +down\nDROP TABLE upgrade_probe;")}
 	directory := t.TempDir()
 	if err := migrate(t.Context(), store.db, directory, source); err != nil {
 		t.Fatal(err)
@@ -115,10 +127,10 @@ func TestMigrationUpgradeBackupAndRollback(t *testing.T) {
 	queryError := backup.QueryRow("SELECT max(version) FROM schema_migration").Scan(&version)
 	var accounts int
 	accountError := backup.QueryRow("SELECT count(*) FROM account").Scan(&accounts)
-	if err := errors.Join(queryError, accountError, backup.Close()); err != nil || version != 1 || accounts != 1 {
+	if err := errors.Join(queryError, accountError, backup.Close()); err != nil || version != baseVersion || accounts != 1 {
 		t.Fatalf("备份不是升级前的有效版本：%v / %d", err, version)
 	}
-	source["migrations/0003_broken.sql"] = &fstest.MapFile{Data: []byte(
+	source[fmt.Sprintf("migrations/%04d_broken.sql", baseVersion+2)] = &fstest.MapFile{Data: []byte(
 		"-- +up\nCREATE TABLE must_rollback(id INTEGER); INVALID SQL;\n-- +down\nDROP TABLE must_rollback;")}
 	if err := migrate(t.Context(), store.db, directory, source); err == nil {
 		t.Fatal("错误 SQL 未导致迁移失败")
@@ -130,7 +142,7 @@ func TestMigrationUpgradeBackupAndRollback(t *testing.T) {
 	if tables != 0 {
 		t.Fatal("失败迁移留下了部分结构")
 	}
-	if err := store.db.QueryRow("SELECT max(version) FROM schema_migration").Scan(&version); err != nil || version != 2 {
+	if err := store.db.QueryRow("SELECT max(version) FROM schema_migration").Scan(&version); err != nil || version != baseVersion+1 {
 		t.Fatalf("失败迁移改变了版本：%v / %d", err, version)
 	}
 	if err := migrate(t.Context(), store.db, directory, migrationFiles); !errors.Is(err, ErrSchemaVersion) {

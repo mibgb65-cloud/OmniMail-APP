@@ -12,6 +12,7 @@ interface TitleBarProps {
   onToggleTheme: () => void;
   startupVisible?: boolean;
   folderTitle?: string;
+  mailStatus?: { lastSyncAt: number; unread: number };
 }
 
 export function TitleBar({
@@ -19,9 +20,11 @@ export function TitleBar({
   onToggleTheme,
   startupVisible = false,
   folderTitle,
+  mailStatus,
 }: TitleBarProps) {
   const { t } = useTranslation('common');
   const { t: workspace } = useTranslation('workspace');
+  const { t: mail, locale } = useTranslation('mail');
   const { available, maximised, status, perform } = useWindowControls();
   const { toggleThemeWithTransition, isTransitioning } = useThemeTransition(onToggleTheme);
   const maximizeLabel = maximised ? t('windowRestore') : t('windowMaximize');
@@ -41,13 +44,26 @@ export function TitleBar({
           <>
             <FolderBubble title={folderTitle} />
             <dl className={styles['status-bubbles']} aria-label={workspace('mailStatusLabel')}>
-              <div className={styles['status-bubble']} title={workspace('mailStatusUnavailable')}>
+              <div
+                className={styles['status-bubble']}
+                title={mailStatus ? mail('statusHint') : workspace('mailStatusUnavailable')}
+              >
                 <dt>{workspace('lastSyncLabel')}</dt>
-                <dd>{workspace('notSynced')}</dd>
+                <dd>
+                  {mailStatus && mailStatus.lastSyncAt > 0
+                    ? new Intl.DateTimeFormat(locale, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      }).format(mailStatus.lastSyncAt)
+                    : workspace('notSynced')}
+                </dd>
               </div>
-              <div className={styles['status-bubble']} title={workspace('mailStatusUnavailable')}>
-                <dt>{workspace('unreadLabel')}</dt>
-                <dd>{workspace('unreadUnavailable')}</dd>
+              <div
+                className={styles['status-bubble']}
+                title={mailStatus ? mail('statusHint') : workspace('mailStatusUnavailable')}
+              >
+                <dt>{mailStatus ? mail('pageUnread') : workspace('unreadLabel')}</dt>
+                <dd>{mailStatus ? mailStatus.unread : workspace('unreadUnavailable')}</dd>
               </div>
             </dl>
           </>

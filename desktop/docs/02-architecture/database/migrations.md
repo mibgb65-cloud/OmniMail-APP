@@ -1,6 +1,6 @@
 # 数据库迁移与备份
 
-> 状态：当前迁移已实现，自动维护与恢复流程待实施 | 最后更新：2026-10-27
+> 状态：当前迁移已实现，自动维护与恢复流程待实施 | 最后更新：2026-10-28
 > 相关：[数据库设计](README.md) · [Schema](schema.md) · [发布检查单](../../06-release/release-checklist.md)
 
 ---
@@ -8,7 +8,7 @@
 ## 0. 当前运行实现（TASK-0030）
 
 - 代码为 `internal/repository/migrations.go`，实际 SQL 位于 `internal/repository/migrations/`；
-  当前只有 `0001_accounts.sql`。SQL 文件嵌入程序，不依赖运行目录。
+  当前为 `0001_accounts.sql` + `0002_mail.sql`。SQL 文件嵌入程序，不依赖运行目录。
 - 每个文件包含 `-- +up` / `-- +down`，只执行 up。文件完整内容归一化 CRLF 为 LF 后计算
   SHA-256；首次初始化和版本登记同事务，已应用文件不可改写。
 - 启动先检查数据库身份；未知非空文件、丢失迁移历史、未知更高版本或校验不符均拒绝继续。

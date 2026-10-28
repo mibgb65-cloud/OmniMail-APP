@@ -42,7 +42,7 @@
   "intro": "The desktop foundation is ready. Check the connection before adding accounts and email features.",
   "nextEyebrow": "Next steps",
   "nextTitle": "Start with one email account.",
-  "nextDescription": "Email accounts, sending, receiving, and the local database are not connected yet. No email on your device will be read.",
+  "nextDescription": "App-password accounts, system credentials, local mail caching, sending and polling are connected. Servers are accessed only after you add an account. OAuth, draft autosave and IDLE push remain unfinished.",
   "addAccountTitle": "Add an account",
   "addAccountDescription": "Account validation and secure credential storage",
   "syncTitle": "Sync email",

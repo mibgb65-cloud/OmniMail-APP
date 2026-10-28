@@ -198,6 +198,44 @@
   height: 100%;
   padding-top: var(--titlebar-height);
 }
+.mailbox-accounts {
+  max-height: 180px;
+  min-height: 0;
+}
+.mailbox-account-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+.mailbox-account-row > button:last-child {
+  flex-shrink: 0;
+  min-height: var(--space-9);
+  padding: var(--space-3);
+}
+.mailbox-account {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  min-width: 0;
+  min-height: var(--space-9);
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: start;
+}
+.mailbox-account[aria-pressed='true'] {
+  background: var(--color-bg-selected);
+}
+.mailbox-account span,
+.mailbox-account small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.mailbox-account small {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
 .main {
   height: 100%;
   min-height: 0;
