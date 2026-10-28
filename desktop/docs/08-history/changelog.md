@@ -1,6 +1,6 @@
 # 变更日志
 
-> 状态：已生效 | 最后更新：2026-10-25
+> 状态：已生效 | 最后更新：2026-10-28
 
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [SemVer](../00-guidelines/git-conventions.md#4-版本号semver)。
 
@@ -20,6 +20,9 @@
 - 桌面工作台支持简体中文和英语，提供即时切换、系统语言识别及本地偏好保存；语言包按公共、导航、工作台和连接面板拆分，附一致性校验与接入约定。
 
 ### 变更
+- 语言切换改为悬停/聚焦横向展开胶囊，选中高亮支持滑动回弹，保留中英偏好、主题适配和减少动态效果，见 [TASK-0038](../07-tasks/archive/2026/10/TASK-0038-language-hover-capsule.md)。
+- 添加邮箱先选择预设服务商或自定义 IMAP/SMTP 卡片，再进入对应配置；支持返回重选并清除旧密码，Gmail OAuth 未配置限制明确展示，见 [TASK-0039](../07-tasks/archive/2026/10/TASK-0039-account-provider-selection.md)。
+- 邮件列表移除上一页/下一页，改为滚动分批追加，支持错误重试、已加载范围刷新及阅读位置保持；筛选与未读统计仅覆盖已加载邮件，见 [TASK-0040](../07-tasks/archive/2026/10/TASK-0040-mail-infinite-scroll.md)。
 - 左侧六个邮件分类图标增加 outline/fill 双向变形，选中为实心、未选中为描边，见 [TASK-0021](../07-tasks/active/TASK-0021-sidebar-outline-fill-icons.md)。
 - 左侧导航选中背景改为共享圆角滑块，平滑移动至新的分类，见 [TASK-0020](../07-tasks/active/TASK-0020-sidebar-active-indicator.md)。
 - 右上角亮暗主题切换增加基于点击位置的原生圆形扩散过渡，兼容普通切换降级，见 [TASK-0019](../07-tasks/active/TASK-0019-circular-theme-transition.md)。
@@ -40,6 +43,7 @@
 - 多语言底层迁移到 i18next + react-i18next，保留中英文即时切换、离线使用与已有偏好；增加插值、复数及中文回退能力，见 [TASK-0004](../07-tasks/archive/2026/10/TASK-0004-i18n-migration.md) 与 [ADR-0006](../02-architecture/adr/ADR-0006-i18n-framework.md)。
 
 ### 修复
+- 修复语言胶囊选中项悬停时继承全局深色按钮背景、造成浅色主题深底深字的问题，见 [TASK-0038](../07-tasks/archive/2026/10/TASK-0038-language-hover-capsule.md)。
 - 禁止侧栏分类按钮文字被拖选，保留正常选中滑块和键盘交互，见 [TASK-0020](../07-tasks/active/TASK-0020-sidebar-active-indicator.md)。
 - 修正圆形主题动画的残留效果与结束清理时序，防止干扰连续切换，见 [TASK-0022](../07-tasks/active/TASK-0022-theme-transition-reentry.md)。
 - 设置中的语言下拉框改为与界面一致的自绘圆角菜单，保留当前语言、选中标记和键盘交互，并处理模态窗滚动区域裁切，见 [TASK-0007](../07-tasks/active/TASK-0007-language-dropdown.md)。

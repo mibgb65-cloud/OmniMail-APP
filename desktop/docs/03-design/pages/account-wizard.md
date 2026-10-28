@@ -23,7 +23,7 @@
   头部与底部保持可见，不产生弹窗外层第二条滚动条。
 - Gmail 卡片与配置页均说明 OAuth 客户端尚未配置，只能使用符合服务商策略的应用专用密码。
   未新增 Outlook/iCloud、OAuth 浏览器授权、邮箱自动发现或分阶段认证进度。
-- 实现与验证见 [TASK-0039](../../07-tasks/active/TASK-0039-account-provider-selection.md)。
+- 实现与验证见 [TASK-0039](../../07-tasks/archive/2026/10/TASK-0039-account-provider-selection.md)。
 
 以下三步方案与接口示例为历史产品目标，尚未全部实现；与当前两步交互不一致的部分不作为现有能力。
 

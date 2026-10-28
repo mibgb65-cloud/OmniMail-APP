@@ -19,7 +19,7 @@
   顶部未读计数也仅覆盖已加载范围，不冒充邮箱总量。
 - 仓储 offset 上限仍为 1,000,000，触达边界会说明读取上限而不是谎称全部加载；
   本轮未改成 API 草稿中的游标协议，也未引入虚拟列表。
-- 实现、测试与验证边界见 [TASK-0040](../../07-tasks/active/TASK-0040-mail-infinite-scroll.md)；
+- 实现、测试与验证边界见 [TASK-0040](../../07-tasks/archive/2026/10/TASK-0040-mail-infinite-scroll.md)；
   原接入基础见 [TASK-0036](../../07-tasks/archive/2026/10/TASK-0036-mail-account-ui-service.md)。
 
 以下为历史产品设计目标，尚未全部实现；与上述当前实现不一致的部分不作为已交付能力。
