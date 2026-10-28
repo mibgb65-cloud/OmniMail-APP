@@ -1,6 +1,6 @@
 # 当前数据库结构：账号与邮件缓存 v2
 
-> 状态：账号基础已提交，邮件缓存待评审 | 最后更新：2026-10-28
+> 状态：账号与基础邮件缓存已提交，后续能力待实施 | 最后更新：2026-10-28
 > 任务：[TASK-0030](../../07-tasks/archive/2026/10/TASK-0030-account-storage-foundation.md)
 
 ## 1. 权威来源
@@ -15,7 +15,7 @@
 
 不复制另一份 DDL；本文用于说明语义，SQL 和测试为实际约束来源。
 旧 [schema.md](schema.md) 中的邮件表和示例不代表当前版本；邮件缓存任务见
-[TASK-0035](../../07-tasks/active/TASK-0035-mail-persistence.md)。
+[TASK-0035](../../07-tasks/archive/2026/10/TASK-0035-mail-persistence.md)。
 
 ## 2. 基础设施
 

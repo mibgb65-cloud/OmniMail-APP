@@ -1,7 +1,7 @@
 # TASK-0037 邮件高级能力与服务商兼容性后续清单
 
 > 状态：待开始 | 负责人：待分配 | 创建：2026-10-28 | 优先级：P0
-> 来源：[TASK-0032](TASK-0032-mail-account-integration.md) 本轮已披露的剩余范围
+> 来源：[TASK-0032](../archive/2026/10/TASK-0032-mail-account-integration.md) 本轮已披露的剩余范围
 
 ## 目标与边界
 

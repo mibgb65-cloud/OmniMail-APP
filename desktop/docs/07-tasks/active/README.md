@@ -1,6 +1,6 @@
 # 进行中的任务（active）
 
-> 状态：已生效 | 最后更新：2026-10-25
+> 状态：已生效 | 最后更新：2026-10-28
 
 本目录存放**当前迭代进行中**的任务，一个任务一个文件：`TASK-<4位序号>-<slug>.md`。
 模板与规则见 [任务管理](../README.md#4-任务记录模板)，项目入口见 [AGENTS.md](../../../../AGENTS.md)。
@@ -40,11 +40,11 @@
 | [TASK-0029](TASK-0029-scrollbar-fade-in.md) | 滚动条默认占位隐藏、悬停淡入 | @Codex | 待评审 | P1 |
 | [TASK-0030](../archive/2026/10/TASK-0030-account-storage-foundation.md) | 多服务商账号与邮件存储基础（已归档） | @Codex | 已完成 | P0 |
 | [TASK-0031](TASK-0031-messages-panel-offset.md) | 修消息面板与铃铛按钮脱开 | @Codex | 待评审 | P2 |
-| [TASK-0032](TASK-0032-mail-account-integration.md) | 账号接入与邮件收发集成 | @Codex | 进行中 | P0 |
-| [TASK-0033](TASK-0033-system-credentials.md) | 系统凭据存储 | @Codex | 待评审 | P0 |
-| [TASK-0034](TASK-0034-mail-protocol-adapters.md) | 邮件协议与 MIME 适配 | @Codex | 待评审 | P0 |
-| [TASK-0035](TASK-0035-mail-persistence.md) | 邮件正文附件与同步状态存储 | @Codex | 待评审 | P0 |
-| [TASK-0036](TASK-0036-mail-account-ui-service.md) | 账号添加与收发同步界面集成 | @Codex | 待评审 | P0 |
+| [TASK-0032](../archive/2026/10/TASK-0032-mail-account-integration.md) | 账号接入与邮件收发集成（基础闭环已归档） | @Codex | 已完成 | P0 |
+| [TASK-0033](../archive/2026/10/TASK-0033-system-credentials.md) | 系统凭据存储（主路径已归档） | @Codex | 已完成 | P0 |
+| [TASK-0034](../archive/2026/10/TASK-0034-mail-protocol-adapters.md) | 邮件协议与 MIME 适配（基础路径已归档） | @Codex | 已完成 | P0 |
+| [TASK-0035](../archive/2026/10/TASK-0035-mail-persistence.md) | 邮件正文附件与同步状态存储（已归档） | @Codex | 已完成 | P0 |
+| [TASK-0036](../archive/2026/10/TASK-0036-mail-account-ui-service.md) | 账号添加与收发同步界面集成（基础路径已归档） | @Codex | 已完成 | P0 |
 | [TASK-0037](TASK-0037-mail-advanced-followups.md) | 邮件高级能力与服务商兼容性后续清单 | 待分配 | 待开始 | P0 |
 
 ## 说明
