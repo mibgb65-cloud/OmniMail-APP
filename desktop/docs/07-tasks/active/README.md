@@ -48,6 +48,7 @@
 | [TASK-0037](TASK-0037-mail-advanced-followups.md) | 邮件高级能力与服务商兼容性后续清单 | 待分配 | 待开始 | P0 |
 | [TASK-0038](TASK-0038-language-hover-capsule.md) | 语言切换悬停横向展开胶囊 | @Codex | 进行中 | P1 |
 | [TASK-0039](TASK-0039-account-provider-selection.md) | 添加邮箱服务商卡片选择页 | @Codex | 进行中 | P1 |
+| [TASK-0040](TASK-0040-mail-infinite-scroll.md) | 邮件列表无限滚动 | @Codex | 进行中 | P1 |
 
 ## 说明
 

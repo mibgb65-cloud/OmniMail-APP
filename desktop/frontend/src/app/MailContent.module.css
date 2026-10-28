@@ -46,15 +46,30 @@
 .list .read {
   font-weight: var(--font-medium);
 }
-.list footer {
-  display: flex;
-  justify-content: space-between;
-  padding: var(--space-3);
-  gap: var(--space-3);
+.list:focus-visible {
+  outline-offset: calc(-1 * var(--outline-width));
 }
-.list footer button {
-  min-height: var(--space-9);
-  padding: var(--space-3);
+.list-status {
+  display: grid;
+  justify-items: center;
+  min-height: var(--space-10);
+  padding: var(--space-4);
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+.list-status button {
+  min-height: var(--control-height);
+  background: var(--color-bg-canvas);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-subtle);
+}
+.list-status button:hover:not(:disabled) {
+  background: var(--color-bg-selected);
+}
+.list-status .error {
+  padding: 0;
 }
 .reader {
   flex: 1;

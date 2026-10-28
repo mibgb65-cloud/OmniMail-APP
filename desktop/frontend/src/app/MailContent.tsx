@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from '../lib/i18n/useTranslation';
 import * as api from '../lib/bridge/mail';
 import type { MailController } from './useMail';
+import { MailList } from './MailList';
 import styles from './MailContent.module.css';
 
 export function MailContent({ mail }: { mail: MailController }) {
@@ -25,50 +26,9 @@ export function MailContent({ mail }: { mail: MailController }) {
       setSaving('');
     }
   };
-  const items = mail.messages.filter((message) =>
-    `${message.subject} ${message.from}`
-      .toLocaleLowerCase()
-      .includes(mail.filter.toLocaleLowerCase()),
-  );
   return (
     <>
-      <section className={styles.list} aria-label={t('selectMessage')}>
-        {mail.error != null && (
-          <p role="alert" className={styles.error}>
-            {t(api.errorKey(mail.error))}
-          </p>
-        )}
-        {items.length === 0 && <p className={styles.empty}>{t('noMessages')}</p>}
-        <ul>
-          {items.map((message) => (
-            <li key={message.id}>
-              <button
-                type="button"
-                aria-pressed={mail.selected === message.id}
-                onClick={() => mail.setSelected(message.id)}
-              >
-                <span className={styles.sender}>{message.from}</span>
-                <time>{formatTime(message.receivedAt)}</time>
-                <strong className={message.read ? styles.read : undefined}>
-                  {message.subject || t('noSubject')}
-                </strong>
-              </button>
-            </li>
-          ))}
-        </ul>
-        <footer>
-          <button type="button" disabled={mail.offset === 0} onClick={() => mail.nextPage(-1)}>
-            {t('previous')}
-          </button>
-          <button
-            type="button"
-            disabled={mail.messages.length < 100}
-            onClick={() => mail.nextPage(1)}
-          >
-            {t('loadMore')}
-          </button>
-        </footer>
-      </section>
+      <MailList mail={mail} formatTime={formatTime} />
       <section className={styles.reader} aria-label={t('selectMessage')} aria-busy={mail.loading}>
         {mail.loading && <p role="status">{t('loading')}</p>}
         {mail.bodyError != null && (
