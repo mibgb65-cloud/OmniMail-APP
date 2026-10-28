@@ -90,8 +90,7 @@ describe('设置模态悬浮窗', () => {
     expect(themeSwitch.querySelector('svg')).toBe(themeIcon);
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
-    fireEvent.click(screen.getByRole('button', { name: '界面语言' }));
-    fireEvent.click(screen.getByRole('menuitemradio', { name: 'English' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'English' }));
     expect(screen.getByRole('dialog', { name: 'Settings' })).toBe(dialog);
     expect(screen.getByRole('switch', { name: 'Dark mode' })).toHaveAttribute(
       'aria-checked',

@@ -1,7 +1,7 @@
 import { useTranslation } from '../../lib/i18n/useTranslation';
 import type { Theme } from '../../lib/theme/theme';
 import { useThemeTransition } from '../../lib/theme/useThemeTransition';
-import { LanguageMenu } from '../LanguageSwitcher/LanguageMenu';
+import { LanguageSwitcher } from '../LanguageSwitcher/LanguageSwitcher';
 import { UiIcon } from '../UiIcon/UiIcon';
 import { FolderBubble } from './FolderBubble';
 import { useWindowControls } from './useWindowControls';
@@ -72,7 +72,7 @@ export function TitleBar({
       <div className={styles.actions}>
         {!startupVisible && (
           <>
-            <LanguageMenu />
+            <LanguageSwitcher compact />
             <button
               type="button"
               className={styles.tool}

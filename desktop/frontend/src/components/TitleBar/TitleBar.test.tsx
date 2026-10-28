@@ -102,7 +102,7 @@ describe('自绘窗口操作栏', () => {
   it('语言与主题操作位于控制栏中，可切换并持久化', () => {
     renderTitleBar();
     const toolbar = screen.getByRole('banner', { name: '窗口操作栏' });
-    expect(within(toolbar).getByRole('button', { name: '切换语言' })).toBeVisible();
+    expect(within(toolbar).getByRole('group', { name: '切换语言' })).toBeVisible();
     expect(within(toolbar).queryByRole('combobox')).not.toBeInTheDocument();
     fireEvent.click(within(toolbar).getByRole('button', { name: '深色模式' }));
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
@@ -111,8 +111,7 @@ describe('自绘窗口操作栏', () => {
       'aria-pressed',
       'true',
     );
-    fireEvent.click(screen.getByRole('button', { name: '切换语言' }));
-    fireEvent.click(screen.getByRole('menuitemradio', { name: 'English' }));
+    fireEvent.click(within(toolbar).getByRole('button', { name: 'English' }));
     expect(screen.getByRole('banner', { name: 'Window toolbar' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Close window' })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Dark mode' }));
@@ -184,7 +183,7 @@ describe('自绘窗口操作栏', () => {
       expect(screen.getByRole('button', { name })).toBeDisabled();
     }
     expect(screen.getByRole('button', { name: '深色模式' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: '切换语言' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '简体中文' })).toBeEnabled();
     expect(windowBridge.readWindowMaximised).not.toHaveBeenCalled();
   });
 

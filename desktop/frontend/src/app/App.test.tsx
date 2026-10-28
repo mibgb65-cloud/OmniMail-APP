@@ -37,9 +37,9 @@ function openAbout(locale: Locale = 'zh-CN') {
 }
 
 function switchToolbarLanguage(locale: Locale) {
-  fireEvent.click(screen.getByRole('button', { name: /切换语言|Change language/ }));
+  const toolbar = within(screen.getByRole('banner', { name: /窗口操作栏|Window toolbar/ }));
   fireEvent.click(
-    screen.getByRole('menuitemradio', {
+    toolbar.getByRole('button', {
       name: locale === 'en' ? 'English' : '简体中文',
     }),
   );
@@ -152,8 +152,7 @@ describe('工作台中英文适配', () => {
     openAbout();
     expect(await screen.findAllByText('未知')).toHaveLength(2);
     fireEvent.click(screen.getByRole('tab', { name: '通用设置' }));
-    fireEvent.click(screen.getByRole('button', { name: '界面语言' }));
-    fireEvent.click(screen.getByRole('menuitemradio', { name: 'English' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'English' }));
     fireEvent.click(screen.getByRole('tab', { name: 'About' }));
     expect(screen.getAllByText('Unknown')).toHaveLength(2);
   });
@@ -195,18 +194,15 @@ describe('工作台与开屏的衔接', () => {
       'aria-pressed',
       'true',
     );
-    fireEvent.click(within(dialog).getByRole('button', { name: '界面语言' }));
-    fireEvent.click(screen.getByRole('menuitemradio', { name: 'English' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'English' }));
     expect(screen.getByRole('dialog', { name: 'Settings' })).toBe(dialog);
-    expect(within(toolbar).getByRole('button', { name: 'Change language' })).toBeVisible();
+    expect(within(toolbar).getByRole('group', { name: 'Change language' })).toBeVisible();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    fireEvent.click(within(toolbar).getByRole('button', { name: 'Change language' }));
-    expect(screen.getByRole('menuitemradio', { name: 'English' })).toHaveAttribute(
-      'aria-checked',
+    expect(within(toolbar).getByRole('button', { name: 'English' })).toHaveAttribute(
+      'aria-pressed',
       'true',
     );
-    fireEvent.keyDown(screen.getByRole('menuitemradio', { name: 'English' }), { key: 'Escape' });
     expect(screen.getByRole('main')).toBe(workspace);
     expect(getVersion).toHaveBeenCalledOnce();
   });
@@ -220,7 +216,7 @@ describe('工作台与开屏的衔接', () => {
     expect(within(sidebar).queryByText('桌面端')).not.toBeInTheDocument();
     expect(within(toolbar).queryByText('OmniMail')).not.toBeInTheDocument();
     expect(screen.queryByText('开发预览')).not.toBeInTheDocument();
-    expect(within(toolbar).getByRole('button', { name: '切换语言' })).toBeEnabled();
+    expect(within(toolbar).getByRole('button', { name: '简体中文' })).toBeEnabled();
     expect(within(toolbar).getByRole('button', { name: '深色模式' })).toBeEnabled();
     expect(within(toolbar).getByRole('button', { name: '关闭窗口' })).toBeInTheDocument();
   });
@@ -237,13 +233,13 @@ describe('工作台与开屏的衔接', () => {
     for (const name of ['最小化', '最大化', '关闭窗口']) {
       expect(within(toolbar).getByRole('button', { name })).toBeVisible();
     }
-    expect(screen.queryByRole('button', { name: '切换语言' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: '切换语言' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '深色模式' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '跳过动画' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '全部收件箱' })).not.toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'Escape' });
     await waitFor(() => expect(screen.getByRole('main')).toHaveFocus());
-    expect(screen.getByRole('button', { name: '切换语言' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '简体中文' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '深色模式' })).toBeEnabled();
     expect(getVersion).toHaveBeenCalledOnce();
   });

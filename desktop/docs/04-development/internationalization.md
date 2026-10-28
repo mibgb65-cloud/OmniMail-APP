@@ -1,6 +1,6 @@
 # 多语言开发约定
 
-> 状态：已生效 | 最后更新：2026-10-24
+> 状态：已生效 | 最后更新：2026-10-28
 > 相关：[前端文件组织](../02-architecture/frontend/file-organization.md) · [代码规范](../00-guidelines/coding-standards.md) · [ADR-0006](../02-architecture/adr/ADR-0006-i18n-framework.md)
 
 桌面端首期支持简体中文（`zh-CN`）和英语（`en`），包括导航、工作台、连接状态、设置悬浮窗、消息卡片、无障碍标签及页面描述。
@@ -35,9 +35,8 @@ frontend/src/
 │   ├── I18nProvider.tsx     # 官方 Provider 装配、文档语言和描述同步
 │   └── useTranslation.ts    # 原生翻译 Hook 与语言控制的薄适配
 └── components/LanguageSwitcher/
-    ├── LanguageSwitcher.tsx # 带标签或紧凑的文字选择器
-    ├── LanguageMenu.tsx     # 顶部图标/设置文字两种外观，共享自绘语言菜单
-    └── useLanguageMenu.ts   # 焦点、关闭、顶层呈现与视口定位生命周期
+    ├── LanguageSwitcher.tsx        # 顶部/设置共用的横向展开胶囊，可带可见标签
+    └── LanguageSwitcher.module.css # hover / focus-within、选中态与主题 Token
 ```
 
 `common` 只收录真正跨页面复用的文案。页面标题、空状态、错误提示和按钮说明属于对应页面或功能，不放进 `common`。
@@ -98,7 +97,11 @@ export function WorkspaceTitle() {
 
 - 优先级：已保存的有效手动偏好 → 系统语言列表中第一个支持的语言 → 简体中文。
 - 系统语言的 `en-US`、`en-GB` 等映射到 `en`，`zh-CN`、`zh-Hans-SG` 等映射到 `zh-CN`。首期仅提供简体中文，不提供繁体中文翻译。
-- 首次检测不会写入偏好；用户通过右上角纯图标语言菜单或设置面板中的文字菜单按钮手动切换后，保存到当前 WebView 来源的 `localStorage`，键为 `omnimail.locale`。两种入口共用 I18nProvider 和自绘菜单，不再由系统绘制原生 select 选项。
+- 首次检测不会写入偏好；用户通过右上角或设置面板中的语言胶囊手动切换后，保存到当前 WebView 来源的 `localStorage`，键为 `omnimail.locale`。两种入口共用 LanguageSwitcher 和 I18nProvider，不维护额外语言状态。
+- 胶囊收起时显示翻译图标与当前语言简写（简中 / EN）；hover 或 focus-within 时横向展开全部支持的语言。按钮以完整语言名提供 `aria-label` / `title`，用 `aria-pressed` 表达当前语言。收起的非选中项不可见且不参与焦点导航，聚焦当前项后其他选项可达。
+- Tab / Shift+Tab 正常进出组件，方向键和 Home/End 只移动焦点，Enter / Space / 点击调用原有 setLocale；展开或浏览本身不保存偏好。组件没有菜单/Popover，不截获 Esc，也不增加外部关闭或定位监听。
+- 语言简写放在 common 语言包中；选项由 SUPPORTED_LOCALES 映射，切换时保留按钮 DOM 顺序。颜色仅引用现有主题 Token，展开过渡遵守全局减少动态效果偏好。
+- 选中高亮是 `aria-hidden` 的单个装饰层，按当前 locale 的选项索引通过 transform 滑动；语言槽位统一 44px，避免测量和切换时宽度抖动。460ms 的回弹贝塞尔曲线只作用于视觉位移，不延迟 setLocale，也不新增定时器、动画状态或监听；减少动态效果时即时定位。
 - 切换立即更新组件、`document.documentElement.lang` 和页面描述，不重挂载工作区、不重新请求 Go 服务。
 - 非法或过期存储值被忽略。存储读写被禁止或额度耗尽时，应用仍可启动和切换；该会话的手动选择不保证能在重启后恢复。
 - 开发与正式应用可能使用不同 WebView 来源，偏好不保证跨来源共享；本期不修改 Go 配置、数据文件格式或绑定协议。

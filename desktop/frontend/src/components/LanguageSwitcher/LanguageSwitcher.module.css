@@ -1,26 +1,132 @@
 .switcher {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: var(--space-3);
 }
 
-.switcher label {
+.label {
   white-space: nowrap;
 }
 
-.compact {
-  position: relative;
-  gap: var(--space-2);
-}
-.compact label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
+.capsule {
+  --wails-draggable: no-drag;
+  --language-option-width: calc(var(--space-7) + var(--space-6));
+  display: flex;
+  align-items: center;
+  height: calc(var(--space-8) + var(--space-1));
   overflow: hidden;
-  clip-path: inset(50%);
+  padding: calc(var(--space-1) + 1px) calc(var(--space-2) + var(--space-1));
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 9999px;
+  background: var(--color-bg-surface);
+  white-space: nowrap;
 }
-.globe {
-  width: var(--icon-size);
-  height: var(--icon-size);
+
+.capsule,
+.icon,
+.option {
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.capsule:is(:hover, :focus-within) {
+  border-color: var(--field-border-hover);
+}
+
+.icon {
+  flex-shrink: 0;
+  width: var(--space-5);
+  height: var(--space-5);
+  margin-inline-end: var(--space-2);
   color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.capsule:is(:hover, :focus-within) .icon {
+  color: var(--color-text-primary);
+}
+
+.options {
+  position: relative;
+  display: flex;
+  align-self: stretch;
+  isolation: isolate;
+}
+
+.indicator {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: -1;
+  width: var(--language-option-width);
+  border-radius: 9999px;
+  background: var(--color-bg-selected);
+  opacity: 0;
+  pointer-events: none;
+  /* 共享高亮略微越过目标后回弹；连续点击由 CSS 从当前位置接续，不排队。 */
+  transition:
+    transform 0.46s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.capsule:is(:hover, :focus-within) .indicator {
+  opacity: 1;
+}
+
+.option {
+  flex-shrink: 0;
+  min-width: 0;
+  min-height: 0;
+  width: var(--language-option-width);
+  max-width: calc(var(--space-10) + var(--space-7));
+  height: 100%;
+  overflow: hidden;
+  padding: var(--space-1) calc(var(--space-3) + var(--space-1));
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+/* 选中底色由共享滑块绘制，阻断全局主按钮 hover 的深色背景。 */
+.option:hover:not(:disabled) {
+  background: transparent;
+}
+
+.option[aria-pressed='true'] {
+  color: var(--color-text-primary);
+  font-weight: var(--font-medium);
+}
+
+/* 隐藏项不抢占焦点；当前语言获得焦点后，focus-within 让全部选项可达。 */
+.option[aria-pressed='false'] {
+  max-width: 0;
+  padding-inline: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.capsule:is(:hover, :focus-within) .option {
+  max-width: calc(var(--space-10) + var(--space-7));
+  padding: var(--space-1) calc(var(--space-3) + var(--space-1));
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  /* 可见性即时生效，避免聚焦后立即按方向键时目标仍在隐藏过渡中。 */
+  transition:
+    all 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s;
+}
+
+.option[aria-pressed='false']:hover:not(:disabled),
+.option[aria-pressed='false']:focus-visible {
+  background: var(--color-bg-sunken);
+  color: var(--color-text-primary);
+}
+
+.option:focus-visible {
+  outline-offset: calc(-1 * var(--outline-width));
 }

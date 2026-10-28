@@ -128,7 +128,8 @@
 }
 .tool {
   width: var(--space-9);
-  height: var(--space-9);
+  min-height: 0;
+  height: calc(var(--space-8) + var(--space-1));
 }
 .tool:hover:not(:disabled),
 .control:hover:not(:disabled) {

@@ -31,9 +31,8 @@ function renderExample() {
 }
 
 function chooseLanguage(locale: Locale, scope: Pick<typeof screen, 'getByRole'> = screen) {
-  fireEvent.click(scope.getByRole('button', { name: /^(界面语言|Language)$/ }));
   fireEvent.click(
-    scope.getByRole('menuitemradio', {
+    scope.getByRole('button', {
       name: locale === 'en' ? 'English' : '简体中文',
     }),
   );
@@ -49,7 +48,7 @@ describe('语言上下文与切换入口', () => {
     vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US']);
     renderExample();
     expect(screen.getByRole('heading')).toHaveTextContent('Your email workspace starts here.');
-    expect(screen.getByRole('button', { name: 'Language' })).toHaveTextContent('English');
+    expect(screen.getByRole('button', { name: 'English' })).toHaveAttribute('aria-pressed', 'true');
     expect(document.documentElement.lang).toBe('en');
     expect(window.localStorage.getItem(LOCALE_STORAGE_KEY)).toBeNull();
   });
@@ -78,7 +77,7 @@ describe('语言上下文与切换入口', () => {
     expect(window.localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('en');
     view.unmount();
     renderExample();
-    expect(screen.getByRole('button', { name: 'Language' })).toHaveTextContent('English');
+    expect(screen.getByRole('button', { name: 'English' })).toHaveAttribute('aria-pressed', 'true');
     chooseLanguage('zh-CN');
     expect(screen.getByRole('heading')).toHaveTextContent('你的邮件工作台，从这里开始。');
     expect(document.documentElement.lang).toBe('zh-CN');
@@ -95,13 +94,14 @@ describe('语言上下文与切换入口', () => {
     expect(document.documentElement.lang).toBe('en');
   });
 
-  it('菜单仅提供受支持的语言，查看选项不会改变偏好', () => {
+  it('胶囊仅提供受支持的语言，查看选项不会改变偏好', () => {
     vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['zh-CN']);
     renderExample();
-    fireEvent.click(screen.getByRole('button', { name: '界面语言' }));
-    expect(screen.getAllByRole('menuitemradio')).toHaveLength(2);
-    expect(screen.queryByRole('menuitemradio', { name: /fr|French/ })).not.toBeInTheDocument();
-    fireEvent.keyDown(screen.getByRole('menuitemradio', { name: '简体中文' }), { key: 'Escape' });
+    const capsule = screen.getByRole('group', { name: '切换语言' });
+    fireEvent.mouseEnter(capsule);
+    expect(within(capsule).getAllByRole('button')).toHaveLength(2);
+    expect(within(capsule).queryByRole('button', { name: /fr|French/ })).not.toBeInTheDocument();
+    fireEvent.mouseLeave(capsule);
     expect(screen.getByRole('heading')).toHaveTextContent('你的邮件工作台，从这里开始。');
     expect(window.localStorage.getItem(LOCALE_STORAGE_KEY)).toBeNull();
   });
@@ -135,7 +135,7 @@ describe('语言上下文与切换入口', () => {
       throw new DOMException('Storage blocked', 'SecurityError');
     });
     renderExample();
-    expect(screen.getByRole('button', { name: 'Language' })).toHaveTextContent('English');
+    expect(screen.getByRole('button', { name: 'English' })).toHaveAttribute('aria-pressed', 'true');
     chooseLanguage('zh-CN');
     expect(screen.getByRole('heading')).toHaveTextContent('你的邮件工作台，从这里开始。');
     expect(document.documentElement.lang).toBe('zh-CN');
@@ -163,6 +163,9 @@ describe('语言上下文与切换入口', () => {
     chooseLanguage('en', first);
     expect(first.getByRole('heading')).toHaveTextContent('Your email workspace starts here.');
     expect(second.getByRole('heading')).toHaveTextContent('你的邮件工作台，从这里开始。');
-    expect(second.getByRole('button', { name: '界面语言' })).toHaveTextContent('简体中文');
+    expect(second.getByRole('button', { name: '简体中文' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 });
