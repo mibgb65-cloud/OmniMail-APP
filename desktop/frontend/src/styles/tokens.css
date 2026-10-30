@@ -49,7 +49,9 @@
   --sidebar-min-height: 480px;
   --panel-shadow: 0 3px 20px rgb(24 24 27 / 3%);
   --motion-interaction: 180ms;
+  --motion-modal-exit: 140ms;
   --motion-sync-spin: 1000ms;
+  --motion-step-progress: 360ms;
   --color-brand-detail: #e46b52;
   --radius-xs: 4px;
   --text-display: 40px;
@@ -72,8 +74,8 @@
   --messages-panel-width: 260px;
   --color-close-hover: #c42b1c;
   --color-close-text: #ffffff;
-  --settings-dialog-width: 900px;
-  --settings-dialog-height: 580px;
+  --dialog-width: 900px;
+  --dialog-height: 580px;
   --settings-nav-width: 196px;
   --settings-nav-compact-width: 124px;
   --modal-backdrop-blur: 10px;
@@ -94,6 +96,7 @@
   --field-accent-soft: rgb(59 130 246 / 12%);
   --field-border-focus: rgb(59 130 246 / 62%);
   --field-ring: rgb(59 130 246 / 16%);
+  --field-error-ring: color-mix(in srgb, var(--color-danger) 14%, transparent);
   --field-shadow: 0 1px 2px rgb(24 24 27 / 6%);
   --field-placeholder: #a1a1aa;
   --field-icon: #a1a1aa;

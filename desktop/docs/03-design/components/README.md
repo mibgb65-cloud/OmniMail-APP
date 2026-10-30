@@ -14,7 +14,7 @@
 | --- | --- | --- | --- |
 | [Button](button.md) | ui | 5 | primary / secondary / ghost / danger |
 | [Input](input.md) | ui | 6 | 文本、搜索、密码 |
-| Dialog | ui | 4 | 模态、抽屉 |
+| [DialogFrame](dialog.md) | ui | 标准模态 / 响应式 / 滚动 | 已实现：设置、添加邮箱与撰写共用 900×580 基准；后续同类弹窗复用 |
 | Toast | ui | 4 | 成功/错误/信息，带动作 |
 | [Tooltip](tooltip.md) | ui | 悬停 / 焦点 / 清理 | 已实现：统一主题浮层，悬停延迟 400ms、键盘即时显示 |
 | Tabs | ui | 4 | 面板切换 |

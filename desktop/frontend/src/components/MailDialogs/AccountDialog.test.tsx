@@ -49,7 +49,87 @@ beforeEach(() => {
 });
 
 describe('添加账号服务商选择流程', () => {
-  it('首先显示预设/自定义卡片，不显示账号表单，也不自动验证', async () => {
+  it.each([
+    [
+      'zh-CN',
+      '输入邮箱自动识别服务商，或从下方直接选择。',
+      '输入完整邮箱地址后，自动匹配服务商。',
+      'QQ 邮箱',
+      '填写邮箱地址和密码或应用授权码，服务器信息已预设。',
+    ],
+    [
+      'en',
+      'Enter your email to detect its provider, or choose one below.',
+      'Enter a complete email address to detect its provider.',
+      'QQ Mail',
+      'Enter your email and password or app password. Server settings are already preset.',
+    ],
+  ] as const)(
+    '%s 选择页去掉重复说明，保留识别状态和配置说明',
+    async (locale, removed, hint, provider, setup) => {
+      renderAccount(locale);
+      await screen.findByRole('button', { name: provider });
+      expect(screen.queryByText(removed)).not.toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent(hint);
+      fireEvent.click(screen.getByRole('button', { name: provider }));
+      expect(screen.getByText(setup)).toBeVisible();
+    },
+  );
+
+  it('左侧仅显示添加进度，右侧表单显示当前选项，不提供跳过步骤的入口', async () => {
+    renderAccount();
+    await screen.findByRole('region', { name: '预设服务商' });
+    const progress = screen.getByRole('complementary', { name: '添加进度' });
+    const steps = within(progress).getAllByRole('listitem');
+    expect(steps).toHaveLength(4);
+    expect(within(progress).getByText('验证连接')).toBeVisible();
+    expect(within(progress).getByText('同步邮件')).toBeVisible();
+    expect(steps[0]).toHaveAttribute('aria-current', 'step');
+    expect(steps[1]).toHaveAttribute('data-state', 'upcoming');
+    expect(within(progress).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(progress).queryByLabelText('邮箱地址')).not.toBeInTheDocument();
+    const panel = screen.getByRole('form', { name: '选择邮箱服务商' });
+    expect(within(panel).getByLabelText('邮箱地址')).toBeVisible();
+    expect(within(panel).getByRole('button', { name: 'QQ 邮箱' })).toBeVisible();
+    expect(within(panel).getByRole('button', { name: '关闭' })).toBeVisible();
+  });
+
+  it('进入配置后左侧标明已选服务商，返回后进度复原且清除秘密', async () => {
+    renderAccount();
+    fireEvent.click(await screen.findByRole('button', { name: 'QQ 邮箱' }));
+    const progress = screen.getByRole('complementary', { name: '添加进度' });
+    let steps = within(progress).getAllByRole('listitem');
+    const completed = steps[0];
+    if (!completed) throw new Error('未找到服务商选择步骤');
+    expect(completed).toHaveAttribute('data-state', 'complete');
+    expect(within(completed).getByText('已选择：QQ 邮箱')).toBeVisible();
+    expect(completed.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(steps[1]).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByRole('form', { name: '配置 QQ 邮箱' })).toBeVisible();
+    fireEvent.change(screen.getByLabelText('密码 / 应用授权码'), {
+      target: { value: 'test-only-split-layout-secret' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '返回选择服务商' }));
+    steps = within(progress).getAllByRole('listitem');
+    expect(steps[0]).toHaveAttribute('aria-current', 'step');
+    expect(steps[1]).toHaveAttribute('data-state', 'upcoming');
+    expect(within(progress).queryByText('已选择：QQ 邮箱')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'QQ 邮箱' }));
+    expect(screen.getByLabelText('密码 / 应用授权码')).toHaveValue('');
+    expect(api.addAccount).not.toHaveBeenCalled();
+  });
+
+  it('英语进度与右侧配置保持一致，不将选择服务商描述为账号已添加', async () => {
+    renderAccount('en');
+    fireEvent.click(await screen.findByRole('button', { name: 'Gmail' }));
+    const progress = screen.getByRole('complementary', { name: 'Setup progress' });
+    expect(within(progress).getByText('Selected: Gmail')).toBeVisible();
+    expect(within(progress).getAllByRole('listitem')[1]).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByRole('form', { name: 'Set up Gmail' })).toBeVisible();
+    expect(api.addAccount).not.toHaveBeenCalled();
+  });
+
+  it('首先显示邮箱快捷输入和预设/自定义卡片，不显示服务器表单，也不自动验证', async () => {
     renderAccount();
     const presetsRegion = await screen.findByRole('region', { name: '预设服务商' });
     for (const name of ['Gmail', 'QQ 邮箱', '网易 163', '网易 126']) {
@@ -57,27 +137,139 @@ describe('添加账号服务商选择流程', () => {
     }
     expect(
       within(presetsRegion).getByRole('button', { name: 'Gmail' }),
-    ).toHaveAccessibleDescription(/OAuth 尚未配置/);
+    ).toHaveAccessibleDescription(/应用专用密码登录/);
     const custom = screen.getByRole('region', { name: '自定义服务商' });
     expect(within(custom).getByRole('button', { name: '自定义 IMAP/SMTP' })).toBeEnabled();
-    expect(screen.queryByLabelText('邮箱地址')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('邮箱地址')).toBeVisible();
+    expect(screen.queryByRole('group', { name: 'IMAP' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '验证并添加' })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '选择邮箱服务商' })).toHaveFocus();
     expect(api.addAccount).not.toHaveBeenCalled();
   });
 
-  it('选择预设后进入对应配置，预填服务器并将焦点移到邮箱', async () => {
+  it.each([
+    ['person@gmail.com', 'Gmail'],
+    ['person@QQ.COM', 'QQ 邮箱'],
+    ['person@163.com', '网易 163'],
+    ['person@126.com', '网易 126'],
+  ])('输入 %s 后识别 %s，继续时带入邮箱并隐藏服务器', async (email, label) => {
+    renderAccount();
+    await screen.findByRole('region', { name: '预设服务商' });
+    fireEvent.change(screen.getByLabelText('邮箱地址'), { target: { value: email } });
+    expect(screen.getByRole('status')).toHaveTextContent(`已识别：${label}`);
+    expect(screen.getByRole('heading', { name: '选择邮箱服务商' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: '继续' }));
+    expect(screen.getByRole('heading', { name: `配置 ${label}` })).toBeVisible();
+    expect(screen.getByLabelText('邮箱地址')).toHaveValue(email);
+    expect(screen.queryByRole('group', { name: 'IMAP' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'SMTP' })).not.toBeInTheDocument();
+    expect(api.addAccount).not.toHaveBeenCalled();
+  });
+
+  it.each(['person@example.invalid', 'person@gmail.com.evil.invalid', 'person@sub.qq.com'])(
+    '未知或相似域名 %s 进入自定义配置，不猜测服务器',
+    async (email) => {
+      renderAccount();
+      await screen.findByRole('button', { name: 'Gmail' });
+      fireEvent.change(screen.getByLabelText('邮箱地址'), { target: { value: email } });
+      expect(screen.getByRole('status')).toHaveTextContent('将使用自定义 IMAP/SMTP');
+      fireEvent.click(screen.getByRole('button', { name: '继续' }));
+      expect(screen.getByRole('heading', { name: '配置 自定义 IMAP/SMTP' })).toBeVisible();
+      expect(screen.getByLabelText('邮箱地址')).toHaveValue(email);
+      expect(
+        within(screen.getByRole('group', { name: 'IMAP' })).getByLabelText('服务器'),
+      ).toHaveValue('');
+    },
+  );
+
+  it.each([
+    '',
+    'person',
+    'person@',
+    'person@@qq.com',
+    '.person@qq.com',
+    `${'a'.repeat(255)}@qq.com`,
+  ])('无效邮箱不能通过快捷入口：%s', async (email) => {
+    renderAccount();
+    await screen.findByRole('button', { name: 'Gmail' });
+    fireEvent.change(screen.getByLabelText('邮箱地址'), { target: { value: email } });
+    expect(screen.getByRole('button', { name: '继续' })).toBeDisabled();
+    const form = screen.getByLabelText('邮箱地址').closest('form');
+    if (form) fireEvent.submit(form);
+    expect(screen.getByRole('heading', { name: '选择邮箱服务商' })).toBeVisible();
+    expect(api.addAccount).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'QQ 邮箱' }));
+    expect(screen.getByRole('heading', { name: '配置 QQ 邮箱' })).toBeVisible();
+  });
+
+  it('使用 Enter 对应的表单提交继续，返回后可修改地址重新识别', async () => {
+    renderAccount();
+    await screen.findByRole('button', { name: 'Gmail' });
+    const storage = vi.spyOn(Storage.prototype, 'setItem');
+    fireEvent.change(screen.getByLabelText('邮箱地址'), {
+      target: { value: 'person+work@gmail.com' },
+    });
+    const form = screen.getByLabelText('邮箱地址').closest('form');
+    if (form) fireEvent.submit(form);
+    expect(screen.getByRole('heading', { name: '配置 Gmail' })).toBeVisible();
+    fireEvent.change(screen.getByLabelText('应用专用密码'), {
+      target: { value: 'test-only-secret' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '返回选择服务商' }));
+    expect(screen.getByLabelText('邮箱地址')).toHaveValue('person+work@gmail.com');
+    fireEvent.change(screen.getByLabelText('邮箱地址'), {
+      target: { value: 'person@example.invalid' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '继续' }));
+    expect(screen.getByLabelText('密码 / 应用授权码')).toHaveValue('');
+    expect(storage).not.toHaveBeenCalled();
+  });
+
+  it('不显示指定的密码存储提示，服务商图标为本地资源且不重复朗读品牌名', async () => {
+    renderAccount();
+    await screen.findByRole('button', { name: 'Gmail' });
+    expect(screen.queryByText(/密码只用于认证并保存到系统凭据存储/)).not.toBeInTheDocument();
+    for (const name of ['Gmail', 'QQ 邮箱', '网易 163', '网易 126']) {
+      const image = screen.getByRole('button', { name }).querySelector('img');
+      expect(image).toHaveAttribute('alt', '');
+      expect(image?.getAttribute('src')).toMatch(/^\/providers\/[\w-]+\.(?:ico|png)$/);
+    }
+  });
+
+  it('匹配只使用实际已加载的服务商，缺失自定义时禁用未知域名入口', async () => {
+    vi.mocked(api.providers).mockResolvedValueOnce(
+      presets.filter((preset) => preset.code === 'qq'),
+    );
+    renderAccount();
+    await screen.findByRole('button', { name: 'QQ 邮箱' });
+    fireEvent.change(screen.getByLabelText('邮箱地址'), {
+      target: { value: 'person@gmail.com' },
+    });
+    expect(screen.getByRole('button', { name: '继续' })).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('暂无可用配置');
+  });
+
+  it('英语快捷入口识别服务商并进入配置，不显示已移除的提示', async () => {
+    renderAccount('en');
+    await screen.findByRole('button', { name: 'Gmail' });
+    fireEvent.change(screen.getByLabelText('Email address'), {
+      target: { value: 'person@gmail.com' },
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('Detected: Gmail');
+    expect(screen.queryByText(/Passwords are used for authentication/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByRole('heading', { name: 'Set up Gmail' })).toBeVisible();
+  });
+
+  it('选择预设后进入简洁登录，将焦点移到邮箱但不展示协议配置', async () => {
     renderAccount();
     fireEvent.click(await screen.findByRole('button', { name: 'QQ 邮箱' }));
     expect(screen.getByRole('heading', { name: '配置 QQ 邮箱' })).toBeVisible();
     expect(screen.getByLabelText('邮箱地址')).toHaveFocus();
-    expect(
-      within(screen.getByRole('group', { name: 'IMAP' })).getByLabelText('服务器'),
-    ).toHaveValue('imap.qq.example.invalid');
-    expect(
-      within(screen.getByRole('group', { name: 'SMTP' })).getByLabelText('服务器'),
-    ).toHaveValue('smtp.qq.example.invalid');
+    expect(screen.queryByRole('group', { name: 'IMAP' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'SMTP' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('密码 / 应用授权码')).toBeVisible();
     expect(screen.queryByRole('region', { name: '预设服务商' })).not.toBeInTheDocument();
     expect(api.addAccount).not.toHaveBeenCalled();
   });
@@ -92,11 +284,12 @@ describe('添加账号服务商选择流程', () => {
       ).toHaveValue('');
     }
     expect(screen.getByRole('button', { name: '验证并添加' })).toBeEnabled();
+    expect(screen.getByText('填写账号与登录凭据，确认服务器信息后验证并添加。')).toBeVisible();
   });
 
   it('返回选择页后清除旧密码，保留本轮邮箱信息且不写浏览器存储', async () => {
     renderAccount();
-    fireEvent.click(await screen.findByRole('button', { name: 'QQ 邮箱' }));
+    fireEvent.click(await screen.findByRole('button', { name: '自定义 IMAP/SMTP' }));
     fireEvent.change(screen.getByLabelText('邮箱地址'), {
       target: { value: 'person@example.invalid' },
     });
@@ -149,13 +342,14 @@ describe('添加账号服务商选择流程', () => {
     expect(await screen.findByRole('button', { name: '自定义 IMAP/SMTP' })).toBeEnabled();
   });
 
-  it('英语界面提供相同选择流程，Gmail 不伪装成可用 OAuth 授权', async () => {
+  it('英语界面 Gmail 使用应用专用密码，不提供 OAuth 授权入口', async () => {
     renderAccount('en');
     expect(await screen.findByRole('region', { name: 'Preset providers' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Custom IMAP/SMTP' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'Gmail' }));
     expect(screen.getByRole('heading', { name: 'Set up Gmail' })).toBeVisible();
-    expect(screen.getByText(/Gmail OAuth/)).toBeVisible();
+    expect(screen.getByLabelText('App password')).toBeVisible();
+    expect(screen.getByText(/not your Google sign-in password/)).toBeVisible();
     expect(screen.queryByRole('button', { name: /OAuth|Authorize/ })).not.toBeInTheDocument();
   });
 

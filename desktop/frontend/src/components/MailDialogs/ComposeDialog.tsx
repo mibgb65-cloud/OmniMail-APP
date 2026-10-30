@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import * as api from '../../lib/bridge/mail';
 import { useTranslation } from '../../lib/i18n/useTranslation';
+import { DialogFrame } from '../DialogFrame/DialogFrame';
+import { useDialogExit } from '../DialogFrame/useDialogExit';
 import { useMailDialog } from './useMailDialog';
 import styles from './MailDialogs.module.css';
 
@@ -17,6 +19,7 @@ export function ComposeDialog({
 }) {
   const { t } = useTranslation('mail');
   const ref = useMailDialog();
+  const { closing, close } = useDialogExit(ref, onClose);
   const title = useId();
   const available = accounts.filter((account) => account.status === 'configured');
   const [accountId, setAccountId] = useState(selectedAccount || available[0]?.id || '');
@@ -46,19 +49,20 @@ export function ComposeDialog({
     }
   };
   return (
-    <dialog
+    <DialogFrame
       ref={ref}
+      closing={closing}
       className={styles.dialog}
       aria-labelledby={title}
       onCancel={(event) => {
         event.preventDefault();
-        if (!busy) onClose();
+        if (!busy) close();
       }}
     >
       <form onSubmit={(event) => void submit(event)}>
         <header>
           <h2 id={title}>{t('composeTitle')}</h2>
-          <button type="button" disabled={busy} onClick={onClose}>
+          <button type="button" disabled={busy} onClick={close}>
             {t('close')}
           </button>
         </header>
@@ -119,6 +123,6 @@ export function ComposeDialog({
           </button>
         </footer>
       </form>
-    </dialog>
+    </DialogFrame>
   );
 }

@@ -1,0 +1,53 @@
+.field {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.field > label {
+  margin-bottom: var(--space-2);
+}
+.wide {
+  grid-column: 1 / -1;
+}
+.controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+}
+.controls input {
+  min-width: 0;
+}
+.controls > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.error {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  line-height: var(--line-height);
+  overflow-wrap: anywhere;
+}
+.summary {
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border-inline-start: var(--outline-width) solid var(--color-danger);
+  border-radius: var(--radius-xs);
+  background: var(--color-bg-canvas);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+.summary ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.summary a {
+  text-underline-offset: var(--space-1);
+  overflow-wrap: anywhere;
+}

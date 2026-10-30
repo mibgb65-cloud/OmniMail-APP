@@ -1,26 +1,13 @@
-.dialog {
-  --wails-draggable: no-drag;
-  width: min(640px, calc(100vw - var(--space-8)));
-  max-height: calc(100dvh - var(--space-8));
-  margin: auto;
-  padding: 0;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  background: var(--color-bg-canvas);
-  box-shadow: var(--modal-shadow);
-}
-.dialog::backdrop {
-  background: var(--color-modal-scrim);
-}
 .dialog form {
   display: flex;
   flex-direction: column;
-  max-height: calc(100dvh - var(--space-8));
+  height: 100%;
+  min-height: 0;
 }
 .dialog header,
 .dialog footer {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
@@ -45,6 +32,7 @@
   color: var(--color-text-inverse);
 }
 .content {
+  flex: 1 1 auto;
   overflow: auto;
   padding: var(--space-6);
   min-height: 0;
@@ -89,9 +77,6 @@
 .server legend {
   padding: 0 var(--space-2);
   font-weight: var(--font-bold);
-}
-.server label:nth-last-child(-n + 2) {
-  grid-column: 1 / -1;
 }
 .dialog .check {
   display: flex;

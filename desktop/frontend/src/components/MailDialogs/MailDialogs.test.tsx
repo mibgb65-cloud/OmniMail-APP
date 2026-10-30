@@ -82,6 +82,9 @@ describe('邮件账号和撰写弹窗', () => {
       }),
       expect.any(AbortSignal),
     );
+    expect(close).not.toHaveBeenCalled();
+    expect(screen.getByRole('heading', { name: '同步邮件' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: '完成' }));
     expect(close).toHaveBeenCalledOnce();
     expect(storage).not.toHaveBeenCalled();
     storage.mockRestore();

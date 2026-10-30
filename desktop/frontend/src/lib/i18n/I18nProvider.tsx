@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { I18nextProvider, useTranslation as useI18nextTranslation } from 'react-i18next';
 
 import { I18nContext } from './context';
-import { createI18nInstance } from './instance';
+import { createI18nInstance, observeI18nResources } from './instance';
 import { isLocale, persistLocale, readInitialLocale } from './locale';
 import { DEFAULT_LOCALE, type Locale } from './resources';
 
@@ -14,6 +14,7 @@ interface I18nProviderProps {
 export function I18nProvider({ children, initialLocale }: I18nProviderProps) {
   const [instance] = useState(() => createI18nInstance(initialLocale ?? readInitialLocale()));
   const { t } = useI18nextTranslation('common', { i18n: instance });
+  useEffect(() => observeI18nResources(instance), [instance]);
   const locale = isLocale(instance.language) ? instance.language : DEFAULT_LOCALE;
   const setLocale = useCallback(
     (next: Locale) => {

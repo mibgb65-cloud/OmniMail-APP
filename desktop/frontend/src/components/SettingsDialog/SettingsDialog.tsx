@@ -3,6 +3,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { ConnectionState } from '../../app/useVersion';
 import type { VersionInfo } from '../../lib/bridge/app';
 import { useTranslation } from '../../lib/i18n/useTranslation';
+import { DialogFrame } from '../DialogFrame/DialogFrame';
+import { useDialogExit } from '../DialogFrame/useDialogExit';
 import type { Theme } from '../../lib/theme/theme';
 import { LanguageSwitcher } from '../LanguageSwitcher/LanguageSwitcher';
 import { ScrollArea } from '../ScrollArea/ScrollArea';
@@ -98,7 +100,7 @@ export function SettingsDialog({
   const lastControlRef = useRef<HTMLButtonElement>(null);
   const pressedBackdrop = useRef(false);
   const [section, setSection] = useState<SettingsSection>('general');
-  const close = () => dialogRef.current?.close();
+  const { closing, close } = useDialogExit(dialogRef, onClose);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -110,16 +112,12 @@ export function SettingsDialog({
   }, []);
 
   return (
-    <dialog
+    <DialogFrame
       ref={dialogRef}
-      className={styles.dialog}
+      closing={closing}
       aria-modal="true"
       aria-label={t('title')}
       aria-describedby={`${id}-description`}
-      onClose={(event) => {
-        // StrictMode 清理产生的旧 close 事件，不能关闭已经重新打开的模态窗。
-        if (!event.currentTarget.open) onClose();
-      }}
       onCancel={(event) => {
         event.preventDefault();
         close();
@@ -210,6 +208,6 @@ export function SettingsDialog({
           </footer>
         </div>
       </div>
-    </dialog>
+    </DialogFrame>
   );
 }
