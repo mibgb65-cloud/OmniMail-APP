@@ -86,6 +86,12 @@ export function addAccount(input: AddAccountInput, signal?: AbortSignal) {
 export function message(id: string, signal?: AbortSignal) {
   return call(() => native.Message(id), signal);
 }
+export function refreshMessage(id: string, signal?: AbortSignal) {
+  return call(() => native.RefreshMessage(id), signal);
+}
+export function setStarred(id: string, starred: boolean) {
+  return call(() => native.SetStarred(id, starred));
+}
 export function synchronize(id: string) {
   return call(() => native.Sync(id));
 }

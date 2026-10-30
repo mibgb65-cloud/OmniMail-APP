@@ -46,6 +46,15 @@
   --brand-size-hero: 72px;
   --icon-size: 18px;
   --avatar-size: 28px;
+  --mail-list-min-width: 232px;
+  --mail-list-width: 24vw;
+  --mail-list-max-width: 340px;
+  --mail-list-max-share: 48%;
+  --mail-unread-size: 6px;
+  --mail-selection-width: 3px;
+  --mail-subject-line-height: 1.5;
+  --mail-frame-min-height: 180px;
+  --external-link-dialog-width: 520px;
   --sidebar-min-height: 480px;
   --panel-shadow: 0 3px 20px rgb(24 24 27 / 3%);
   --motion-interaction: 180ms;

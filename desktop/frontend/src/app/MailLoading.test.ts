@@ -9,6 +9,8 @@ vi.mock('../lib/bridge/mail', async (original) => ({
   accounts: vi.fn(),
   messages: vi.fn(),
   message: vi.fn(),
+  refreshMessage: vi.fn(),
+  setStarred: vi.fn(),
 }));
 const summary: api.MailSummary = {
   id: 'mail-test',
@@ -45,6 +47,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(api.accounts).mockResolvedValue([account]);
   vi.mocked(api.messages).mockResolvedValue([summary]);
+  vi.mocked(api.setStarred).mockResolvedValue(undefined);
 });
 afterEach(() => vi.useRealTimers());
 
@@ -72,6 +75,33 @@ it('正文遇到账号 BUSY 时显示等待并自动恢复，而不是让用户�
   expect(result.current.bodyWaiting).toBe(false);
 });
 
+it('同步状态变化和星标完成不取消或重发当前在途正文', async () => {
+  let resolve: (value: api.MailDetail) => void = () => {};
+  vi.mocked(api.message).mockReturnValueOnce(
+    new Promise((done) => {
+      resolve = done;
+    }),
+  );
+  const { result } = renderHook(() => useMail('inbox'));
+  await flush();
+  act(() => result.current.setSelected(summary.id));
+  await flush();
+  const signal = vi.mocked(api.message).mock.calls[0]?.[1];
+  vi.mocked(api.accounts).mockResolvedValue([
+    { ...account, sync: { ...account.sync, running: true, lastSyncAt: 2 } },
+  ]);
+  await act(async () => vi.advanceTimersByTimeAsync(3000));
+  expect(api.message).toHaveBeenCalledOnce();
+  expect(signal?.aborted).toBe(false);
+  await act(async () => {
+    await result.current.toggleStarred(summary);
+  });
+  expect(api.message).toHaveBeenCalledOnce();
+  expect(signal?.aborted).toBe(false);
+  await act(async () => resolve(detail));
+  expect(result.current.detail?.body).toBe(detail.body);
+});
+
 it('正文网络失败不循环重试，手动重试立即清掉旧错误并显示加载', async () => {
   vi.mocked(api.message).mockRejectedValueOnce(new Error('NETWORK_FAILED'));
   const { result } = renderHook(() => useMail('inbox'));
@@ -91,6 +121,22 @@ it('正文网络失败不循环重试，手动重试立即清掉旧错误并显�
   expect(result.current.bodyError).toBeUndefined();
   await act(async () => resolve(detail));
   expect(result.current.detail?.body).toBe(detail.body);
+});
+
+it('显式升级旧正文走重取接口，失败仍保留旧缓存，不反复自动升级', async () => {
+  vi.mocked(api.message).mockResolvedValue(detail);
+  const { result } = renderHook(() => useMail('inbox'));
+  await flush();
+  act(() => result.current.setSelected(summary.id));
+  await flush();
+  vi.mocked(api.refreshMessage).mockRejectedValueOnce(new Error('NETWORK_FAILED'));
+  act(() => result.current.refreshBody());
+  await flush();
+  expect(api.refreshMessage).toHaveBeenCalledOnce();
+  expect(result.current.detail?.body).toBe(detail.body);
+  expect(api.errorCode(result.current.bodyError)).toBe('NETWORK_FAILED');
+  await act(async () => vi.advanceTimersByTimeAsync(1000));
+  expect(api.refreshMessage).toHaveBeenCalledOnce();
 });
 
 it('持续 BUSY 的自动重试有界，之后保留可操作错误而不无限请求', async () => {

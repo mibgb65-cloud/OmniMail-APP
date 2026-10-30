@@ -121,7 +121,7 @@ describe('邮件列表分批追加', () => {
     await waitFor(() => expect(result.current.listError).toBeInstanceOf(Error));
     act(() => result.current.retryList());
     await waitFor(() => expect(result.current.listError).toBeUndefined());
-    expect(result.current.listLoading).toBe(false);
+    await waitFor(() => expect(result.current.listLoading).toBe(false));
     expect(result.current.hasMore).toBe(false);
     expect(vi.mocked(api.messages).mock.calls.map((call) => call[2])).toEqual([0, 0]);
   });

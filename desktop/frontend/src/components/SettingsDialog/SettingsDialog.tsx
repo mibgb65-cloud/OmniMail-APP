@@ -16,6 +16,7 @@ import {
   type SettingsSection,
 } from './SettingsNavigation';
 import { SettingsStorage } from './SettingsStorage';
+import { SettingsMailImages } from './SettingsMailImages';
 import styles from './SettingsDialog.module.css';
 
 interface AppearanceProps {
@@ -35,37 +36,40 @@ function SettingsPreferences({ theme, onToggleTheme }: AppearanceProps) {
   const { t } = useTranslation('settings');
   const { t: common } = useTranslation('common');
   return (
-    <section className={`${styles.card} ${styles.preferences}`} aria-label={t('general')}>
-      <h3>{t('general')}</h3>
-      <div className={styles.row}>
-        <div className={styles.copy}>
-          <strong>{common('languageLabel')}</strong>
-          <p>{t('languageDescription')}</p>
+    <>
+      <section className={`${styles.card} ${styles.preferences}`} aria-label={t('general')}>
+        <h3>{t('general')}</h3>
+        <div className={styles.row}>
+          <div className={styles.copy}>
+            <strong>{common('languageLabel')}</strong>
+            <p>{t('languageDescription')}</p>
+          </div>
+          <LanguageSwitcher compact />
         </div>
-        <LanguageSwitcher compact />
-      </div>
-      <div className={styles.row}>
-        <div className={styles.copy}>
-          <strong>{t('appearance')}</strong>
-          <p>{t('appearanceDescription')}</p>
+        <div className={styles.row}>
+          <div className={styles.copy}>
+            <strong>{t('appearance')}</strong>
+            <p>{t('appearanceDescription')}</p>
+          </div>
+          <div className={styles.appearance}>
+            <span>{theme === 'dark' ? t('dark') : t('light')}</span>
+            <button
+              type="button"
+              role="switch"
+              className={styles.switch}
+              aria-label={common('themeToggle')}
+              aria-checked={theme === 'dark'}
+              onClick={onToggleTheme}
+            >
+              <span aria-hidden="true">
+                <UiIcon name={theme === 'dark' ? 'moon' : 'sun'} size={16} />
+              </span>
+            </button>
+          </div>
         </div>
-        <div className={styles.appearance}>
-          <span>{theme === 'dark' ? t('dark') : t('light')}</span>
-          <button
-            type="button"
-            role="switch"
-            className={styles.switch}
-            aria-label={common('themeToggle')}
-            aria-checked={theme === 'dark'}
-            onClick={onToggleTheme}
-          >
-            <span aria-hidden="true">
-              <UiIcon name={theme === 'dark' ? 'moon' : 'sun'} size={16} />
-            </span>
-          </button>
-        </div>
-      </div>
-    </section>
+      </section>
+      <SettingsMailImages />
+    </>
   );
 }
 

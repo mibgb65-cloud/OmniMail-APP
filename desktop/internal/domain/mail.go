@@ -34,6 +34,7 @@ type MailRepository interface {
 	MailLocation(context.Context, string) (MailLocation, uint32, error)
 	ReadMail(context.Context, string) (MailDetail, error)
 	SaveMailBody(context.Context, string, DecodedMail) error
+	UpdateMailStarred(context.Context, string, bool) error
 	ReadAttachment(context.Context, string) ([]byte, string, error)
 	NextCachedUID(context.Context, string, uint32) (uint32, bool, error)
 	CacheAttachment(context.Context, string, string, io.Reader) (DecodedAttachment, error)
@@ -70,29 +71,35 @@ type MailSummary struct {
 }
 
 type AttachmentInfo struct {
-	ID       string `json:"id"`
-	Filename string `json:"filename"`
-	MIME     string `json:"mime"`
-	Size     int64  `json:"size"`
+	ID        string `json:"id"`
+	Filename  string `json:"filename"`
+	MIME      string `json:"mime"`
+	Size      int64  `json:"size"`
+	ContentID string `json:"contentId,omitempty"`
 }
 
 type MailDetail struct {
 	MailSummary
 	Body        string           `json:"body"`
+	BodyHTML    string           `json:"bodyHtml,omitempty"`
+	BodyVersion int              `json:"bodyVersion,omitempty"`
+	RawHTML     string           `json:"-"`
 	Attachments []AttachmentInfo `json:"attachments"`
 }
 
 type DecodedAttachment struct {
-	Filename string
-	MIME     string
-	Data     []byte
-	Hash     string
-	Size     int64
+	Filename  string
+	MIME      string
+	Data      []byte
+	Hash      string
+	Size      int64
+	ContentID string
 }
 type AttachmentSink func(string, string, io.Reader) (DecodedAttachment, error)
 
 type DecodedMail struct {
 	Text        string
+	HTML        string
 	Attachments []DecodedAttachment
 }
 
@@ -110,6 +117,11 @@ type MailSession interface {
 	Headers(start, end uint32) ([]RemoteMessage, error)
 	Body(uid uint32, sink AttachmentSink) (DecodedMail, error)
 	Close() error
+}
+
+// MailFlagSession 是协议适配器的可选写能力；只读会话不能假装支持修改服务器标记。
+type MailFlagSession interface {
+	SetStarred(mailbox string, validity, uid uint32, starred bool) error
 }
 
 type MailTransport interface {

@@ -254,6 +254,7 @@ func (s *Mail) syncPass(ctx context.Context, accountID, mailboxID string, validi
 		if end < start {
 			end = last
 		}
+		version := s.flagVersion(accountID)
 		messages, err := session.Headers(start, end)
 		if err != nil {
 			return false, batch, syncStepError("fetch_headers", "", err)
@@ -266,7 +267,15 @@ func (s *Mail) syncPass(ctx context.Context, accountID, mailboxID string, validi
 		if scan {
 			scanNext = &scanValue
 		}
-		if err := s.store.SaveMailBatch(ctx, accountID, mailboxID, validity, start, end, messages, scanNext); err != nil {
+		s.flagCommit.Lock()
+		if version != s.flagVersion(accountID) {
+			s.flagCommit.Unlock()
+			// FETCH 期间有用户标记提交，丢弃旧快照并重读该区间；不推进游标，不永久覆盖服务器状态。
+			continue
+		}
+		err = s.store.SaveMailBatch(ctx, accountID, mailboxID, validity, start, end, messages, scanNext)
+		s.flagCommit.Unlock()
+		if err != nil {
 			return false, batch, syncStepError("cache_headers", "", err)
 		}
 		if end == last {

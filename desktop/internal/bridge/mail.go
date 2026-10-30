@@ -43,6 +43,15 @@ func (b *MailBridge) Message(ctx context.Context, id string) (domain.MailDetail,
 	return result, mailError(err)
 }
 
+func (b *MailBridge) RefreshMessage(ctx context.Context, id string) (domain.MailDetail, error) {
+	result, err := b.mail.RefreshMessage(ctx, id)
+	return result, mailError(err)
+}
+
+func (b *MailBridge) SetStarred(ctx context.Context, id string, starred bool) error {
+	return mailError(b.mail.SetStarred(ctx, id, starred))
+}
+
 func (b *MailBridge) Sync(ctx context.Context, id string) error {
 	if id != "" {
 		return mailError(b.mail.QueueSync(id))

@@ -3,6 +3,7 @@ package mailnet
 import (
 	"io"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"omnimail/desktop/internal/domain"
@@ -29,7 +30,7 @@ func decodeReader(source io.Reader, size int64, sink domain.AttachmentSink) (dom
 	if err != nil {
 		return result, domain.ErrProtocol
 	}
-	var fallback string
+	textBytes := 0
 	for count := 0; ; count++ {
 		if count >= 128 {
 			return result, domain.ErrTooLarge
@@ -52,19 +53,32 @@ func decodeReader(source io.Reader, size int64, sink domain.AttachmentSink) (dom
 				if err != nil {
 					return result, domain.ErrProtocol
 				}
-				if len(data)+len(result.Text)+len(fallback) > maxTextBytes {
+				textBytes += len(data)
+				if textBytes > maxTextBytes {
 					return result, domain.ErrTooLarge
 				}
 				text := strings.ToValidUTF8(string(data), "\uFFFD")
 				if contentType == "text/plain" {
 					result.Text += text
 				} else {
-					fallback += htmlText(text)
+					result.HTML += text
 				}
 			} else {
-				attachment, err := decodeAttachment("inline.bin", contentType, part.Body, sink)
+				_, params, _ := header.ContentType()
+				filename := params["name"]
+				if filename == "" {
+					filename = "inline.bin"
+				}
+				if !utf8.ValidString(filename) || len(filename) > 256 || strings.ContainsFunc(filename, unicode.IsControl) {
+					return result, domain.ErrProtocol
+				}
+				attachment, err := decodeAttachment(filename, bounded(contentType, 128), part.Body, sink)
 				if err != nil {
 					return result, err
+				}
+				attachment.ContentID = strings.TrimSpace(strings.Trim(header.Get("Content-ID"), "<>"))
+				if !validContentID(attachment.ContentID) {
+					return result, domain.ErrProtocol
 				}
 				result.Attachments = append(result.Attachments, attachment)
 			}
@@ -84,11 +98,15 @@ func decodeReader(source io.Reader, size int64, sink domain.AttachmentSink) (dom
 			if err != nil {
 				return result, err
 			}
+			attachment.ContentID = strings.TrimSpace(strings.Trim(header.Get("Content-ID"), "<>"))
+			if !validContentID(attachment.ContentID) {
+				return result, domain.ErrProtocol
+			}
 			result.Attachments = append(result.Attachments, attachment)
 		}
 	}
 	if result.Text == "" {
-		result.Text = fallback
+		result.Text = htmlText(result.HTML)
 	}
 	return result, nil
 }
@@ -100,7 +118,11 @@ func decodeAttachment(name, kind string, reader io.Reader, sink domain.Attachmen
 	return domain.DecodedAttachment{}, domain.ErrProtocol
 }
 
-// 只提取可显示文本，忽略脚本/样式；UI 仍按文本渲染，永不插入邮件 HTML。
+func validContentID(value string) bool {
+	return len(value) <= 998 && utf8.ValidString(value) && !strings.ContainsAny(value, "<>") && !strings.ContainsFunc(value, unicode.IsControl)
+}
+
+// 提供离线与安全降级的纯文本；HTML 单独保留，交给安全清洗与沙箱阅读器。
 func htmlText(source string) string {
 	tokenizer := html.NewTokenizer(strings.NewReader(source))
 	var output strings.Builder

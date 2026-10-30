@@ -44,3 +44,13 @@
     animation: none;
   }
 }
+.link-host {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: var(--font-bold);
+}
+.link-url {
+  display: block;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}

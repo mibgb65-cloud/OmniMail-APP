@@ -15,12 +15,14 @@ const actions = [
 export function MailToolbar({
   onSync,
   syncBusy = false,
+  syncState = 'idle',
   count,
   query: controlledQuery,
   onQuery,
 }: {
   onSync?: () => void;
   syncBusy?: boolean;
+  syncState?: 'idle' | 'running' | 'partial' | 'error';
   count?: number;
   query?: string;
   onQuery?: (query: string) => void;
@@ -53,13 +55,29 @@ export function MailToolbar({
           className={styles['sync-button']}
           aria-label={t('syncAction')}
           data-tooltip={
-            onSync ? t('syncAction') : t('unavailableMailAction', { action: t('syncAction') })
+            syncState === 'running'
+              ? mail('syncCachedHint')
+              : syncState === 'partial'
+                ? mail('syncMore')
+                : syncState === 'error'
+                  ? mail('syncFailedHint')
+                  : onSync
+                    ? t('syncAction')
+                    : t('unavailableMailAction', { action: t('syncAction') })
           }
-          disabled={!onSync || syncBusy}
+          aria-busy={syncBusy || syncState === 'running'}
+          data-syncing={syncBusy || syncState === 'running'}
+          disabled={!onSync || syncBusy || syncState === 'running'}
           onClick={onSync}
         >
           <UiIcon name="sync" size={16} />
-          <span>{t('syncButton')}</span>
+          <span aria-live="polite">
+            {syncBusy || syncState === 'running'
+              ? mail('syncButtonRunning')
+              : syncState === 'partial'
+                ? mail('syncButtonMore')
+                : t('syncButton')}
+          </span>
         </button>
       </div>
       <div className={styles['mail-controls']}>

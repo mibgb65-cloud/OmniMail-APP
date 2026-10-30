@@ -36,12 +36,20 @@ export function Providers(): $CancellablePromise<domain$0.ProviderPreset[] | nul
     return $Call.ByID(1030120780);
 }
 
+export function RefreshMessage(id: string): $CancellablePromise<domain$0.MailDetail> {
+    return $Call.ByID(1193686472, id);
+}
+
 export function SaveAttachment(id: string): $CancellablePromise<boolean> {
     return $Call.ByID(2376372402, id);
 }
 
 export function Send(input: service$0.SendInput): $CancellablePromise<void> {
     return $Call.ByID(2589496472, input);
+}
+
+export function SetStarred(id: string, starred: boolean): $CancellablePromise<void> {
+    return $Call.ByID(3359158673, id, starred);
 }
 
 export function Sync(id: string): $CancellablePromise<void> {

@@ -28,7 +28,8 @@ func (s *Store) contentPath(hash string) (string, error) {
 }
 
 func (s *Store) SaveMailBody(ctx context.Context, id string, body domain.DecodedMail) (err error) {
-	if !domain.ValidAccountID(id) || len(body.Text) > 1<<20 || !utf8.ValidString(body.Text) || len(body.Attachments) > 128 {
+	if !domain.ValidAccountID(id) || len(body.Text) > 1<<20 || !utf8.ValidString(body.Text) ||
+		len(body.HTML) > 1<<20 || !utf8.ValidString(body.HTML) || len(body.Attachments) > 128 {
 		return domain.ErrTooLarge
 	}
 	s.blobMu.Lock()
@@ -50,7 +51,9 @@ func (s *Store) SaveMailBody(ctx context.Context, id string, body domain.Decoded
 			return ctx.Err()
 		}
 		if len(attachment.Data) > 25<<20 || len(attachment.Filename) == 0 || len(attachment.Filename) > 256 ||
-			!utf8.ValidString(attachment.Filename) || strings.ContainsFunc(attachment.Filename, unicode.IsControl) || len(attachment.MIME) > 128 {
+			!utf8.ValidString(attachment.Filename) || strings.ContainsFunc(attachment.Filename, unicode.IsControl) || len(attachment.MIME) > 128 ||
+			len(attachment.ContentID) > 998 || !utf8.ValidString(attachment.ContentID) || strings.ContainsFunc(attachment.ContentID, unicode.IsControl) ||
+			strings.ContainsAny(attachment.ContentID, "<>") {
 			return domain.ErrTooLarge
 		}
 		if attachment.Hash != "" {
@@ -84,7 +87,7 @@ func (s *Store) saveBodyReferences(ctx context.Context, id string, body domain.D
 		return storageError("开始正文保存", err)
 	}
 	defer rollback(tx, &err)
-	result, err := tx.ExecContext(ctx, "UPDATE mail_message SET body_text=? WHERE id=?", body.Text, id)
+	result, err := tx.ExecContext(ctx, "UPDATE mail_message SET body_text=?,body_html=?,body_version=1 WHERE id=?", body.Text, body.HTML, id)
 	if err != nil {
 		return storageError("保存正文", err)
 	}
@@ -100,8 +103,8 @@ func (s *Store) saveBodyReferences(ctx context.Context, id string, body domain.D
 		if attachment.Hash != "" {
 			size = attachment.Size
 		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO mail_attachment(id,mail_id,filename,mime,size_bytes,content_hash)
-			VALUES(?,?,?,?,?,?)`, rand.Text(), id, attachment.Filename, attachment.MIME, size, hashes[i]); err != nil {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO mail_attachment(id,mail_id,filename,mime,size_bytes,content_hash,content_id)
+			VALUES(?,?,?,?,?,?,?)`, rand.Text(), id, attachment.Filename, attachment.MIME, size, hashes[i], attachment.ContentID); err != nil {
 			return storageError("保存附件引用", err)
 		}
 	}

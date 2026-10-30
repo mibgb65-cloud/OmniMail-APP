@@ -163,14 +163,14 @@ func (s *Store) ReadMail(ctx context.Context, id string) (detail domain.MailDeta
 		return detail, domain.ErrProtocol
 	}
 	err = s.db.QueryRowContext(ctx, `SELECT m.id,m.account_id,b.remote_name,m.subject,m.from_addr,m.to_addrs,
-		m.received_at,m.is_read,m.is_starred,m.body_text IS NOT NULL,COALESCE(m.body_text,'')
+		m.received_at,m.is_read,m.is_starred,m.body_text IS NOT NULL,COALESCE(m.body_text,''),m.body_html,m.body_version
 		FROM mail_message m JOIN mailbox b ON b.id=m.mailbox_id WHERE m.id=?`, id).
 		Scan(&detail.ID, &detail.AccountID, &detail.Mailbox, &detail.Subject, &detail.From, &detail.To,
-			&detail.ReceivedAt, &detail.Read, &detail.Starred, &detail.Cached, &detail.Body)
+			&detail.ReceivedAt, &detail.Read, &detail.Starred, &detail.Cached, &detail.Body, &detail.RawHTML, &detail.BodyVersion)
 	if err != nil {
 		return detail, storageError("读取邮件正文", err)
 	}
-	rows, err := s.db.QueryContext(ctx, "SELECT id,filename,mime,size_bytes FROM mail_attachment WHERE mail_id=? ORDER BY rowid", id)
+	rows, err := s.db.QueryContext(ctx, "SELECT id,filename,mime,size_bytes,content_id FROM mail_attachment WHERE mail_id=? ORDER BY rowid", id)
 	if err != nil {
 		return detail, storageError("读取附件信息", err)
 	}
@@ -178,7 +178,7 @@ func (s *Store) ReadMail(ctx context.Context, id string) (detail domain.MailDeta
 	detail.Attachments = []domain.AttachmentInfo{}
 	for rows.Next() {
 		var attachment domain.AttachmentInfo
-		if err := rows.Scan(&attachment.ID, &attachment.Filename, &attachment.MIME, &attachment.Size); err != nil {
+		if err := rows.Scan(&attachment.ID, &attachment.Filename, &attachment.MIME, &attachment.Size, &attachment.ContentID); err != nil {
 			return detail, storageError("解析附件信息", err)
 		}
 		detail.Attachments = append(detail.Attachments, attachment)

@@ -5,8 +5,10 @@ go 1.26.0
 require (
 	github.com/emersion/go-imap/v2 v2.0.0-beta.8
 	github.com/emersion/go-message v0.18.2
+	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/wailsapp/wails/v3 v3.0.0-beta.34
 	github.com/zalando/go-keyring v0.2.8
+	golang.org/x/image v0.41.0
 	golang.org/x/net v0.61.0
 	modernc.org/sqlite v1.61.0
 )
@@ -101,7 +103,6 @@ require (
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/mattn/go-zglob v0.0.6 // indirect
-	github.com/microcosm-cc/bluemonday v1.0.27 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -141,7 +142,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20260112195511-716be5621a96 // indirect
-	golang.org/x/image v0.41.0 // indirect
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect

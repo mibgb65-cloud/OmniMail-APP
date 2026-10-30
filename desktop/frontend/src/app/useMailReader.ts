@@ -13,11 +13,11 @@ interface Snapshot {
   error?: unknown;
 }
 
-export function useMailReader(id: string, revision: number, syncStamp: string) {
+export function useMailReader(id: string) {
   const [retry, setRetry] = useState(0);
   const [busyRetry, setBusyRetry] = useState(0);
-  const scope = JSON.stringify([id, revision, retry]);
-  const query = JSON.stringify([scope, syncStamp, busyRetry]);
+  const scope = JSON.stringify([id, retry]);
+  const query = JSON.stringify([scope, busyRetry]);
   const [snapshot, setSnapshot] = useState<Snapshot>({
     id: '',
     scope: '',
@@ -25,18 +25,22 @@ export function useMailReader(id: string, revision: number, syncStamp: string) {
     status: 'success',
   });
   const budget = useRef({ scope: '', deadline: 0, attempts: 0 });
+  const refresh = useRef({ id: '', requested: false });
   useEffect(() => {
+    if (refresh.current.id !== id) refresh.current = { id, requested: false };
     if (budget.current.scope !== scope) {
       budget.current = { scope, deadline: Date.now() + BUSY_WAIT_MS, attempts: 0 };
     }
     if (!id) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
-    api
-      .message(id, controller.signal)
+    const read = refresh.current.requested ? api.refreshMessage : api.message;
+    read(id, controller.signal)
       .then((detail) => {
-        if (!controller.signal.aborted)
+        if (!controller.signal.aborted) {
+          refresh.current.requested = false;
           setSnapshot({ id, scope, query, status: 'success', detail });
+        }
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -46,15 +50,28 @@ export function useMailReader(id: string, revision: number, syncStamp: string) {
           remaining > 0 &&
           budget.current.attempts < MAX_BUSY_RETRIES
         ) {
-          // 只自动重试幂等的正文读取；沿用账号互斥，不通过并行 IMAP 连接抢占后台同步。
+          // 正文不再与后台同步互斥；仅为显式账号撤销等短暂 BUSY 保留有界兼容重试。
           budget.current.attempts++;
-          setSnapshot({ id, scope, query, status: 'waiting' });
+          setSnapshot((previous) => ({
+            id,
+            scope,
+            query,
+            status: 'waiting',
+            detail: previous.id === id ? previous.detail : undefined,
+          }));
           timer = setTimeout(
             () => setBusyRetry((value) => value + 1),
             Math.min(BUSY_RETRY_MS, remaining),
           );
         } else {
-          setSnapshot({ id, scope, query, status: 'error', error });
+          setSnapshot((previous) => ({
+            id,
+            scope,
+            query,
+            status: 'error',
+            error,
+            detail: previous.id === id ? previous.detail : undefined,
+          }));
         }
       });
     return () => {
@@ -69,5 +86,9 @@ export function useMailReader(id: string, revision: number, syncStamp: string) {
     bodyWaiting: !!id && snapshot.scope === scope && snapshot.status === 'waiting',
     loading: !!id && (snapshot.query !== query || snapshot.status === 'waiting'),
     retryBody: () => setRetry((value) => value + 1),
+    refreshBody: () => {
+      refresh.current = { id, requested: true };
+      setRetry((value) => value + 1);
+    },
   };
 }

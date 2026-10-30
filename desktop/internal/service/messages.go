@@ -22,13 +22,30 @@ func (s *Mail) Messages(ctx context.Context, accountID, folder string, offset in
 }
 
 func (s *Mail) Message(ctx context.Context, id string) (domain.MailDetail, error) {
+	detail, err := s.readMessage(ctx, id, false)
+	if err != nil {
+		return domain.MailDetail{}, err
+	}
+	return s.renderMessage(ctx, detail)
+}
+
+// RefreshMessage 显式重取旧版缓存；失败不会删除仍可离线阅读的正文与附件。
+func (s *Mail) RefreshMessage(ctx context.Context, id string) (domain.MailDetail, error) {
+	detail, err := s.readMessage(ctx, id, true)
+	if err != nil {
+		return domain.MailDetail{}, err
+	}
+	return s.renderMessage(ctx, detail)
+}
+
+func (s *Mail) readMessage(ctx context.Context, id string, refresh bool) (domain.MailDetail, error) {
 	ctx, done, err := s.request(ctx)
 	if err != nil {
 		return domain.MailDetail{}, err
 	}
 	defer done()
 	detail, err := s.store.ReadMail(ctx, id)
-	if err != nil || detail.Cached {
+	if err != nil || (detail.Cached && !refresh) {
 		return detail, err
 	}
 	location, size, err := s.store.MailLocation(ctx, id)
@@ -38,15 +55,18 @@ func (s *Mail) Message(ctx context.Context, id string) (domain.MailDetail, error
 	if size > 40<<20 {
 		return detail, domain.ErrTooLarge
 	}
-	release, err := s.claim(location.AccountID)
+	release, err := s.acquireForeground(ctx, location.AccountID, false)
 	if err != nil {
 		return detail, err
 	}
 	defer release()
-	if err := s.acquire(ctx); err != nil {
-		return detail, err
+	if !refresh {
+		// 同类请求排队期间另一窗口可能已保存正文，避免再次建立连接重复下载。
+		detail, err = s.store.ReadMail(ctx, id)
+		if err != nil || detail.Cached {
+			return detail, err
+		}
 	}
-	defer func() { <-s.network }()
 	account, err := s.store.GetAccount(ctx, location.AccountID)
 	if err != nil {
 		return detail, err

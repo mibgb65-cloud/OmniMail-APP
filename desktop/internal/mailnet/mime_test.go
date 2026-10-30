@@ -37,3 +37,24 @@ func TestDecodeMIMEAndSafeHTMLText(t *testing.T) {
 		t.Fatalf("截断 UTF8 不完整：%q", got)
 	}
 }
+
+func TestDecodePreservesHTMLAndCID(t *testing.T) {
+	raw := "MIME-Version: 1.0\r\nContent-Type: multipart/related; boundary=b\r\n\r\n" +
+		"--b\r\nContent-Type: text/html; charset=utf-8\r\n\r\n<table><tr><td>内容<img src=\"cid:logo@test\"></td></tr></table>\r\n" +
+		"--b\r\nContent-Type: image/png\r\nContent-ID: <logo@test>\r\nContent-Disposition: inline; filename=logo.png\r\n\r\nimage-bytes\r\n--b--\r\n"
+	got, err := decodeForTest([]byte(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got.HTML, "<table>") || !strings.Contains(got.Text, "内容") ||
+		len(got.Attachments) != 1 || got.Attachments[0].ContentID != "logo@test" {
+		t.Fatal("HTML 或 CID 图片关联丢失")
+	}
+}
+
+func TestHTMLBudgetCountsOriginalNotStrippedText(t *testing.T) {
+	raw := "Content-Type: text/html; charset=utf-8\r\n\r\n" + strings.Repeat("<b></b>", maxTextBytes/7+1)
+	if _, err := decodeForTest([]byte(raw)); !errors.Is(err, domain.ErrTooLarge) {
+		t.Fatal("HTML 标签绕过正文预算")
+	}
+}

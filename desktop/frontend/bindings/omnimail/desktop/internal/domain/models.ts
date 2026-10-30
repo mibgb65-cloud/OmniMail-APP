@@ -17,6 +17,7 @@ export interface AttachmentInfo {
     "filename": string;
     "mime": string;
     "size": number;
+    "contentId"?: string;
 }
 
 export enum AuthKind {
@@ -48,6 +49,8 @@ export interface MailDetail {
     "starred": boolean;
     "cached": boolean;
     "body": string;
+    "bodyHtml"?: string;
+    "bodyVersion"?: number;
     "attachments": AttachmentInfo[] | null;
 }
 

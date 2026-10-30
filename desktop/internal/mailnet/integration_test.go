@@ -96,6 +96,19 @@ func TestTLSAccountToDatabaseBodyAttachmentAndSend(t *testing.T) {
 	if err != nil || string(data) != "hello" || name != "file.bin" {
 		t.Fatalf("流式附件缓存不正确：%v", err)
 	}
+	for _, starred := range []bool{true, false} {
+		if err := manager.SetStarred(t.Context(), detail.ID, starred); err != nil {
+			t.Fatalf("实际协议星标未保存：%v", err)
+		}
+		rows, err := manager.Messages(t.Context(), account.ID, "starred", 0)
+		expected := 0
+		if starred {
+			expected = 1
+		}
+		if err != nil || len(rows) != expected {
+			t.Fatal("星标分类不符合服务器确认结果")
+		}
+	}
 	if err := manager.Send(t.Context(), service.SendInput{AccountID: account.ID, To: "to@example.invalid", Subject: "outgoing", Body: "real smtp fixture"}); err != nil {
 		t.Fatal(err)
 	}

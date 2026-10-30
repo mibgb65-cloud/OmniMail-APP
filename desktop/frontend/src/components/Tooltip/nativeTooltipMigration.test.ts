@@ -18,7 +18,8 @@ it('应用 DOM 不再使用原生 title，保留自定义组件的同名业务�
     const visit = (node: ts.Node) => {
       if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
         const tag = node.tagName.getText(file);
-        if (/^[a-z]/.test(tag)) {
+        // iframe 的 title 是文档级无障碍名称，不是替代统一 Tooltip 的控件悬浮提示。
+        if (/^[a-z]/.test(tag) && tag !== 'iframe') {
           for (const attribute of node.attributes.properties) {
             if (ts.isJsxAttribute(attribute) && attribute.name.getText(file) === 'title') {
               nativeTitles.push(`${path}: ${tag}`);

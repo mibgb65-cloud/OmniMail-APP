@@ -30,11 +30,19 @@ export function mailAccountNotice(mail: MailController): Notice | undefined {
   const failed = active.find((account) => mailboxState(account) === 'error');
   if (failed)
     return { kind: 'error', text: 'syncFailedHint', error: failed.sync.errorCode, action: 'sync' };
-  if (active.some((account) => ['running', 'partial'].includes(mailboxState(account)))) {
-    return { kind: 'info', text: mail.messages.length ? 'syncCachedHint' : 'syncWaitingHint' };
-  }
   if (selected.length && !active.length) return { kind: 'info', text: 'disconnectedHint' };
   if (!selected.length && !mail.messages.length) return { kind: 'info', text: 'noAccountsHint' };
+}
+
+export function mailSyncState(mail: MailController) {
+  const accounts = mail.accounts.filter(
+    (account) => !mail.accountId || account.id === mail.accountId,
+  );
+  if (mail.syncRequested || accounts.some((account) => mailboxState(account) === 'running'))
+    return 'running';
+  if (accounts.some((account) => mailboxState(account) === 'error')) return 'error';
+  if (accounts.some((account) => mailboxState(account) === 'partial')) return 'partial';
+  return 'idle';
 }
 
 export function MailAccountNotice({ mail, notice }: { mail: MailController; notice?: Notice }) {

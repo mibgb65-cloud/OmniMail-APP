@@ -43,29 +43,37 @@ type SyncState struct {
 	LastSyncAt int64  `json:"lastSyncAt"`
 }
 type Mail struct {
-	store     domain.MailRepository
-	secrets   domain.CredentialStore
-	transport domain.MailTransport
-	log       *slog.Logger
-	ctx       context.Context
-	cancel    context.CancelFunc
-	mu        sync.Mutex
-	closed    bool
-	started   bool
-	active    map[string]bool
-	states    map[string]SyncState
-	pending   map[string]bool
-	cycles    map[string]map[string]bool
-	wg        sync.WaitGroup
-	network   chan struct{}
-	actions   sync.Mutex
+	store       domain.MailRepository
+	secrets     domain.CredentialStore
+	transport   domain.MailTransport
+	log         *slog.Logger
+	ctx         context.Context
+	cancel      context.CancelFunc
+	mu          sync.Mutex
+	closed      bool
+	started     bool
+	active      map[string]bool
+	states      map[string]SyncState
+	pending     map[string]bool
+	cycles      map[string]map[string]bool
+	wg          sync.WaitGroup
+	network     chan struct{}
+	bodyNetwork chan struct{}
+	flagNetwork chan struct{}
+	foreground  map[string]*foregroundLanes
+	revoking    map[string]bool
+	flagCommit  sync.Mutex
+	flagEpoch   map[string]uint64
+	actions     sync.Mutex
 }
 
 func NewMail(store domain.MailRepository, secrets domain.CredentialStore, transport domain.MailTransport, log *slog.Logger) *Mail {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Mail{store: store, secrets: secrets, transport: transport, log: log, ctx: ctx, cancel: cancel,
 		active: map[string]bool{}, states: map[string]SyncState{}, pending: map[string]bool{},
-		cycles: map[string]map[string]bool{}, network: make(chan struct{}, 3)}
+		cycles: map[string]map[string]bool{}, network: make(chan struct{}, 3),
+		bodyNetwork: make(chan struct{}, 3), flagNetwork: make(chan struct{}, 2),
+		foreground: map[string]*foregroundLanes{}, revoking: map[string]bool{}, flagEpoch: map[string]uint64{}}
 }
 
 func (s *Mail) Accounts(ctx context.Context) ([]AccountSummary, error) {
@@ -211,7 +219,7 @@ func (s *Mail) Disconnect(ctx context.Context, id string) error {
 		return err
 	}
 	defer done()
-	release, err := s.claim(id)
+	release, err := s.claimRevocation(id)
 	if err != nil {
 		return err
 	}

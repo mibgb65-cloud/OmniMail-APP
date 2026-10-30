@@ -9,8 +9,24 @@ export interface ActiveTooltip {
   container: HTMLElement;
 }
 
+function isNode(target: EventTarget | null): target is Node {
+  return target !== null && 'nodeType' in target && typeof target.nodeType === 'number';
+}
+function isElement(target: EventTarget | null): target is Element {
+  return (
+    isNode(target) &&
+    target.nodeType === 1 &&
+    'closest' in target &&
+    typeof target.closest === 'function'
+  );
+}
 function tooltipTarget(target: EventTarget | null) {
-  return target instanceof Element ? target.closest<HTMLElement>('[data-tooltip]') : null;
+  return isElement(target) ? target.closest<HTMLElement>('[data-tooltip]') : null;
+}
+
+export function tooltipFrame(anchor: HTMLElement) {
+  const frame = anchor.ownerDocument.defaultView?.frameElement;
+  return frame instanceof HTMLIFrameElement ? frame : undefined;
 }
 
 function tooltipText(anchor: HTMLElement) {
@@ -31,7 +47,7 @@ export function useTooltip(id: string) {
     let hideTimer: ReturnType<typeof setTimeout> | undefined;
     const tooltip = () => document.getElementById(id);
     const inside = (element: Element | null, target: EventTarget | null) =>
-      target instanceof Node && !!element?.contains(target);
+      isNode(target) && !!element?.contains(target);
     const clearTimers = () => {
       clearTimeout(showTimer);
       clearTimeout(hideTimer);
@@ -52,13 +68,18 @@ export function useTooltip(id: string) {
       setActive(null);
     };
     const valid = (anchor: HTMLElement) => {
+      const frame = tooltipFrame(anchor);
+      const host = frame ?? anchor;
       const dialog = anchor.closest('dialog');
       const modal = document.querySelector('dialog[open]');
       return (
         anchor.isConnected &&
+        (anchor.ownerDocument === document ||
+          (frame?.isConnected && frame.contentDocument === anchor.ownerDocument)) &&
         !anchor.closest('[inert], [hidden]') &&
+        !host.closest('[inert], [hidden]') &&
         (!dialog || dialog.open) &&
-        (!modal || modal.contains(anchor))
+        (!modal || modal.contains(host))
       );
     };
     const publish = () => {
@@ -74,7 +95,9 @@ export function useTooltip(id: string) {
         (current.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean),
       );
       ids.add(id);
-      current.setAttribute('aria-describedby', [...ids].join(' '));
+      // 跨文档 IDREF 不能指向主页面；邮件链接自身的 aria-label 已包含完整地址。
+      if (current.ownerDocument === document)
+        current.setAttribute('aria-describedby', [...ids].join(' '));
       // Portal 保留在 dialog 的模态/无障碍范围内；呈现组件再用 Popover 进入 top layer。
       setActive({ anchor: current, text, container: current.closest('dialog') ?? document.body });
     };
@@ -145,7 +168,56 @@ export function useTooltip(id: string) {
     const scroll = (event: Event) => {
       if (!inside(tooltip(), event.target)) hide();
     };
+    const bind = (doc: Document) => {
+      doc.addEventListener('pointerover', over, true);
+      doc.addEventListener('pointerout', out, true);
+      doc.addEventListener('focusin', focus, true);
+      doc.addEventListener('focusout', blur, true);
+      doc.addEventListener('pointerdown', down, true);
+      doc.addEventListener('keydown', key, true);
+      doc.addEventListener('scroll', scroll, true);
+      return () => {
+        doc.removeEventListener('pointerover', over, true);
+        doc.removeEventListener('pointerout', out, true);
+        doc.removeEventListener('focusin', focus, true);
+        doc.removeEventListener('focusout', blur, true);
+        doc.removeEventListener('pointerdown', down, true);
+        doc.removeEventListener('keydown', key, true);
+        doc.removeEventListener('scroll', scroll, true);
+      };
+    };
+    const frames = new Map<HTMLIFrameElement, () => void>();
+    const watchFrames = () => {
+      for (const [frame, stop] of frames) {
+        if (!frame.isConnected) {
+          stop();
+          frames.delete(frame);
+        }
+      }
+      document
+        .querySelectorAll<HTMLIFrameElement>('iframe[data-mail-frame="safe"]')
+        .forEach((frame) => {
+          if (frames.has(frame)) return;
+          let release = () => {};
+          const load = () => {
+            release();
+            hide();
+            try {
+              if (frame.contentDocument) release = bind(frame.contentDocument);
+            } catch {
+              /* 不接管跨源文档。 */
+            }
+          };
+          frame.addEventListener('load', load);
+          frames.set(frame, () => {
+            release();
+            frame.removeEventListener('load', load);
+          });
+          load();
+        });
+    };
     const mutations = new MutationObserver(() => {
+      watchFrames();
       if (current) {
         if (!valid(current) || !tooltipText(current)) hide();
         else if (visible) publish();
@@ -157,25 +229,15 @@ export function useTooltip(id: string) {
       attributes: true,
       attributeFilter: ['data-tooltip', 'open', 'inert', 'hidden'],
     });
-    document.addEventListener('pointerover', over, true);
-    document.addEventListener('pointerout', out, true);
-    document.addEventListener('focusin', focus, true);
-    document.addEventListener('focusout', blur, true);
-    document.addEventListener('pointerdown', down, true);
-    document.addEventListener('keydown', key, true);
-    document.addEventListener('scroll', scroll, true);
+    const unbind = bind(document);
+    watchFrames();
     window.addEventListener('blur', hide);
     window.addEventListener('resize', hide);
     return () => {
       mutations.disconnect();
       hide();
-      document.removeEventListener('pointerover', over, true);
-      document.removeEventListener('pointerout', out, true);
-      document.removeEventListener('focusin', focus, true);
-      document.removeEventListener('focusout', blur, true);
-      document.removeEventListener('pointerdown', down, true);
-      document.removeEventListener('keydown', key, true);
-      document.removeEventListener('scroll', scroll, true);
+      unbind();
+      frames.forEach((stop) => stop());
       window.removeEventListener('blur', hide);
       window.removeEventListener('resize', hide);
     };

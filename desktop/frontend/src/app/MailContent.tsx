@@ -3,6 +3,7 @@ import { useTranslation } from '../lib/i18n/useTranslation';
 import * as api from '../lib/bridge/mail';
 import type { MailController } from './useMail';
 import { MailList } from './MailList';
+import { MailBody } from './MailBody';
 import styles from './MailContent.module.css';
 
 export function MailContent({ mail }: { mail: MailController }) {
@@ -54,7 +55,15 @@ export function MailContent({ mail }: { mail: MailController }) {
               </p>
               <time>{formatTime(mail.detail.receivedAt)}</time>
             </header>
-            <div className={styles.body}>{mail.detail.body}</div>
+            {(mail.detail.bodyVersion ?? 0) < 1 && (
+              <div className={styles['reader-error']}>
+                <p className={styles.hint}>{t('legacyBody')}</p>
+                <button type="button" disabled={mail.loading} onClick={mail.refreshBody}>
+                  {t('refreshRichBody')}
+                </button>
+              </div>
+            )}
+            <MailBody id={mail.detail.id} html={mail.detail.bodyHtml} text={mail.detail.body} />
             {(mail.detail.attachments?.length ?? 0) > 0 && (
               <section aria-label={t('attachments')}>
                 <h3>{t('attachments')}</h3>

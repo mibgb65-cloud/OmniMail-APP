@@ -183,3 +183,24 @@ describe('统一悬浮提示', () => {
     expect(escape).toHaveBeenCalledOnce();
   });
 });
+it('受控邮件 iframe 的链接焦点使用统一提示，卸载后不遗留', async () => {
+  const view = render(
+    <>
+      <TooltipHost />
+      <iframe data-mail-frame="safe" title="测试邮件" />
+    </>,
+  );
+  const frame = screen.getByTitle<HTMLIFrameElement>('测试邮件');
+  const doc = frame.contentDocument;
+  if (!doc) throw new Error('测试文档不可用');
+  doc.body.innerHTML =
+    '<a href="#" data-tooltip="https://example.invalid/path" data-tooltip-kind="link">链接</a>';
+  fireEvent.load(frame);
+  const link = doc.querySelector('a');
+  if (!link) throw new Error('测试链接缺失');
+  fireEvent.focusIn(link);
+  expect(screen.getByRole('tooltip')).toHaveTextContent('example.invalid');
+  expect(screen.getByRole('tooltip')).toHaveTextContent('https://example.invalid/path');
+  view.unmount();
+  expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+});

@@ -3,6 +3,7 @@ import * as api from '../lib/bridge/mail';
 import type { MailFolder } from './WorkspaceSidebar';
 import { useMailList } from './useMailList';
 import { useMailReader } from './useMailReader';
+import { useMailStarred } from './useMailStarred';
 
 export function useMail(folder: MailFolder) {
   const [accounts, setAccounts] = useState<api.AccountSummary[]>([]);
@@ -50,10 +51,7 @@ export function useMail(folder: MailFolder) {
   }, [revision]);
 
   const relevantAccounts = accounts.filter((account) => !accountId || account.id === accountId);
-  const syncStamp = relevantAccounts
-    .map((account) => `${account.id}:${account.sync.running}:${account.sync.lastSyncAt}`)
-    .join('|');
-  // 断开或部分同步失败未必推进时间戳，列表仍须重验；正文保留原有触发条件。
+  // 后台状态仅驱动列表重验，不能取消用户正在等待的正文。
   const listStamp = JSON.stringify(
     relevantAccounts.map(({ id, status, sync }) => [
       id,
@@ -73,7 +71,15 @@ export function useMail(folder: MailFolder) {
     syncStamp: listStamp,
   });
 
-  const reader = useMailReader(selected, revision, syncStamp);
+  const reader = useMailReader(selected);
+  const stars = useMailStarred(
+    JSON.stringify([accountId, folder]),
+    folder,
+    (id) => setSelected((current) => (current === id ? '' : current)),
+    refresh,
+    list.messages,
+    accountId,
+  );
 
   const chooseAccount = (id: string) => {
     setAccountId(id);
@@ -117,6 +123,7 @@ export function useMail(folder: MailFolder) {
     ready,
     ...list,
     ...reader,
+    ...stars,
     selected,
     setSelected: selectMessage,
     error,

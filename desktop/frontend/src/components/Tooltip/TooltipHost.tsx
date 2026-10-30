@@ -2,7 +2,7 @@ import { useId, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 import { tooltipPosition, type TooltipSide } from './tooltipPosition';
-import { useTooltip, type ActiveTooltip } from './useTooltip';
+import { tooltipFrame, useTooltip, type ActiveTooltip } from './useTooltip';
 import styles from './TooltipHost.module.css';
 
 function TooltipBubble({ active, id }: { active: ActiveTooltip; id: string }) {
@@ -23,8 +23,19 @@ function TooltipBubble({ active, id }: { active: ActiveTooltip; id: string }) {
       ?.getAttribute('data-tooltip-side');
     const side: TooltipSide =
       preferred === 'bottom' || preferred === 'left' || preferred === 'right' ? preferred : 'top';
+    const rect = active.anchor.getBoundingClientRect();
+    const frameRect = tooltipFrame(active.anchor)?.getBoundingClientRect();
+    const offsetX = frameRect ? frameRect.left + (tooltipFrame(active.anchor)?.clientLeft ?? 0) : 0;
+    const offsetY = frameRect ? frameRect.top + (tooltipFrame(active.anchor)?.clientTop ?? 0) : 0;
     const position = tooltipPosition(
-      active.anchor.getBoundingClientRect(),
+      {
+        left: rect.left + offsetX,
+        right: rect.right + offsetX,
+        top: rect.top + offsetY,
+        bottom: rect.bottom + offsetY,
+        width: rect.width,
+        height: rect.height,
+      },
       node.getBoundingClientRect(),
       { width: window.innerWidth, height: window.innerHeight },
       spacing('--tooltip-gap'),
@@ -36,9 +47,26 @@ function TooltipBubble({ active, id }: { active: ActiveTooltip; id: string }) {
     node.style.visibility = 'visible';
     return () => node.hidePopover?.();
   }, [active]);
+  const isLink = active.anchor.dataset.tooltipKind === 'link';
+  let host = '';
+  if (isLink) {
+    try {
+      const url = new URL(active.text);
+      host = url.hostname || url.protocol;
+    } catch {
+      host = '';
+    }
+  }
   return (
     <div ref={ref} id={id} role="tooltip" className={styles.tooltip}>
-      {active.text}
+      {isLink ? (
+        <>
+          <strong className={styles['link-host']}>{host}</strong>
+          <span className={styles['link-url']}>{active.text}</span>
+        </>
+      ) : (
+        active.text
+      )}
     </div>
   );
 }
