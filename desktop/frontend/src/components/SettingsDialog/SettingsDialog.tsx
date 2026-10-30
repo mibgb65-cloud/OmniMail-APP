@@ -158,7 +158,7 @@ export function SettingsDialog({
               type="button"
               className={styles.close}
               aria-label={t('close')}
-              title={t('close')}
+              data-tooltip={t('close')}
               onClick={close}
             >
               <UiIcon name="close" />

@@ -85,7 +85,7 @@ export function SearchField({
           type="button"
           className={styles.clear}
           aria-label={clearLabel}
-          title={clearLabel}
+          data-tooltip={clearLabel}
           onClick={clear}
           onMouseDown={(event) => event.preventDefault()}
         >

@@ -46,7 +46,7 @@ export function TitleBar({
             <dl className={styles['status-bubbles']} aria-label={workspace('mailStatusLabel')}>
               <div
                 className={styles['status-bubble']}
-                title={mailStatus ? mail('statusHint') : workspace('mailStatusUnavailable')}
+                data-tooltip={mailStatus ? mail('statusHint') : workspace('mailStatusUnavailable')}
               >
                 <dt>{workspace('lastSyncLabel')}</dt>
                 <dd>
@@ -60,7 +60,7 @@ export function TitleBar({
               </div>
               <div
                 className={styles['status-bubble']}
-                title={mailStatus ? mail('statusHint') : workspace('mailStatusUnavailable')}
+                data-tooltip={mailStatus ? mail('statusHint') : workspace('mailStatusUnavailable')}
               >
                 <dt>{mailStatus ? mail('pageUnread') : workspace('unreadLabel')}</dt>
                 <dd>{mailStatus ? mailStatus.unread : workspace('unreadUnavailable')}</dd>
@@ -80,7 +80,7 @@ export function TitleBar({
               aria-pressed={theme === 'dark'}
               aria-disabled={isTransitioning || undefined}
               aria-busy={isTransitioning || undefined}
-              title={theme === 'dark' ? t('switchToLight') : t('switchToDark')}
+              data-tooltip={theme === 'dark' ? t('switchToLight') : t('switchToDark')}
               onClick={toggleThemeWithTransition}
             >
               <UiIcon name={theme === 'dark' ? 'sun' : 'moon'} className={styles.icon} />
@@ -92,7 +92,7 @@ export function TitleBar({
             type="button"
             className={styles.control}
             aria-label={t('windowMinimize')}
-            title={available ? t('windowMinimize') : t('windowPreviewOnly')}
+            data-tooltip={available ? t('windowMinimize') : t('windowPreviewOnly')}
             disabled={disabled}
             onClick={() => void perform('minimize')}
           >
@@ -102,7 +102,7 @@ export function TitleBar({
             type="button"
             className={styles.control}
             aria-label={maximizeLabel}
-            title={available ? maximizeLabel : t('windowPreviewOnly')}
+            data-tooltip={available ? maximizeLabel : t('windowPreviewOnly')}
             disabled={disabled}
             onClick={() => void perform('maximize')}
           >
@@ -112,7 +112,7 @@ export function TitleBar({
             type="button"
             className={`${styles.control} ${styles.close}`}
             aria-label={t('windowClose')}
-            title={available ? t('windowClose') : t('windowPreviewOnly')}
+            data-tooltip={available ? t('windowClose') : t('windowPreviewOnly')}
             disabled={disabled}
             onClick={() => void perform('close')}
           >

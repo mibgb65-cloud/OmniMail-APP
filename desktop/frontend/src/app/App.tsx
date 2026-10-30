@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { StartupScreen } from '../components/StartupScreen/StartupScreen';
+import { TooltipHost } from '../components/Tooltip/TooltipHost';
 import { TitleBar } from '../components/TitleBar/TitleBar';
 import { useTranslation } from '../lib/i18n/useTranslation';
 import { useTheme } from '../lib/theme/useTheme';
@@ -32,6 +33,7 @@ export function App() {
 
   return (
     <>
+      <TooltipHost />
       <TitleBar
         theme={theme}
         onToggleTheme={toggleTheme}

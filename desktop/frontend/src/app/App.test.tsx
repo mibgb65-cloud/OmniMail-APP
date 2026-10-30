@@ -36,6 +36,17 @@ function openAbout(locale: Locale = 'zh-CN') {
   fireEvent.click(screen.getByRole('tab', { name: locale === 'en' ? 'About' : '关于' }));
 }
 
+it('全局提示使用统一浮层，不再显示原生 title，悬停侧栏可看到说明', async () => {
+  vi.mocked(getVersion).mockResolvedValue(VERSION_INFO);
+  await renderApp();
+  expect(document.querySelector('[title]')).toBeNull();
+  const trigger = screen.getByRole('button', { name: '草稿箱' });
+  fireEvent.pointerOver(trigger, { pointerType: 'mouse' });
+  expect(await screen.findByRole('tooltip')).toHaveTextContent('仅切换界面预览');
+  fireEvent.pointerOut(trigger, { relatedTarget: document.body });
+  await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
+});
+
 function switchToolbarLanguage(locale: Locale) {
   const toolbar = within(screen.getByRole('banner', { name: /窗口操作栏|Window toolbar/ }));
   fireEvent.click(

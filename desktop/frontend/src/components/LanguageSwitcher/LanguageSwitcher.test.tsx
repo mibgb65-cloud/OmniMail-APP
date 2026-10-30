@@ -50,7 +50,8 @@ describe('悬停横向展开语言胶囊', () => {
       const fullLabel = value === 'en' ? 'English' : '简体中文';
       const option = screen.getByRole('button', { name: fullLabel });
       expect(option).toHaveAttribute('aria-pressed', String(value === locale));
-      expect(option).toHaveAttribute('title', fullLabel);
+      expect(option).toHaveAttribute('data-tooltip', fullLabel);
+      expect(option).not.toHaveAttribute('title');
       expect(option).toHaveAttribute('lang', value);
     }
     expect(screen.getByRole('group').querySelector('span[aria-hidden="true"]')).toHaveStyle({

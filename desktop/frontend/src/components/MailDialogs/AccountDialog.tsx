@@ -175,7 +175,7 @@ export function AccountDialog({ onClose, onSaved }: { onClose: () => void; onSav
             type="button"
             className={wizard.close}
             aria-label={t('close')}
-            title={t('close')}
+            data-tooltip={t('close')}
             onClick={onClose}
           >
             <UiIcon name="close" />

@@ -52,7 +52,7 @@ export function MessagesPopover() {
         type="button"
         className={styles.trigger}
         aria-label={t('title')}
-        title={t('title')}
+        data-tooltip={t('title')}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
@@ -77,7 +77,7 @@ export function MessagesPopover() {
               type="button"
               className={styles.close}
               aria-label={t('close')}
-              title={t('close')}
+              data-tooltip={t('close')}
               onClick={() => close(true)}
             >
               <UiIcon name="close" />

@@ -107,7 +107,7 @@ export function WorkspaceSidebar({
   }, [selectedFolder, locale]);
 
   return (
-    <aside className={styles.sidebar} aria-label={t('applicationLabel')}>
+    <aside className={styles.sidebar} aria-label={t('applicationLabel')} data-tooltip-side="right">
       <div className={styles.brand}>
         <BrandMark className={styles['brand-mark']} />
         <strong>OmniMail</strong>
@@ -117,7 +117,7 @@ export function WorkspaceSidebar({
         className={styles['compose-button']}
         aria-label={t('compose')}
         aria-describedby={composeStatusId}
-        title={onCompose ? t('compose') : t('composeUnavailable')}
+        data-tooltip={onCompose ? t('compose') : t('composeUnavailable')}
         disabled={!onCompose}
         onClick={onCompose}
       >
@@ -141,7 +141,7 @@ export function WorkspaceSidebar({
                 }}
                 data-folder={name}
                 aria-pressed={selectedFolder === name}
-                title={t('folderPreview')}
+                data-tooltip={t('folderPreview')}
                 onClick={() => onSelectFolder(name)}
               >
                 <UiIcon name={icon} className={styles.icon} selected={selectedFolder === name} />
@@ -171,7 +171,7 @@ export function WorkspaceSidebar({
                   type="button"
                   className={styles['mailbox-account']}
                   aria-pressed={selectedAccount === account.id}
-                  title={account.email}
+                  data-tooltip={account.email}
                   onClick={() => onSelectAccount?.(account.id)}
                 >
                   <span>{account.displayName || account.email}</span>
@@ -191,7 +191,7 @@ export function WorkspaceSidebar({
                   <button
                     type="button"
                     aria-label={`${mail('disconnect')}: ${account.email}`}
-                    title={mail('disconnect')}
+                    data-tooltip={mail('disconnect')}
                     onClick={() => {
                       if (window.confirm(mail('disconnectConfirm'))) onDisconnect?.(account.id);
                     }}
@@ -213,7 +213,7 @@ export function WorkspaceSidebar({
           className={styles['mailbox-add']}
           aria-label={t('addMailbox')}
           aria-describedby={mailboxStatusId}
-          title={onAddAccount ? t('addMailbox') : t('addMailboxUnavailable')}
+          data-tooltip={onAddAccount ? t('addMailbox') : t('addMailboxUnavailable')}
           disabled={!onAddAccount}
           onClick={onAddAccount}
         >
@@ -231,7 +231,7 @@ export function WorkspaceSidebar({
           aria-label={t('settings')}
           aria-haspopup="dialog"
           aria-expanded={settingsOpen}
-          title={t('settings')}
+          data-tooltip={t('settings')}
           onClick={() => setSettingsOpen(true)}
         >
           <span className={styles['nav-label']}>

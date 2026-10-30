@@ -52,7 +52,9 @@ export function MailToolbar({
           type="button"
           className={styles['sync-button']}
           aria-label={t('syncAction')}
-          title={onSync ? t('syncAction') : t('unavailableMailAction', { action: t('syncAction') })}
+          data-tooltip={
+            onSync ? t('syncAction') : t('unavailableMailAction', { action: t('syncAction') })
+          }
           disabled={!onSync || syncBusy}
           onClick={onSync}
         >
@@ -68,7 +70,7 @@ export function MailToolbar({
               type="button"
               className={styles['icon-button']}
               aria-label={t(label)}
-              title={t('unavailableMailAction', { action: t(label) })}
+              data-tooltip={t('unavailableMailAction', { action: t(label) })}
               disabled
             >
               <UiIcon name={icon} />
@@ -93,7 +95,7 @@ export function MailToolbar({
               type="button"
               className={styles['icon-button']}
               aria-label={t(label)}
-              title={t('unavailableMailAction', { action: t(label) })}
+              data-tooltip={t('unavailableMailAction', { action: t(label) })}
               disabled
             >
               <UiIcon name={icon} />

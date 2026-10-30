@@ -1,6 +1,6 @@
 # 组件规范
 
-> 状态：草稿 | 负责人：@design-lead | 最后更新：2026-10-25
+> 状态：草稿（含已实现组件） | 负责人：@design-lead | 最后更新：2026-10-30
 > 相关：[设计系统](../design-system.md) · [页面规格](../pages/README.md)
 
 ---
@@ -16,7 +16,7 @@
 | [Input](input.md) | ui | 6 | 文本、搜索、密码 |
 | Dialog | ui | 4 | 模态、抽屉 |
 | Toast | ui | 4 | 成功/错误/信息，带动作 |
-| Tooltip | ui | 2 | 延迟 400ms |
+| [Tooltip](tooltip.md) | ui | 悬停 / 焦点 / 清理 | 已实现：统一主题浮层，悬停延迟 400ms、键盘即时显示 |
 | Tabs | ui | 4 | 面板切换 |
 | Menu | ui | 4 | 右键与下拉 |
 | Checkbox / Radio / Switch | ui | 4 | — |

@@ -74,7 +74,7 @@ export function MailWorkspace({ mail }: { mail?: MailController } = {}) {
             type="button"
             className={styles.toggle}
             aria-label={t(analysisOpen ? 'collapseAnalysis' : 'expandAnalysis')}
-            title={t(analysisOpen ? 'collapseAnalysis' : 'expandAnalysis')}
+            data-tooltip={t(analysisOpen ? 'collapseAnalysis' : 'expandAnalysis')}
             aria-expanded={analysisOpen}
             aria-controls={analysisId}
             onClick={() => setAnalysisOpen((open) => !open)}

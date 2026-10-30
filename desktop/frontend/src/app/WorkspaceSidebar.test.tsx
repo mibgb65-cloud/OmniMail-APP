@@ -180,7 +180,8 @@ describe('侧栏底部设置入口', () => {
       expect(button).toBeVisible();
       expect(button).toBeDisabled();
       expect(button).toHaveAccessibleDescription(pending);
-      expect(button).toHaveAttribute('title', unavailable);
+      expect(button).toHaveAttribute('data-tooltip', unavailable);
+      expect(button).not.toHaveAttribute('title');
       expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
       expect(
         navigation.compareDocumentPosition(region) & Node.DOCUMENT_POSITION_FOLLOWING,

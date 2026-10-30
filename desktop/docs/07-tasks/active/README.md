@@ -1,6 +1,6 @@
 # 进行中的任务（active）
 
-> 状态：已生效 | 最后更新：2026-10-28
+> 状态：已生效 | 最后更新：2026-10-30
 
 本目录存放**当前迭代进行中**的任务，一个任务一个文件：`TASK-<4位序号>-<slug>.md`。
 模板与规则见 [任务管理](../README.md#4-任务记录模板)，项目入口见 [AGENTS.md](../../../../AGENTS.md)。
@@ -9,6 +9,7 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
+| [TASK-0042](TASK-0042-unified-tooltips.md) | 全局悬浮提示视觉与交互统一 | @Codex | 待评审 | P1 |
 | [TASK-0001](../archive/2026/10/TASK-0001-docs-skeleton.md) | 文档目录骨架与初始内容（已归档） | @arch-lead | 已完成 | P0 |
 | [TASK-0002](TASK-0002-project-skeleton.md) | 工程骨架：Wails 启动 + 绑定打通 | @backend-lead | 进行中 | P0 |
 | [TASK-0003](TASK-0003-ci-pipeline.md) | CI 流水线（三平台 lint/test/build） | @devops | 待开始 | P0 |

@@ -65,6 +65,9 @@
   --titlebar-control-width: 46px;
   --layer-titlebar: 200;
   --layer-menu: 210;
+  --layer-tooltip: 220;
+  --tooltip-max-width: 320px;
+  --tooltip-shadow: 0 4px 8px rgb(24 24 27 / 4%), 0 12px 32px rgb(24 24 27 / 10%);
   --messages-panel-width: 260px;
   --color-close-hover: #c42b1c;
   --color-close-text: #ffffff;
@@ -128,6 +131,7 @@
   --color-danger: #ff9c9c;
   --color-close-hover: #d73535;
   --panel-shadow: 0 3px 20px rgb(0 0 0 / 12%);
+  --tooltip-shadow: 0 4px 8px rgb(0 0 0 / 16%), 0 12px 32px rgb(0 0 0 / 28%);
   --color-modal-scrim: rgb(0 0 0 / 50%);
   --modal-shadow: 0 24px 80px rgb(0 0 0 / 40%);
   --field-bg: rgb(39 39 42 / 45%);

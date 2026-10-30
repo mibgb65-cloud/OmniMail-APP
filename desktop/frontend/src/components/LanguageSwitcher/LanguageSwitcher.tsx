@@ -66,7 +66,7 @@ export function LanguageSwitcher({ compact = false }: LanguageSwitcherProps) {
               className={styles.option}
               lang={value}
               aria-label={t(labels[value].full)}
-              title={t(labels[value].full)}
+              data-tooltip={t(labels[value].full)}
               aria-pressed={locale === value}
               onClick={() => setLocale(value)}
             >
