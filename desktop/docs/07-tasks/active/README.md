@@ -10,11 +10,11 @@
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
 | [TASK-0046](../archive/2026/10/TASK-0046-mailbox-sidebar-sync-health.md) | 我的邮箱区域与邮件加载体验 | @Codex | 已完成 | P1 |
-| [TASK-0045](TASK-0045-dialog-exit-motion.md) | 标准弹窗退出动效 | @Codex | 待评审 | P1 |
-| [TASK-0044](TASK-0044-same-provider-batch.md) | 同服务商多账号批量添加 | @Codex | 待评审 | P1 |
-| [TASK-0043](TASK-0043-shared-dialog-frame.md) | 统一弹窗外框与账号四步向导 | @Codex | 待评审 | P1 |
+| [TASK-0045](../archive/2026/10/TASK-0045-dialog-exit-motion.md) | 标准弹窗退出动效 | @Codex | 已完成 | P1 |
+| [TASK-0044](../archive/2026/10/TASK-0044-same-provider-batch.md) | 同服务商多账号批量添加 | @Codex | 已完成 | P1 |
+| [TASK-0043](../archive/2026/10/TASK-0043-shared-dialog-frame.md) | 统一弹窗外框与账号四步向导 | @Codex | 已完成 | P1 |
 | [TASK-0042](../archive/2026/10/TASK-0042-unified-tooltips.md) | 全局悬浮提示视觉与交互统一 | @Codex | 已完成 | P1 |
-| [TASK-0041](TASK-0041-account-provider-detection.md) | 邮箱输入匹配服务商与品牌图标 | @Codex | 待评审 | P1 |
+| [TASK-0041](../archive/2026/10/TASK-0041-account-provider-detection.md) | 邮箱输入匹配服务商与品牌图标 | @Codex | 已完成 | P1 |
 | [TASK-0001](../archive/2026/10/TASK-0001-docs-skeleton.md) | 文档目录骨架与初始内容（已归档） | @arch-lead | 已完成 | P0 |
 | [TASK-0002](TASK-0002-project-skeleton.md) | 工程骨架：Wails 启动 + 绑定打通 | @backend-lead | 进行中 | P0 |
 | [TASK-0003](TASK-0003-ci-pipeline.md) | CI 流水线（三平台 lint/test/build） | @devops | 待开始 | P0 |

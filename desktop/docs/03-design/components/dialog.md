@@ -1,8 +1,8 @@
 # 标准模态弹窗 DialogFrame
 
 > 状态：已实现 | 最后更新：2026-10-29
-> 相关：[TASK-0043](../../07-tasks/active/TASK-0043-shared-dialog-frame.md)、
-> [TASK-0045](../../07-tasks/active/TASK-0045-dialog-exit-motion.md)
+> 相关：[TASK-0043](../../07-tasks/archive/2026/10/TASK-0043-shared-dialog-frame.md)、
+> [TASK-0045](../../07-tasks/archive/2026/10/TASK-0045-dialog-exit-motion.md)
 
 ## 用途与统一基准
 

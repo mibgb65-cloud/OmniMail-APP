@@ -21,9 +21,9 @@
 
 ### 变更
 - 完成邮箱服务商本地域名识别、品牌图标和账号四步向导；支持同服务商最多 10 个账号串行添加、
-  内联校验、原位单面板编辑与失败项重试，见 [TASK-0041](../07-tasks/active/TASK-0041-account-provider-detection.md)、
-  [TASK-0043](../07-tasks/active/TASK-0043-shared-dialog-frame.md)、
-  [TASK-0044](../07-tasks/active/TASK-0044-same-provider-batch.md)。
+  内联校验、原位单面板编辑与失败项重试，见 [TASK-0041](../07-tasks/archive/2026/10/TASK-0041-account-provider-detection.md)、
+  [TASK-0043](../07-tasks/archive/2026/10/TASK-0043-shared-dialog-frame.md)、
+  [TASK-0044](../07-tasks/archive/2026/10/TASK-0044-same-provider-batch.md)。
 - 语言切换改为悬停/聚焦横向展开胶囊，选中高亮支持滑动回弹，保留中英偏好、主题适配和减少动态效果，见 [TASK-0038](../07-tasks/archive/2026/10/TASK-0038-language-hover-capsule.md)。
 - 添加邮箱先选择预设服务商或自定义 IMAP/SMTP 卡片，再进入对应配置；支持返回重选并清除旧密码，Gmail OAuth 未配置限制明确展示，见 [TASK-0039](../07-tasks/archive/2026/10/TASK-0039-account-provider-selection.md)。
 - 邮件列表移除上一页/下一页，改为滚动分批追加，支持错误重试、已加载范围刷新及阅读位置保持；筛选与未读统计仅覆盖已加载邮件，见 [TASK-0040](../07-tasks/archive/2026/10/TASK-0040-mail-infinite-scroll.md)。
@@ -48,9 +48,9 @@
 
 ### 修复
 - 标准弹窗补充外框/遮罩同步退出动效，快速关闭不跳帧，保留减少动效、即时取消和发送保护，
-  见 [TASK-0045](../07-tasks/active/TASK-0045-dialog-exit-motion.md)。
+  见 [TASK-0045](../07-tasks/archive/2026/10/TASK-0045-dialog-exit-motion.md)。
 - 开发期语言资源热更新保留语言、表单与实例，避免新增键仅显示键名，见
-  [TASK-0043](../07-tasks/active/TASK-0043-shared-dialog-frame.md)。
+  [TASK-0043](../07-tasks/archive/2026/10/TASK-0043-shared-dialog-frame.md)。
 - 优化“我的邮箱”账号行与加载失败恢复，修复 IMAP 邮件头兼容、异常流关闭及大批量同步续排，
   保留已成功缓存与真实错误；正文仍按需读取，见 [TASK-0046](../07-tasks/archive/2026/10/TASK-0046-mailbox-sidebar-sync-health.md)。
 - 统一应用内悬浮提示的明暗主题、键盘交互、窗口边缘与模态层显示，替换原生黑色 title，

@@ -102,9 +102,9 @@
 - Gmail 卡片与配置页明确使用应用专用密码，区分于 Google 登录密码，不展示 OAuth 注册要求或授权入口。
   未新增 Outlook/iCloud、OAuth 浏览器授权、服务器自动发现、协议级细分进度或同步百分比。
 - 实现与验证见 [TASK-0039](../../07-tasks/archive/2026/10/TASK-0039-account-provider-selection.md)、
-  [TASK-0041](../../07-tasks/active/TASK-0041-account-provider-detection.md)、
-  [TASK-0043](../../07-tasks/active/TASK-0043-shared-dialog-frame.md)
-  与 [TASK-0044](../../07-tasks/active/TASK-0044-same-provider-batch.md)。
+  [TASK-0041](../../07-tasks/archive/2026/10/TASK-0041-account-provider-detection.md)、
+  [TASK-0043](../../07-tasks/archive/2026/10/TASK-0043-shared-dialog-frame.md)
+  与 [TASK-0044](../../07-tasks/archive/2026/10/TASK-0044-same-provider-batch.md)。
 
 以下三步方案与接口示例为历史产品目标，尚未全部实现；与当前四步交互不一致的部分不作为现有能力。
 

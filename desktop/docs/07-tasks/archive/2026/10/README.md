@@ -17,7 +17,11 @@
 | [TASK-0034](TASK-0034-mail-protocol-adapters.md) | 邮件协议与 MIME 基础适配 | @Codex | 2026-10-28 |
 | [TASK-0035](TASK-0035-mail-persistence.md) | 邮件正文附件与同步状态存储 | @Codex | 2026-10-28 |
 | [TASK-0036](TASK-0036-mail-account-ui-service.md) | 账号添加与收发同步基础界面集成 | @Codex | 2026-10-28 |
+| [TASK-0041](TASK-0041-account-provider-detection.md) | 邮箱输入匹配服务商与品牌图标 | @Codex | 2026-10-30 |
 | [TASK-0042](TASK-0042-unified-tooltips.md) | 全局悬浮提示视觉与交互统一 | @Codex | 2026-10-30 |
+| [TASK-0043](TASK-0043-shared-dialog-frame.md) | 统一弹窗外框与账号四步向导 | @Codex | 2026-10-30 |
+| [TASK-0044](TASK-0044-same-provider-batch.md) | 同服务商多账号批量添加 | @Codex | 2026-10-30 |
+| [TASK-0045](TASK-0045-dialog-exit-motion.md) | 标准弹窗退出动效 | @Codex | 2026-10-30 |
 | [TASK-0046](TASK-0046-mailbox-sidebar-sync-health.md) | 我的邮箱区域与邮件加载体验 | @Codex | 2026-10-30 |
 
 ## 本月取消
