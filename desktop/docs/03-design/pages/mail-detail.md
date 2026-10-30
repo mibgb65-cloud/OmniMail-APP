@@ -27,8 +27,8 @@
 - TASK-0050 将正文读取从后台同步互斥中拆出，使用独立有界连接；同步轮询和星标完成只刷新列表，
   不取消在途正文。切换邮件或用户主动重试仍可取消旧读取，服务端网络耗时不被隐藏为成功。
 - 缺失/不支持/超预算的内嵌图片显示降级提示，附件另存保持原流程。
-- 验证结果与未验证项以 [TASK-0048](../../07-tasks/active/TASK-0048-rich-mail-reader.md) 为准；
-  后续交互修正见 [TASK-0049](../../07-tasks/active/TASK-0049-mail-reader-interactions.md)；
+- 验证结果与未验证项以 [TASK-0048](../../07-tasks/archive/2026/10/TASK-0048-rich-mail-reader.md) 为准；
+  后续交互修正见 [TASK-0049](../../07-tasks/archive/2026/10/TASK-0049-mail-reader-interactions.md)；
   以下布局和操作仍包含未落地的历史设计目标。
 
 主界面右栏（宽屏分栏）或覆盖层（< 960px）。目标：快速读懂内容、安全地打开外部资源、

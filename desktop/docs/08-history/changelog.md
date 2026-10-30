@@ -11,6 +11,10 @@
 ## [未发布]
 
 ### 新增
+- 邮件阅读支持安全 HTML、表格和内嵌图片，设置提供图片显示策略；
+  外链打开前需当次安全确认，星标可独立操作并持久保存，见
+  [TASK-0048](../07-tasks/archive/2026/10/TASK-0048-rich-mail-reader.md)、
+  [TASK-0049](../07-tasks/archive/2026/10/TASK-0049-mail-reader-interactions.md)。
 - 增加应用授权码账号添加、系统凭据适配、TLS IMAP/SMTP 认证、邮件正文与流式附件缓存、后台轮询、手动同步及纯文本发送；本轮基础闭环已提交归档，见 [TASK-0032](../07-tasks/archive/2026/10/TASK-0032-mail-account-integration.md)；未实现/未验证项保留在 [TASK-0037](../07-tasks/active/TASK-0037-mail-advanced-followups.md)，不含 OAuth、IDLE、草稿自动保存或发送附件。
 - 新增 SQLite 账号存储基础：版本校验迁移、多服务商预设、独立 IMAP/SMTP 配置及内部账号仓储，应用启动/关闭接入数据库；尚未实现账号接入 UI、系统凭据保存或真实收发信，见 [TASK-0030](../07-tasks/archive/2026/10/TASK-0030-account-storage-foundation.md)。
 - 邮件区域增加通栏搜索与邮件操作工具条，下方采用列表和内容双列布局；当前仅 UI 预览，见 [TASK-0024](../07-tasks/active/TASK-0024-mail-workspace-toolbar.md)。
@@ -20,6 +24,11 @@
 - 桌面工作台支持简体中文和英语，提供即时切换、系统语言识别及本地偏好保存；语言包按公共、导航、工作台和连接面板拆分，附一致性校验与接入约定。
 
 ### 变更
+- 邮件列表优化发件人/日期/两行主题与状态层级；同步进度移至工具栏按钮，
+  正文与星标使用独立有界前台通道，不因后台同步而取消或等待账号空闲；
+  旧同步快照不得覆盖新星标。已验收提交 `771619c`，
+  见 [TASK-0047](../07-tasks/archive/2026/10/TASK-0047-mail-list-visual-hierarchy.md)、
+  [TASK-0050](../07-tasks/archive/2026/10/TASK-0050-foreground-mail-concurrency.md)。
 - 完成邮箱服务商本地域名识别、品牌图标和账号四步向导；支持同服务商最多 10 个账号串行添加、
   内联校验、原位单面板编辑与失败项重试，见 [TASK-0041](../07-tasks/archive/2026/10/TASK-0041-account-provider-detection.md)、
   [TASK-0043](../07-tasks/archive/2026/10/TASK-0043-shared-dialog-frame.md)、
