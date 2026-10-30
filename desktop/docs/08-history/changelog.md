@@ -44,9 +44,9 @@
 
 ### 修复
 - 优化“我的邮箱”账号行与加载失败恢复，修复 IMAP 邮件头兼容、异常流关闭及大批量同步续排，
-  保留已成功缓存与真实错误；正文仍按需读取，见 [TASK-0046](../07-tasks/active/TASK-0046-mailbox-sidebar-sync-health.md)。
+  保留已成功缓存与真实错误；正文仍按需读取，见 [TASK-0046](../07-tasks/archive/2026/10/TASK-0046-mailbox-sidebar-sync-health.md)。
 - 统一应用内悬浮提示的明暗主题、键盘交互、窗口边缘与模态层显示，替换原生黑色 title，
-  保留原操作及可访问描述，见 [TASK-0042](../07-tasks/active/TASK-0042-unified-tooltips.md)。
+  保留原操作及可访问描述，见 [TASK-0042](../07-tasks/archive/2026/10/TASK-0042-unified-tooltips.md)。
 - 修复语言胶囊选中项悬停时继承全局深色按钮背景、造成浅色主题深底深字的问题，见 [TASK-0038](../07-tasks/archive/2026/10/TASK-0038-language-hover-capsule.md)。
 - 禁止侧栏分类按钮文字被拖选，保留正常选中滑块和键盘交互，见 [TASK-0020](../07-tasks/active/TASK-0020-sidebar-active-indicator.md)。
 - 修正圆形主题动画的残留效果与结束清理时序，防止干扰连续切换，见 [TASK-0022](../07-tasks/active/TASK-0022-theme-transition-reentry.md)。

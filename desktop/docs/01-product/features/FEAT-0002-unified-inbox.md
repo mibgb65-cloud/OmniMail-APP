@@ -11,7 +11,7 @@
 > 暂时的账号状态读取失败不清空已加载邮件，正文 BUSY 采用有界等待而不是新增并行连接。
 > 下文会话聚合、多选、状态回写与窄屏覆盖阅读器等仍为目标；真实服务商访问结果须另行验证。
 > 当前说明见[统一收件箱页面](../../03-design/pages/inbox.md)与
-> [TASK-0046](../../07-tasks/active/TASK-0046-mailbox-sidebar-sync-health.md)。
+> [TASK-0046](../../07-tasks/archive/2026/10/TASK-0046-mailbox-sidebar-sync-health.md)。
 
 ## 1. 背景与目标
 

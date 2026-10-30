@@ -9,8 +9,8 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
-| [TASK-0046](TASK-0046-mailbox-sidebar-sync-health.md) | 我的邮箱区域与邮件加载体验 | @Codex | 待评审 | P1 |
-| [TASK-0042](TASK-0042-unified-tooltips.md) | 全局悬浮提示视觉与交互统一 | @Codex | 待评审 | P1 |
+| [TASK-0046](../archive/2026/10/TASK-0046-mailbox-sidebar-sync-health.md) | 我的邮箱区域与邮件加载体验 | @Codex | 已完成 | P1 |
+| [TASK-0042](../archive/2026/10/TASK-0042-unified-tooltips.md) | 全局悬浮提示视觉与交互统一 | @Codex | 已完成 | P1 |
 | [TASK-0001](../archive/2026/10/TASK-0001-docs-skeleton.md) | 文档目录骨架与初始内容（已归档） | @arch-lead | 已完成 | P0 |
 | [TASK-0002](TASK-0002-project-skeleton.md) | 工程骨架：Wails 启动 + 绑定打通 | @backend-lead | 进行中 | P0 |
 | [TASK-0003](TASK-0003-ci-pipeline.md) | CI 流水线（三平台 lint/test/build） | @devops | 待开始 | P0 |

@@ -11,7 +11,7 @@
 > 不重复扫描，前台 BUSY 不丢续排，真实失败不按此短周期反复尝试。
 > 日志仅记录白名单阶段/原因和分批/周期完成事件；未记录原始响应、账号或邮件内容。
 > 下文 IDLE、指数退避、离线操作回写等仍为设计目标，不能当作已实现能力。
-> 实际验证和边界见 [TASK-0046](../../07-tasks/active/TASK-0046-mailbox-sidebar-sync-health.md)。
+> 实际验证和边界见 [TASK-0046](../../07-tasks/archive/2026/10/TASK-0046-mailbox-sidebar-sync-health.md)。
 
 ## 1. 背景与目标
 

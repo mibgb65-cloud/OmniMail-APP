@@ -1,7 +1,7 @@
 # 悬浮提示 Tooltip
 
 > 状态：已实现 | 最后更新：2026-10-29
-> 相关：[TASK-0042](../../07-tasks/active/TASK-0042-unified-tooltips.md)
+> 相关：[TASK-0042](../../07-tasks/archive/2026/10/TASK-0042-unified-tooltips.md)
 
 ## 用途与入口
 
