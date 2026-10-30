@@ -5,12 +5,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"io"
 	"log/slog"
 	"mime"
 	"net"
 	"net/smtp"
 	"strconv"
+	"sync"
 	"time"
 
 	"omnimail/desktop/internal/domain"
@@ -27,18 +27,38 @@ func New() *Transport { return &Transport{} }
 type limitedConn struct {
 	net.Conn
 	remaining int64
+	failureMu sync.Mutex
+	readError error
 }
 
 func (c *limitedConn) Read(buffer []byte) (int, error) {
 	if c.remaining <= 0 {
-		return 0, io.ErrUnexpectedEOF
+		c.recordReadError(domain.ErrTooLarge)
+		return 0, domain.ErrTooLarge
 	}
 	if int64(len(buffer)) > c.remaining {
 		buffer = buffer[:c.remaining]
 	}
 	n, err := c.Conn.Read(buffer)
 	c.remaining -= int64(n)
+	if err != nil {
+		c.recordReadError(err)
+	}
 	return n, err
+}
+
+func (c *limitedConn) recordReadError(err error) {
+	c.failureMu.Lock()
+	defer c.failureMu.Unlock()
+	if c.readError == nil {
+		c.readError = err
+	}
+}
+
+func (c *limitedConn) failure() error {
+	c.failureMu.Lock()
+	defer c.failureMu.Unlock()
+	return c.readError
 }
 func releaseConnection(conn net.Conn) {
 	if err := conn.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
@@ -142,7 +162,7 @@ func (t *Transport) Connect(ctx context.Context, endpoint domain.AccountEndpoint
 		}
 		return nil, domain.ErrNetwork
 	}
-	return &session{client: c, stop: stop}, nil
+	return &session{client: c, stop: stop, ctx: ctx, conn: conn}, nil
 }
 
 func (t *Transport) smtp(ctx context.Context, endpoint domain.AccountEndpoint, secret []byte) (*smtp.Client, func(), error) {

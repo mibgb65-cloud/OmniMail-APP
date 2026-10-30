@@ -74,6 +74,7 @@ export function App() {
               setSelectedFolder(folder);
             }}
             accounts={mail.accounts}
+            mailReady={mail.ready}
             selectedAccount={mail.accountId}
             onSelectAccount={mail.chooseAccount}
             onAddAccount={mail.ready ? () => setMailDialog('account') : undefined}

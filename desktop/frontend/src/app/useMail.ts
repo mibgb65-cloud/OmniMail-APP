@@ -2,23 +2,22 @@ import { useCallback, useEffect, useState } from 'react';
 import * as api from '../lib/bridge/mail';
 import type { MailFolder } from './WorkspaceSidebar';
 import { useMailList } from './useMailList';
+import { useMailReader } from './useMailReader';
 
 export function useMail(folder: MailFolder) {
   const [accounts, setAccounts] = useState<api.AccountSummary[]>([]);
   const [accountId, setAccountId] = useState('');
   const [ready, setReady] = useState(false);
-  const [reader, setReader] = useState<{ id: string; detail?: api.MailDetail; error?: unknown }>({
-    id: '',
-  });
   const [selected, setSelected] = useState('');
   const [error, setError] = useState<unknown>();
   const [viewRevision, setViewRevision] = useState(0);
   const [filter, setFilter] = useState('');
   const [revision, setRevision] = useState(0);
-  const refresh = useCallback(() => setRevision((value) => value + 1), []);
-  const detail = reader.id === selected ? reader.detail : undefined;
-  const bodyError = reader.id === selected ? reader.error : undefined;
-  const loading = selected !== '' && reader.id !== selected;
+  const [syncRequested, setSyncRequested] = useState(false);
+  const refresh = useCallback(() => {
+    setError(undefined);
+    setRevision((value) => value + 1);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -36,7 +35,7 @@ export function useMail(folder: MailFolder) {
       } catch (error) {
         if (!controller.signal.aborted) {
           setError(error);
-          setReady(false);
+          // 已成功读取后保留缓存视图，瞬时状态读取失败不能把真实邮件退回演示空态。
         }
       } finally {
         pending = false;
@@ -74,19 +73,7 @@ export function useMail(folder: MailFolder) {
     syncStamp: listStamp,
   });
 
-  useEffect(() => {
-    if (!selected) return;
-    const controller = new AbortController();
-    api
-      .message(selected, controller.signal)
-      .then((value) => {
-        if (!controller.signal.aborted) setReader({ id: selected, detail: value });
-      })
-      .catch((error: unknown) => {
-        if (!controller.signal.aborted) setReader({ id: selected, error });
-      });
-    return () => controller.abort();
-  }, [selected, revision, syncStamp]);
+  const reader = useMailReader(selected, revision, syncStamp);
 
   const chooseAccount = (id: string) => {
     setAccountId(id);
@@ -94,11 +81,16 @@ export function useMail(folder: MailFolder) {
     setViewRevision((value) => value + 1);
   };
   const sync = async () => {
+    if (syncRequested) return;
+    setSyncRequested(true);
+    setError(undefined);
     try {
       await api.synchronize(accountId);
       refresh();
     } catch (error) {
       setError(error);
+    } finally {
+      setSyncRequested(false);
     }
   };
   const resetView = () => {
@@ -107,7 +99,7 @@ export function useMail(folder: MailFolder) {
     setFilter('');
   };
   const selectMessage = (id: string) => {
-    if (id === selected) refresh();
+    if (id === selected) reader.retryBody();
     else setSelected(id);
   };
   const disconnectAccount = async (id: string) => {
@@ -124,14 +116,13 @@ export function useMail(folder: MailFolder) {
     chooseAccount,
     ready,
     ...list,
-    detail,
+    ...reader,
     selected,
     setSelected: selectMessage,
     error,
-    bodyError,
-    loading,
     refresh,
     sync,
+    syncRequested,
     filter,
     setFilter,
     resetView,

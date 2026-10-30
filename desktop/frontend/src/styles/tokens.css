@@ -49,6 +49,7 @@
   --sidebar-min-height: 480px;
   --panel-shadow: 0 3px 20px rgb(24 24 27 / 3%);
   --motion-interaction: 180ms;
+  --motion-sync-spin: 1000ms;
   --color-brand-detail: #e46b52;
   --radius-xs: 4px;
   --text-display: 40px;

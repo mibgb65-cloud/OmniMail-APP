@@ -1,6 +1,8 @@
 package mailnet
 
 import (
+	"context"
+	"net"
 	"sort"
 	"strings"
 	"unicode"
@@ -14,6 +16,8 @@ import (
 type session struct {
 	client   *imapclient.Client
 	stop     func() bool
+	ctx      context.Context
+	conn     net.Conn
 	uids     imap.UIDSet
 	searched bool
 }
@@ -48,7 +52,10 @@ func (s *session) Mailboxes() ([]domain.RemoteMailbox, error) {
 			result = append(result, domain.RemoteMailbox{Name: box.Mailbox, Kind: mailboxKind(box.Mailbox, attributes)})
 		}
 	}
-	if err := command.Close(); err != nil || overflow {
+	if err := command.Close(); err != nil {
+		return nil, s.commandError(err)
+	}
+	if overflow {
 		return nil, domain.ErrProtocol
 	}
 	sort.SliceStable(result, func(i, j int) bool {
@@ -89,7 +96,7 @@ func mailboxKind(name string, attributes []string) string {
 func (s *session) Select(name string) (uint32, uint32, error) {
 	state, err := s.client.Select(name, &imap.SelectOptions{ReadOnly: true}).Wait()
 	if err != nil {
-		return 0, 0, domain.ErrProtocol
+		return 0, 0, s.commandError(err)
 	}
 	s.uids = nil
 	s.searched = false
@@ -100,7 +107,7 @@ func (s *session) LocateUID(from uint32) (uint32, bool, error) {
 	if !s.searched {
 		data, err := s.client.UIDSearch(&imap.SearchCriteria{}, nil).Wait()
 		if err != nil {
-			return 0, false, domain.ErrProtocol
+			return 0, false, s.commandError(err)
 		}
 		set, ok := data.All.(imap.UIDSet)
 		if !ok || set.Dynamic() || len(set) > 1000000 {
@@ -122,52 +129,6 @@ func (s *session) LocateUID(from uint32) (uint32, bool, error) {
 	return 0, false, nil
 }
 
-func (s *session) Headers(start, end uint32) ([]domain.RemoteMessage, error) {
-	if start == 0 || end < start || end-start >= 100 {
-		return nil, domain.ErrProtocol
-	}
-	var set imap.UIDSet
-	set.AddRange(imap.UID(start), imap.UID(end))
-	command := s.client.Fetch(set, &imap.FetchOptions{UID: true, Envelope: true, Flags: true,
-		InternalDate: true, RFC822Size: true})
-	result := []domain.RemoteMessage{}
-	for data := command.Next(); data != nil; data = command.Next() {
-		message := new(imapclient.FetchMessageBuffer)
-		for item := data.Next(); item != nil; item = data.Next() {
-			switch item := item.(type) {
-			case imapclient.FetchItemDataUID:
-				message.UID = item.UID
-			case imapclient.FetchItemDataEnvelope:
-				message.Envelope = item.Envelope
-			case imapclient.FetchItemDataFlags:
-				message.Flags = item.Flags
-			case imapclient.FetchItemDataInternalDate:
-				message.InternalDate = item.Time
-			case imapclient.FetchItemDataRFC822Size:
-				message.RFC822Size = item.Size
-			case imapclient.FetchItemDataBodySection:
-				closeIMAP(s.client)
-				return nil, domain.ErrProtocol
-			}
-		}
-		if message.Envelope == nil || uint32(message.UID) < start || uint32(message.UID) > end || len(result) >= 100 {
-			closeIMAP(s.client)
-			return nil, domain.ErrProtocol
-		}
-		envelope := message.Envelope
-		result = append(result, domain.RemoteMessage{
-			UID: uint32(message.UID), MessageID: bounded(envelope.MessageID, 998), Subject: bounded(envelope.Subject, 4096),
-			From: formatAddresses(envelope.From), To: formatAddresses(envelope.To),
-			ReceivedAt: message.InternalDate.UnixMilli(), Read: contains(message.Flags, imap.FlagSeen),
-			Starred: contains(message.Flags, imap.FlagFlagged), Size: uint32(min(message.RFC822Size, 1<<32-1)),
-		})
-	}
-	if err := command.Close(); err != nil {
-		return nil, domain.ErrProtocol
-	}
-	return result, nil
-}
-
 func (s *session) Body(uid uint32, sink domain.AttachmentSink) (domain.DecodedMail, error) {
 	section := &imap.FetchItemBodySection{Peek: true}
 	command := s.client.Fetch(imap.UIDSetNum(imap.UID(uid)), &imap.FetchOptions{
@@ -186,23 +147,19 @@ func (s *session) Body(uid uint32, sink domain.AttachmentSink) (domain.DecodedMa
 				continue
 			}
 			literal := body.Literal
-			if literal.Size() > maxRawBytes {
-				closeIMAP(s.client)
-				return result, domain.ErrTooLarge
-			}
-			result, decodeError = decodeReader(literal, literal.Size(), sink)
+			result, decodeError = s.decodeLiteral(literal, sink)
 			if decodeError != nil {
-				closeIMAP(s.client)
+				s.abortFetch(command)
 				return result, decodeError
 			}
 		}
 		if responseUID != imap.UID(uid) {
-			closeIMAP(s.client)
+			s.abortFetch(command)
 			return result, domain.ErrProtocol
 		}
 	}
 	if err := command.Close(); err != nil {
-		return result, domain.ErrProtocol
+		return result, s.commandError(err)
 	}
 	return result, decodeError
 }

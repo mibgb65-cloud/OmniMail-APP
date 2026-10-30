@@ -51,6 +51,10 @@ func (s *Mail) queueAll() {
 }
 
 func (s *Mail) QueueSync(id string) error {
+	return s.queueSync(id, false)
+}
+
+func (s *Mail) queueSync(id string, continuation bool) error {
 	if !domain.ValidAccountID(id) {
 		return domain.ErrInvalidAccount
 	}
@@ -65,6 +69,11 @@ func (s *Mail) QueueSync(id string) error {
 	if s.closed {
 		s.mu.Unlock()
 		return context.Canceled
+	}
+	// 读取账号可能等待 SQLite；用同一把锁重新检查续排资格，避免前台恰好已完成周期。
+	if continuation && (!s.states[id].More || s.states[id].ErrorCode != "") {
+		s.mu.Unlock()
+		return nil
 	}
 	if s.active[id] {
 		s.mu.Unlock()
@@ -85,6 +94,7 @@ func (s *Mail) QueueSync(id string) error {
 		if errors.Is(err, domain.ErrAuthentication) || errors.Is(err, domain.ErrCredentialMissing) {
 			s.markReauth(id)
 		}
+		s.logSyncFailure(err)
 		s.mu.Lock()
 		state := s.states[id]
 		state.Running = false
@@ -97,7 +107,11 @@ func (s *Mail) QueueSync(id string) error {
 		delete(s.active, id)
 		s.mu.Unlock()
 		if more && err == nil {
+			s.log.Info("邮件同步分批完成", "code", "SYNC_PROGRESS")
 			s.continueSync(id)
+		} else if err == nil {
+			// 只记录周期结束，不包含账号或邮件数据；分批完成不宣称全量同步结束。
+			s.log.Info("邮件同步周期完成", "code", "SYNC_COMPLETE")
 		}
 	}()
 	return nil
@@ -120,12 +134,7 @@ func (s *Mail) continueSync(id string) {
 		case <-s.ctx.Done():
 			return
 		case <-timer.C:
-			s.mu.Lock()
-			delete(s.pending, id)
-			s.mu.Unlock()
-			if err := s.QueueSync(id); err != nil && ErrorCode(err) != "BUSY" && s.ctx.Err() == nil {
-				s.log.Warn("继续历史同步失败", "code", ErrorCode(err))
-			}
+			s.resumeSync(id)
 		}
 	}()
 }
@@ -146,32 +155,33 @@ func (s *Mail) markReauth(id string) {
 func (s *Mail) syncAccount(ctx context.Context, id string) (more bool, err error) {
 	defer func() {
 		if ctx.Err() != nil {
-			err = ctx.Err()
+			// 保留超时/取消优先级，同时保留操作阶段，不能用裸上下文错误盖掉诊断位置。
+			err = errors.Join(ctx.Err(), err)
 		}
 	}()
 	if err := s.acquire(ctx); err != nil {
-		return false, err
+		return false, syncStepError("wait_connection", "", err)
 	}
 	defer func() { <-s.network }()
 	account, err := s.store.GetAccount(ctx, id)
 	if err != nil {
-		return false, err
+		return false, syncStepError("load_account", "", err)
 	}
 	if !account.SyncEnabled || account.Status != domain.AccountConfigured {
-		return false, domain.ErrCredentialMissing
+		return false, syncStepError("load_account", "", domain.ErrCredentialMissing)
 	}
 	connection, err := endpoint(account, domain.ProtocolIMAP)
 	if err != nil {
-		return false, err
+		return false, syncStepError("load_endpoint", "", err)
 	}
 	secret, err := s.secrets.Get(ctx, connection.CredentialRef)
 	if err != nil {
-		return false, err
+		return false, syncStepError("load_credential", "", err)
 	}
 	defer clear(secret)
 	session, err := s.transport.Connect(ctx, connection, secret)
 	if err != nil {
-		return false, err
+		return false, syncStepError("connect", "", err)
 	}
 	defer func() {
 		if closeError := session.Close(); closeError != nil && ctx.Err() == nil {
@@ -180,26 +190,22 @@ func (s *Mail) syncAccount(ctx context.Context, id string) (more bool, err error
 	}()
 	boxes, err := session.Mailboxes()
 	if err != nil {
-		return false, err
+		return false, syncStepError("list", "", err)
 	}
-	for _, box := range boxes {
-		pending, err := s.syncMailbox(ctx, id, box, session)
-		if err != nil {
-			return more, err
-		}
-		more = more || pending
-	}
-	return more, nil
+	return s.syncMailboxes(ctx, id, boxes, session)
 }
 
 func (s *Mail) syncMailbox(ctx context.Context, accountID string, box domain.RemoteMailbox, session domain.MailSession) (bool, error) {
 	validity, next, err := session.Select(box.Name)
-	if err != nil || validity == 0 || next == 0 {
-		return false, domain.ErrProtocol
+	if err != nil {
+		return false, syncStepError("select", box.Kind, err)
+	}
+	if validity == 0 || next == 0 {
+		return false, syncStepError("select", box.Kind, domain.ErrProtocol)
 	}
 	cursor, err := s.store.PrepareMailbox(ctx, accountID, box, validity)
 	if err != nil {
-		return false, err
+		return false, syncStepError("cache_mailbox", box.Kind, err)
 	}
 	last := next - 1
 	startNew := cursor.LastUID + 1
@@ -209,7 +215,7 @@ func (s *Mail) syncMailbox(ctx context.Context, accountID string, box domain.Rem
 	}
 	finished, batches, err := s.syncPass(ctx, accountID, cursor.ID, validity, startNew, last, 50, false, session)
 	if err != nil || !finished {
-		return true, err
+		return true, syncMailboxError(box.Kind, err)
 	}
 	// 分段重对账刷新已读/星标并删除区间内消失的 UID，不把旧游标误当成已处理新邮件。
 	start := cursor.ScanUID + 1
@@ -217,7 +223,7 @@ func (s *Mail) syncMailbox(ctx context.Context, accountID string, box domain.Rem
 		start = 1
 	}
 	finished, _, err = s.syncPass(ctx, accountID, cursor.ID, validity, start, last, 50-batches, true, session)
-	return !finished, err
+	return !finished, syncMailboxError(box.Kind, err)
 }
 
 func (s *Mail) syncPass(ctx context.Context, accountID, mailboxID string, validity, start, last uint32, limit int, scan bool,
@@ -229,9 +235,19 @@ func (s *Mail) syncPass(ctx context.Context, accountID, mailboxID string, validi
 		if ctx.Err() != nil {
 			return false, batch, ctx.Err()
 		}
+		if syncShouldYield(ctx) {
+			return false, batch, nil
+		}
 		window, err := s.nextWindow(ctx, session, mailboxID, start, last)
 		if err != nil {
 			return false, batch, err
+		}
+		// SEARCH 也可能耗时，返回后重新核对预算，不能直接接着启动下一次 FETCH。
+		if err := ctx.Err(); err != nil {
+			return false, batch, err
+		}
+		if syncShouldYield(ctx) {
+			return false, batch, nil
 		}
 		start = window
 		end := min(start+99, last)
@@ -240,7 +256,7 @@ func (s *Mail) syncPass(ctx context.Context, accountID, mailboxID string, validi
 		}
 		messages, err := session.Headers(start, end)
 		if err != nil {
-			return false, batch, err
+			return false, batch, syncStepError("fetch_headers", "", err)
 		}
 		scanValue := end
 		if end == last {
@@ -251,7 +267,7 @@ func (s *Mail) syncPass(ctx context.Context, accountID, mailboxID string, validi
 			scanNext = &scanValue
 		}
 		if err := s.store.SaveMailBatch(ctx, accountID, mailboxID, validity, start, end, messages, scanNext); err != nil {
-			return false, batch, err
+			return false, batch, syncStepError("cache_headers", "", err)
 		}
 		if end == last {
 			return true, batch + 1, nil
@@ -264,11 +280,11 @@ func (s *Mail) syncPass(ctx context.Context, accountID, mailboxID string, validi
 func (s *Mail) nextWindow(ctx context.Context, session domain.MailSession, mailboxID string, from, last uint32) (uint32, error) {
 	remote, remoteFound, err := session.LocateUID(from)
 	if err != nil {
-		return 0, err
+		return 0, syncStepError("search", "", err)
 	}
 	local, localFound, err := s.store.NextCachedUID(ctx, mailboxID, from)
 	if err != nil {
-		return 0, err
+		return 0, syncStepError("cache_read", "", err)
 	}
 	next := last
 	if remoteFound && remote <= last {

@@ -55,6 +55,7 @@ type Mail struct {
 	active    map[string]bool
 	states    map[string]SyncState
 	pending   map[string]bool
+	cycles    map[string]map[string]bool
 	wg        sync.WaitGroup
 	network   chan struct{}
 	actions   sync.Mutex
@@ -63,7 +64,8 @@ type Mail struct {
 func NewMail(store domain.MailRepository, secrets domain.CredentialStore, transport domain.MailTransport, log *slog.Logger) *Mail {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Mail{store: store, secrets: secrets, transport: transport, log: log, ctx: ctx, cancel: cancel,
-		active: map[string]bool{}, states: map[string]SyncState{}, pending: map[string]bool{}, network: make(chan struct{}, 3)}
+		active: map[string]bool{}, states: map[string]SyncState{}, pending: map[string]bool{},
+		cycles: map[string]map[string]bool{}, network: make(chan struct{}, 3)}
 }
 
 func (s *Mail) Accounts(ctx context.Context) ([]AccountSummary, error) {
@@ -218,6 +220,9 @@ func (s *Mail) Disconnect(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
+	s.mu.Lock()
+	delete(s.cycles, id)
+	s.mu.Unlock()
 	return s.compensate(refs, nil)
 }
 

@@ -4,9 +4,8 @@ import { BrandMark } from '../components/BrandMark/BrandMark';
 import { MessagesPopover } from '../components/MessagesPopover/MessagesPopover';
 import { SettingsDialog } from '../components/SettingsDialog/SettingsDialog';
 import { UiIcon } from '../components/UiIcon/UiIcon';
-import { ScrollArea } from '../components/ScrollArea/ScrollArea';
+import { MailboxAccounts } from './MailboxAccounts';
 import type { AccountSummary } from '../lib/bridge/mail';
-import { errorKey } from '../lib/bridge/mail';
 import type { VersionInfo } from '../lib/bridge/app';
 import { useTranslation } from '../lib/i18n/useTranslation';
 import type { Theme } from '../lib/theme/theme';
@@ -39,6 +38,7 @@ interface WorkspaceSidebarProps {
   onAddAccount?: () => void;
   onCompose?: () => void;
   onDisconnect?: (id: string) => void;
+  mailReady?: boolean;
 }
 
 export function WorkspaceSidebar({
@@ -56,9 +56,9 @@ export function WorkspaceSidebar({
   onAddAccount,
   onCompose,
   onDisconnect,
+  mailReady = false,
 }: WorkspaceSidebarProps) {
   const { t, locale } = useTranslation('navigation');
-  const { t: mail } = useTranslation('mail');
   const composeStatusId = useId();
   const mailboxLabelId = useId();
   const mailboxStatusId = useId();
@@ -116,7 +116,7 @@ export function WorkspaceSidebar({
         type="button"
         className={styles['compose-button']}
         aria-label={t('compose')}
-        aria-describedby={composeStatusId}
+        aria-describedby={!onCompose ? composeStatusId : undefined}
         data-tooltip={onCompose ? t('compose') : t('composeUnavailable')}
         disabled={!onCompose}
         onClick={onCompose}
@@ -141,7 +141,7 @@ export function WorkspaceSidebar({
                 }}
                 data-folder={name}
                 aria-pressed={selectedFolder === name}
-                data-tooltip={t('folderPreview')}
+                data-tooltip={mailReady ? t('folderOpen', { folder: t(name) }) : t('folderPreview')}
                 onClick={() => onSelectFolder(name)}
               >
                 <UiIcon name={icon} className={styles.icon} selected={selectedFolder === name} />
@@ -156,52 +156,12 @@ export function WorkspaceSidebar({
           {t('mailboxesLabel')}
         </p>
         {accounts.length > 0 ? (
-          <ScrollArea className={styles['mailbox-accounts']}>
-            <button
-              type="button"
-              className={styles['mailbox-account']}
-              aria-pressed={selectedAccount === ''}
-              onClick={() => onSelectAccount?.('')}
-            >
-              {mail('allAccounts')}
-            </button>
-            {accounts.map((account) => (
-              <div key={account.id} className={styles['mailbox-account-row']}>
-                <button
-                  type="button"
-                  className={styles['mailbox-account']}
-                  aria-pressed={selectedAccount === account.id}
-                  data-tooltip={account.email}
-                  onClick={() => onSelectAccount?.(account.id)}
-                >
-                  <span>{account.displayName || account.email}</span>
-                  <small>
-                    {account.status === 'disconnected'
-                      ? mail('disconnected')
-                      : account.sync.running
-                        ? mail('syncing')
-                        : account.sync.errorCode
-                          ? mail(errorKey(account.sync.errorCode))
-                          : account.sync.more
-                            ? mail('syncMore')
-                            : account.email}
-                  </small>
-                </button>
-                {account.status !== 'disconnected' && (
-                  <button
-                    type="button"
-                    aria-label={`${mail('disconnect')}: ${account.email}`}
-                    data-tooltip={mail('disconnect')}
-                    onClick={() => {
-                      if (window.confirm(mail('disconnectConfirm'))) onDisconnect?.(account.id);
-                    }}
-                  >
-                    <UiIcon name="close" size={14} />
-                  </button>
-                )}
-              </div>
-            ))}
-          </ScrollArea>
+          <MailboxAccounts
+            accounts={accounts}
+            selectedAccount={selectedAccount}
+            onSelectAccount={onSelectAccount}
+            onDisconnect={onDisconnect}
+          />
         ) : (
           <p className={styles['mailbox-empty']}>
             <UiIcon name="mailOpen" className={styles.icon} />
@@ -212,7 +172,7 @@ export function WorkspaceSidebar({
           type="button"
           className={styles['mailbox-add']}
           aria-label={t('addMailbox')}
-          aria-describedby={mailboxStatusId}
+          aria-describedby={!onAddAccount ? mailboxStatusId : undefined}
           data-tooltip={onAddAccount ? t('addMailbox') : t('addMailboxUnavailable')}
           disabled={!onAddAccount}
           onClick={onAddAccount}

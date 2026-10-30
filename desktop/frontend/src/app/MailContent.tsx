@@ -30,11 +30,16 @@ export function MailContent({ mail }: { mail: MailController }) {
     <>
       <MailList mail={mail} formatTime={formatTime} />
       <section className={styles.reader} aria-label={t('selectMessage')} aria-busy={mail.loading}>
-        {mail.loading && <p role="status">{t('loading')}</p>}
+        {mail.loading && <p role="status">{t(mail.bodyWaiting ? 'bodyWaiting' : 'loading')}</p>}
         {mail.bodyError != null && (
-          <p role="alert" className={styles.error}>
-            {t(api.errorKey(mail.bodyError))}
-          </p>
+          <div className={styles['reader-error']}>
+            <p role="alert" className={styles.error}>
+              {t(api.errorKey(mail.bodyError))}
+            </p>
+            <button type="button" onClick={mail.retryBody}>
+              {t('retryBody')}
+            </button>
+          </div>
         )}
         {!mail.selected && <p className={styles.empty}>{t('selectMessage')}</p>}
         {mail.detail && (

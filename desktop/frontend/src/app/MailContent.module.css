@@ -82,6 +82,19 @@
 .reader h2 {
   font-size: var(--text-lg);
 }
+.reader-error {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+.reader-error button {
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-canvas);
+  color: var(--color-text-primary);
+}
+.reader-error button:hover:not(:disabled) {
+  background: var(--color-bg-selected);
+}
 .reader header p {
   margin: var(--space-2) 0;
   color: var(--color-text-secondary);

@@ -6,6 +6,7 @@ import { MailToolbar } from './MailToolbar';
 import styles from './MailWorkspace.module.css';
 import { MailContent } from './MailContent';
 import type { MailController } from './useMail';
+import { MailConnectionState } from './MailAccountNotice';
 
 export function MailWorkspace({ mail }: { mail?: MailController } = {}) {
   const { t } = useTranslation('workspace');
@@ -17,7 +18,13 @@ export function MailWorkspace({ mail }: { mail?: MailController } = {}) {
       <section className={styles.mail} aria-label={t('mailArea')}>
         <MailToolbar
           onSync={mail?.ready && mail.accounts.length ? () => void mail.sync() : undefined}
-          syncBusy={mail?.accounts.some((account) => account.sync.running)}
+          syncBusy={
+            mail?.syncRequested ||
+            mail?.accounts.some(
+              (account) =>
+                (!mail.accountId || mail.accountId === account.id) && account.sync.running,
+            )
+          }
           count={mail?.ready ? mail.messages.length : undefined}
           query={mail?.ready ? mail.filter : undefined}
           onQuery={mail?.ready ? mail.setFilter : undefined}
@@ -25,6 +32,8 @@ export function MailWorkspace({ mail }: { mail?: MailController } = {}) {
         <div className={styles.panes}>
           {mail?.ready ? (
             <MailContent mail={mail} />
+          ) : mail ? (
+            <MailConnectionState mail={mail} />
           ) : (
             <>
               <section className={styles.list} aria-labelledby="mail-list-title">

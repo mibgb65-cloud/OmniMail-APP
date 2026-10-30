@@ -43,6 +43,8 @@
 - 多语言底层迁移到 i18next + react-i18next，保留中英文即时切换、离线使用与已有偏好；增加插值、复数及中文回退能力，见 [TASK-0004](../07-tasks/archive/2026/10/TASK-0004-i18n-migration.md) 与 [ADR-0006](../02-architecture/adr/ADR-0006-i18n-framework.md)。
 
 ### 修复
+- 优化“我的邮箱”账号行与加载失败恢复，修复 IMAP 邮件头兼容、异常流关闭及大批量同步续排，
+  保留已成功缓存与真实错误；正文仍按需读取，见 [TASK-0046](../07-tasks/active/TASK-0046-mailbox-sidebar-sync-health.md)。
 - 统一应用内悬浮提示的明暗主题、键盘交互、窗口边缘与模态层显示，替换原生黑色 title，
   保留原操作及可访问描述，见 [TASK-0042](../07-tasks/active/TASK-0042-unified-tooltips.md)。
 - 修复语言胶囊选中项悬停时继承全局深色按钮背景、造成浅色主题深底深字的问题，见 [TASK-0038](../07-tasks/archive/2026/10/TASK-0038-language-hover-capsule.md)。

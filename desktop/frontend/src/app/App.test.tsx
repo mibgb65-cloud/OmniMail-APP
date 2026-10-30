@@ -83,7 +83,9 @@ describe('初始化工作台', () => {
       .mockResolvedValueOnce(VERSION_INFO);
     await renderApp();
     openAbout();
-    expect(await screen.findByRole('alert')).toHaveTextContent('暂时无法连接桌面服务');
+    expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent(
+      '暂时无法连接桌面服务',
+    );
     expect(screen.queryByText(/private-token/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '检查连接' }));
     expect(await screen.findByText('桌面服务已连接 · React ↔ Go')).toBeVisible();
@@ -145,7 +147,7 @@ describe('工作台中英文适配', () => {
       .mockResolvedValueOnce(VERSION_INFO);
     await renderApp('en');
     openAbout('en');
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent(
       'Unable to connect to the desktop service',
     );
     expect(screen.queryByText(/private-token/)).not.toBeInTheDocument();
@@ -179,7 +181,7 @@ describe('工作台与开屏的衔接', () => {
     fireEvent.click(starred);
     expect(starred).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('heading', { name: '星标邮件' })).toBeVisible();
-    expect(screen.getByText('邮箱功能尚未接入，邮件将在这里显示。')).toBeVisible();
+    expect(screen.getByRole('alert')).toHaveTextContent('无法连接桌面邮件服务');
     switchToolbarLanguage('en');
     expect(screen.getByRole('heading', { name: 'Starred' })).toBeVisible();
     expect(within(navigation).getByRole('button', { name: 'Starred' })).toHaveAttribute(

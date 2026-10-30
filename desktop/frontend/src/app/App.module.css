@@ -125,7 +125,7 @@
   align-items: center;
   gap: var(--space-4);
 }
-/* 我的邮箱：与工作空间分组同构的标签 + 空态 + 待开发入口，数据接入后替换为真实账号列表 */
+/* 我的邮箱分组布局；账号行样式单独隔离，避免继承主按钮的悬停和危险操作填充。 */
 .mailbox-section {
   display: flex;
   flex-direction: column;
@@ -154,13 +154,17 @@
   background: transparent;
   color: var(--color-text-secondary);
   text-align: start;
-  cursor: not-allowed;
+  cursor: pointer;
 }
 /* 覆盖全局 button:disabled 的填充，保持与文件夹列表一致的幽灵行，避免看起来像可点击主按钮 */
 .mailbox-add:disabled {
   background: transparent;
   color: var(--color-text-secondary);
   cursor: not-allowed;
+}
+.mailbox-add:hover:not(:disabled) {
+  background: var(--color-bg-selected);
+  color: var(--color-text-primary);
 }
 .mailbox-add small {
   font-size: var(--text-sm);
@@ -197,44 +201,6 @@
   min-height: 0;
   height: 100%;
   padding-top: var(--titlebar-height);
-}
-.mailbox-accounts {
-  max-height: 180px;
-  min-height: 0;
-}
-.mailbox-account-row {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-}
-.mailbox-account-row > button:last-child {
-  flex-shrink: 0;
-  min-height: var(--space-9);
-  padding: var(--space-3);
-}
-.mailbox-account {
-  display: grid;
-  gap: var(--space-1);
-  width: 100%;
-  min-width: 0;
-  min-height: var(--space-9);
-  padding: var(--space-3) var(--space-4);
-  background: transparent;
-  color: var(--color-text-primary);
-  text-align: start;
-}
-.mailbox-account[aria-pressed='true'] {
-  background: var(--color-bg-selected);
-}
-.mailbox-account span,
-.mailbox-account small {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.mailbox-account small {
-  color: var(--color-text-secondary);
-  font-size: var(--text-sm);
 }
 .main {
   height: 100%;
