@@ -5,7 +5,7 @@ import { UiIcon } from '../components/UiIcon/UiIcon';
 import { useTranslation } from '../lib/i18n/useTranslation';
 import styles from './MailToolbar.module.css';
 import type { MailController } from './useMail';
-import { DEFAULT_MAIL_VIEW, selectMailView } from './mailView';
+import { DEFAULT_MAIL_VIEW } from './mailView';
 
 const actions = [
   { label: 'archiveAction', icon: 'archive' },
@@ -46,7 +46,7 @@ export function MailToolbar({
   // 搜索词只在本地 UI 预览，未接入邮箱检索
   const [query, setQuery] = useState('');
   const options = controller?.viewOptions ?? DEFAULT_MAIL_VIEW;
-  const items = controller ? selectMailView(controller.messages, controller.filter, options) : [];
+  const items = controller?.visibleMessages ?? [];
   const selectedIndex = items.findIndex((message) => message.id === controller?.selected);
   const selected = items[selectedIndex];
   const writable =

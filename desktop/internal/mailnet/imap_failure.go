@@ -14,12 +14,16 @@ import (
 )
 
 type protocolFailure struct {
-	reason string
+	reason       string
+	responseCode string
+	mailboxClass string
 }
 
 func (e *protocolFailure) Error() string          { return domain.ErrProtocol.Error() }
 func (e *protocolFailure) Unwrap() error          { return domain.ErrProtocol }
 func (e *protocolFailure) DiagnosticCode() string { return e.reason }
+func (e *protocolFailure) ResponseCode() string   { return e.responseCode }
+func (e *protocolFailure) MailboxClass() string   { return e.mailboxClass }
 
 // IMAP 解码器会在部分路径用文本包装 I/O 错误，不能靠匹配服务器/错误原文判断网络故障。
 func (s *session) commandError(err error) error {
@@ -42,9 +46,9 @@ func (s *session) commandError(err error) error {
 		}
 		// 服务器明确拒绝命令时，即使随后断线也不能覆盖这个真实响应。
 		if response.Type == imap.StatusResponseTypeNo {
-			return &protocolFailure{reason: "command_no"}
+			return &protocolFailure{reason: "command_no", responseCode: safeIMAPResponseCode(response.Code)}
 		}
-		return &protocolFailure{reason: "command_bad"}
+		return &protocolFailure{reason: "command_bad", responseCode: safeIMAPResponseCode(response.Code)}
 	}
 	cause := err
 	if failure := connectionReadError(s.conn); failure != nil {
@@ -147,6 +151,10 @@ func (s *session) bodyError(err, readError error) error {
 		return s.commandError(readError)
 	}
 	if errors.Is(err, domain.ErrProtocol) {
+		var failure *protocolFailure
+		if errors.As(err, &failure) {
+			return failure
+		}
 		return s.commandError(err)
 	}
 	// 附件缓存 sink 的存储等错误不能被重新归为 MIME 格式错误。

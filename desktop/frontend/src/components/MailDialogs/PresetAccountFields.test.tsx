@@ -15,8 +15,8 @@ vi.mock('../../lib/bridge/mail', async (original) => ({
 const providers = [
   ['gmail', 'Gmail'],
   ['qq', 'QQ 邮箱'],
-  ['netease_163', '网易 163'],
-  ['netease_126', '网易 126'],
+  ['netease_163', '网易邮箱'],
+  ['netease_126', '网易邮箱'],
 ] as const;
 const presets: api.ProviderPreset[] = [...providers.map(([code]) => code), 'custom'].map(
   (code) => ({
@@ -66,7 +66,13 @@ describe('预设账号简洁登录', () => {
       expect(screen.queryByLabelText('登录用户名')).not.toBeInTheDocument();
       expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
       const domain = code.replaceAll('_', '-');
-      const email = `person@${domain}.example.invalid`;
+      const emailDomain =
+        code === 'netease_163'
+          ? '163.com'
+          : code === 'netease_126'
+            ? '126.com'
+            : `${domain}.example.invalid`;
+      const email = `person@${emailDomain}`;
       fireEvent.change(screen.getByLabelText('邮箱地址'), { target: { value: email } });
       fireEvent.change(
         screen.getByLabelText(code === 'gmail' ? '应用专用密码' : '密码 / 应用授权码'),

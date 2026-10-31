@@ -6,9 +6,12 @@ import { useMailReader } from './useMailReader';
 import { useMailStarred } from './useMailStarred';
 import { useMailActions } from './useMailActions';
 import { DEFAULT_MAIL_VIEW, type MailViewOptions } from './mailView';
+import { useMailView } from './useMailView';
 
 export function useMail(folder: MailFolder) {
   const [accounts, setAccounts] = useState<api.AccountSummary[]>([]);
+  const [accountRevision, setAccountRevision] = useState(0);
+  const accountPoll = useRef(0);
   const [accountId, setAccountId] = useState('');
   const [ready, setReady] = useState(false);
   const [selected, setSelected] = useState('');
@@ -18,6 +21,8 @@ export function useMail(folder: MailFolder) {
   const [viewOptions, setViewOptions] = useState<MailViewOptions>(DEFAULT_MAIL_VIEW);
   const [revision, setRevision] = useState(0);
   const [syncRequested, setSyncRequested] = useState(false);
+  const [filterRevision, setFilterRevision] = useState(0);
+  const [filterSync, setFilterSync] = useState<{ scope: string; poll: number }>();
   const refresh = useCallback(() => {
     setError(undefined);
     setRevision((value) => value + 1);
@@ -33,6 +38,7 @@ export function useMail(folder: MailFolder) {
         const result = await api.accounts(controller.signal);
         if (!controller.signal.aborted) {
           setAccounts(result);
+          setAccountRevision(++accountPoll.current);
           setReady(true);
           setError(undefined);
         }
@@ -73,6 +79,19 @@ export function useMail(folder: MailFolder) {
     viewRevision,
     syncStamp: listStamp,
   });
+  const syncInProgress = relevantAccounts.some(
+    (account) => account.sync.running || (account.sync.more && !account.sync.errorCode),
+  );
+  // 根据已完成的账号轮询有条件结束窗口，避免 effect 中派生 setState 引发级联刷新。
+  if (
+    filterSync &&
+    (filterSync.scope !== list.listKey ||
+      (filterSync.poll !== accountRevision &&
+        !syncRequested &&
+        !syncInProgress &&
+        !list.listLoading))
+  )
+    setFilterSync(undefined);
 
   const reader = useMailReader(selected);
   const revalidatedDetail = useRef<api.MailDetail>();
@@ -102,6 +121,14 @@ export function useMail(folder: MailFolder) {
     actions.messages,
     accountId,
   );
+  const visibleMessages = useMailView(
+    stars.messages,
+    JSON.stringify([list.listKey, filterRevision]),
+    filter,
+    viewOptions,
+    list.listPageCount,
+    filterSync?.scope === list.listKey,
+  );
 
   const chooseAccount = (id: string) => {
     setAccountId(id);
@@ -110,12 +137,16 @@ export function useMail(folder: MailFolder) {
   };
   const sync = async () => {
     if (syncRequested) return;
+    // 主动同步是筛选会话边界；自动已读、正文缓存和后台轮询使用 refresh，不清除此快照。
+    setFilterRevision((value) => value + 1);
+    setFilterSync({ scope: list.listKey, poll: accountPoll.current });
     setSyncRequested(true);
     setError(undefined);
     try {
       await api.synchronize(accountId);
       refresh();
     } catch (error) {
+      setFilterSync(undefined);
       setError(error);
     } finally {
       setSyncRequested(false);
@@ -147,6 +178,7 @@ export function useMail(folder: MailFolder) {
     ...list,
     ...reader,
     ...stars,
+    visibleMessages,
     actionBusy: actions.actionBusy,
     actionError: actions.actionError,
     autoReadError: actions.autoReadError,

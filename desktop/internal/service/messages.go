@@ -104,6 +104,14 @@ func (s *Mail) cacheMessage(ctx context.Context, id string, location domain.Mail
 	if validity != location.UIDValidity {
 		return detail, domain.ErrProtocol
 	}
+	if err := s.storeMessageBody(ctx, id, location.UID, session); err != nil {
+		return detail, err
+	}
+	return s.store.ReadMail(ctx, id)
+}
+
+// 前台按需读取和后台补齐共用同一套正文/附件事务，正文始终写 SQLite，不写临时正文文件。
+func (s *Mail) storeMessageBody(ctx context.Context, id string, uid uint32, session domain.MailSession) error {
 	hashes := []string{}
 	defer func() {
 		cleanup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -112,7 +120,7 @@ func (s *Mail) cacheMessage(ctx context.Context, id string, location domain.Mail
 			s.log.Warn("附件暂存回收失败", "code", "STORAGE_FAILED")
 		}
 	}()
-	body, err := session.Body(location.UID, func(name, kind string, reader io.Reader) (domain.DecodedAttachment, error) {
+	body, err := session.Body(uid, func(name, kind string, reader io.Reader) (domain.DecodedAttachment, error) {
 		attachment, err := s.store.CacheAttachment(ctx, name, kind, reader)
 		if err == nil {
 			hashes = append(hashes, attachment.Hash)
@@ -121,14 +129,11 @@ func (s *Mail) cacheMessage(ctx context.Context, id string, location domain.Mail
 	})
 	if err != nil {
 		if ctx.Err() != nil {
-			return detail, ctx.Err()
+			return ctx.Err()
 		}
-		return detail, err
+		return err
 	}
-	if err := s.store.SaveMailBody(ctx, id, body); err != nil {
-		return detail, err
-	}
-	return s.store.ReadMail(ctx, id)
+	return s.store.SaveMailBody(ctx, id, body)
 }
 
 func (s *Mail) Attachment(ctx context.Context, id string) ([]byte, string, error) {

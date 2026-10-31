@@ -6,6 +6,7 @@ import type { Translations } from '../../lib/i18n/resources';
 import { useTranslation } from '../../lib/i18n/useTranslation';
 import { UiIcon } from '../UiIcon/UiIcon';
 import { detectEmailProvider, normalizeAccountEmail } from './providerDetection';
+import { isNeteaseProvider } from './providerInput';
 import { AccountInput } from './AccountFormValidation';
 import styles from './AccountDialog.module.css';
 
@@ -13,8 +14,9 @@ import styles from './AccountDialog.module.css';
 const PROVIDER_LABELS = new Map<string, { label: keyof Translations['mail']; icon?: string }>([
   ['gmail', { label: 'providerGmail', icon: '/providers/gmail.ico' }],
   ['qq', { label: 'providerQQ', icon: '/providers/qq.ico' }],
-  ['netease_163', { label: 'provider163', icon: '/providers/netease-163.png' }],
-  ['netease_126', { label: 'provider126', icon: '/providers/netease-126.png' }],
+  ['netease_163', { label: 'providerNetease', icon: '/providers/netease-163.png' }],
+  ['netease_126', { label: 'providerNetease', icon: '/providers/netease-163.png' }],
+  ['linuxdo', { label: 'providerLinuxDo', icon: '/providers/linuxdo.png' }],
   ['custom', { label: 'customProvider' }],
 ]);
 
@@ -42,6 +44,12 @@ export function ProviderSelection({
   const id = useId();
   const detected = detectEmailProvider(email, presets);
   const validEmail = normalizeAccountEmail(email);
+  const netease =
+    presets.find((preset) => preset.code === 'netease_163') ??
+    presets.find((preset) => preset.code === 'netease_126');
+  const displayed = presets.filter(
+    (preset) => !isNeteaseProvider(preset.code) || preset === netease,
+  );
   if (status !== 'success' || presets.length === 0) {
     return (
       <div className={styles.state}>
@@ -88,7 +96,7 @@ export function ProviderSelection({
         </p>
       </div>
       {(['preset', 'custom'] as const).map((kind) => {
-        const values = presets.filter(
+        const values = displayed.filter(
           (preset) => (preset.code === 'custom') === (kind === 'custom'),
         );
         if (!values.length) return null;
@@ -131,7 +139,9 @@ export function ProviderSelection({
                           ? 'customProviderDescription'
                           : preset.code === 'gmail'
                             ? 'gmailProviderDescription'
-                            : 'presetProviderDescription',
+                            : isNeteaseProvider(preset.code)
+                              ? 'neteaseProviderDescription'
+                              : 'presetProviderDescription',
                       )}
                     </span>
                   </span>

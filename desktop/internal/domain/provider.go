@@ -22,6 +22,7 @@ func ProviderPresets() []ProviderPreset {
 		newPreset("qq", "QQ 邮箱", "imap.qq.com", "smtp.qq.com", AuthPassword),
 		newPreset("netease_163", "网易 163", "imap.163.com", "smtp.163.com", AuthPassword),
 		newPreset("netease_126", "网易 126", "imap.126.com", "smtp.126.com", AuthPassword),
+		newPreset("linuxdo", "LINUX DO Mail", "mail.linux.do", "mail.linux.do", AuthPassword),
 		newPreset("custom", "自定义 IMAP/SMTP", "", "", AuthPassword, AuthOAuth2),
 	}
 }

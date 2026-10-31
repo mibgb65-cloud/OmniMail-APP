@@ -12,6 +12,7 @@ import {
   type DraftField,
 } from './accountBatch';
 import { useSameProviderBatch } from './useSameProviderBatch';
+import { resolveProviderInput } from './providerInput';
 
 const emptyServer = (port: number): ServerInput => ({
   host: '',
@@ -258,6 +259,7 @@ export function useAccountForm(onSaved: () => void) {
         same,
         drafts,
         batch.results,
+        presets,
       );
       setBatchIssue(built.issue);
       setError(undefined);
@@ -283,7 +285,7 @@ export function useAccountForm(onSaved: () => void) {
         ? { ...smtp, username: imap.username, password: imap.password }
         : smtp;
     try {
-      const created = await api.addAccount(
+      const input = resolveProviderInput(
         {
           providerCode: provider,
           email,
@@ -291,8 +293,10 @@ export function useAccountForm(onSaved: () => void) {
           imap: incoming,
           smtp: outgoing,
         },
-        controller.signal,
+        presets,
       );
+      if (!input) throw new Error('INVALID_INPUT');
+      const created = await api.addAccount(input, controller.signal);
       if (!controller.signal.aborted) {
         // 账号已创建且后端已尝试安排同步；后续只展示结果，不能重复提交或继续持有表单秘密。
         setIMAP((value) => ({ ...value, password: '' }));

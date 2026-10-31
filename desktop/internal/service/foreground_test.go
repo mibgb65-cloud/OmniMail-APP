@@ -88,7 +88,7 @@ func TestSlowBodyDoesNotBlockStarOrNewSync(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 	bodyResult := make(chan error, 1)
-	go func() { _, err := mail.Message(ctx, rows[0].ID); bodyResult <- err }()
+	go func() { _, err := mail.RefreshMessage(ctx, rows[0].ID); bodyResult <- err }()
 	select {
 	case <-transport.started:
 	case <-ctx.Done():
@@ -144,7 +144,7 @@ func TestForegroundDoesNotWaitForSyncClaimOrBackgroundSlots(t *testing.T) {
 	}()
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
-	if _, err := mail.Message(ctx, rows[0].ID); err != nil {
+	if _, err := mail.RefreshMessage(ctx, rows[0].ID); err != nil {
 		t.Fatalf("正文被同步锁或后台额度阻塞：%s", ErrorCode(err))
 	}
 	if err := mail.SetStarred(ctx, rows[0].ID, true); err != nil {

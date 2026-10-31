@@ -4,7 +4,6 @@ import type { MailController } from './useMail';
 import styles from './MailList.module.css';
 import { UiIcon } from '../components/UiIcon/UiIcon';
 import { mailAccountNotice, MailAccountNotice, mailSyncState } from './MailAccountNotice';
-import { DEFAULT_MAIL_VIEW, selectMailView } from './mailView';
 
 // 约提前两个邮件行加载，读取仍受控制器的串行、错误和结束状态约束。
 const LOAD_AHEAD_PX = 160;
@@ -63,7 +62,7 @@ export function MailList({
     month: 'short',
     day: 'numeric',
   });
-  const items = selectMailView(mail.messages, mail.filter, mail.viewOptions ?? DEFAULT_MAIL_VIEW);
+  const items = mail.visibleMessages;
   return (
     <section
       key={mail.listKey}

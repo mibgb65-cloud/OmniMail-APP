@@ -127,6 +127,21 @@ func failureSession(t *testing.T, ctx context.Context, operation, response strin
 				case "truncated":
 					write("* 1 FETCH (UID 1 BODY[] {100}\r\nFrom: preview@example.invalid\r\n")
 					return
+				case "complete-multipart", "truncated-multipart":
+					raw := "Content-Type: multipart/mixed; boundary=b\r\n\r\n--b\r\nContent-Type: text/plain\r\n\r\nsynthetic complete text"
+					size := len(raw)
+					if response == "truncated-multipart" {
+						size += 100
+					}
+					if _, err := fmt.Fprintf(conn, "* 1 FETCH (UID 1 BODY[] {%d}\r\n%s", size, raw); err != nil {
+						return
+					}
+					if response == "truncated-multipart" {
+						return
+					}
+					if !write(")\r\n" + tag + " OK fetched\r\n") {
+						return
+					}
 				case "oversize":
 					write(fmt.Sprintf("* 1 FETCH (UID 1 BODY[] {%d}\r\nx", maxRawBytes+1))
 				case "invalid-body", "invalid-body-large", "sink-error":

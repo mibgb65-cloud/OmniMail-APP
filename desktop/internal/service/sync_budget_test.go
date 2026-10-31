@@ -124,13 +124,22 @@ func TestSyncContinuationDoesNotRestartCompletedMailboxes(t *testing.T) {
 	awaitSync(t, mail, account.ID)
 	transport := new(cycleTransport)
 	mail.transport = transport
-	for round, expected := range []bool{true, true, false} {
+	finished := false
+	// 完整同步现在包含正文补齐，不把原来只有邮件头的固定轮数当作完成条件。
+	for round := 0; round < 12; round++ {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		more, err := mail.syncAccount(ctx, account.ID)
 		cancel()
-		if err != nil || more != expected {
+		if err != nil {
 			t.Fatalf("第 %d 轮未按游标续传：more=%v code=%s", round+1, more, ErrorCode(err))
 		}
+		if !more {
+			finished = true
+			break
+		}
+	}
+	if !finished {
+		t.Fatal("邮件头和正文续传未在有限轮数内完成")
 	}
 	if count := transport.inboxSelections.Load(); count != 1 {
 		t.Fatalf("已完成的 inbox 被重复核对 %d 次，后续文件夹可能饥饿", count)

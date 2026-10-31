@@ -1,12 +1,14 @@
-# 当前数据库结构：账号与邮件缓存 v2
+# 当前数据库结构：账号与邮件持久化 v3
 
-> 状态：账号与基础邮件缓存已提交，后续能力待实施 | 最后更新：2026-10-28
+> 状态：schema v3 已落地，正文自动补齐实现待评审 | 最后更新：2026-10-31
 > 任务：[TASK-0030](../../07-tasks/archive/2026/10/TASK-0030-account-storage-foundation.md)
 
 ## 1. 权威来源
 
 - 真实结构：[0001_accounts.sql](../../../internal/repository/migrations/0001_accounts.sql)。
 - 追加邮件缓存：[0002_mail.sql](../../../internal/repository/migrations/0002_mail.sql)，不修改 0001。
+- 富正文与内嵌图引用：[0003_rich_mail.sql](../../../internal/repository/migrations/0003_rich_mail.sql)；
+  TASK-0058 复用现有列，不增加迁移或修改任何已应用脚本。
 - 数据库打开、身份校验及连接设置：[sqlite.go](../../../internal/repository/sqlite.go)。
 - 迁移执行：[migrations.go](../../../internal/repository/migrations.go)。
 - 输入校验与领域接口：[account.go](../../../internal/domain/account.go)。
@@ -62,7 +64,7 @@ WAL 数据库不作为网络共享文件使用。目录创建权限不等同于 
 
 ## 5. `schema_migration`
 
-- 记录 `version`、`applied_at`、`checksum`；初始版本为 1，当前版本为 2。
+- 记录 `version`、`applied_at`、`checksum`；初始版本为 1，当前版本为 3。
 - 初次空库初始化、迁移及历史记录在同一事务提交。
 - 校验和使用完整 SQL 文件归一化 CRLF 为 LF 后的 SHA-256；包含 up/down，不能改写已应用迁移。
 - 已知数据库丢失历史、历史缺号、未知更高版本、校验不符时拒绝继续迁移。
@@ -91,19 +93,28 @@ IMAP 或满足授权政策。当前使用密码/应用授权码；Gmail OAuth �
 界面明确提示只有允许应用密码的账号可走该入口。QQ、网易通常需要服务商授权码。
 “新增预设无需迁移”适用于现有 IMAP/SMTP 和密码类/OAuth2 模型；新增协议或认证机制需另外评审。
 
-## 8. 邮件缓存 v2
+## 8. 邮件正文与附件持久化 v3
 
 - `mailbox`：账号内远端文件夹、角色、UIDVALIDITY、新增游标、历史核对游标。
 - `mail_message`：一行对应一个远端实例，`(mailbox_id, uid_validity, uid)` 唯一；
-  账号与文件夹复合外键防错关联，不以 Message-ID 去重。保存邮件头、服务器标志、大小和可空正文。
+  账号与文件夹复合外键防错关联，不以 Message-ID 去重。保存邮件头、服务器标志、大小，
+  以及数据库文字正文 `body_text`、原始 HTML `body_html` 和 `body_version`。
+  `body_text IS NULL` 或旧 `body_version=0` 为待补齐，空字符串且版本 1 也可表示已确认的空正文。
 - `mail_attachment`：邮件附件元数据、大小及 SHA-256 内容引用；实际内容在数据目录的哈希分桶，
   从不把远端文件名拼进缓存路径。
 - 单次 FETCH/事务至多 100 个 UID，头与进度一并提交；只有 FETCH 成功才删除该区间已消失 UID。
 - 首次优先末端窗口，历史通过可恢复的扫描补齐；压缩 UID 搜索集合与本地索引共同跳过空洞，
   不展开百万 UID 区间。不完整批次约 5 秒继续，空闲约 5 分钟轮询，尚无 IDLE。
 - UIDVALIDITY 改变只清该文件夹远端缓存和游标，不动账号、凭据或其他账号数据。
-- 正文按需获取整封 MIME，网络 literal 上限 40 MiB，文本上限 1 MiB、单附件 25 MiB、部件数有界。
+- 后台同步自动分批补齐未打开邮件的正文与历史摘要，按数据库待办断点继续；
+  当前版正文不重复下载。`Cached` 仅为本地正文具备状态，不意味着临时缓存或正文文件。
+  前台仍保留读取和显式重取入口；网络 literal 上限 40 MiB，文本上限 1 MiB、单附件 25 MiB、部件数有界。
   附件在解码时流式写临时文件并计算哈希；租约保护其他未提交下载，失败回收临时/未引用内容。
   这是按整封获取，不是逐附件远端 FETCH；导出缓存附件仍有内存读取上限。
-- HTML 只提取文本，不执行或请求远程资源；发送目前只支持纯文本，DATA 不确定结果不自动重发。
+- 文字/HTML 事务写入 SQLite，图片/附件二进制保留文件引用。读取正文不依赖正文缓存文件，
+  图片不可读则降级图片，不清除数据库文字。原始 HTML 重新清洗后展示，不执行邮件脚本或自动请求外部图片；
+  发送目前只支持纯文本，DATA 不确定结果不自动重发。
+- 该存储是服务器镜像，不是永久归档；服务器确认删除和 UIDVALIDITY 改变仍沿用既有核对政策。
+- 详见 [TASK-0058](../../07-tasks/active/TASK-0058-offline-mail-persistence.md) 与
+  [ADR-0008](../adr/ADR-0008-offline-mail-bodies.md)；没有宣称超预算正文或所有历史数据均已下载。
 - 已删除缓存的历史孤立内容尚无全量 GC/配额策略；不把临时下载补偿等同于完整垃圾回收。

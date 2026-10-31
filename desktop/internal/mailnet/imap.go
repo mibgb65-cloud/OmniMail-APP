@@ -29,9 +29,11 @@ func (s *session) Close() error {
 
 func (s *session) Mailboxes() ([]domain.RemoteMailbox, error) {
 	options := &imap.ListOptions{}
-	if s.client.Caps().Has(imap.CapSpecialUse) {
+	caps := s.client.Caps()
+	if caps.Has(imap.CapSpecialUse) {
 		options.ReturnSpecialUse = true
 	}
+	gmail := caps.Has(imap.Cap("X-GM-EXT-1"))
 	command := s.client.List("", "*", options)
 	result := []domain.RemoteMailbox{}
 	overflow := false
@@ -40,11 +42,14 @@ func (s *session) Mailboxes() ([]domain.RemoteMailbox, error) {
 			overflow = true
 			continue
 		}
-		selectable := true
+		// Gmail 顶层名称仅是虚拟分组；即使 LIST 缺少 Noselect，也不能把它当邮箱 EXAMINE。
+		// 用服务端 Gmail 扩展限定该兼容规则，保留其他服务器上的同名真实邮箱及全部子文件夹。
+		selectable := !gmail || !isGmailContainer(box.Mailbox)
 		attributes := []string{}
 		for _, attr := range box.Attrs {
 			attributes = append(attributes, string(attr))
-			if attr == imap.MailboxAttrNoSelect {
+			// RFC 9051：NonExistent 隐含 NoSelect，不能只过滤显式 Noselect。
+			if attr == imap.MailboxAttrNoSelect || attr == imap.MailboxAttrNonExistent {
 				selectable = false
 			}
 		}
@@ -96,11 +101,11 @@ func mailboxKind(name string, attributes []string) string {
 func (s *session) Select(name string) (uint32, uint32, error) {
 	state, err := s.client.Select(name, &imap.SelectOptions{ReadOnly: true}).Wait()
 	if err != nil {
-		return 0, 0, s.commandError(err)
+		return 0, 0, s.selectError(name, err)
 	}
 	s.uids = nil
 	s.searched = false
-	return state.UIDValidity, uint32(state.UIDNext), nil
+	return s.selectedMetadata(name, state)
 }
 
 func (s *session) LocateUID(from uint32) (uint32, bool, error) {

@@ -103,7 +103,7 @@ func (t *Transport) dial(ctx context.Context, endpoint domain.AccountEndpoint) (
 			if ctx.Err() != nil {
 				return nil, nil, connectionStepError("tls", ctx.Err(), ctx.Err())
 			}
-			return nil, nil, connectionStepError("tls", domain.ErrTLS, err)
+			return nil, nil, connectionStepError("tls", tlsFailureCode(err), err)
 		}
 		return secure, stop, nil
 	}
@@ -119,7 +119,7 @@ func (t *Transport) tlsConfig(host string) *tls.Config {
 	return &tls.Config{ServerName: host, MinVersion: tls.VersionTLS12, RootCAs: t.roots}
 }
 
-func (t *Transport) Connect(ctx context.Context, endpoint domain.AccountEndpoint, secret []byte) (domain.MailSession, error) {
+func (t *Transport) connectOnce(ctx context.Context, endpoint domain.AccountEndpoint, secret []byte) (domain.MailSession, error) {
 	if endpoint.AuthKind != domain.AuthPassword {
 		return nil, domain.ErrOAuthConfig
 	}
@@ -145,7 +145,7 @@ func (t *Transport) Connect(ctx context.Context, endpoint domain.AccountEndpoint
 		if ctx.Err() != nil {
 			return nil, connectionStepError(stage, ctx.Err(), ctx.Err())
 		}
-		return nil, connectionStepError(stage, domain.ErrTLS, err)
+		return nil, connectionStepError(stage, tlsFailureCode(err), err)
 	}
 	// 部分服务商要求 IMAP ID；只发送应用标识，不发送系统信息、账号或环境变量。
 	if c.Caps().Has(imap.CapID) {

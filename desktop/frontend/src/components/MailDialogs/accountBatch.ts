@@ -1,5 +1,6 @@
 import * as api from '../../lib/bridge/mail';
 import { normalizeAccountEmail } from './providerDetection';
+import { resolveProviderInput } from './providerInput';
 
 export const MAX_BATCH_ACCOUNTS = 10;
 export interface AccountDraft {
@@ -61,6 +62,7 @@ export function buildBatchRequests(
   same: boolean,
   drafts: AccountDraft[],
   results: Record<number, BatchResult>,
+  presets: api.ProviderPreset[] = [],
 ): { issue?: BatchIssue; items: BatchRequest[] } {
   if (drafts.length < 1 || drafts.length > MAX_BATCH_ACCOUNTS) return { issue: 'limit', items: [] };
   const emails = new Set<string>(),
@@ -113,7 +115,12 @@ export function buildBatchRequests(
       username: custom ? (same ? draft.username : draft.smtpUsername) : email,
       password: !custom || same ? draft.password : draft.smtpPassword,
     };
-    items.push({ id: draft.id, input: { ...base, email, displayName: draft.name, imap, smtp } });
+    const input = resolveProviderInput(
+      { ...base, email, displayName: draft.name, imap, smtp },
+      presets,
+    );
+    if (!input) return { issue: 'invalid', items: [] };
+    items.push({ id: draft.id, input });
   }
   return { items };
 }

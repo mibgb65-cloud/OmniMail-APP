@@ -36,6 +36,23 @@ TASK-0032～0036 交付的是密码/应用授权码、TLS 认证、OS 凭据主�
 - 后续应先以不泄漏账号、文件夹名称或原始响应的方式定位可选择文件夹语义与服务商限制，
   再补协议夹具和回归；不得为通过同步而静默跳过所有拒绝、忽略 TLS 或采集用户密码。
   本次仅转交观察项，未开始新代码实现、未改变本清单状态。
+- 后续实施已由 [TASK-0056](TASK-0056-gmail-mailbox-sync.md) 承接（2026-10-31）：新安全诊断确认
+  Gmail 正在选择公共虚拟分组，返回 NONEXISTENT；已针对虚拟分组和标准 NonExistent 属性修复并补本地 TLS 回归。
+  修复后的实际日志已记录 `provider=gmail / SYNC_COMPLETE`，完整本地 verify 通过；本任务仍未提交。
+  该轮同步完成与剩余边界以 TASK-0056 为准，不据此勾选本清单中的全部真实服务商验收；
+  网易 163 的独立 SELECT 错误不在该次 Gmail 修复范围。
+- [TASK-0058](TASK-0058-offline-mail-persistence.md) 已将受支持正文纳入后台同步完成条件，复用 schema v3 持久保存文字/HTML。
+  真实开发观察中 Gmail 持续分批补齐；QQ 出现 `persist_body / MAIL_PROTOCOL_FAILED / response_parse`，
+  网易 163 仍有独立 SELECT 错误，具体兼容原因待后续定位，不把这些账号记作“全部正文已保存”。
+  当前不采集用户正文或私密原始响应，也不以吞掉协议错误或放宽安全上限换取同步完成。
+- [TASK-0059](TASK-0059-mail-provider-integration.md) 后续定位网易 163 为 EXAMINE 缺 UIDNEXT，
+  已加入标准元数据恢复、只读 UID 范围与本地旧范围核对；13:07:32 实际记录
+  `provider=netease_163 / SYNC_COMPLETE`。此为一轮同步完成，不代表所有网易账号或未来错误已验收。
+  LinuxDo 预设与图标已接入，但没有真实 LinuxDo 账号登录验收；QQ 正文解析观察项仍保留。
+- [TASK-0060](TASK-0060-sync-stability-dev-delivery.md) 继续细化诊断并修复完整 MIME 缺少顶层结束边界，
+  以及 IMAP 认证前瞬时 TLS/问候断线的单次恢复；QQ/Gmail 已持续 `SYNC_PROGRESS`。
+  LinuxDo 后台已记录 `SYNC_COMPLETE`，仅代表当前配置账号的一轮同步；完整历史审计、
+  所有邮件格式/网络故障、macOS 和 race 等未验证范围仍保留。
 
 ## Git 与交付
 

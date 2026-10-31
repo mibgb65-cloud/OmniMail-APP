@@ -132,7 +132,7 @@ describe('添加账号服务商选择流程', () => {
   it('首先显示邮箱快捷输入和预设/自定义卡片，不显示服务器表单，也不自动验证', async () => {
     renderAccount();
     const presetsRegion = await screen.findByRole('region', { name: '预设服务商' });
-    for (const name of ['Gmail', 'QQ 邮箱', '网易 163', '网易 126']) {
+    for (const name of ['Gmail', 'QQ 邮箱', '网易邮箱']) {
       expect(within(presetsRegion).getByRole('button', { name })).toBeEnabled();
     }
     expect(
@@ -151,8 +151,8 @@ describe('添加账号服务商选择流程', () => {
   it.each([
     ['person@gmail.com', 'Gmail'],
     ['person@QQ.COM', 'QQ 邮箱'],
-    ['person@163.com', '网易 163'],
-    ['person@126.com', '网易 126'],
+    ['person@163.com', '网易邮箱'],
+    ['person@126.com', '网易邮箱'],
   ])('输入 %s 后识别 %s，继续时带入邮箱并隐藏服务器', async (email, label) => {
     renderAccount();
     await screen.findByRole('region', { name: '预设服务商' });
@@ -230,7 +230,7 @@ describe('添加账号服务商选择流程', () => {
     renderAccount();
     await screen.findByRole('button', { name: 'Gmail' });
     expect(screen.queryByText(/密码只用于认证并保存到系统凭据存储/)).not.toBeInTheDocument();
-    for (const name of ['Gmail', 'QQ 邮箱', '网易 163', '网易 126']) {
+    for (const name of ['Gmail', 'QQ 邮箱', '网易邮箱']) {
       const image = screen.getByRole('button', { name }).querySelector('img');
       expect(image).toHaveAttribute('alt', '');
       expect(image?.getAttribute('src')).toMatch(/^\/providers\/[\w-]+\.(?:ico|png)$/);

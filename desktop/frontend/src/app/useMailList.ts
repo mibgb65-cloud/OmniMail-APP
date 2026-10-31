@@ -20,6 +20,7 @@ interface ListSnapshot {
   scope: string;
   query: string;
   messages: api.MailSummary[];
+  pageCount: number;
   offset: number;
   more: boolean;
   status: 'success' | 'loading' | 'error';
@@ -46,6 +47,7 @@ export function useMailList({
     scope: '',
     query: '',
     messages: [],
+    pageCount: 0,
     offset: 0,
     more: false,
     status: 'success',
@@ -81,6 +83,7 @@ export function useMailList({
           scope,
           query,
           messages: uniqueMessages(messages),
+          pageCount: count,
           offset,
           more,
           status: 'success',
@@ -91,6 +94,7 @@ export function useMailList({
             scope,
             query,
             messages: previous.scope === scope ? previous.messages : [],
+            pageCount: previous.scope === scope ? previous.pageCount : 0,
             offset: previous.scope === scope ? previous.offset : 0,
             more: previous.scope === scope && previous.more,
             status: 'error',
@@ -131,6 +135,7 @@ export function useMailList({
         scope,
         query,
         messages: uniqueMessages([...value.messages, ...batch]),
+        pageCount: pages.current.count,
         // 按实际读取数推进，而不是去重后的条数，避免同步位移产生重复读取。
         offset: snapshot.offset + batch.length,
         more: batch.length === PAGE_SIZE,
@@ -154,6 +159,7 @@ export function useMailList({
   return {
     messages: visible ? snapshot.messages : [],
     listKey: scope,
+    listPageCount: visible ? snapshot.pageCount : 0,
     listLoading: ready && (!visible || snapshot.query !== query || snapshot.status === 'loading'),
     listError: visible && snapshot.query === query ? snapshot.error : undefined,
     hasMore: visible && snapshot.more && snapshot.offset <= MAX_OFFSET,

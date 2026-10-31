@@ -9,6 +9,11 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
+| [TASK-0060](TASK-0060-sync-stability-dev-delivery.md) | QQ/Gmail 同步稳定性与 dev 交付 | @Codex | 进行中 | P1 |
+| [TASK-0059](TASK-0059-mail-provider-integration.md) | LinuxDo 接入、网易统一入口与同步兼容 | @Codex | 待评审 | P1 |
+| [TASK-0058](TASK-0058-offline-mail-persistence.md) | 后台同步完整正文并持久保存数据库 | @Codex | 待评审 | P1 |
+| [TASK-0057](TASK-0057-stable-unread-filter.md) | 未读筛选会话保持列表位置 | @Codex | 待评审 | P1 |
+| [TASK-0056](TASK-0056-gmail-mailbox-sync.md) | Gmail 文件夹选择失败与同步兼容性 | @Codex | 待评审 | P1 |
 | [TASK-0055](../archive/2026/10/TASK-0055-gmail-account-connection.md) | Gmail 添加失败诊断、密码兼容与认证错误分类（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0054](../archive/2026/10/TASK-0054-reader-header-star.md) | 标题星标入口与紧凑邮件头（已归档） | @Codex | 已完成 | P2 |
 | [TASK-0053](../archive/2026/10/TASK-0053-reader-switch-transition.md) | 阅读体验、邮件操作与服务商自动已读（已归档） | @Codex | 已完成 | P1 |

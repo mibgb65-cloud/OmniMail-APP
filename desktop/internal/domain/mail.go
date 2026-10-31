@@ -28,6 +28,12 @@ type MailboxCursor struct {
 	ScanUID uint32
 }
 
+type MailBodyTarget struct {
+	ID   string
+	UID  uint32
+	Size uint32
+}
+
 type MailRepository interface {
 	AccountRepository
 	PrepareMailbox(context.Context, string, RemoteMailbox, uint32) (MailboxCursor, error)
@@ -36,6 +42,7 @@ type MailRepository interface {
 	MailLocation(context.Context, string) (MailLocation, uint32, error)
 	ReadMail(context.Context, string) (MailDetail, error)
 	SaveMailBody(context.Context, string, DecodedMail) error
+	PendingMailBodies(context.Context, string, string, uint32, int) ([]MailBodyTarget, error)
 	UpdateMailStarred(context.Context, string, bool) error
 	UpdateMailRead(context.Context, string, bool) error
 	MoveMail(context.Context, string, RemoteMailbox, uint32, uint32) error

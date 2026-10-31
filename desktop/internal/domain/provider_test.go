@@ -30,3 +30,16 @@ func TestProviderPresetsAreIndependent(t *testing.T) {
 		t.Fatal("未知预设被错误识别")
 	}
 }
+
+func TestLinuxDoPresetUsesOfficialTLSEndpoints(t *testing.T) {
+	preset, found := FindProviderPreset("linuxdo")
+	if !found || len(preset.Endpoints) != 2 {
+		t.Fatal("缺少 LinuxDo 服务商预设")
+	}
+	for i, port := range []int{993, 465} {
+		if preset.Endpoints[i].Host != "mail.linux.do" || preset.Endpoints[i].Port != port ||
+			preset.Endpoints[i].TLSMode != TLSImplicit {
+			t.Fatal("LinuxDo 未使用官方 TLS 主机和端口")
+		}
+	}
+}

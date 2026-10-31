@@ -3,9 +3,14 @@ import { describe, expect, it } from 'vitest';
 import type { ProviderPreset } from '../../lib/bridge/mail';
 import { detectEmailProvider, normalizeAccountEmail } from './providerDetection';
 
-const presets: ProviderPreset[] = ['gmail', 'qq', 'netease_163', 'netease_126', 'custom'].map(
-  (code) => ({ code, name: code, endpoints: [], authKinds: [] }),
-);
+const presets: ProviderPreset[] = [
+  'gmail',
+  'qq',
+  'netease_163',
+  'netease_126',
+  'linuxdo',
+  'custom',
+].map((code) => ({ code, name: code, endpoints: [], authKinds: [] }));
 
 describe('邮箱输入校验与服务商匹配', () => {
   it.each([
@@ -48,6 +53,10 @@ describe('邮箱输入校验与服务商匹配', () => {
     ['person@QQ.COM', 'qq'],
     ['person@163.com', 'netease_163'],
     ['person@126.com', 'netease_126'],
+    ['person+tag@LINUX.DO', 'linuxdo'],
+    ['person@linux.do.evil.invalid', 'custom'],
+    ['person@sub.linux.do', 'custom'],
+    ['person@162.com', 'custom'],
     ['person@gmail.com.evil.invalid', 'custom'],
     ['person@sub.qq.com', 'custom'],
     ['person@notgmail.com', 'custom'],

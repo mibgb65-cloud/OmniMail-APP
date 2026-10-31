@@ -3,6 +3,7 @@ import { useTranslation } from '../../lib/i18n/useTranslation';
 import { UiIcon } from '../UiIcon/UiIcon';
 import { buildBatchRequests, type AccountDraft, type DraftField } from './accountBatch';
 import { accountErrorKey } from './accountErrors';
+import { isNeteaseProvider } from './providerInput';
 import type { AccountFormState } from './useAccountForm';
 import { AccountInput } from './AccountFormValidation';
 import { ACCOUNT_FIELD_FOCUS, requestAccountFieldFocus } from './accountFieldFocus';
@@ -32,6 +33,7 @@ function BatchAccountSummary({ form, draft, index, editorId }: EntryProps & { ed
       form.same,
       [draft],
       {},
+      form.presets,
     ).issue;
   const status = added
     ? 'batchAdded'
@@ -170,6 +172,14 @@ export function BatchAccountFields({ form }: Props) {
     ({ draft }) => !['added', 'review'].includes(form.batch.results[draft.id]?.status ?? ''),
   );
   const active = editable.find(({ draft }) => draft.id === form.editingDraftId) ?? editable[0];
+  const providerHint =
+    form.provider === 'gmail'
+      ? 'googleHint'
+      : form.provider === 'linuxdo'
+        ? 'linuxdoHint'
+        : isNeteaseProvider(form.provider)
+          ? 'neteaseHint'
+          : undefined;
   // 始终按草稿顺序原位展开，既不改变请求顺序，也不因编辑切换打乱键盘导航。
   useEffect(() => {
     const root = rootRef.current;
@@ -184,10 +194,10 @@ export function BatchAccountFields({ form }: Props) {
   }, [editAccountDraft]);
   return (
     <div ref={rootRef} className={wizard['batch-fields']}>
-      {form.provider === 'gmail' ? (
+      {providerHint ? (
         <div className={wizard['batch-notice']}>
           <UiIcon name="about" size={16} />
-          <p>{t('googleHint')}</p>
+          <p>{t(providerHint)}</p>
         </div>
       ) : (
         <p className={styles.hint}>{t('batchSameProviderHint')}</p>

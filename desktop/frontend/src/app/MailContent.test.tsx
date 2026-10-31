@@ -1,11 +1,11 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { I18nProvider } from '../lib/i18n/I18nProvider';
 import type { MailController } from './useMail';
 import { MailWorkspace } from './MailWorkspace';
 import { MailList } from './MailList';
 import { AccountStatus } from '../../bindings/omnimail/desktop/internal/domain/models';
-import { DEFAULT_MAIL_VIEW } from './mailView';
+import { DEFAULT_MAIL_VIEW, selectMailView } from './mailView';
 
 function makeController(overrides: Partial<MailController> = {}): MailController {
   const message = {
@@ -35,6 +35,9 @@ function makeController(overrides: Partial<MailController> = {}): MailController
     accountId: '',
     chooseAccount: vi.fn(),
     messages: [message],
+    get visibleMessages() {
+      return selectMailView(this.messages, this.filter, this.viewOptions ?? DEFAULT_MAIL_VIEW);
+    },
     detail: { ...message, body: '<script>not-executed()</script>', attachments: [] },
     selected: message.id,
     setSelected: vi.fn(),
@@ -50,6 +53,7 @@ function makeController(overrides: Partial<MailController> = {}): MailController
     toggleStarred: vi.fn(),
     loading: false,
     listKey: 'inbox',
+    listPageCount: 1,
     listLoading: false,
     listError: undefined,
     hasMore: false,
@@ -87,7 +91,7 @@ it('真实邮件视图移除分页按钮，正文始终作为文本而不是 HTM
   expect(screen.queryByRole('button', { name: '上一页' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '下一页' })).not.toBeInTheDocument();
   expect(screen.queryByText('选择邮件后，可在这里查看内容。')).not.toBeInTheDocument();
-  expect(controller.markViewed).toHaveBeenCalledWith(controller.selected);
+  await waitFor(() => expect(controller.markViewed).toHaveBeenCalledWith(controller.selected));
 });
 
 it('自动已读失败不隐藏正文，提示原因且不暴露底层错误', async () => {
@@ -137,6 +141,10 @@ it('工具栏真实操作、组合筛选和排序导航使用同一可见列表�
           ...mail,
           actionBusy: true,
           viewOptions: { ...DEFAULT_MAIL_VIEW, unreadOnly: true },
+          visibleMessages: selectMailView(mail.messages, '', {
+            ...DEFAULT_MAIL_VIEW,
+            unreadOnly: true,
+          }),
         }}
       />
     </I18nProvider>,
@@ -522,6 +530,7 @@ it('标题和列表复用星标操作与即时状态，状态更新不重播阅�
         mail={{
           ...mail,
           messages: [{ ...first, starred: true }],
+          visibleMessages: [{ ...first, starred: true }],
           getStarred: () => true,
           isStarPending: () => true,
         }}

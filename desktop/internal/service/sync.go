@@ -94,7 +94,7 @@ func (s *Mail) queueSync(id string, continuation bool) error {
 		if errors.Is(err, domain.ErrAuthentication) || errors.Is(err, domain.ErrCredentialMissing) {
 			s.markReauth(id)
 		}
-		s.logSyncFailure(err)
+		s.logSyncFailure(err, account.ProviderCode)
 		s.mu.Lock()
 		state := s.states[id]
 		state.Running = false
@@ -107,11 +107,11 @@ func (s *Mail) queueSync(id string, continuation bool) error {
 		delete(s.active, id)
 		s.mu.Unlock()
 		if more && err == nil {
-			s.log.Info("邮件同步分批完成", "code", "SYNC_PROGRESS")
+			s.log.Info("邮件同步分批完成", "code", "SYNC_PROGRESS", "provider", safeSyncProvider(account.ProviderCode))
 			s.continueSync(id)
 		} else if err == nil {
 			// 只记录周期结束，不包含账号或邮件数据；分批完成不宣称全量同步结束。
-			s.log.Info("邮件同步周期完成", "code", "SYNC_COMPLETE")
+			s.log.Info("邮件同步周期完成", "code", "SYNC_COMPLETE", "provider", safeSyncProvider(account.ProviderCode))
 		}
 	}()
 	return nil
@@ -196,18 +196,29 @@ func (s *Mail) syncAccount(ctx context.Context, id string) (more bool, err error
 }
 
 func (s *Mail) syncMailbox(ctx context.Context, accountID string, box domain.RemoteMailbox, session domain.MailSession) (bool, error) {
+	ctx = bodySyncContext(ctx)
 	validity, next, err := session.Select(box.Name)
 	if err != nil {
 		return false, syncStepError("select", box.Kind, err)
 	}
 	if validity == 0 || next == 0 {
-		return false, syncStepError("select", box.Kind, domain.ErrProtocol)
+		reason := "missing_uidnext"
+		if validity == 0 {
+			reason = "missing_uidvalidity"
+		}
+		return false, syncStepError("select", box.Kind, selectionMetadataFailure{reason: reason})
 	}
 	cursor, err := s.store.PrepareMailbox(ctx, accountID, box, validity)
 	if err != nil {
 		return false, syncStepError("cache_mailbox", box.Kind, err)
 	}
-	last := next - 1
+	pending, downloaded, err := s.syncStoredBodies(ctx, accountID, cursor.ID, validity, session)
+	if err != nil || pending || downloaded {
+		// 已有摘要优先补齐；正文较多时下一轮从数据库继续，避免旧记录永远依赖用户点击。
+		return pending || downloaded, syncMailboxError(box.Kind, err)
+	}
+	// 缺失 UIDNEXT 时协议层只能给出已有 UID 的上界；仍核对旧游标范围，删除必须由远端结果确认。
+	last := max(next-1, cursor.LastUID)
 	startNew := cursor.LastUID + 1
 	// 首次优先读取靠近末端的窗口；旧邮件仍由下方可恢复的历史重对账补齐，不永久截断历史。
 	if cursor.LastUID == 0 && last > 5000 {
@@ -223,7 +234,11 @@ func (s *Mail) syncMailbox(ctx context.Context, accountID string, box domain.Rem
 		start = 1
 	}
 	finished, _, err = s.syncPass(ctx, accountID, cursor.ID, validity, start, last, 50-batches, true, session)
-	return !finished, syncMailboxError(box.Kind, err)
+	if err != nil || !finished {
+		return !finished, syncMailboxError(box.Kind, err)
+	}
+	pending, _, err = s.syncStoredBodies(ctx, accountID, cursor.ID, validity, session)
+	return pending, syncMailboxError(box.Kind, err)
 }
 
 func (s *Mail) syncPass(ctx context.Context, accountID, mailboxID string, validity, start, last uint32, limit int, scan bool,
@@ -255,6 +270,9 @@ func (s *Mail) syncPass(ctx context.Context, accountID, mailboxID string, validi
 			end = last
 		}
 		version := s.flagVersion(accountID)
+		if budget := bodyBudget(ctx); budget != nil {
+			budget.headers++
+		}
 		messages, err := session.Headers(start, end)
 		if err != nil {
 			return false, batch, syncStepError("fetch_headers", "", err)

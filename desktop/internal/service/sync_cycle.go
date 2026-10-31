@@ -15,6 +15,7 @@ func syncShouldYield(ctx context.Context) bool {
 }
 
 func (s *Mail) syncMailboxes(ctx context.Context, id string, boxes []domain.RemoteMailbox, session domain.MailSession) (bool, error) {
+	ctx = bodySyncContext(ctx)
 	s.mu.Lock()
 	completed := make(map[string]bool, len(boxes))
 	for _, box := range boxes {
@@ -33,7 +34,7 @@ func (s *Mail) syncMailboxes(ctx context.Context, id string, boxes []domain.Remo
 		if completed[box.Name] {
 			continue
 		}
-		if syncShouldYield(ctx) {
+		if syncShouldYield(ctx) || bodyBudget(ctx).count > 0 {
 			return true, nil
 		}
 		pending, err := s.syncMailbox(ctx, id, box, session)

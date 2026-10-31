@@ -88,6 +88,10 @@ func TestTLSAccountToDatabaseBodyAttachmentAndSend(t *testing.T) {
 	if err != nil || len(messages) != 1 {
 		t.Fatalf("实际 FETCH 未落库：%v", err)
 	}
+	persisted, err := store.ReadMail(t.Context(), messages[0].ID)
+	if err != nil || !persisted.Cached || persisted.BodyVersion != 1 || strings.TrimSpace(persisted.Body) != "hello" || persisted.Read {
+		t.Fatal("未打开邮件在真实 TLS 后台同步后缺少数据库正文，或下载标为了已读")
+	}
 	detail, err := manager.Message(t.Context(), messages[0].ID)
 	if err != nil || strings.TrimSpace(detail.Body) != "hello" || len(detail.Attachments) != 1 {
 		t.Fatalf("实际 MIME 未缓存：%v", err)

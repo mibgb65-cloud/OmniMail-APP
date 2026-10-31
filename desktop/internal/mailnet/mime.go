@@ -1,6 +1,7 @@
 package mailnet
 
 import (
+	"errors"
 	"io"
 	"strings"
 	"unicode"
@@ -26,11 +27,19 @@ func decodeReader(source io.Reader, size int64, sink domain.AttachmentSink) (dom
 	if size > maxRawBytes {
 		return result, domain.ErrTooLarge
 	}
-	reader, err := mail.CreateReader(io.LimitReader(source, maxRawBytes+1))
+	input := &mimeBoundaryReader{source: io.LimitReader(source, maxRawBytes+1)}
+	reader, err := mail.CreateReader(input)
 	if err != nil {
-		return result, domain.ErrProtocol
+		return result, mimeDecodeFailure("mime_header_invalid", err)
+	}
+	kind, params, typeError := reader.Header.ContentType()
+	if typeError == nil && strings.HasPrefix(kind, "multipart/") {
+		if err := input.setBoundary(params["boundary"]); err != nil {
+			return result, err
+		}
 	}
 	textBytes := 0
+	parts := 0
 	for count := 0; ; count++ {
 		if count >= 128 {
 			return result, domain.ErrTooLarge
@@ -40,8 +49,9 @@ func decodeReader(source io.Reader, size int64, sink domain.AttachmentSink) (dom
 			break
 		}
 		if err != nil {
-			return result, domain.ErrProtocol
+			return result, mimeDecodeFailure("mime_part_invalid", err)
 		}
+		parts++
 		switch header := part.Header.(type) {
 		case *mail.InlineHeader:
 			contentType, _, err := header.ContentType()
@@ -51,7 +61,15 @@ func decodeReader(source io.Reader, size int64, sink domain.AttachmentSink) (dom
 			if contentType == "text/plain" || contentType == "text/html" {
 				data, err := io.ReadAll(io.LimitReader(part.Body, maxTextBytes+1))
 				if err != nil {
-					return result, domain.ErrProtocol
+					if errors.Is(err, io.ErrUnexpectedEOF) {
+						switch strings.ToLower(strings.TrimSpace(part.Header.Get("Content-Transfer-Encoding"))) {
+						case "base64":
+							return result, &protocolFailure{reason: "mime_base64_truncated"}
+						case "quoted-printable":
+							return result, &protocolFailure{reason: "mime_quoted_printable_truncated"}
+						}
+					}
+					return result, mimeDecodeFailure("mime_text_read_failed", err)
 				}
 				textBytes += len(data)
 				if textBytes > maxTextBytes {
@@ -104,6 +122,9 @@ func decodeReader(source io.Reader, size int64, sink domain.AttachmentSink) (dom
 			}
 			result.Attachments = append(result.Attachments, attachment)
 		}
+	}
+	if input.appended && parts == 0 {
+		return result, &protocolFailure{reason: "mime_part_invalid"}
 	}
 	if result.Text == "" {
 		result.Text = htmlText(result.HTML)

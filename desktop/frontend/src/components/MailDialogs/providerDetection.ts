@@ -6,6 +6,7 @@ const PROVIDER_DOMAINS = new Map([
   ['qq.com', 'qq'],
   ['163.com', 'netease_163'],
   ['126.com', 'netease_126'],
+  ['linux.do', 'linuxdo'],
 ]);
 
 export function normalizeAccountEmail(value: string): string | null {
