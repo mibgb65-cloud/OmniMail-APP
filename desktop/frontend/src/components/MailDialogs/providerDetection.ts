@@ -7,6 +7,14 @@ const PROVIDER_DOMAINS = new Map([
   ['163.com', 'netease_163'],
   ['126.com', 'netease_126'],
   ['linux.do', 'linuxdo'],
+  ['naver.com', 'naver'],
+  ['yandex.com', 'yandex'],
+  ['yandex.ru', 'yandex'],
+  ['ya.ru', 'yandex'],
+  ['icloud.com', 'icloud'],
+  ['me.com', 'icloud'],
+  ['mac.com', 'icloud'],
+  ['yahoo.com', 'yahoo'],
 ]);
 
 export function normalizeAccountEmail(value: string): string | null {

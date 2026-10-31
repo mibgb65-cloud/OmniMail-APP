@@ -1,6 +1,6 @@
 # 组件规范
 
-> 状态：草稿（含已实现组件） | 负责人：@design-lead | 最后更新：2026-10-30
+> 状态：草稿（含已实现组件） | 负责人：@design-lead | 最后更新：2026-10-31
 > 相关：[设计系统](../design-system.md) · [页面规格](../pages/README.md)
 
 ---
@@ -17,6 +17,7 @@
 | [DialogFrame](dialog.md) | ui | 标准模态 / 响应式 / 滚动 | 已实现：设置、添加邮箱与撰写共用 900×580 基准；后续同类弹窗复用 |
 | Toast | ui | 4 | 成功/错误/信息，带动作 |
 | [Tooltip](tooltip.md) | ui | 悬停 / 焦点 / 清理 | 已实现：统一主题浮层，悬停延迟 400ms、键盘即时显示 |
+| [ScrollArea / 原生滚动条](scroll-area.md) | ui | 空闲 / 滚动 / 槽位悬浮 / 拖拽 | 默认只占位，滚动或精确槽位悬浮淡入，无上下箭头；正文悬浮不显示 |
 | Tabs | ui | 4 | 面板切换 |
 | Menu | ui | 4 | 右键与下拉 |
 | Checkbox / Radio / Switch | ui | 4 | — |

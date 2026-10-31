@@ -1,4 +1,8 @@
 :root {
+  --color-sync-blue: #3b82f6;
+  --color-sync-violet: #a855f7;
+  --color-sync-pink: #ec4899;
+  --color-sync-mint: #2dd4bf;
   color-scheme: light;
   --color-bg-canvas: #ffffff;
   --color-bg-surface: #f6f6f7;
@@ -130,6 +134,7 @@
   --scrollbar-thumb: rgb(32 32 35 / 24%);
   --scrollbar-thumb-hover: rgb(32 32 35 / 46%);
   --scrollbar-fade: 160ms;
+  --scroll-edge-fade-size: 16px;
 }
 
 :root[data-theme='dark'] {

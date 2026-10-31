@@ -43,3 +43,35 @@ func TestLinuxDoPresetUsesOfficialTLSEndpoints(t *testing.T) {
 		}
 	}
 }
+
+func TestInternationalProviderPresets(t *testing.T) {
+	for _, test := range []struct {
+		code, imap, smtp string
+		port             int
+		tls              TLSMode
+	}{
+		{"naver", "imap.naver.com", "smtp.naver.com", 587, TLSStartTLS},
+		{"yandex", "imap.yandex.com", "smtp.yandex.com", 465, TLSImplicit},
+		{"icloud", "imap.mail.me.com", "smtp.mail.me.com", 587, TLSStartTLS},
+		{"yahoo", "imap.mail.yahoo.com", "smtp.mail.yahoo.com", 465, TLSImplicit},
+	} {
+		t.Run(test.code, func(t *testing.T) {
+			preset, found := FindProviderPreset(test.code)
+			if !found || len(preset.Endpoints) != 2 {
+				t.Fatal("缺少完整的服务商预设")
+			}
+			if len(preset.AuthKinds) != 1 || preset.AuthKinds[0] != AuthPassword {
+				t.Fatal("应用密码登录不能宣称已实现 OAuth")
+			}
+			incoming, outgoing := preset.Endpoints[0], preset.Endpoints[1]
+			if incoming.Protocol != ProtocolIMAP || incoming.Host != test.imap ||
+				incoming.Port != 993 || incoming.TLSMode != TLSImplicit {
+				t.Fatal("收信端点不符合官方配置")
+			}
+			if outgoing.Protocol != ProtocolSMTP || outgoing.Host != test.smtp ||
+				outgoing.Port != test.port || outgoing.TLSMode != test.tls {
+				t.Fatal("发信端点不符合官方配置，不能混用隐式 TLS 和 STARTTLS")
+			}
+		})
+	}
+}

@@ -25,7 +25,7 @@ export function MailToolbar({
 }: {
   onSync?: () => void;
   syncBusy?: boolean;
-  syncState?: 'idle' | 'running' | 'partial' | 'error';
+  syncState?: 'idle' | 'running' | 'partial' | 'limited' | 'error';
   count?: number;
   query?: string;
   onQuery?: (query: string) => void;
@@ -100,9 +100,11 @@ export function MailToolbar({
                 ? mail('syncMore')
                 : syncState === 'error'
                   ? mail('syncFailedHint')
-                  : onSync
-                    ? t('syncAction')
-                    : t('unavailableMailAction', { action: t('syncAction') })
+                  : syncState === 'limited'
+                    ? mail('mailboxLimited')
+                    : onSync
+                      ? t('syncAction')
+                      : t('unavailableMailAction', { action: t('syncAction') })
           }
           aria-busy={syncBusy || syncState === 'running'}
           data-syncing={syncBusy || syncState === 'running'}

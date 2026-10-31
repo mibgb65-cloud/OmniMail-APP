@@ -257,7 +257,7 @@ export function AccountDialog({ onClose, onSaved }: { onClose: () => void; onSav
       }}
     >
       <div className={wizard.layout}>
-        <aside className={wizard.progress} aria-labelledby={progressTitle}>
+        <aside className={wizard.progress} aria-labelledby={progressTitle} data-native-scrollbar="">
           <h2 id={title}>{t('addTitle')}</h2>
           <p id={progressTitle} className={wizard['progress-title']}>
             {t('accountSetupProgress')}
@@ -322,7 +322,10 @@ export function AccountDialog({ onClose, onSaved }: { onClose: () => void; onSav
               <UiIcon name="close" />
             </button>
           </header>
-          <div className={`${styles.content} ${wizard.body} ${selected ? '' : wizard.selection}`}>
+          <div
+            data-native-scrollbar=""
+            className={`${styles.content} ${wizard.body} ${selected ? '' : wizard.selection}`}
+          >
             <AccountValidationSummary />
             {selected &&
               !form.addedAccount &&

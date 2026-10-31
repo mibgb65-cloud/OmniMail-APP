@@ -23,8 +23,20 @@ func ProviderPresets() []ProviderPreset {
 		newPreset("netease_163", "网易 163", "imap.163.com", "smtp.163.com", AuthPassword),
 		newPreset("netease_126", "网易 126", "imap.126.com", "smtp.126.com", AuthPassword),
 		newPreset("linuxdo", "LINUX DO Mail", "mail.linux.do", "mail.linux.do", AuthPassword),
+		newSubmissionPreset("naver", "NAVER Mail", "imap.naver.com", "smtp.naver.com"),
+		newPreset("yandex", "Yandex Mail", "imap.yandex.com", "smtp.yandex.com", AuthPassword),
+		newSubmissionPreset("icloud", "iCloud Mail", "imap.mail.me.com", "smtp.mail.me.com"),
+		newPreset("yahoo", "Yahoo Mail", "imap.mail.yahoo.com", "smtp.mail.yahoo.com", AuthPassword),
 		newPreset("custom", "自定义 IMAP/SMTP", "", "", AuthPassword, AuthOAuth2),
 	}
+}
+
+// NAVER 和 iCloud 的 587 发信端口要求先通过 STARTTLS 升级连接，不能套用 465 隐式 TLS。
+func newSubmissionPreset(code, name, imap, smtp string) ProviderPreset {
+	preset := newPreset(code, name, imap, smtp, AuthPassword)
+	preset.Endpoints[1].Port = 587
+	preset.Endpoints[1].TLSMode = TLSStartTLS
+	return preset
 }
 
 func FindProviderPreset(code string) (ProviderPreset, bool) {

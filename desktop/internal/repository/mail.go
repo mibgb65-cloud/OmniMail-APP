@@ -16,7 +16,7 @@ type MailboxCursor = domain.MailboxCursor
 
 func (s *Store) PrepareMailbox(ctx context.Context, accountID string, box domain.RemoteMailbox,
 	validity uint32) (cursor MailboxCursor, err error) {
-	if !domain.ValidAccountID(accountID) || validity == 0 || len(box.Name) == 0 || len(box.Name) > 1024 ||
+	if !domain.ValidAccountID(accountID) || len(box.Name) == 0 || len(box.Name) > 1024 ||
 		!utf8.ValidString(box.Name) || strings.ContainsFunc(box.Name, unicode.IsControl) {
 		return cursor, domain.ErrProtocol
 	}
@@ -25,6 +25,11 @@ func (s *Store) PrepareMailbox(ctx context.Context, accountID string, box domain
 		return cursor, storageError("开始文件夹事务", err)
 	}
 	defer rollback(tx, &err)
+	if validity == 0 {
+		if err := allowZeroValidity(ctx, tx, accountID); err != nil {
+			return cursor, err
+		}
+	}
 	var old uint32
 	err = tx.QueryRowContext(ctx, "SELECT id, uid_validity, last_uid, scan_uid FROM mailbox WHERE account_id=? AND remote_name=?",
 		accountID, box.Name).Scan(&cursor.ID, &old, &cursor.LastUID, &cursor.ScanUID)
@@ -52,7 +57,7 @@ func (s *Store) PrepareMailbox(ctx context.Context, accountID string, box domain
 
 func (s *Store) SaveMailBatch(ctx context.Context, accountID, mailboxID string, validity, start, end uint32,
 	messages []domain.RemoteMessage, scanNext *uint32) (err error) {
-	if !domain.ValidAccountID(accountID) || !domain.ValidAccountID(mailboxID) || validity == 0 ||
+	if !domain.ValidAccountID(accountID) || !domain.ValidAccountID(mailboxID) ||
 		start == 0 || end < start || end-start >= 100 || len(messages) > 100 {
 		return domain.ErrProtocol
 	}
@@ -61,6 +66,11 @@ func (s *Store) SaveMailBatch(ctx context.Context, accountID, mailboxID string, 
 		return storageError("开始邮件批次", err)
 	}
 	defer rollback(tx, &err)
+	if validity == 0 {
+		if err := allowZeroValidity(ctx, tx, accountID); err != nil {
+			return err
+		}
+	}
 	var actual uint32
 	if err := tx.QueryRowContext(ctx, "SELECT uid_validity FROM mailbox WHERE id=? AND account_id=?", mailboxID, accountID).Scan(&actual); err != nil || actual != validity {
 		return domain.ErrProtocol
@@ -72,11 +82,19 @@ func (s *Store) SaveMailBatch(ctx context.Context, accountID, mailboxID string, 
 			return domain.ErrProtocol
 		}
 		kept[message.UID] = true
+		if validity == 0 {
+			if err := replaceZeroInstance(ctx, tx, mailboxID, message); err != nil {
+				return err
+			}
+		}
 		_, err = tx.ExecContext(ctx, `INSERT INTO mail_message
 			(id,account_id,mailbox_id,uid_validity,uid,message_id,subject,from_addr,to_addrs,received_at,is_read,is_starred,size_bytes)
 			VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(mailbox_id,uid_validity,uid) DO UPDATE SET
 			subject=excluded.subject,from_addr=excluded.from_addr,to_addrs=excluded.to_addrs,
-			received_at=excluded.received_at,is_read=excluded.is_read,is_starred=excluded.is_starred,size_bytes=excluded.size_bytes`,
+			received_at=excluded.received_at,is_read=excluded.is_read,is_starred=excluded.is_starred,
+			body_error_code=CASE WHEN size_bytes!=excluded.size_bytes THEN '' ELSE body_error_code END,
+			body_version=CASE WHEN size_bytes!=excluded.size_bytes THEN 0 ELSE body_version END,
+			size_bytes=excluded.size_bytes`,
 			rand.Text(), accountID, mailboxID, validity, message.UID, nullableReference(message.MessageID), message.Subject,
 			message.From, message.To, message.ReceivedAt, message.Read, message.Starred, message.Size)
 		if err != nil {
@@ -128,7 +146,7 @@ func (s *Store) PageMail(ctx context.Context, accountID, folder string, offset i
 	}
 	rows, err := s.db.QueryContext(ctx, `SELECT m.id,m.account_id,b.remote_name,m.subject,m.from_addr,m.to_addrs,
 		m.received_at,m.is_read,m.is_starred,m.body_text IS NOT NULL,
-		EXISTS(SELECT 1 FROM mail_attachment x WHERE x.mail_id=m.id AND COALESCE(x.content_id,'')='')
+		EXISTS(SELECT 1 FROM mail_attachment x WHERE x.mail_id=m.id AND COALESCE(x.content_id,'')=''),m.body_error_code
 		FROM mail_message m
 		JOIN mailbox b ON b.id=m.mailbox_id JOIN account a ON a.id=m.account_id
 		WHERE (?='' OR m.account_id=?) AND (a.status!='disconnected' OR ?!='')
@@ -142,7 +160,7 @@ func (s *Store) PageMail(ctx context.Context, accountID, folder string, offset i
 	for rows.Next() {
 		var message domain.MailSummary
 		if err := rows.Scan(&message.ID, &message.AccountID, &message.Mailbox, &message.Subject, &message.From, &message.To,
-			&message.ReceivedAt, &message.Read, &message.Starred, &message.Cached, &message.HasAttachments); err != nil {
+			&message.ReceivedAt, &message.Read, &message.Starred, &message.Cached, &message.HasAttachments, &message.BodyErrorCode); err != nil {
 			return nil, storageError("解析邮件列表", err)
 		}
 		result = append(result, message)
@@ -154,9 +172,13 @@ func (s *Store) MailLocation(ctx context.Context, id string) (location domain.Ma
 	if !domain.ValidAccountID(id) {
 		return location, 0, domain.ErrProtocol
 	}
-	err = s.db.QueryRowContext(ctx, `SELECT m.account_id,b.remote_name,m.uid_validity,m.uid,m.size_bytes
+	err = s.db.QueryRowContext(ctx, `SELECT m.account_id,b.remote_name,m.uid_validity,m.uid,m.size_bytes,
+		COALESCE(m.message_id,''),m.subject,m.from_addr,m.to_addrs,m.received_at
 		FROM mail_message m JOIN mailbox b ON b.id=m.mailbox_id WHERE m.id=?`, id).
-		Scan(&location.AccountID, &location.Mailbox, &location.UIDValidity, &location.UID, &size)
+		Scan(&location.AccountID, &location.Mailbox, &location.UIDValidity, &location.UID, &size,
+			&location.Identity.MessageID, &location.Identity.Subject, &location.Identity.From,
+			&location.Identity.To, &location.Identity.ReceivedAt)
+	location.Identity.UID, location.Identity.Size = location.UID, size
 	return location, size, storageError("读取远端邮件位置", err)
 }
 
@@ -165,10 +187,10 @@ func (s *Store) ReadMail(ctx context.Context, id string) (detail domain.MailDeta
 		return detail, domain.ErrProtocol
 	}
 	err = s.db.QueryRowContext(ctx, `SELECT m.id,m.account_id,b.remote_name,m.subject,m.from_addr,m.to_addrs,
-		m.received_at,m.is_read,m.is_starred,m.body_text IS NOT NULL,COALESCE(m.body_text,''),m.body_html,m.body_version
+		m.received_at,m.is_read,m.is_starred,m.body_text IS NOT NULL,COALESCE(m.body_text,''),m.body_html,m.body_version,m.body_error_code
 		FROM mail_message m JOIN mailbox b ON b.id=m.mailbox_id WHERE m.id=?`, id).
 		Scan(&detail.ID, &detail.AccountID, &detail.Mailbox, &detail.Subject, &detail.From, &detail.To,
-			&detail.ReceivedAt, &detail.Read, &detail.Starred, &detail.Cached, &detail.Body, &detail.RawHTML, &detail.BodyVersion)
+			&detail.ReceivedAt, &detail.Read, &detail.Starred, &detail.Cached, &detail.Body, &detail.RawHTML, &detail.BodyVersion, &detail.BodyErrorCode)
 	if err != nil {
 		return detail, storageError("读取邮件正文", err)
 	}

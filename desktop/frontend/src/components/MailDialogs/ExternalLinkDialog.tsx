@@ -45,6 +45,7 @@ export function ExternalLinkDialog({ url, onClose }: { url: string; onClose: () 
   };
   return (
     <DialogFrame
+      data-native-scrollbar=""
       ref={ref}
       closing={closing}
       className={styles.dialog}

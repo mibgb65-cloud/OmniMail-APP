@@ -14,7 +14,7 @@ import (
 	"github.com/emersion/go-message/charset"
 )
 
-const maxHeaderBytes = maxTextBytes
+const maxHeaderBytes = domain.MaxMailHeaderBytes
 
 func (s *session) readHeaderLiteral(item imapclient.FetchItemDataBodySection) (*imap.Envelope, error) {
 	section, literal := item.Section, item.Literal

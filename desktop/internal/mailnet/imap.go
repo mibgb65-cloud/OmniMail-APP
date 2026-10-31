@@ -14,12 +14,16 @@ import (
 )
 
 type session struct {
-	client   *imapclient.Client
-	stop     func() bool
-	ctx      context.Context
-	conn     net.Conn
-	uids     imap.UIDSet
-	searched bool
+	client                 *imapclient.Client
+	stop                   func() bool
+	ctx                    context.Context
+	conn                   net.Conn
+	uids                   imap.UIDSet
+	searched               bool
+	selectMetadataFallback bool
+	metadata               *metadataObserver
+	selection              validityObservation
+	zeroValidity           bool
 }
 
 func (s *session) Close() error {
@@ -99,13 +103,28 @@ func mailboxKind(name string, attributes []string) string {
 }
 
 func (s *session) Select(name string) (uint32, uint32, error) {
-	state, err := s.client.Select(name, &imap.SelectOptions{ReadOnly: true}).Wait()
+	s.zeroValidity = false
+	state, err := s.selectObserved(name, &imap.SelectOptions{ReadOnly: true})
 	if err != nil {
 		return 0, 0, s.selectError(name, err)
 	}
 	s.uids = nil
 	s.searched = false
 	return s.selectedMetadata(name, state)
+}
+
+func (s *session) ZeroUIDValidity() bool { return s.zeroValidity }
+
+func (s *session) selectObserved(name string, options *imap.SelectOptions) (*imap.SelectData, error) {
+	if s.metadata != nil {
+		s.metadata.begin()
+	}
+	state, err := s.client.Select(name, options).Wait()
+	s.selection = validityObservation{}
+	if s.metadata != nil {
+		s.selection = s.metadata.end()
+	}
+	return state, err
 }
 
 func (s *session) LocateUID(from uint32) (uint32, bool, error) {

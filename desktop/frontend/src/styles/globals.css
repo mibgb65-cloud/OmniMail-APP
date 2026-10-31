@@ -1,13 +1,8 @@
 @import './tokens.css';
+@import './scrollbars.css';
 
 * {
   box-sizing: border-box;
-}
-
-/* 兜底：未接入 ScrollArea 的滚动容器也使用细滚动条，避免露出系统默认滚动条。 */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 body {

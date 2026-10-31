@@ -122,7 +122,7 @@ func (s *session) decodeLiteral(literal imap.LiteralReader, sink domain.Attachme
 		return domain.DecodedMail{}, domain.ErrProtocol
 	}
 	if literal.Size() > maxRawBytes {
-		return domain.DecodedMail{}, domain.ErrTooLarge
+		return domain.DecodedMail{}, domain.ErrRawMessageTooLarge
 	}
 	reader := &literalFailureReader{source: literal, remaining: literal.Size()}
 	result, err := decodeReader(reader, literal.Size(), sink)
@@ -145,7 +145,7 @@ func (s *session) bodyError(err, readError error) error {
 		return s.ctx.Err()
 	}
 	if errors.Is(err, domain.ErrTooLarge) {
-		return domain.ErrTooLarge
+		return err
 	}
 	if readError != nil {
 		return s.commandError(readError)

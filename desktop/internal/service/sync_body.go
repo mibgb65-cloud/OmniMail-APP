@@ -30,7 +30,7 @@ func (b *syncBodyBudget) permits(size uint32) bool {
 	cost := max(uint64(size), 1<<20)
 	// 复用连接仍须给 IMAP 元数据留余量；单封较大正文只在新连接尚未读取邮件头时下载。
 	return b.count < syncBodyBatchLimit && b.headers <= 4 &&
-		(b.bytes+cost <= 32<<20 || (b.count == 0 && b.headers == 0 && cost <= 40<<20))
+		(b.bytes+cost <= 32<<20 || (b.count == 0 && b.headers == 0 && cost <= domain.MaxRawMessageBytes))
 }
 
 func (s *Mail) pendingBodies(ctx context.Context, accountID, mailboxID string, validity uint32, limit int) ([]domain.MailBodyTarget, error) {
@@ -76,8 +76,24 @@ func (s *Mail) syncStoredBodies(ctx context.Context, accountID, mailboxID string
 		if !exists {
 			continue
 		}
-		if target.Size > 40<<20 {
-			return true, downloaded, syncStepError("persist_body", "", domain.ErrTooLarge)
+		if validity == 0 {
+			current, err := s.reconcileZeroBody(ctx, accountID, mailboxID, target, session)
+			if err != nil {
+				return true, downloaded, syncStepError("reconcile_body", "", err)
+			}
+			if !current {
+				continue
+			}
+		}
+		if budget.count >= syncBodyBatchLimit {
+			return true, downloaded, nil
+		}
+		if target.Size > domain.MaxRawMessageBytes {
+			if err := s.store.MarkMailBodyLimit(ctx, target.ID, domain.ErrRawMessageTooLarge.Error()); err != nil {
+				return true, downloaded, syncStepError("persist_body", "", err)
+			}
+			budget.count++
+			continue
 		}
 		if syncShouldYield(ctx) || !budget.permits(target.Size) {
 			return true, downloaded, nil
@@ -93,6 +109,16 @@ func (s *Mail) syncStoredBodies(ctx context.Context, accountID, mailboxID string
 		budget.count++
 		budget.bytes += max(uint64(target.Size), 1<<20)
 		if err := s.storeMessageBody(ctx, target.ID, target.UID, session); err != nil {
+			if ctx.Err() != nil {
+				return true, downloaded, ctx.Err()
+			}
+			if code := domain.MessageLimitCode(err); code != "" && ctx.Err() == nil {
+				if err := s.store.MarkMailBodyLimit(ctx, target.ID, code); err != nil {
+					return true, downloaded, syncStepError("persist_body", "", err)
+				}
+				// MIME 失败已经中止 FETCH 连接；让下一批重连继续，不能复用断开的 session。
+				return true, downloaded, nil
+			}
 			return true, downloaded, syncStepError("persist_body", "", err)
 		}
 		downloaded = true

@@ -1,0 +1,68 @@
+.skeleton {
+  flex: 1;
+  min-height: 0;
+  border-radius: 0;
+}
+.rows {
+  display: grid;
+  grid-template-rows: repeat(12, minmax(96px, 1fr));
+  height: 100%;
+  padding: var(--space-3);
+  overflow: hidden;
+}
+.row {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+.header {
+  display: grid;
+  grid-template-columns: var(--avatar-size) minmax(0, 1fr) var(--space-10);
+  align-items: center;
+  gap: var(--space-3);
+}
+.row span {
+  display: block;
+  border-radius: var(--radius-xs);
+  background: var(--color-bg-sunken);
+}
+.avatar {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+}
+.sender,
+.date,
+.clock,
+.subject,
+.tail {
+  height: var(--space-3);
+}
+.timestamp {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-1);
+}
+.date {
+  width: 100%;
+}
+.clock {
+  width: 80%;
+}
+.sender {
+  width: 80%;
+}
+.subject {
+  width: 92%;
+}
+.tail {
+  width: 62%;
+}
+@container (max-width: 260px) {
+  .header {
+    grid-template-columns: minmax(0, 1fr) var(--space-10);
+  }
+  .header .avatar {
+    display: none;
+  }
+}

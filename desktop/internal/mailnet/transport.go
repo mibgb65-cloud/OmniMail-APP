@@ -84,7 +84,7 @@ func (t *Transport) dial(ctx context.Context, endpoint domain.AccountEndpoint) (
 		return nil, nil, connectionStepError("dial", domain.ErrNetwork, err)
 	}
 	// 总读取预算同时约束伪造的大 envelope 和字符串，不只限制正常正文 literal。
-	conn = &limitedConn{Conn: conn, remaining: 64 << 20}
+	conn = &limitedConn{Conn: conn, remaining: 128 << 20}
 	stop := context.AfterFunc(ctx, func() { releaseConnection(conn) })
 	deadline := time.Now().Add(60 * time.Second)
 	if requested, ok := ctx.Deadline(); ok && requested.Before(deadline) {
@@ -128,11 +128,12 @@ func (t *Transport) connectOnce(ctx context.Context, endpoint domain.AccountEndp
 		return nil, err
 	}
 	options := &imapclient.Options{TLSConfig: t.tlsConfig(endpoint.Host), WordDecoder: &mime.WordDecoder{CharsetReader: charset.Reader}}
+	observer := &metadataObserver{Conn: conn}
 	var c *imapclient.Client
 	if endpoint.TLSMode == domain.TLSStartTLS {
 		c, err = imapclient.NewStartTLS(conn, options)
 	} else {
-		c = imapclient.New(conn, options)
+		c = imapclient.New(observer, options)
 	}
 	stage := "starttls"
 	if err == nil {
@@ -161,7 +162,9 @@ func (t *Transport) connectOnce(ctx context.Context, endpoint domain.AccountEndp
 		releaseConnection(conn)
 		return nil, connectionStepError("authenticate", failure, err)
 	}
-	return &session{client: c, stop: stop, ctx: ctx, conn: conn}, nil
+	return &session{client: c, stop: stop, ctx: ctx, conn: conn,
+		metadata: observer, selectMetadataFallback: useSelectMetadataFallback(endpoint.Host) &&
+			endpoint.TLSMode == domain.TLSImplicit}, nil
 }
 
 func (t *Transport) smtp(ctx context.Context, endpoint domain.AccountEndpoint, secret []byte) (*smtp.Client, func(), error) {

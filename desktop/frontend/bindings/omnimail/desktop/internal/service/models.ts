@@ -12,6 +12,8 @@ export interface AccountSummary {
     "providerCode": string;
     "status": domain$0.AccountStatus;
     "sync": SyncState;
+    "messageCount"?: number | null;
+    "limitedMessageCount"?: number | null;
 }
 
 export interface AddAccountInput {

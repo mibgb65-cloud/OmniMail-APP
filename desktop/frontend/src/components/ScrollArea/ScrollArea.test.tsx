@@ -1,5 +1,5 @@
-import { fireEvent, render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { act, fireEvent, render } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ScrollArea } from './ScrollArea';
 
@@ -23,9 +23,9 @@ function applyMetrics(
   });
 }
 
-function renderArea() {
+function renderArea(edgeFade = false) {
   const view = render(
-    <ScrollArea data-testid="viewport">
+    <ScrollArea data-testid="viewport" edgeFade={edgeFade}>
       <p>内容</p>
     </ScrollArea>,
   );
@@ -37,6 +37,61 @@ function renderArea() {
 }
 
 describe('滚动区', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('边缘羽化只在还有内容可滚动的边缘启用，到达首尾或无溢出时不遮住完整内容', () => {
+    const { root, viewport, track } = renderArea(true);
+    applyMetrics(viewport, { clientHeight: 200, scrollHeight: 800 });
+    applyMetrics(track, { clientHeight: 200 });
+    fireEvent.scroll(viewport);
+    expect(root).toHaveAttribute('data-edge-fade', 'true');
+    expect(root).toHaveAttribute('data-fade-top', 'false');
+    expect(root).toHaveAttribute('data-fade-bottom', 'true');
+    applyMetrics(viewport, { clientHeight: 200, scrollHeight: 800, scrollTop: 300 });
+    fireEvent.scroll(viewport);
+    expect(root).toHaveAttribute('data-fade-top', 'true');
+    expect(root).toHaveAttribute('data-fade-bottom', 'true');
+    applyMetrics(viewport, { clientHeight: 200, scrollHeight: 800, scrollTop: 600 });
+    fireEvent.scroll(viewport);
+    expect(root).toHaveAttribute('data-fade-top', 'true');
+    expect(root).toHaveAttribute('data-fade-bottom', 'false');
+    applyMetrics(viewport, { clientHeight: 800, scrollHeight: 800 });
+    fireEvent.scroll(viewport);
+    expect(root).toHaveAttribute('data-fade-top', 'false');
+    expect(root).toHaveAttribute('data-fade-bottom', 'false');
+  });
+
+  it('初始仅占位，滚动时显示，连续滚动延长空闲时间并最终收起', () => {
+    vi.useFakeTimers();
+    const { root, viewport, track } = renderArea();
+    applyMetrics(viewport, { clientHeight: 200, scrollHeight: 800 });
+    applyMetrics(track, { clientHeight: 300 });
+    expect(root).toHaveAttribute('data-scrolling', 'false');
+    fireEvent.scroll(viewport);
+    expect(root).toHaveAttribute('data-scrolling', 'true');
+    act(() => vi.advanceTimersByTime(600));
+    fireEvent.scroll(viewport);
+    act(() => vi.advanceTimersByTime(600));
+    expect(root).toHaveAttribute('data-scrolling', 'true');
+    act(() => vi.advanceTimersByTime(201));
+    expect(root).toHaveAttribute('data-scrolling', 'false');
+  });
+
+  it('卸载会清理活动计时器，拖拽结束后留有短暂显示缓冲', () => {
+    vi.useFakeTimers();
+    const { root, viewport, track, thumb, unmount } = renderArea();
+    applyMetrics(viewport, { clientHeight: 200, scrollHeight: 800 });
+    applyMetrics(track, { clientHeight: 300 });
+    fireEvent.scroll(viewport);
+    fireEvent.pointerDown(thumb, { clientY: 10, pointerId: 1 });
+    act(() => vi.advanceTimersByTime(1000));
+    expect(root).toHaveAttribute('data-dragging', 'true');
+    fireEvent.pointerUp(thumb, { pointerId: 1 });
+    expect(root).toHaveAttribute('data-scrolling', 'true');
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('内容未溢出时不显示滑块', () => {
     const { root, viewport, track } = renderArea();
     applyMetrics(viewport, { clientHeight: 400, scrollHeight: 400 });

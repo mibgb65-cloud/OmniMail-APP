@@ -23,10 +23,11 @@ function bodyParts(root: Element): Element[] {
   return parts;
 }
 
-export function revealMailPage(page: HTMLElement) {
+export function revealMailPage(page: HTMLElement, viewport?: HTMLElement) {
   const media = page.ownerDocument.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)');
   if (media?.matches) return () => {};
-  const reader = page.closest<HTMLElement>('[data-mail-reader]');
+  const reader = viewport ?? page.closest<HTMLElement>('[data-mail-reader]');
+  const topEdge = viewport?.getBoundingClientRect().top ?? -Infinity;
   const bottom = reader?.getBoundingClientRect().bottom ?? Infinity;
   const candidates: { node: Element; top: number }[] = [
     ...page.querySelectorAll<HTMLElement>('[data-mail-reveal]'),
@@ -48,6 +49,7 @@ export function revealMailPage(page: HTMLElement) {
     .filter(
       ({ node, top }) =>
         node.getBoundingClientRect().height > 0 &&
+        (!viewport || node.getBoundingClientRect().bottom > topEdge) &&
         top < bottom &&
         typeof node.animate === 'function',
     )
@@ -71,12 +73,21 @@ export function revealMailPage(page: HTMLElement) {
   // 动画不决定可读状态；快切、减少动态或键盘聚焦都能直接取消并显示最终样式。
   const cancel = () => animations.forEach((animation) => animation.cancel());
   page.addEventListener('focusin', cancel);
+  viewport?.addEventListener('scroll', cancel, { passive: true });
+  viewport?.addEventListener('pointerdown', cancel);
   frameDocument?.addEventListener('focusin', cancel);
   media?.addEventListener?.('change', cancel);
   return () => {
     cancel();
     page.removeEventListener('focusin', cancel);
+    viewport?.removeEventListener('scroll', cancel);
+    viewport?.removeEventListener('pointerdown', cancel);
     frameDocument?.removeEventListener('focusin', cancel);
     media?.removeEventListener?.('change', cancel);
   };
+}
+
+export function revealMailList(list: HTMLUListElement) {
+  const viewport = list.closest<HTMLElement>('[data-custom-scrollbar]');
+  return revealMailPage(list, viewport ?? undefined);
 }

@@ -7,6 +7,7 @@ import { useTranslation } from '../../lib/i18n/useTranslation';
 import { UiIcon } from '../UiIcon/UiIcon';
 import { detectEmailProvider, normalizeAccountEmail } from './providerDetection';
 import { isNeteaseProvider } from './providerInput';
+import { usesAppPassword } from './providerAuthentication';
 import { AccountInput } from './AccountFormValidation';
 import styles from './AccountDialog.module.css';
 
@@ -17,10 +18,17 @@ const PROVIDER_LABELS = new Map<string, { label: keyof Translations['mail']; ico
   ['netease_163', { label: 'providerNetease', icon: '/providers/netease-163.png' }],
   ['netease_126', { label: 'providerNetease', icon: '/providers/netease-163.png' }],
   ['linuxdo', { label: 'providerLinuxDo', icon: '/providers/linuxdo.png' }],
+  ['naver', { label: 'providerNaver', icon: '/providers/naver.ico' }],
+  ['yandex', { label: 'providerYandex', icon: '/providers/yandex.ico' }],
+  ['icloud', { label: 'providerICloud', icon: '/providers/icloud.ico' }],
+  ['yahoo', { label: 'providerYahoo', icon: '/providers/yahoo.png' }],
   ['custom', { label: 'customProvider' }],
 ]);
 
-export function getProviderLabel(preset: ProviderPreset, t: TFunction<'mail'>) {
+export function getProviderLabel(
+  preset: Pick<ProviderPreset, 'code' | 'name'>,
+  t: TFunction<'mail'>,
+) {
   const key = PROVIDER_LABELS.get(preset.code)?.label;
   return key ? t(key) : preset.name;
 }
@@ -139,9 +147,11 @@ export function ProviderSelection({
                           ? 'customProviderDescription'
                           : preset.code === 'gmail'
                             ? 'gmailProviderDescription'
-                            : isNeteaseProvider(preset.code)
-                              ? 'neteaseProviderDescription'
-                              : 'presetProviderDescription',
+                            : usesAppPassword(preset.code)
+                              ? 'appPasswordProviderDescription'
+                              : isNeteaseProvider(preset.code)
+                                ? 'neteaseProviderDescription'
+                                : 'presetProviderDescription',
                       )}
                     </span>
                   </span>

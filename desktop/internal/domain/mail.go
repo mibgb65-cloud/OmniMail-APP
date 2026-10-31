@@ -36,6 +36,9 @@ type MailBodyTarget struct {
 
 type MailRepository interface {
 	AccountRepository
+	MailCounts(context.Context) (map[string]int, error)
+	MailLimitCounts(context.Context) (map[string]int, error)
+	MarkMailBodyLimit(context.Context, string, string) error
 	PrepareMailbox(context.Context, string, RemoteMailbox, uint32) (MailboxCursor, error)
 	SaveMailBatch(context.Context, string, string, uint32, uint32, uint32, []RemoteMessage, *uint32) error
 	PageMail(context.Context, string, string, int) ([]MailSummary, error)
@@ -80,6 +83,7 @@ type MailSummary struct {
 	Starred        bool   `json:"starred"`
 	Cached         bool   `json:"cached"`
 	HasAttachments bool   `json:"hasAttachments,omitempty"`
+	BodyErrorCode  string `json:"bodyErrorCode,omitempty"`
 }
 
 type AttachmentInfo struct {
@@ -120,6 +124,19 @@ type MailLocation struct {
 	Mailbox     string
 	UIDValidity uint32
 	UID         uint32
+	Identity    RemoteMessage
+}
+
+// SameIdentity 不把已读/星标当成身份；零纪元邮箱用不可变摘要检测常见 UID 重用。
+// 服务器若同时复用 UID 与所有摘要字段，协议本身仍无法提供标准纪元的保证。
+func (m RemoteMessage) SameIdentity(other RemoteMessage) bool {
+	return m.UID == other.UID && m.MessageID == other.MessageID && m.Subject == other.Subject &&
+		m.From == other.From && m.To == other.To && m.ReceivedAt == other.ReceivedAt && m.Size == other.Size
+}
+
+// MailZeroValiditySession 仅由已核对官方端点且观察到明确零值的适配器实现。
+type MailZeroValiditySession interface {
+	ZeroUIDValidity() bool
 }
 
 type MailSession interface {
@@ -134,6 +151,11 @@ type MailSession interface {
 // MailFlagSession 是协议适配器的可选写能力；只读会话不能假装支持修改服务器标记。
 type MailFlagSession interface {
 	SetStarred(mailbox string, validity, uid uint32, starred bool) error
+}
+
+// MailVerifiedReadSession 仅提供经完整摘要核验的已读写入，不暗示星标或移动安全。
+type MailVerifiedReadSession interface {
+	SetReadVerified(mailbox string, expected RemoteMessage, read bool) error
 }
 
 // 写操作为可选能力；不支持安全移动时禁止退化为 COPY/STORE/全邮箱 EXPUNGE。

@@ -66,7 +66,7 @@ func (s *Mail) logSyncFailure(err error, providers ...string) {
 		switch code := diagnostic.DiagnosticCode(); code {
 		case "command_no", "command_bad", "response_parse", "missing_envelope",
 			"uid_out_of_range", "batch_overflow", "unexpected_body", "incomplete_headers",
-			"missing_uidvalidity", "missing_uidnext", "uidvalidity_changed",
+			"missing_uidvalidity", "missing_uidvalidity_after_select", "missing_uidnext", "uidvalidity_changed",
 			"mime_header_invalid", "mime_part_invalid", "mime_text_read_failed",
 			"mime_charset_unknown", "mime_encoding_unknown", "server_closed",
 			"mime_base64_invalid", "mime_body_truncated", "mime_quoted_printable_invalid",
@@ -96,7 +96,7 @@ func (s *Mail) logSyncFailure(err error, providers ...string) {
 
 func safeSyncProvider(provider string) string {
 	switch provider {
-	case "gmail", "qq", "netease_163", "netease_126", "linuxdo", "custom":
+	case "gmail", "qq", "netease_163", "netease_126", "linuxdo", "naver", "yandex", "icloud", "yahoo", "custom":
 		return provider
 	default:
 		return "unknown"

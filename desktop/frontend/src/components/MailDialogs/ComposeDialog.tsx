@@ -66,7 +66,7 @@ export function ComposeDialog({
             {t('close')}
           </button>
         </header>
-        <div className={styles.content}>
+        <div className={styles.content} data-native-scrollbar="">
           <fieldset className={styles.fields} disabled={busy || sent || uncertain}>
             <label>
               {t('from')}

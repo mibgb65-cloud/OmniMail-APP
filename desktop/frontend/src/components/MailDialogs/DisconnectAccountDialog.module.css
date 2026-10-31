@@ -1,0 +1,42 @@
+.dialog {
+  width: min(420px, calc(100vw - var(--space-8)));
+  height: fit-content;
+  overflow: auto;
+}
+.content {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-7);
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: var(--space-10);
+  height: var(--space-10);
+  margin-bottom: var(--space-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+}
+.email {
+  overflow-wrap: anywhere;
+  font-weight: var(--font-medium);
+}
+.description {
+  color: var(--color-text-secondary);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+.confirm {
+  --button-background: var(--color-danger);
+  --button-foreground: var(--color-bg-canvas);
+  --button-hover-background: var(--color-danger);
+  --button-hover-foreground: var(--color-bg-canvas);
+  --button-active-background: var(--color-danger);
+}

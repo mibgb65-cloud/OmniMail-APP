@@ -49,6 +49,7 @@ export interface MailDetail {
     "starred": boolean;
     "cached": boolean;
     "hasAttachments"?: boolean;
+    "bodyErrorCode"?: string;
     "body": string;
     "bodyHtml"?: string;
     "bodyVersion"?: number;
@@ -67,6 +68,7 @@ export interface MailSummary {
     "starred": boolean;
     "cached": boolean;
     "hasAttachments"?: boolean;
+    "bodyErrorCode"?: string;
 }
 
 export enum Protocol {

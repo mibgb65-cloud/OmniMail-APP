@@ -1,5 +1,5 @@
 .list {
-  max-height: calc(var(--space-10) * 4);
+  flex: 1 1 0;
   min-height: 0;
 }
 .all {
@@ -26,11 +26,35 @@
   list-style: none;
 }
 .row {
+  position: relative;
   display: flex;
   align-items: center;
   min-width: 0;
   padding-inline-end: var(--space-2);
   border-radius: var(--radius-sm);
+}
+/* 遮罩只保留 2px 外环，不叠加内容层背景，选中/悬停时仍沿用原卡片底色。 */
+.row[data-syncing='true']::before {
+  --mailbox-border-angle: 0deg;
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--mailbox-border-angle),
+    var(--color-sync-blue),
+    var(--color-sync-violet),
+    var(--color-sync-pink),
+    var(--color-sync-mint),
+    var(--color-sync-blue)
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  content: '';
+  animation: border-flow 4s linear infinite;
 }
 .row[data-selected='true'],
 .row:hover,
@@ -38,90 +62,64 @@
   background: var(--color-bg-selected);
 }
 .select {
-  display: grid;
-  flex: 1;
-  gap: var(--space-1);
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
   min-width: 0;
-  min-height: var(--space-10);
-  padding: var(--space-3) var(--space-4);
+  min-height: var(--space-9);
+  padding: var(--space-3) 0 var(--space-3) var(--space-4);
+  border: 0;
   background: transparent;
   color: var(--color-text-primary);
   text-align: start;
+}
+@media (max-width: 680px) {
+  .list {
+    flex: 0 1 auto;
+    max-height: min(320px, 40dvh);
+  }
 }
 /* 显式覆盖全局按钮悬停，避免出现深色底配深色文字。 */
 .select:hover:not(:disabled) {
   background: transparent;
 }
-.identity,
-.status > span {
+.identity {
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-.identity {
   font-size: var(--text-base);
 }
-.status {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--text-sm);
-}
-.dot {
-  flex-shrink: 0;
-  width: var(--space-2);
-  height: var(--space-2);
-  border-radius: 50%;
-  background: currentColor;
-}
-.status[data-state='ready'] {
-  color: var(--color-success);
-}
-.status[data-state='error'],
-.status[data-state='reauth'] {
-  color: var(--color-danger);
-}
-.spinner {
-  display: flex;
-  flex-shrink: 0;
-  animation: spin var(--motion-sync-spin) linear infinite;
-}
-.disconnect {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: var(--space-7);
-  min-height: var(--space-7);
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   padding: 0;
-  background: transparent;
-  color: var(--color-text-secondary);
-  opacity: 0;
-  pointer-events: none;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
-.row:hover .disconnect,
-.row:focus-within .disconnect {
-  opacity: 1;
-  pointer-events: auto;
-}
-.disconnect:hover:not(:disabled) {
-  background: var(--color-bg-sunken);
-  color: var(--color-danger);
-}
-@keyframes spin {
+@keyframes border-flow {
   to {
-    transform: rotate(360deg);
-  }
-}
-@media (hover: none), (forced-colors: active) {
-  .disconnect {
-    opacity: 1;
-    pointer-events: auto;
+    --mailbox-border-angle: 360deg;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .spinner {
+  .row[data-syncing='true']::before {
+    animation: none;
+  }
+}
+@property --mailbox-border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@media (forced-colors: active) {
+  .row[data-syncing='true']::before {
+    padding: 0;
+    border: 2px solid Highlight;
+    background: none;
+    mask: none;
     animation: none;
   }
 }

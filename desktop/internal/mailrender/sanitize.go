@@ -14,6 +14,8 @@ import (
 	"strings"
 	"unicode"
 
+	"omnimail/desktop/internal/domain"
+
 	"github.com/microcosm-cc/bluemonday"
 	_ "golang.org/x/image/webp"
 	"golang.org/x/net/html"
@@ -89,7 +91,7 @@ func SafeURL(value string, imageURL bool) string {
 
 // Sanitize 的输出不会主动加载任何资源；只有清洗完成后才生成受控数据属性，原文同名属性已被剥离。
 func Sanitize(source string, resolveCID func(string) string) string {
-	if len(source) > 1<<20 || strings.TrimSpace(source) == "" {
+	if len(source) > domain.MaxMessageTextBytes || strings.TrimSpace(source) == "" {
 		return ""
 	}
 	cleaned := policy.Sanitize(source)

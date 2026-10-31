@@ -138,13 +138,10 @@ func (failedBodySave) SaveMailBody(context.Context, string, domain.DecodedMail) 
 }
 
 func TestBodyBackfillFailuresKeepDatabaseBacklogAndOldContent(t *testing.T) {
-	for _, failure := range []string{"network", "format", "oversize", "storage", "canceled", "search", "uid"} {
+	for _, failure := range []string{"network", "format", "storage", "canceled", "search", "uid"} {
 		t.Run(failure, func(t *testing.T) {
 			mail, store, _, _ := testService(t)
 			size := uint32(0)
-			if failure == "oversize" {
-				size = (40 << 20) + 1
-			}
 			accountID, mailboxID := seedBodyTargets(t, mail, store, 1, size)
 			session := new(storedBodySession)
 			ctx, cancel := context.WithCancel(t.Context())
@@ -155,8 +152,6 @@ func TestBodyBackfillFailuresKeepDatabaseBacklogAndOldContent(t *testing.T) {
 				session.cause = domain.ErrNetwork
 			case "format":
 				session.cause, wantCode = domain.ErrProtocol, "MAIL_PROTOCOL_FAILED"
-			case "oversize":
-				wantCode = "MESSAGE_TOO_LARGE"
 			case "storage":
 				mail.store, wantCode = failedBodySave{store}, "STORAGE_FAILED"
 			case "canceled":

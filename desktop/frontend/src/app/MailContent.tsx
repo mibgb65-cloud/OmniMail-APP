@@ -17,6 +17,7 @@ export function MailContent({ mail }: { mail: MailController }) {
     <>
       <MailList mail={mail} formatTime={formatTime} />
       <section
+        data-native-scrollbar=""
         data-mail-reader
         className={styles.reader}
         aria-label={t('selectMessage')}

@@ -26,6 +26,27 @@
   width: 0;
   height: 0;
 }
+/* 透明 mask 只影响内容视口；主题底色、轨道和 Portal 浮层不被遮挡。 */
+.root[data-edge-fade='true'] > .viewport {
+  --edge-top-color: #000;
+  --edge-bottom-color: #000;
+  scroll-padding-block: var(--scroll-edge-fade-size);
+  mask-image: linear-gradient(
+    to bottom,
+    var(--edge-top-color) 0,
+    #000 var(--scroll-edge-fade-size),
+    #000 calc(100% - var(--scroll-edge-fade-size)),
+    var(--edge-bottom-color) 100%
+  );
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+}
+.root[data-fade-top='true'] > .viewport {
+  --edge-top-color: transparent;
+}
+.root[data-fade-bottom='true'] > .viewport {
+  --edge-bottom-color: transparent;
+}
 
 .track {
   position: absolute;
@@ -38,12 +59,12 @@
 }
 
 .root[data-overflow='false'] .track {
-  visibility: hidden;
+  opacity: 0;
 }
 
-.root:hover .track,
-.root:focus-within .track,
-.root[data-dragging='true'] .track {
+.root[data-overflow='true'] .track:hover,
+.root[data-overflow='true'][data-scrolling='true'] .track,
+.root[data-overflow='true'][data-dragging='true'] .track {
   opacity: 1;
 }
 
@@ -57,7 +78,9 @@
   border-radius: 999px;
   background: var(--scrollbar-thumb);
   cursor: default;
-  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  pointer-events: none;
   transition:
     background-color var(--motion-interaction) var(--ease-out),
     width var(--motion-interaction) var(--ease-out);
@@ -65,6 +88,14 @@
 
 .root[data-overflow='false'] .thumb {
   pointer-events: none;
+}
+.root[data-overflow='true'] .track:hover .thumb,
+.root[data-overflow='true'][data-scrolling='true'] .thumb,
+.root[data-overflow='true'][data-dragging='true'] .thumb {
+  pointer-events: auto;
+}
+.root[data-overflow='true'] .track {
+  pointer-events: auto;
 }
 
 .thumb:hover,

@@ -1,6 +1,6 @@
 # 进行中的任务（active）
 
-> 状态：已生效 | 最后更新：2026-10-31
+> 状态：已生效 | 最后更新：2026-11-01
 
 本目录存放**当前迭代进行中**的任务，一个任务一个文件：`TASK-<4位序号>-<slug>.md`。
 模板与规则见 [任务管理](../README.md#4-任务记录模板)，项目入口见 [AGENTS.md](../../../../AGENTS.md)。
@@ -9,6 +9,17 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
+| [TASK-0071](TASK-0071-mail-list-clock.md) | 邮件列表显示具体时分 | @Codex | 待评审 | P2 |
+| [TASK-0070](TASK-0070-yahoo-mail-preset.md) | Yahoo Mail 服务商接入 | @Codex | 待评审 | P1 |
+| [TASK-0069](TASK-0069-mail-list-switch-transition.md) | 邮箱切换列表骨架与顺序入场 | @Codex | 待评审 | P1 |
+| [TASK-0068](TASK-0068-naver-verified-read.md) | NAVER 自动已读与安全标记修复 | @Codex | 待评审 | P1 |
+| [TASK-0067](TASK-0067-mail-list-edge-fade.md) | 邮件列表上下滚动边缘羽化 | @Codex | 待评审 | P2 |
+| [TASK-0066](TASK-0066-naver-sync-sidebar-layout.md) | NAVER 同步兼容与邮箱侧栏布局 | @Codex | 待评审 | P1 |
+| [TASK-0065](TASK-0065-scrollbar-activity-visibility.md) | 滚动条按活动显示与淡入淡出 | @Codex | 待评审 | P1 |
+| [TASK-0064](TASK-0064-mailbox-account-management.md) | 我的邮箱设置入口与账号管理浮窗 | @Codex | 待评审 | P1 |
+| [TASK-0063](TASK-0063-large-mail-sync-isolation.md) | 大邮件 100／50／8 MiB 与单封超限隔离 | @Codex | 待评审 | P1 |
+| [TASK-0062](TASK-0062-naver-yandex-icloud-presets.md) | NAVER、Yandex 与 iCloud 邮箱预设 | @Codex | 待评审 | P1 |
+| [TASK-0061](TASK-0061-mailbox-status-polish.md) | 邮箱单行状态、流光边框与断开确认弹窗 | @Codex | 待评审 | P1 |
 | [TASK-0060](../archive/2026/10/TASK-0060-sync-stability-dev-delivery.md) | QQ/Gmail 同步稳定性与 dev 交付（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0059](../archive/2026/10/TASK-0059-mail-provider-integration.md) | LinuxDo 接入、网易统一入口与同步兼容（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0058](../archive/2026/10/TASK-0058-offline-mail-persistence.md) | 后台同步完整正文并持久保存数据库（已归档） | @Codex | 已完成 | P1 |

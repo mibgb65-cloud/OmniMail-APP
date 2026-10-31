@@ -5,6 +5,7 @@ import { MessagesPopover } from '../components/MessagesPopover/MessagesPopover';
 import { SettingsDialog } from '../components/SettingsDialog/SettingsDialog';
 import { UiIcon } from '../components/UiIcon/UiIcon';
 import { MailboxAccounts } from './MailboxAccounts';
+import { MailboxManagementDialog } from '../components/MailboxManagementDialog/MailboxManagementDialog';
 import type { AccountSummary } from '../lib/bridge/mail';
 import type { VersionInfo } from '../lib/bridge/app';
 import { useTranslation } from '../lib/i18n/useTranslation';
@@ -37,7 +38,8 @@ interface WorkspaceSidebarProps {
   onSelectAccount?: (id: string) => void;
   onAddAccount?: () => void;
   onCompose?: () => void;
-  onDisconnect?: (id: string) => void;
+  onDisconnect?: (id: string) => Promise<void> | void;
+  onRetryAccount?: (id: string) => Promise<void>;
   mailReady?: boolean;
 }
 
@@ -56,13 +58,17 @@ export function WorkspaceSidebar({
   onAddAccount,
   onCompose,
   onDisconnect,
+  onRetryAccount,
   mailReady = false,
 }: WorkspaceSidebarProps) {
   const { t, locale } = useTranslation('navigation');
+  const { t: mail } = useTranslation('mail');
   const composeStatusId = useId();
   const mailboxLabelId = useId();
   const mailboxStatusId = useId();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [accountsOpen, setAccountsOpen] = useState(false);
+  const manageAccountsRef = useRef<HTMLButtonElement>(null);
   const navigationRef = useRef<HTMLElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
   const folderRefs = useRef(new Map<MailFolder, HTMLButtonElement>());
@@ -152,15 +158,30 @@ export function WorkspaceSidebar({
         </ul>
       </nav>
       <section className={styles['mailbox-section']} aria-labelledby={mailboxLabelId}>
-        <p id={mailboxLabelId} className={styles['sidebar-label']}>
-          {t('mailboxesLabel')}
-        </p>
+        <div className={styles['mailbox-header']}>
+          <p id={mailboxLabelId} className={styles['sidebar-label']}>
+            {t('mailboxesLabel')}
+          </p>
+          <button
+            ref={manageAccountsRef}
+            type="button"
+            className={styles['mailbox-settings']}
+            aria-label={mail('manageAccounts')}
+            data-tooltip={mail('manageAccounts')}
+            aria-haspopup="dialog"
+            aria-expanded={accountsOpen}
+            disabled={!mailReady && accounts.length === 0}
+            onClick={() => setAccountsOpen(true)}
+          >
+            <UiIcon name="settings" size={14} />
+          </button>
+        </div>
         {accounts.length > 0 ? (
           <MailboxAccounts
             accounts={accounts}
             selectedAccount={selectedAccount}
             onSelectAccount={onSelectAccount}
-            onDisconnect={onDisconnect}
+            onRetryAccount={onRetryAccount}
           />
         ) : (
           <p className={styles['mailbox-empty']}>
@@ -184,6 +205,19 @@ export function WorkspaceSidebar({
           {!onAddAccount && <small id={mailboxStatusId}>{t('pending')}</small>}
         </button>
       </section>
+      {accountsOpen && (
+        <MailboxManagementDialog
+          accounts={accounts}
+          selectedAccount={selectedAccount}
+          onDisconnect={onDisconnect}
+          onRetryAccount={onRetryAccount}
+          onAddAccount={onAddAccount}
+          onClose={() => {
+            setAccountsOpen(false);
+            manageAccountsRef.current?.focus({ preventScroll: true });
+          }}
+        />
+      )}
       <div className={styles['sidebar-footer']}>
         <button
           type="button"

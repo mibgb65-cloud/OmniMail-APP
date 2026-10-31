@@ -45,7 +45,18 @@ export function MailReaderPage({
         interactive={options.interactive}
         star={star}
       />
-      {(detail.bodyVersion ?? 0) < 1 && (
+      {detail.bodyErrorCode && (
+        <div className={styles['reader-error']} role="status" data-mail-reveal>
+          <p>{t(api.errorKey(detail.bodyErrorCode))}</p>
+          <p className={styles.hint}>{t('bodyLimitedHint')}</p>
+          {detail.bodyErrorCode !== 'MESSAGE_RAW_TOO_LARGE' && (
+            <button type="button" disabled={busy || !options.interactive} onClick={onRefresh}>
+              {t('retryLimitedBody')}
+            </button>
+          )}
+        </div>
+      )}
+      {!detail.bodyErrorCode && (detail.bodyVersion ?? 0) < 1 && (
         <div className={styles['reader-error']} data-mail-reveal>
           <p className={styles.hint}>{t('legacyBody')}</p>
           <button type="button" disabled={busy || !options.interactive} onClick={onRefresh}>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as api from '../lib/bridge/mail';
+import { AccountStatus } from '../../bindings/omnimail/desktop/internal/domain/models';
 import type { MailFolder } from './WorkspaceSidebar';
 import { useMailList } from './useMailList';
 import { useMailReader } from './useMailReader';
@@ -62,13 +63,14 @@ export function useMail(folder: MailFolder) {
   const relevantAccounts = accounts.filter((account) => !accountId || account.id === accountId);
   // 后台状态仅驱动列表重验，不能取消用户正在等待的正文。
   const listStamp = JSON.stringify(
-    relevantAccounts.map(({ id, status, sync }) => [
+    relevantAccounts.map(({ id, status, sync, limitedMessageCount }) => [
       id,
       status,
       sync.running,
       sync.more,
       sync.errorCode,
       sync.lastSyncAt,
+      limitedMessageCount,
     ]),
   );
   const list = useMailList({
@@ -147,7 +149,20 @@ export function useMail(folder: MailFolder) {
       refresh();
     } catch (error) {
       setFilterSync(undefined);
-      setError(error);
+      const code = api.errorCode(error);
+      if (code === 'BUSY') {
+        refresh();
+      } else {
+        // 同步请求失败属于本次邮箱范围，不应冒充账号列表读取失败并重新弹出顶部告警。
+        // 只保留安全错误码；下一次账号轮询继续以后台真实状态为准。
+        setAccounts((current) =>
+          current.map((account) =>
+            account.status === 'configured' && (!accountId || account.id === accountId)
+              ? { ...account, sync: { ...account.sync, errorCode: code } }
+              : account,
+          ),
+        );
+      }
     } finally {
       setSyncRequested(false);
     }
@@ -163,12 +178,47 @@ export function useMail(folder: MailFolder) {
     else setSelected(id);
   };
   const disconnectAccount = async (id: string) => {
+    if (!accounts.some((account) => account.id === id && account.status !== 'disconnected')) {
+      throw new Error('INVALID_INPUT');
+    }
     try {
       await api.disconnect(id);
+      setAccounts((current) =>
+        current.map((account) =>
+          account.id === id
+            ? {
+                ...account,
+                status: AccountStatus.AccountDisconnected,
+                sync: { ...account.sync, running: false, more: false, errorCode: '' },
+              }
+            : account,
+        ),
+      );
       refresh();
     } catch (error) {
-      setError(error);
+      // 断开可能包含凭据清理的不确定结果，刷新实际状态，并把失败交还管理窗局部展示。
+      refresh();
+      throw error;
     }
+  };
+  const retryAccount = async (id: string) => {
+    if (!accounts.some((account) => account.id === id && account.status === 'configured')) {
+      throw new Error('INVALID_INPUT');
+    }
+    try {
+      await api.synchronize(id);
+    } catch (error) {
+      // BUSY 说明已有该账号的同步任务，按已在同步处理，不能把它展示成再次失败。
+      if (api.errorCode(error) !== 'BUSY') throw error;
+    }
+    // 不切换所选账号，不重置邮件/筛选；三秒轮询继续获取真实结果。
+    setAccounts((current) =>
+      current.map((account) =>
+        account.id === id
+          ? { ...account, sync: { ...account.sync, running: true, errorCode: '' } }
+          : account,
+      ),
+    );
   };
   return {
     accounts,
@@ -183,7 +233,13 @@ export function useMail(folder: MailFolder) {
     actionError: actions.actionError,
     autoReadError: actions.autoReadError,
     markViewed: (id: string) => {
-      if (id !== selected || reader.detail?.id !== id || reader.bodyError != null || reader.loading)
+      if (
+        id !== selected ||
+        reader.detail?.id !== id ||
+        !reader.detail.cached ||
+        reader.bodyError != null ||
+        reader.loading
+      )
         return;
       const message = actions.messages.find((item) => item.id === id);
       if (
@@ -208,6 +264,7 @@ export function useMail(folder: MailFolder) {
     setFilter,
     resetView,
     disconnectAccount,
+    retryAccount,
   };
 }
 

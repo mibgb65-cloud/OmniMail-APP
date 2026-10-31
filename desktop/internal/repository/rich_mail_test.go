@@ -40,7 +40,7 @@ func TestRichBodyRejectsInvalidInputWithoutReplacingCache(t *testing.T) {
 	if err := store.SaveMailBody(t.Context(), id, domain.DecodedMail{Text: "保留文本"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := store.SaveMailBody(t.Context(), id, domain.DecodedMail{HTML: strings.Repeat("x", (1<<20)+1)}); !errors.Is(err, domain.ErrTooLarge) {
+	if err := store.SaveMailBody(t.Context(), id, domain.DecodedMail{HTML: strings.Repeat("x", domain.MaxMessageTextBytes+1)}); !errors.Is(err, domain.ErrTooLarge) {
 		t.Fatal("未限制 HTML 大小")
 	}
 	bad := domain.DecodedMail{Text: "不应替换", Attachments: []domain.DecodedAttachment{

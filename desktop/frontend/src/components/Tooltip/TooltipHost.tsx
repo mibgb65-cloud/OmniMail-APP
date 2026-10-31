@@ -58,7 +58,7 @@ function TooltipBubble({ active, id }: { active: ActiveTooltip; id: string }) {
     }
   }
   return (
-    <div ref={ref} id={id} role="tooltip" className={styles.tooltip}>
+    <div ref={ref} id={id} role="tooltip" className={styles.tooltip} data-native-scrollbar="">
       {isLink ? (
         <>
           <strong className={styles['link-host']}>{host}</strong>

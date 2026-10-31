@@ -28,8 +28,13 @@ func (s *Store) contentPath(hash string) (string, error) {
 }
 
 func (s *Store) SaveMailBody(ctx context.Context, id string, body domain.DecodedMail) (err error) {
-	if !domain.ValidAccountID(id) || len(body.Text) > 1<<20 || !utf8.ValidString(body.Text) ||
-		len(body.HTML) > 1<<20 || !utf8.ValidString(body.HTML) || len(body.Attachments) > 128 {
+	if len(body.Text) > domain.MaxMessageTextBytes-len(body.HTML) {
+		return domain.ErrMessageTextTooLarge
+	}
+	if len(body.Attachments) > domain.MaxMessageParts {
+		return domain.ErrTooManyMailParts
+	}
+	if !domain.ValidAccountID(id) || !utf8.ValidString(body.Text) || !utf8.ValidString(body.HTML) {
 		return domain.ErrTooLarge
 	}
 	s.blobMu.Lock()
@@ -50,7 +55,10 @@ func (s *Store) SaveMailBody(ctx context.Context, id string, body domain.Decoded
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		if len(attachment.Data) > 25<<20 || len(attachment.Filename) == 0 || len(attachment.Filename) > 256 ||
+		if len(attachment.Data) > domain.MaxAttachmentBytes || attachment.Size > domain.MaxAttachmentBytes {
+			return domain.ErrAttachmentTooLarge
+		}
+		if len(attachment.Filename) == 0 || len(attachment.Filename) > 256 ||
 			!utf8.ValidString(attachment.Filename) || strings.ContainsFunc(attachment.Filename, unicode.IsControl) || len(attachment.MIME) > 128 ||
 			len(attachment.ContentID) > 998 || !utf8.ValidString(attachment.ContentID) || strings.ContainsFunc(attachment.ContentID, unicode.IsControl) ||
 			strings.ContainsAny(attachment.ContentID, "<>") {
@@ -58,7 +66,7 @@ func (s *Store) SaveMailBody(ctx context.Context, id string, body domain.Decoded
 		}
 		if attachment.Hash != "" {
 			path, err := s.contentPath(attachment.Hash)
-			if err != nil || attachment.Size < 0 || attachment.Size > 25<<20 {
+			if err != nil || attachment.Size < 0 {
 				return domain.ErrProtocol
 			}
 			if err := s.checkContent(path, attachment.Hash); err != nil {
@@ -87,7 +95,7 @@ func (s *Store) saveBodyReferences(ctx context.Context, id string, body domain.D
 		return storageError("开始正文保存", err)
 	}
 	defer rollback(tx, &err)
-	result, err := tx.ExecContext(ctx, "UPDATE mail_message SET body_text=?,body_html=?,body_version=1 WHERE id=?", body.Text, body.HTML, id)
+	result, err := tx.ExecContext(ctx, "UPDATE mail_message SET body_text=?,body_html=?,body_version=1,body_error_code='' WHERE id=?", body.Text, body.HTML, id)
 	if err != nil {
 		return storageError("保存正文", err)
 	}
@@ -151,8 +159,8 @@ func (s *Store) checkContent(path, hash string) (err error) {
 	}
 	defer func() { err = errors.Join(err, storageError("关闭缓存", file.Close())) }()
 	digest := sha256.New()
-	size, err := io.Copy(digest, io.LimitReader(file, (25<<20)+1))
-	if err != nil || size > 25<<20 || hex.EncodeToString(digest.Sum(nil)) != hash {
+	size, err := io.Copy(digest, io.LimitReader(file, domain.MaxAttachmentBytes+1))
+	if err != nil || size > domain.MaxAttachmentBytes || hex.EncodeToString(digest.Sum(nil)) != hash {
 		return domain.ErrProtocol
 	}
 	return nil
@@ -193,12 +201,12 @@ func (s *Store) ReadAttachment(ctx context.Context, id string) (data []byte, nam
 		return nil, "", storageError("打开附件缓存", err)
 	}
 	defer func() { err = errors.Join(err, storageError("关闭附件缓存", file.Close())) }()
-	data, err = io.ReadAll(io.LimitReader(file, (25<<20)+1))
+	data, err = io.ReadAll(io.LimitReader(file, domain.MaxAttachmentBytes+1))
 	if err != nil {
 		return nil, "", storageError("读取附件缓存", err)
 	}
 	digest := sha256.Sum256(data)
-	if len(data) > 25<<20 || hex.EncodeToString(digest[:]) != hash {
+	if len(data) > domain.MaxAttachmentBytes || hex.EncodeToString(digest[:]) != hash {
 		return nil, "", domain.ErrProtocol
 	}
 	return data, name, nil

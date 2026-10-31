@@ -12,8 +12,10 @@ import { useMail } from './useMail';
 import { useVersion } from './useVersion';
 import { WorkspaceSidebar, type MailFolder } from './WorkspaceSidebar';
 import styles from './App.module.css';
+import { useNativeScrollbarActivity } from '../components/ScrollArea/useNativeScrollbarActivity';
 
 export function App() {
+  useNativeScrollbarActivity();
   const { t: nav } = useTranslation('navigation');
   const { state, retry } = useVersion();
   const { theme, toggleTheme } = useTheme();
@@ -84,6 +86,7 @@ export function App() {
                 : undefined
             }
             onDisconnect={mail.disconnectAccount}
+            onRetryAccount={mail.retryAccount}
             versionInfo={state.status === 'success' ? state.info : undefined}
             connectionState={state}
             onRetryConnection={retry}

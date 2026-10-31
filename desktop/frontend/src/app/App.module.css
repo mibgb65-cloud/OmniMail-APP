@@ -129,9 +129,38 @@
 .mailbox-section {
   display: flex;
   flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
   margin-top: var(--space-5);
   padding-top: var(--space-4);
   border-top: 1px solid var(--color-border-subtle);
+}
+.mailbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-inline: var(--space-4);
+  margin-bottom: var(--space-1);
+  flex-shrink: 0;
+}
+.mailbox-header .sidebar-label {
+  display: block;
+  margin: 0;
+}
+.mailbox-settings {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+.mailbox-settings:hover:not(:disabled),
+.mailbox-settings[aria-expanded='true'] {
+  background: var(--color-bg-selected);
+  color: var(--color-text-primary);
 }
 .mailbox-empty {
   display: flex;
@@ -155,6 +184,7 @@
   color: var(--color-text-secondary);
   text-align: start;
   cursor: pointer;
+  flex-shrink: 0;
 }
 /* 覆盖全局 button:disabled 的填充，保持与文件夹列表一致的幽灵行，避免看起来像可点击主按钮 */
 .mailbox-add:disabled {
@@ -177,6 +207,7 @@
   gap: var(--space-3);
   margin-top: auto;
   padding-top: var(--space-6);
+  flex-shrink: 0;
 }
 .settings-button {
   display: flex;
@@ -426,6 +457,9 @@
   }
 }
 @media (max-width: 680px) {
+  .mailbox-section {
+    flex: none;
+  }
   .shell {
     flex-direction: column;
     padding-top: calc(var(--titlebar-height) + var(--space-4));
