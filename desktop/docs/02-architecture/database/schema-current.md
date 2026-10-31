@@ -115,6 +115,6 @@ IMAP 或满足授权政策。当前使用密码/应用授权码；Gmail OAuth �
   图片不可读则降级图片，不清除数据库文字。原始 HTML 重新清洗后展示，不执行邮件脚本或自动请求外部图片；
   发送目前只支持纯文本，DATA 不确定结果不自动重发。
 - 该存储是服务器镜像，不是永久归档；服务器确认删除和 UIDVALIDITY 改变仍沿用既有核对政策。
-- 详见 [TASK-0058](../../07-tasks/active/TASK-0058-offline-mail-persistence.md) 与
+- 详见 [TASK-0058](../../07-tasks/archive/2026/10/TASK-0058-offline-mail-persistence.md) 与
   [ADR-0008](../adr/ADR-0008-offline-mail-bodies.md)；没有宣称超预算正文或所有历史数据均已下载。
 - 已删除缓存的历史孤立内容尚无全量 GC/配额策略；不把临时下载补偿等同于完整垃圾回收。

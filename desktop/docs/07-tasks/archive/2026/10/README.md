@@ -35,6 +35,10 @@
 | [TASK-0053](TASK-0053-reader-switch-transition.md) | 阅读体验、邮件操作与服务商自动已读 | @Codex | 2026-10-31 |
 | [TASK-0054](TASK-0054-reader-header-star.md) | 标题星标入口与紧凑邮件头 | @Codex | 2026-10-31 |
 | [TASK-0055](TASK-0055-gmail-account-connection.md) | Gmail 添加失败诊断、密码兼容与认证错误分类 | @Codex | 2026-10-31 |
+| [TASK-0056](TASK-0056-gmail-mailbox-sync.md) | Gmail 文件夹选择失败与同步兼容性 | @Codex | 2026-10-31 |
+| [TASK-0057](TASK-0057-stable-unread-filter.md) | 未读筛选会话保持列表位置 | @Codex | 2026-10-31 |
+| [TASK-0058](TASK-0058-offline-mail-persistence.md) | 后台正文同步与数据库持久化 | @Codex | 2026-10-31 |
+| [TASK-0059](TASK-0059-mail-provider-integration.md) | LinuxDo 与网易邮箱接入及兼容 | @Codex | 2026-10-31 |
 
 ## 本月取消
 

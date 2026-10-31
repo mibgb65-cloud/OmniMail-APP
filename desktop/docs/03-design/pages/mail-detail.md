@@ -35,7 +35,7 @@
   保留旧正文与附件。TASK-0058 增加后台有界补齐缺失/旧版正文，当前版正文不因状态轮询而反复下载。
   文字和 HTML 持久写入数据库，图片/附件保留文件引用；缺图降级不应导致文字不可读。
   尚未补齐时不宣称离线正文已完整，详情见
-  [TASK-0058](../../07-tasks/active/TASK-0058-offline-mail-persistence.md)。
+  [TASK-0058](../../07-tasks/archive/2026/10/TASK-0058-offline-mail-persistence.md)。
 - TASK-0050 将正文读取从后台同步互斥中拆出，使用独立有界连接；同步轮询和星标完成只刷新列表，
   不取消在途正文。切换邮件或用户主动重试仍可取消旧读取，服务端网络耗时不被隐藏为成功。
 - 缺失/不支持/超预算的内嵌图片显示降级提示，附件另存保持原流程。
@@ -86,7 +86,7 @@
   用户加载下一页可扩展新的未读成员，主动同步完成后继续保持本轮列表稳定；
   明确归档/删除或真实移出的邮件仍移除，不保留幽灵条目。
   未实现历史设计中的 3 秒延迟或离线回写队列。详见
-  [TASK-0057](../../07-tasks/active/TASK-0057-stable-unread-filter.md)。
+  [TASK-0057](../../07-tasks/archive/2026/10/TASK-0057-stable-unread-filter.md)。
 - 验证结果与未验证项以 [TASK-0048](../../07-tasks/archive/2026/10/TASK-0048-rich-mail-reader.md) 为准；
   后续交互修正见 [TASK-0049](../../07-tasks/archive/2026/10/TASK-0049-mail-reader-interactions.md)；
   加载与滚动见 [TASK-0051](../../07-tasks/archive/2026/10/TASK-0051-reader-loading-skeleton.md)；

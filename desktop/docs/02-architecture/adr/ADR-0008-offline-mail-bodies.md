@@ -2,7 +2,7 @@
 
 > 状态：草稿（实现待评审） | 日期：2026-10-31 | 提议人：@Codex
 > 需求依据：用户明确要求正文保存在本地数据库，图片可缓存
-> 任务：[TASK-0058](../../07-tasks/active/TASK-0058-offline-mail-persistence.md)
+> 任务：[TASK-0058](../../07-tasks/archive/2026/10/TASK-0058-offline-mail-persistence.md)
 
 ## 背景
 

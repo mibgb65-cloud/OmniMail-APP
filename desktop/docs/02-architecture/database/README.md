@@ -15,7 +15,7 @@
 - TASK-0058 已复用 schema v3 实现后台正文补齐：受支持的文字/HTML 正文持久保存在 SQLite，
   图片/附件使用文件及数据库引用，不需要新迁移；详见
   [ADR-0008](../adr/ADR-0008-offline-mail-bodies.md) 与
-  [任务记录](../../07-tasks/active/TASK-0058-offline-mail-persistence.md)。
+  [任务记录](../../07-tasks/archive/2026/10/TASK-0058-offline-mail-persistence.md)。
   历史下载仍受预算/格式/大小限制，不把分批进行中说成所有真实账号已完整离线。
 - 下方历史草稿中的标识、去重、状态和查询示例仍需按实施设计修订，不能直接作为后续 DDL。
 
