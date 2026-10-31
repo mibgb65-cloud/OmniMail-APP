@@ -49,7 +49,7 @@ TASK-0032～0036 交付的是密码/应用授权码、TLS 认证、OS 凭据主�
   已加入标准元数据恢复、只读 UID 范围与本地旧范围核对；13:07:32 实际记录
   `provider=netease_163 / SYNC_COMPLETE`。此为一轮同步完成，不代表所有网易账号或未来错误已验收。
   LinuxDo 预设与图标已接入，但没有真实 LinuxDo 账号登录验收；QQ 正文解析观察项仍保留。
-- [TASK-0060](TASK-0060-sync-stability-dev-delivery.md) 继续细化诊断并修复完整 MIME 缺少顶层结束边界，
+- [TASK-0060](../archive/2026/10/TASK-0060-sync-stability-dev-delivery.md) 继续细化诊断并修复完整 MIME 缺少顶层结束边界，
   以及 IMAP 认证前瞬时 TLS/问候断线的单次恢复；QQ/Gmail 已持续 `SYNC_PROGRESS`。
   LinuxDo 后台已记录 `SYNC_COMPLETE`，仅代表当前配置账号的一轮同步；完整历史审计、
   所有邮件格式/网络故障、macOS 和 race 等未验证范围仍保留。
