@@ -5,6 +5,7 @@ import type { MailController } from './useMail';
 import { MailWorkspace } from './MailWorkspace';
 import { MailList } from './MailList';
 import { AccountStatus } from '../../bindings/omnimail/desktop/internal/domain/models';
+import { DEFAULT_MAIL_VIEW } from './mailView';
 
 function makeController(overrides: Partial<MailController> = {}): MailController {
   const message = {
@@ -44,6 +45,7 @@ function makeController(overrides: Partial<MailController> = {}): MailController
     refreshBody: vi.fn(),
     starPending: '',
     isStarPending: () => false,
+    getStarred: (message) => message.starred,
     starError: undefined,
     toggleStarred: vi.fn(),
     loading: false,
@@ -58,6 +60,13 @@ function makeController(overrides: Partial<MailController> = {}): MailController
     sync: vi.fn(),
     syncRequested: false,
     filter: '',
+    viewOptions: DEFAULT_MAIL_VIEW,
+    setViewOptions: vi.fn(),
+    actionBusy: false,
+    actionError: undefined,
+    autoReadError: undefined,
+    markViewed: vi.fn(),
+    runAction: vi.fn(),
     setFilter: vi.fn(),
     resetView: vi.fn(),
     disconnectAccount: vi.fn(),
@@ -65,19 +74,76 @@ function makeController(overrides: Partial<MailController> = {}): MailController
   };
 }
 
-it('真实邮件视图移除分页按钮，正文始终作为文本而不是 HTML', () => {
+it('真实邮件视图移除分页按钮，正文始终作为文本而不是 HTML', async () => {
   const controller = makeController();
   const { container } = render(
     <I18nProvider initialLocale="zh-CN">
       <MailWorkspace mail={controller} />
     </I18nProvider>,
   );
-  expect(screen.getByRole('heading', { name: '真实主题' })).toBeVisible();
+  expect(await screen.findByRole('heading', { name: '真实主题' })).toBeVisible();
   expect(screen.getByText('<script>not-executed()</script>')).toBeVisible();
   expect(container.querySelector('script')).toBeNull();
   expect(screen.queryByRole('button', { name: '上一页' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '下一页' })).not.toBeInTheDocument();
   expect(screen.queryByText('选择邮件后，可在这里查看内容。')).not.toBeInTheDocument();
+  expect(controller.markViewed).toHaveBeenCalledWith(controller.selected);
+});
+
+it('自动已读失败不隐藏正文，提示原因且不暴露底层错误', async () => {
+  const mail = makeController({ autoReadError: new Error('NETWORK_FAILED private-marker') });
+  render(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace mail={mail} />
+    </I18nProvider>,
+  );
+  expect(await screen.findByRole('heading', { name: '真实主题' })).toBeVisible();
+  expect(screen.getByRole('alert')).toHaveTextContent('自动标为已读失败');
+  expect(screen.getByRole('alert')).not.toHaveTextContent('private-marker');
+  expect(screen.getByRole('button', { name: '标为已读' })).toBeEnabled();
+});
+
+it('工具栏真实操作、组合筛选和排序导航使用同一可见列表，保存中防止重复请求', () => {
+  const base = makeController();
+  const first = base.messages[0];
+  if (!first) throw new Error('缺少夹具');
+  const older = { ...first, id: 'older', receivedAt: 0, read: true, hasAttachments: true };
+  const mail = makeController({ messages: [first, older], viewOptions: { ...DEFAULT_MAIL_VIEW } });
+  const view = render(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace mail={mail} />
+    </I18nProvider>,
+  );
+  expect(screen.getByRole('button', { name: '上一封' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: '下一封' }));
+  expect(mail.setSelected).toHaveBeenCalledWith('older');
+  fireEvent.click(screen.getByRole('button', { name: '归档' }));
+  expect(mail.runAction).toHaveBeenLastCalledWith('archive', [first]);
+  fireEvent.click(screen.getByRole('button', { name: '删除' }));
+  expect(mail.runAction).toHaveBeenLastCalledWith('deleted', [first]);
+  fireEvent.click(screen.getByRole('button', { name: '标为已读' }));
+  expect(mail.runAction).toHaveBeenLastCalledWith('read', [first]);
+  fireEvent.click(screen.getByRole('button', { name: '全部已读' }));
+  expect(mail.runAction).toHaveBeenLastCalledWith('allRead', [first]);
+  fireEvent.click(screen.getByText('筛选', { selector: 'summary span' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '只看未读' }));
+  expect(mail.setViewOptions).toHaveBeenLastCalledWith({ ...DEFAULT_MAIL_VIEW, unreadOnly: true });
+  fireEvent.click(screen.getByRole('button', { name: '最新在前' }));
+  expect(mail.setViewOptions).toHaveBeenLastCalledWith({ ...DEFAULT_MAIL_VIEW, oldestFirst: true });
+  view.rerender(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace
+        mail={{
+          ...mail,
+          actionBusy: true,
+          viewOptions: { ...DEFAULT_MAIL_VIEW, unreadOnly: true },
+        }}
+      />
+    </I18nProvider>,
+  );
+  expect(screen.getByRole('button', { name: '下一封' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '删除' })).toBeDisabled();
+  expect(screen.getByText('显示 1 / 已加载 2 封')).toBeVisible();
 });
 
 it('初始账号读取失败显示安全原因和重试入口，不伪装成尚未接入的预览页', () => {
@@ -147,6 +213,16 @@ function renderList(mail: MailController, locale: 'zh-CN' | 'en' = 'zh-CN') {
     </I18nProvider>,
   );
 }
+
+it('筛选后空列表仍可继续加载，不要求有滚动条才能读取下一批', () => {
+  const mail = makeController({
+    hasMore: true,
+    viewOptions: { ...DEFAULT_MAIL_VIEW, attachmentsOnly: true },
+  });
+  renderList(mail);
+  fireEvent.click(screen.getByRole('button', { name: '继续加载邮件' }));
+  expect(mail.loadMore).toHaveBeenCalledOnce();
+});
 
 it.each(['zh-CN', 'en'] as const)(
   '列表在 %s 下展示短日期，完整信息可通过名称及统一提示读取，选中行为不变',
@@ -340,4 +416,124 @@ it('星标按钮与邮件选择按钮独立，标星不顺带选择邮件，忙�
     </I18nProvider>,
   );
   expect(screen.getByRole('button', { name: '标星：真实主题' })).toBeDisabled();
+});
+it('正文网络读取阶段使用同一骨架屏而非裸露的加载文字或空 iframe', () => {
+  const mail = makeController({ detail: undefined, loading: true });
+  render(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace mail={mail} />
+    </I18nProvider>,
+  );
+  expect(screen.getByRole('status', { name: '正在加载邮件内容' })).toBeVisible();
+  expect(screen.queryByTitle('邮件正文')).not.toBeInTheDocument();
+});
+it('阅读器不再显示数据库和脚本安全技术说明，保留正文与必要操作', async () => {
+  render(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace mail={makeController()} />
+    </I18nProvider>,
+  );
+  expect(
+    screen.queryByText(/已下载的正文与原始 HTML 持久保存在本机数据库/),
+  ).not.toBeInTheDocument();
+  expect(await screen.findByRole('button', { name: '复制发件人邮箱' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '复制收件人邮箱' })).toBeVisible();
+});
+it('直接切换到另一封已加载邮件时，头信息不会残留成两份', async () => {
+  const mail = makeController();
+  const view = render(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace mail={mail} />
+    </I18nProvider>,
+  );
+  if (!mail.detail) throw new Error('测试正文缺失');
+  const next = {
+    ...mail.detail,
+    id: 'second-mail',
+    subject: '另一封脱敏主题',
+    from: 'other@example.invalid',
+  };
+  view.rerender(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace mail={{ ...mail, selected: next.id, detail: next, messages: [next] }} />
+    </I18nProvider>,
+  );
+  expect(screen.queryByRole('heading', { name: '真实主题' })).not.toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: '另一封脱敏主题' })).toBeVisible();
+  expect(screen.getAllByRole('button', { name: '复制发件人邮箱' })).toHaveLength(1);
+});
+it('切换邮件立即统一为骨架，旧内容不留在骨架后面', () => {
+  const mail = makeController();
+  const view = render(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace mail={mail} />
+    </I18nProvider>,
+  );
+  view.rerender(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace mail={{ ...mail, selected: 'next-mail', detail: undefined, loading: true }} />
+    </I18nProvider>,
+  );
+  expect(screen.queryByRole('heading', { name: '真实主题', hidden: true })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: '真实主题' })).not.toBeInTheDocument();
+  expect(screen.getByRole('status', { name: '正在加载邮件内容' })).toBeVisible();
+});
+it('切换账号或分类范围时清理旧视觉缓冲，不跨范围保留邮件内容', () => {
+  const mail = makeController();
+  const view = render(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace mail={mail} />
+    </I18nProvider>,
+  );
+  view.rerender(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace
+        mail={{
+          ...mail,
+          listKey: 'another-scope',
+          selected: 'next',
+          detail: undefined,
+          loading: true,
+        }}
+      />
+    </I18nProvider>,
+  );
+  expect(screen.queryByRole('heading', { name: '真实主题', hidden: true })).not.toBeInTheDocument();
+  expect(screen.getByRole('status', { name: '正在加载邮件内容' })).toBeVisible();
+});
+it('标题和列表复用星标操作与即时状态，状态更新不重播阅读页或携带正文提交', async () => {
+  const mail = makeController();
+  const view = render(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace mail={mail} />
+    </I18nProvider>,
+  );
+  const page = document.querySelector('[data-mail-page]');
+  fireEvent.click(await screen.findByRole('button', { name: '标记星标' }));
+  expect(mail.toggleStarred).toHaveBeenCalledOnce();
+  const input = vi.mocked(mail.toggleStarred).mock.calls[0]?.[0];
+  expect(input).not.toHaveProperty('body');
+  expect(input).not.toHaveProperty('bodyHtml');
+  const first = mail.messages[0];
+  if (!first) throw new Error('测试邮件缺失');
+  view.rerender(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace
+        mail={{
+          ...mail,
+          messages: [{ ...first, starred: true }],
+          getStarred: () => true,
+          isStarPending: () => true,
+        }}
+      />
+    </I18nProvider>,
+  );
+  expect(screen.getByRole('button', { name: '取消星标' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('button', { name: '取消星标' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '取消星标：真实主题' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  expect(document.querySelector('[data-mail-page]')).toBe(page);
+  expect(page).toHaveAttribute('data-phase', 'shown');
 });

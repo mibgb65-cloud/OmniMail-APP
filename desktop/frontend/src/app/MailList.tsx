@@ -4,6 +4,7 @@ import type { MailController } from './useMail';
 import styles from './MailList.module.css';
 import { UiIcon } from '../components/UiIcon/UiIcon';
 import { mailAccountNotice, MailAccountNotice, mailSyncState } from './MailAccountNotice';
+import { DEFAULT_MAIL_VIEW, selectMailView } from './mailView';
 
 // 约提前两个邮件行加载，读取仍受控制器的串行、错误和结束状态约束。
 const LOAD_AHEAD_PX = 160;
@@ -33,7 +34,12 @@ function ListStatus({ mail }: { mail: MailController }) {
         <p role="status">{t('listLimitReached')}</p>
       ) : mail.messages.length > 0 && !mail.hasMore ? (
         <p role="status">{t('allMessagesLoaded')}</p>
-      ) : mail.hasMore && !mail.filter ? (
+      ) : mail.hasMore &&
+        (mail.filter || mail.viewOptions?.unreadOnly || mail.viewOptions?.attachmentsOnly) ? (
+        <button type="button" onClick={mail.loadMore}>
+          {t('loadMoreMessages')}
+        </button>
+      ) : mail.hasMore ? (
         <p>{t('scrollForMore')}</p>
       ) : null}
     </footer>
@@ -57,11 +63,7 @@ export function MailList({
     month: 'short',
     day: 'numeric',
   });
-  const items = mail.messages.filter((message) =>
-    `${message.subject} ${message.from}`
-      .toLocaleLowerCase()
-      .includes(mail.filter.toLocaleLowerCase()),
-  );
+  const items = selectMailView(mail.messages, mail.filter, mail.viewOptions ?? DEFAULT_MAIL_VIEW);
   return (
     <section
       key={mail.listKey}
@@ -82,6 +84,14 @@ export function MailList({
       }}
     >
       <MailAccountNotice mail={mail} notice={notice} />
+      {mail.actionError != null && (
+        <p role="alert" className={styles.error}>
+          {t(api.errorKey(mail.actionError))}
+        </p>
+      )}
+      {mail.viewOptions?.attachmentsOnly && (
+        <p className={styles.empty}>{t('attachmentFilterHint')}</p>
+      )}
       {mail.starError != null && (
         <p role="alert" className={styles.error}>
           {t('starFailed')} {t(api.errorKey(mail.starError))}

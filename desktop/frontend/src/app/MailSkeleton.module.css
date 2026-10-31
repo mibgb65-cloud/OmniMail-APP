@@ -1,0 +1,98 @@
+.skeleton {
+  --mail-skeleton-title-width: 60%;
+  --mail-skeleton-tail-width: 42%;
+  position: relative;
+  overflow: hidden;
+  min-height: var(--mail-skeleton-height);
+  border-radius: var(--radius-sm);
+  background: var(--mail-skeleton-surface, var(--color-bg-canvas));
+}
+.skeleton::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--mail-skeleton-glow), transparent);
+  transform: translateX(-100%);
+  animation: mail-shimmer var(--motion-mail-shimmer) linear infinite;
+}
+.skeleton[data-active='false']::after {
+  animation-play-state: paused;
+}
+.skeleton[data-fill='true'] {
+  flex: 1;
+  container: reader-skeleton / size;
+}
+.skeleton[data-fill='true'] .art {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  gap: clamp(var(--space-4), 3cqh, var(--space-7));
+}
+.skeleton[data-fill='true'] .cover {
+  flex: 1;
+  min-height: var(--space-10);
+  max-height: calc(var(--mail-skeleton-cover-height) * 1.6);
+}
+.skeleton[data-fill='true'] .heading,
+.skeleton[data-fill='true'] .lines {
+  flex-shrink: 0;
+}
+.lines.continuation {
+  display: none;
+}
+@container reader-skeleton (min-height: 560px) {
+  .lines.continuation {
+    display: grid;
+  }
+}
+.art {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-6);
+}
+.heading,
+.lines {
+  display: grid;
+  gap: var(--space-3);
+}
+.heading span,
+.lines span,
+.cover {
+  display: block;
+  border-radius: var(--radius-xs);
+  background: var(--color-bg-sunken);
+}
+.lines span {
+  height: var(--space-4);
+}
+.heading span {
+  width: var(--mail-skeleton-title-width);
+  height: var(--space-6);
+}
+.heading span + span,
+.lines span:last-child {
+  width: var(--mail-skeleton-tail-width);
+}
+.cover {
+  height: var(--mail-skeleton-cover-height);
+}
+.screen-reader-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+@keyframes mail-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+    background: none;
+  }
+}

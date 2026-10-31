@@ -62,7 +62,9 @@ func newApplication(assets fs.FS, icon []byte, cfg config.Config, log *slog.Logg
 		Name: "OmniMail", Description: "本地优先的桌面邮件客户端",
 		Icon:   icon,
 		Logger: log, LogLevel: cfg.LogLevel, OnShutdown: shutdown,
-		Services: []application.Service{application.NewService(bridge.NewAppBridge()),
+		Services: []application.Service{application.NewService(bridge.NewAppBridge(func(text string) bool {
+			return application.Get().Clipboard.SetText(text)
+		})),
 			application.NewService(bridge.NewMailBridge(mail, saveAttachment))},
 		Assets: application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
 		Mac: application.MacOptions{

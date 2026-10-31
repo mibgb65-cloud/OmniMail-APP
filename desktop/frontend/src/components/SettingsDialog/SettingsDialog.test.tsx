@@ -43,6 +43,51 @@ beforeEach(() => {
 });
 
 describe('设置模态悬浮窗', () => {
+  it('通用设置提供正文跟随暗色开关，保存后重开仍保持选择', () => {
+    const view = renderDialog();
+    const toggle = screen.getByRole('switch', { name: '邮件正文跟随暗色模式' });
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByRole('switch', { name: '深色模式' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    view.unmount();
+    renderDialog();
+    expect(screen.getByRole('switch', { name: '邮件正文跟随暗色模式' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+  });
+
+  it('邮件配色保存失败时本会话生效、提示未保存且不泄露底层错误', () => {
+    renderDialog();
+    const blocked = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('private-marker');
+    });
+    fireEvent.click(screen.getByRole('switch', { name: '邮件正文跟随暗色模式' }));
+    expect(screen.getByRole('switch', { name: '邮件正文跟随暗色模式' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('当前无法保存偏好');
+    expect(screen.getByRole('alert')).not.toHaveTextContent('private-marker');
+    blocked.mockRestore();
+    fireEvent.click(screen.getByRole('switch', { name: '邮件正文跟随暗色模式' }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('英文设置提供可访问名称和说明', () => {
+    render(
+      <I18nProvider initialLocale="en">
+        <DialogPreview onClose={vi.fn()} />
+      </I18nProvider>,
+    );
+    expect(
+      screen.getByRole('switch', { name: 'Email body follows dark mode' }),
+    ).toHaveAccessibleDescription(/HTML email bodies adapt/);
+  });
   it('挂载后进入原生模态状态，提供名称和说明', () => {
     const { dialog } = renderDialog();
     expect(dialog).toHaveAttribute('open');

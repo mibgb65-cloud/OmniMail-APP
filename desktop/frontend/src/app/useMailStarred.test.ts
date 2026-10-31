@@ -149,3 +149,25 @@ it('切换星标分类时仍显示本账号尚在保存的星标，其他账号�
   expect(result.current.messages).toHaveLength(0);
   await act(async () => resolve());
 });
+it('标题可读取被星标筛选移除的保存中值，确认后也不回退到旧详情', async () => {
+  let finish: () => void = () => {};
+  vi.mocked(api.setStarred).mockReturnValueOnce(
+    new Promise<void>((resolve) => {
+      finish = resolve;
+    }),
+  );
+  const old = { ...message, starred: true };
+  const { result, rerender } = renderHook(
+    ({ messages }) => useMailStarred('scope', 'starred', vi.fn(), vi.fn(), messages),
+    { initialProps: { messages: [old] } },
+  );
+  act(() => {
+    void result.current.toggleStarred(old);
+  });
+  expect(result.current.messages).toHaveLength(0);
+  expect(result.current.getStarred(old)).toBe(false);
+  await act(async () => finish());
+  expect(result.current.getStarred(old)).toBe(false);
+  rerender({ messages: [{ ...old, starred: false }] });
+  expect(result.current.getStarred(old)).toBe(false);
+});

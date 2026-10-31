@@ -1,8 +1,11 @@
 .reader {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   min-width: 0;
   overflow: auto;
+  scrollbar-gutter: stable;
   padding: var(--space-6);
   overflow-wrap: anywhere;
 }
@@ -21,10 +24,6 @@
 }
 .reader-error button:hover:not(:disabled) {
   background: var(--color-bg-selected);
-}
-.reader header p {
-  margin: var(--space-2) 0;
-  color: var(--color-text-secondary);
 }
 .attachment {
   display: block;

@@ -127,7 +127,9 @@ func (s *Store) PageMail(ctx context.Context, accountID, folder string, offset i
 		return nil, domain.ErrProtocol
 	}
 	rows, err := s.db.QueryContext(ctx, `SELECT m.id,m.account_id,b.remote_name,m.subject,m.from_addr,m.to_addrs,
-		m.received_at,m.is_read,m.is_starred,m.body_text IS NOT NULL FROM mail_message m
+		m.received_at,m.is_read,m.is_starred,m.body_text IS NOT NULL,
+		EXISTS(SELECT 1 FROM mail_attachment x WHERE x.mail_id=m.id AND COALESCE(x.content_id,'')='')
+		FROM mail_message m
 		JOIN mailbox b ON b.id=m.mailbox_id JOIN account a ON a.id=m.account_id
 		WHERE (?='' OR m.account_id=?) AND (a.status!='disconnected' OR ?!='')
 		AND ((?='starred' AND m.is_starred=1) OR (?!='starred' AND b.kind=?))
@@ -140,7 +142,7 @@ func (s *Store) PageMail(ctx context.Context, accountID, folder string, offset i
 	for rows.Next() {
 		var message domain.MailSummary
 		if err := rows.Scan(&message.ID, &message.AccountID, &message.Mailbox, &message.Subject, &message.From, &message.To,
-			&message.ReceivedAt, &message.Read, &message.Starred, &message.Cached); err != nil {
+			&message.ReceivedAt, &message.Read, &message.Starred, &message.Cached, &message.HasAttachments); err != nil {
 			return nil, storageError("解析邮件列表", err)
 		}
 		result = append(result, message)
@@ -182,6 +184,9 @@ func (s *Store) ReadMail(ctx context.Context, id string) (detail domain.MailDeta
 			return detail, storageError("解析附件信息", err)
 		}
 		detail.Attachments = append(detail.Attachments, attachment)
+		if attachment.ContentID == "" {
+			detail.HasAttachments = true
+		}
 	}
 	return detail, storageError("读取附件信息", rows.Err())
 }

@@ -33,6 +33,22 @@ export function buildMailDocument(html: string, policy: ImagePolicy) {
   template.content.querySelectorAll('*').forEach((node) => {
     // 邮件中任何嵌套 title 都可能覆盖链接的统一提示，不能只清理最外层 a。
     node.removeAttribute('title');
+    node.removeAttribute('id');
+    if (node instanceof HTMLElement) {
+      // 颜色值仍原样保留，仅降下邮件自身的 !important，让受控暗色规则可覆盖；
+      // 原始配色模式不匹配暗色规则，仍使用这些原始颜色。
+      for (const property of ['color', 'background-color', 'border-color']) {
+        if (node.style.getPropertyPriority(property)) {
+          const value = node.style.getPropertyValue(property);
+          node.style.removeProperty(property);
+          node.style.setProperty(property, value);
+        }
+      }
+      for (const property of Array.from(node.style)) {
+        if (/(?:\d|\.)\s*(?:[sld]?v[hw]|vmin|vmax)\b/i.test(node.style.getPropertyValue(property)))
+          node.style.removeProperty(property);
+      }
+    }
     for (const attr of [...node.attributes]) {
       if (
         /^on/i.test(attr.name) ||
@@ -74,7 +90,13 @@ export function buildMailDocument(html: string, policy: ImagePolicy) {
   const images = policy === 'all' ? 'data: https: http:' : policy === 'inline' ? 'data:' : "'none'";
   const csp = `default-src 'none'; script-src 'none'; img-src ${images}; style-src 'unsafe-inline'; font-src 'none'; media-src 'none'; frame-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'`;
   const source = `<!doctype html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><meta name="referrer" content="no-referrer"><style>
-html{color-scheme:light}body{margin:16px;font:14px/1.65 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;color:#202023;background:#fff;overflow-wrap:anywhere}img{max-width:100%;height:auto}table{max-width:100%}pre{white-space:pre-wrap}a{color:#185abc}img:not([src]){display:inline-block;min-width:24px;min-height:24px;border:1px dashed #c4c4cc}
-</style></head><body>${template.innerHTML}</body></html>`;
+html{color-scheme:light}html,body{overflow:hidden!important;scrollbar-width:none!important}body{margin:0;font:14px/1.65 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;color:#202023;background:#fff;overflow-wrap:anywhere}*::-webkit-scrollbar{display:none!important}#omnimail-layout{box-sizing:border-box;padding:16px;overflow:hidden}#omnimail-content{display:flow-root;min-width:0;transform-origin:top left}#omnimail-content div,#omnimail-content table{box-sizing:border-box;max-width:100%!important}img{max-width:100%;height:auto}table{max-width:100%}pre{white-space:pre-wrap}a{color:#185abc}img:not([src]){display:inline-block;min-width:24px;min-height:24px;border:1px dashed #c4c4cc}
+html[data-mail-theme="dark"]:not([data-mail-original="true"]){color-scheme:dark}
+html[data-mail-theme="dark"]:not([data-mail-original="true"]) body{background:#242428!important;color:#e7e7ec!important}
+html[data-mail-theme="dark"]:not([data-mail-original="true"]) #omnimail-content,
+html[data-mail-theme="dark"]:not([data-mail-original="true"]) #omnimail-content *{color:#e7e7ec!important;background-color:transparent!important;border-color:#51515c!important;box-shadow:none!important;text-shadow:none!important}
+html[data-mail-theme="dark"]:not([data-mail-original="true"]) #omnimail-content a,
+html[data-mail-theme="dark"]:not([data-mail-original="true"]) #omnimail-content a *{color:#9fc4ff!important}
+</style></head><body><div id="omnimail-layout"><div id="omnimail-content">${template.innerHTML}</div></div></body></html>`;
   return { source, blocked, unavailable };
 }

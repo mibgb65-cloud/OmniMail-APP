@@ -34,6 +34,8 @@ export const errorKeys = {
   SEND_UNCERTAIN: 'error_SEND_UNCERTAIN',
   CREDENTIAL_CLEANUP_FAILED: 'error_CREDENTIAL_CLEANUP_FAILED',
   SAVE_FAILED: 'error_SAVE_FAILED',
+  ACTION_UNSUPPORTED: 'error_ACTION_UNSUPPORTED',
+  ACTION_UNCERTAIN: 'error_ACTION_UNCERTAIN',
 } as const;
 
 export function errorCode(error: unknown): keyof typeof errorKeys {
@@ -91,6 +93,12 @@ export function refreshMessage(id: string, signal?: AbortSignal) {
 }
 export function setStarred(id: string, starred: boolean) {
   return call(() => native.SetStarred(id, starred));
+}
+export function setRead(id: string, read: boolean) {
+  return call(() => native.SetRead(id, read));
+}
+export function moveMessage(id: string, folder: 'archive' | 'deleted') {
+  return call(() => native.MoveMessage(id, folder));
 }
 export function synchronize(id: string) {
   return call(() => native.Sync(id));

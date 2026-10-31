@@ -37,6 +37,15 @@ func TestMailBridgeRejectsInvalidInputWithoutNativeCalls(t *testing.T) {
 	if _, err := bridge.Message(t.Context(), "../bad"); err == nil {
 		t.Fatal("非法邮件未拒绝")
 	}
+	if err := bridge.SetRead(t.Context(), "../bad", true); err == nil || err.Error() != "MAIL_PROTOCOL_FAILED" {
+		t.Fatal("已读桥接未安全拒绝非法邮件", err)
+	}
+	if err := bridge.MoveMessage(t.Context(), "../bad", "deleted"); err == nil || err.Error() != "MAIL_PROTOCOL_FAILED" {
+		t.Fatal("移动桥接未安全拒绝非法邮件", err)
+	}
+	if err := bridge.MoveMessage(t.Context(), "../bad", "../bad"); err == nil || err.Error() != "INVALID_INPUT" {
+		t.Fatal("移动桥接接受非法目标", err)
+	}
 	if _, err := bridge.SaveAttachment(t.Context(), "../bad"); err == nil {
 		t.Fatal("非法附件未拒绝")
 	}

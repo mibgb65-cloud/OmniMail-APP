@@ -17,6 +17,7 @@ export function MailWorkspace({ mail }: { mail?: MailController } = {}) {
     <div className={styles.layout}>
       <section className={styles.mail} aria-label={t('mailArea')}>
         <MailToolbar
+          controller={mail?.ready ? mail : undefined}
           onSync={mail?.ready && mail.accounts.length ? () => void mail.sync() : undefined}
           syncState={mail ? mailSyncState(mail) : 'idle'}
           syncBusy={

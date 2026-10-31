@@ -28,8 +28,8 @@
   padding: var(--space-3) var(--space-5);
 }
 .dialog button[type='submit'] {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
+  --button-background: var(--color-accent);
+  --button-foreground: var(--color-text-inverse);
 }
 .content {
   flex: 1 1 auto;

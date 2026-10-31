@@ -54,6 +54,11 @@
   --mail-selection-width: 3px;
   --mail-subject-line-height: 1.5;
   --mail-frame-min-height: 180px;
+  --mail-skeleton-height: 288px;
+  --mail-skeleton-cover-height: 112px;
+  --mail-skeleton-glow: rgb(255 255 255 / 66%);
+  --motion-mail-shimmer: 1400ms;
+  --motion-mail-reveal: 220ms;
   --external-link-dialog-width: 520px;
   --sidebar-min-height: 480px;
   --panel-shadow: 0 3px 20px rgb(24 24 27 / 3%);
@@ -128,6 +133,7 @@
 }
 
 :root[data-theme='dark'] {
+  --mail-skeleton-glow: rgb(255 255 255 / 7%);
   color-scheme: dark;
   --color-bg-canvas: #222227;
   --color-bg-surface: #19191d;

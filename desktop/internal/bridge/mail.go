@@ -52,6 +52,14 @@ func (b *MailBridge) SetStarred(ctx context.Context, id string, starred bool) er
 	return mailError(b.mail.SetStarred(ctx, id, starred))
 }
 
+func (b *MailBridge) SetRead(ctx context.Context, id string, read bool) error {
+	return mailError(b.mail.SetRead(ctx, id, read))
+}
+
+func (b *MailBridge) MoveMessage(ctx context.Context, id, folder string) error {
+	return mailError(b.mail.MoveMessage(ctx, id, folder))
+}
+
 func (b *MailBridge) Sync(ctx context.Context, id string) error {
 	if id != "" {
 		return mailError(b.mail.QueueSync(id))

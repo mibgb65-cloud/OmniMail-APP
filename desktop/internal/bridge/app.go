@@ -20,10 +20,10 @@ type VersionInfo struct {
 	Platform  string `json:"platform"`
 }
 
-type AppBridge struct{}
+type AppBridge struct{ copyText func(string) bool }
 
-func NewAppBridge() *AppBridge {
-	return &AppBridge{}
+func NewAppBridge(copyText func(string) bool) *AppBridge {
+	return &AppBridge{copyText: copyText}
 }
 
 func (b *AppBridge) Version(ctx context.Context) (VersionInfo, error) {

@@ -1,6 +1,6 @@
 # 代码规范
 
-> 状态：已生效 | 最后更新：2026-10-25 | 适用：`desktop/internal/**` (Go)、`desktop/frontend/**` (TypeScript/React)
+> 状态：已生效 | 最后更新：2026-10-31 | 适用：`desktop/internal/**` (Go)、`desktop/frontend/**` (TypeScript/React)
 
 ---
 
@@ -157,6 +157,9 @@ src/
 - 只用设计令牌：[design-system.md](../03-design/design-system.md) 中的 CSS 变量，禁止硬编码颜色/间距。
 - 允许硬编码的只有 `0`、`1px` 边框、`100%`。
 - 优先 CSS Modules 或单一全局层；不要引入第二套 UI 框架。
+- 全局按钮基础和状态规则保持在 `button-defaults` cascade layer，不得用高优先级裸
+  `button:hover`/`button:disabled` 覆盖 CSS Module。通用工具按钮显式声明
+  `data-button-variant`，背景与前景成对使用共享状态变量；详见 [按钮规范](../03-design/components/button.md)。
 
 ---
 

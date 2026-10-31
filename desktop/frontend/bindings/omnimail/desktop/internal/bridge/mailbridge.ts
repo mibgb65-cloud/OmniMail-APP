@@ -32,6 +32,10 @@ export function Messages(accountID: string, folder: string, offset: number): $Ca
     return $Call.ByID(945799510, accountID, folder, offset);
 }
 
+export function MoveMessage(id: string, folder: string): $CancellablePromise<void> {
+    return $Call.ByID(1438595894, id, folder);
+}
+
 export function Providers(): $CancellablePromise<domain$0.ProviderPreset[] | null> {
     return $Call.ByID(1030120780);
 }
@@ -46,6 +50,10 @@ export function SaveAttachment(id: string): $CancellablePromise<boolean> {
 
 export function Send(input: service$0.SendInput): $CancellablePromise<void> {
     return $Call.ByID(2589496472, input);
+}
+
+export function SetRead(id: string, read: boolean): $CancellablePromise<void> {
+    return $Call.ByID(389436034, id, read);
 }
 
 export function SetStarred(id: string, starred: boolean): $CancellablePromise<void> {

@@ -1,6 +1,6 @@
 # 进行中的任务（active）
 
-> 状态：已生效 | 最后更新：2026-10-30
+> 状态：已生效 | 最后更新：2026-10-31
 
 本目录存放**当前迭代进行中**的任务，一个任务一个文件：`TASK-<4位序号>-<slug>.md`。
 模板与规则见 [任务管理](../README.md#4-任务记录模板)，项目入口见 [AGENTS.md](../../../../AGENTS.md)。
@@ -9,6 +9,10 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
+| [TASK-0054](TASK-0054-reader-header-star.md) | 标题星标入口与紧凑邮件头 | @Codex | 待评审 | P2 |
+| [TASK-0053](TASK-0053-reader-switch-transition.md) | 阅读体验、邮件操作与服务商自动已读 | @Codex | 待评审 | P1 |
+| [TASK-0052](TASK-0052-mail-header-copy.md) | 邮件头信息排版、邮箱复制与技术说明移除 | @Codex | 待评审 | P2 |
+| [TASK-0051](TASK-0051-reader-loading-skeleton.md) | 邮件骨架屏、就绪淡入与单一滚动区 | @Codex | 待评审 | P1 |
 | [TASK-0050](../archive/2026/10/TASK-0050-foreground-mail-concurrency.md) | 星标与正文读取不被后台同步阻塞 | @Codex | 已完成 | P1 |
 | [TASK-0049](../archive/2026/10/TASK-0049-mail-reader-interactions.md) | 链接安全交互、同步按钮状态、正文持久化核对与星标 | @Codex | 已完成 | P1 |
 | [TASK-0048](../archive/2026/10/TASK-0048-rich-mail-reader.md) | 邮件正文与图片安全完整展示、图片显示设置 | @Codex | 已完成 | P1 |

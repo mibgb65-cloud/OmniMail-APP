@@ -46,7 +46,8 @@ describe('邮件通栏工具条', () => {
       expect(input).toHaveValue('');
       const buttons = within(toolbar).getAllByRole('button');
       expect(buttons.map((button) => button.getAttribute('aria-label'))).toEqual(actions);
-      for (const button of buttons) {
+      for (const [index, button] of buttons.entries()) {
+        expect(button).toHaveAttribute('data-button-variant', index === 0 ? 'secondary' : 'ghost');
         expect(button).toBeDisabled();
         expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
       }

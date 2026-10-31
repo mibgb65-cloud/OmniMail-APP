@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 
 import {
   Archive,
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
   Bell,
   Check,
   ChevronDown,
@@ -10,6 +12,7 @@ import {
   ChevronUp,
   Copy,
   FileText,
+  Filter,
   HardDrive,
   Inbox,
   Info,
@@ -65,6 +68,7 @@ const icons = {
   minimize: Minus,
   maximize: Square,
   restore: Copy,
+  copy: Copy,
   close: X,
   bell: Bell,
   language: Languages,
@@ -79,6 +83,9 @@ const icons = {
   markAllRead: MailCheck,
   previous: ChevronLeft,
   next: ChevronRight,
+  filter: Filter,
+  sortAscending: ArrowUpNarrowWide,
+  sortDescending: ArrowDownWideNarrow,
 } as const;
 
 export type UiIconName = keyof typeof icons;

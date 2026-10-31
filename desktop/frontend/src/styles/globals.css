@@ -48,22 +48,50 @@ h2 {
   outline-offset: var(--outline-width);
 }
 
-button {
-  min-height: var(--control-height);
-  padding: var(--space-3) var(--space-5);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
-  cursor: pointer;
-}
-button:hover:not(:disabled) {
-  background: var(--color-accent-hover);
-}
-button:disabled {
-  background: var(--color-bg-sunken);
-  color: var(--color-text-secondary);
-  cursor: wait;
+/* 按钮默认值不能凭伪类优先级盖过组件。组件在非分层样式中声明状态时始终优先；
+   通用变体统一提供成对的前景/背景，避免次级图标误用主按钮强调底色。 */
+@layer button-defaults {
+  button {
+    --button-background: var(--color-accent);
+    --button-foreground: var(--color-text-inverse);
+    --button-hover-background: var(--color-accent-hover);
+    --button-hover-foreground: var(--color-text-inverse);
+    --button-active-background: var(--color-accent-hover);
+    --button-disabled-background: var(--color-bg-sunken);
+    --button-disabled-foreground: var(--color-text-secondary);
+    min-height: var(--control-height);
+    padding: var(--space-3) var(--space-5);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: var(--button-background);
+    color: var(--button-foreground);
+    cursor: pointer;
+  }
+  button[data-button-variant='ghost'],
+  button[data-button-variant='secondary'] {
+    --button-background: transparent;
+    --button-foreground: var(--color-text-secondary);
+    --button-hover-background: var(--color-bg-selected);
+    --button-hover-foreground: var(--color-text-primary);
+    --button-active-background: var(--color-bg-sunken);
+    --button-disabled-background: transparent;
+  }
+  button[data-button-variant='secondary'] {
+    border-color: var(--color-border-subtle);
+  }
+  button:hover:not(:disabled) {
+    background: var(--button-hover-background);
+    color: var(--button-hover-foreground);
+  }
+  button:active:not(:disabled) {
+    background: var(--button-active-background);
+    color: var(--button-hover-foreground);
+  }
+  button:disabled {
+    background: var(--button-disabled-background);
+    color: var(--button-disabled-foreground);
+    cursor: not-allowed;
+  }
 }
 
 :root[data-theme-transition='circular']::view-transition-group(root) {

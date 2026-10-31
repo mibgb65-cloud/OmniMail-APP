@@ -62,6 +62,10 @@ func testEndpoint(t *testing.T, address string, mode domain.TLSMode) domain.Acco
 }
 
 func imapFixture(t *testing.T, mode domain.TLSMode, rawMessage ...[]byte) (domain.AccountEndpoint, *Transport) {
+	return imapFixtureWithCaps(t, mode, nil, rawMessage...)
+}
+
+func imapFixtureWithCaps(t *testing.T, mode domain.TLSMode, caps imap.CapSet, rawMessage ...[]byte) (domain.AccountEndpoint, *Transport) {
 	t.Helper()
 	config, roots := testTLS(t)
 	memory := imapmemserver.New()
@@ -77,7 +81,7 @@ func imapFixture(t *testing.T, mode domain.TLSMode, rawMessage ...[]byte) (domai
 		t.Fatal(err)
 	}
 	memory.AddUser(user)
-	server := imapserver.New(&imapserver.Options{TLSConfig: config, Logger: log.New(io.Discard, "", 0),
+	server := imapserver.New(&imapserver.Options{TLSConfig: config, Caps: caps, Logger: log.New(io.Discard, "", 0),
 		NewSession: func(*imapserver.Conn) (imapserver.Session, *imapserver.GreetingData, error) {
 			return memory.NewSession(), nil, nil
 		}})

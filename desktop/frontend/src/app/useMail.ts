@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as api from '../lib/bridge/mail';
 import type { MailFolder } from './WorkspaceSidebar';
 import { useMailList } from './useMailList';
 import { useMailReader } from './useMailReader';
 import { useMailStarred } from './useMailStarred';
+import { useMailActions } from './useMailActions';
+import { DEFAULT_MAIL_VIEW, type MailViewOptions } from './mailView';
 
 export function useMail(folder: MailFolder) {
   const [accounts, setAccounts] = useState<api.AccountSummary[]>([]);
@@ -13,6 +15,7 @@ export function useMail(folder: MailFolder) {
   const [error, setError] = useState<unknown>();
   const [viewRevision, setViewRevision] = useState(0);
   const [filter, setFilter] = useState('');
+  const [viewOptions, setViewOptions] = useState<MailViewOptions>(DEFAULT_MAIL_VIEW);
   const [revision, setRevision] = useState(0);
   const [syncRequested, setSyncRequested] = useState(false);
   const refresh = useCallback(() => {
@@ -72,12 +75,31 @@ export function useMail(folder: MailFolder) {
   });
 
   const reader = useMailReader(selected);
+  const revalidatedDetail = useRef<api.MailDetail>();
+  useEffect(() => {
+    // 首次下载正文才确认附件信息，重验本地列表；不为附件筛选自动下载所有邮件。
+    if (
+      reader.detail?.cached &&
+      revalidatedDetail.current !== reader.detail &&
+      list.messages.some((message) => message.id === reader.detail?.id && !message.cached)
+    ) {
+      revalidatedDetail.current = reader.detail;
+      refresh();
+    }
+  }, [reader.detail, list.messages, refresh]);
+  const actions = useMailActions(
+    list.listKey,
+    list.messages,
+    refresh,
+    (id) => setSelected((current) => (current === id ? '' : current)),
+    selected,
+  );
   const stars = useMailStarred(
     JSON.stringify([accountId, folder]),
     folder,
     (id) => setSelected((current) => (current === id ? '' : current)),
     refresh,
-    list.messages,
+    actions.messages,
     accountId,
   );
 
@@ -103,6 +125,7 @@ export function useMail(folder: MailFolder) {
     setSelected('');
     setViewRevision((value) => value + 1);
     setFilter('');
+    setViewOptions(DEFAULT_MAIL_VIEW);
   };
   const selectMessage = (id: string) => {
     if (id === selected) reader.retryBody();
@@ -124,6 +147,25 @@ export function useMail(folder: MailFolder) {
     ...list,
     ...reader,
     ...stars,
+    actionBusy: actions.actionBusy,
+    actionError: actions.actionError,
+    autoReadError: actions.autoReadError,
+    markViewed: (id: string) => {
+      if (id !== selected || reader.detail?.id !== id || reader.bodyError != null || reader.loading)
+        return;
+      const message = actions.messages.find((item) => item.id === id);
+      if (
+        message &&
+        !message.read &&
+        accounts.some(
+          (account) => account.id === message.accountId && account.status === 'configured',
+        )
+      )
+        actions.markViewed(id);
+    },
+    runAction: actions.runAction,
+    viewOptions,
+    setViewOptions,
     selected,
     setSelected: selectMessage,
     error,

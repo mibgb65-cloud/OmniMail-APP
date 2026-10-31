@@ -18,6 +18,8 @@ var (
 	ErrCredentialInvalid     = errors.New("INVALID_CREDENTIAL")
 	ErrCredentialCleanup     = errors.New("CREDENTIAL_CLEANUP_FAILED")
 	ErrSendUncertain         = errors.New("SEND_UNCERTAIN")
+	ErrActionUnsupported     = errors.New("ACTION_UNSUPPORTED")
+	ErrActionUncertain       = errors.New("ACTION_UNCERTAIN")
 )
 
 type MailboxCursor struct {
@@ -35,6 +37,8 @@ type MailRepository interface {
 	ReadMail(context.Context, string) (MailDetail, error)
 	SaveMailBody(context.Context, string, DecodedMail) error
 	UpdateMailStarred(context.Context, string, bool) error
+	UpdateMailRead(context.Context, string, bool) error
+	MoveMail(context.Context, string, RemoteMailbox, uint32, uint32) error
 	ReadAttachment(context.Context, string) ([]byte, string, error)
 	NextCachedUID(context.Context, string, uint32) (uint32, bool, error)
 	CacheAttachment(context.Context, string, string, io.Reader) (DecodedAttachment, error)
@@ -58,16 +62,17 @@ type RemoteMessage struct {
 }
 
 type MailSummary struct {
-	ID         string `json:"id"`
-	AccountID  string `json:"accountId"`
-	Mailbox    string `json:"mailbox"`
-	Subject    string `json:"subject"`
-	From       string `json:"from"`
-	To         string `json:"to"`
-	ReceivedAt int64  `json:"receivedAt"`
-	Read       bool   `json:"read"`
-	Starred    bool   `json:"starred"`
-	Cached     bool   `json:"cached"`
+	ID             string `json:"id"`
+	AccountID      string `json:"accountId"`
+	Mailbox        string `json:"mailbox"`
+	Subject        string `json:"subject"`
+	From           string `json:"from"`
+	To             string `json:"to"`
+	ReceivedAt     int64  `json:"receivedAt"`
+	Read           bool   `json:"read"`
+	Starred        bool   `json:"starred"`
+	Cached         bool   `json:"cached"`
+	HasAttachments bool   `json:"hasAttachments,omitempty"`
 }
 
 type AttachmentInfo struct {
@@ -122,6 +127,12 @@ type MailSession interface {
 // MailFlagSession 是协议适配器的可选写能力；只读会话不能假装支持修改服务器标记。
 type MailFlagSession interface {
 	SetStarred(mailbox string, validity, uid uint32, starred bool) error
+}
+
+// 写操作为可选能力；不支持安全移动时禁止退化为 COPY/STORE/全邮箱 EXPUNGE。
+type MailActionSession interface {
+	SetRead(mailbox string, validity, uid uint32, read bool) error
+	MoveMail(mailbox string, validity, uid uint32, destination string) (uint32, uint32, error)
 }
 
 type MailTransport interface {

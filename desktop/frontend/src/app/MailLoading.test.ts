@@ -11,6 +11,7 @@ vi.mock('../lib/bridge/mail', async (original) => ({
   message: vi.fn(),
   refreshMessage: vi.fn(),
   setStarred: vi.fn(),
+  setRead: vi.fn(),
 }));
 const summary: api.MailSummary = {
   id: 'mail-test',
@@ -48,8 +49,50 @@ beforeEach(() => {
   vi.mocked(api.accounts).mockResolvedValue([account]);
   vi.mocked(api.messages).mockResolvedValue([summary]);
   vi.mocked(api.setStarred).mockResolvedValue(undefined);
+  vi.mocked(api.setRead).mockResolvedValue(undefined);
 });
 afterEach(() => vi.useRealTimers());
+
+it('仅实际展示通知才写服务商已读，成功更新未读数与筛选而不移除阅读正文', async () => {
+  vi.mocked(api.message).mockResolvedValue(detail);
+  let serverRead = false;
+  vi.mocked(api.messages).mockImplementation(async () => [
+    { ...summary, cached: true, read: serverRead },
+  ]);
+  vi.mocked(api.setRead).mockImplementation(async (id, read) => {
+    expect(id).toBe(summary.id);
+    serverRead = read;
+  });
+  const { result } = renderHook(() => useMail('inbox'));
+  await flush();
+  act(() => result.current.setSelected(summary.id));
+  await flush();
+  expect(api.setRead).not.toHaveBeenCalled();
+  act(() =>
+    result.current.setViewOptions({ unreadOnly: true, attachmentsOnly: false, oldestFirst: false }),
+  );
+  await act(async () => result.current.markViewed(summary.id));
+  expect(api.setRead).toHaveBeenCalledExactlyOnceWith(summary.id, true);
+  expect(result.current.messages.filter((message) => !message.read)).toHaveLength(0);
+  expect(result.current.selected).toBe(summary.id);
+  expect(result.current.detail?.body).toBe(detail.body);
+  await act(async () => result.current.markViewed(summary.id));
+  expect(api.setRead).toHaveBeenCalledTimes(1);
+});
+
+it('断开账号的缓存邮件仍能阅读，但不尝试回写服务商', async () => {
+  vi.mocked(api.accounts).mockResolvedValue([
+    { ...account, status: AccountStatus.AccountDisconnected },
+  ]);
+  vi.mocked(api.message).mockResolvedValue(detail);
+  const { result } = renderHook(() => useMail('inbox'));
+  await flush();
+  act(() => result.current.setSelected(summary.id));
+  await flush();
+  await act(async () => result.current.markViewed(summary.id));
+  expect(api.setRead).not.toHaveBeenCalled();
+  expect(result.current.detail?.body).toBe(detail.body);
+});
 
 it('账号状态轮询暂时失败仍保留已经加载的邮件，不退回演示空态', async () => {
   const { result } = renderHook(() => useMail('inbox'));
@@ -60,6 +103,25 @@ it('账号状态轮询暂时失败仍保留已经加载的邮件，不退回演�
   expect(result.current.ready).toBe(true);
   expect(result.current.messages).toHaveLength(1);
   expect(api.errorCode(result.current.error)).toBe('NETWORK_FAILED');
+});
+
+it('首次下载正文后仅重验一次附件摘要，不为筛选额外下载正文', async () => {
+  vi.mocked(api.message).mockResolvedValue({ ...detail, hasAttachments: true });
+  vi.mocked(api.messages)
+    .mockResolvedValueOnce([summary])
+    .mockResolvedValue([{ ...summary, cached: true, hasAttachments: true }]);
+  const { result } = renderHook(() => useMail('inbox'));
+  await flush();
+  act(() => result.current.setSelected(summary.id));
+  await flush();
+  expect(result.current.messages[0]?.hasAttachments).toBe(true);
+  expect(api.messages).toHaveBeenCalledTimes(2);
+  act(() =>
+    result.current.setViewOptions({ unreadOnly: false, attachmentsOnly: true, oldestFirst: false }),
+  );
+  await flush();
+  expect(api.message).toHaveBeenCalledOnce();
+  expect(api.messages).toHaveBeenCalledTimes(2);
 });
 
 it('正文遇到账号 BUSY 时显示等待并自动恢复，而不是让用户停留在错误页', async () => {

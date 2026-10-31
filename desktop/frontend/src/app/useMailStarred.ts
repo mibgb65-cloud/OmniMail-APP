@@ -87,14 +87,14 @@ export function useMailStarred(
   const pendingIds = Object.entries(displayed)
     .filter(([, value]) => value.status === 'pending')
     .map(([id]) => id);
-  const existingIds = new Set(baseMessages.map((message) => message.id));
+  const canonical = new Map(baseMessages.map((message) => [message.id, message.starred]));
   const added =
     folder === 'starred'
       ? Object.values(displayed)
           .filter(
             (value) =>
               value.wanted &&
-              !existingIds.has(value.message.id) &&
+              !canonical.has(value.message.id) &&
               (!accountId || value.message.accountId === accountId),
           )
           .map((value) => value.message)
@@ -114,6 +114,8 @@ export function useMailStarred(
     messages,
     starPending: pendingIds[0] ?? '',
     isStarPending: (id: string) => displayed[id]?.status === 'pending',
+    getStarred: (message: api.MailSummary) =>
+      displayed[message.id]?.wanted ?? canonical.get(message.id) ?? message.starred,
     starError: !accountId || state.accountId === accountId ? state.error : undefined,
     toggleStarred,
   };

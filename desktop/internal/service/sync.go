@@ -329,7 +329,7 @@ func ErrorCode(err error) string {
 		return "TIMEOUT"
 	}
 	for _, known := range []error{domain.ErrAuthentication, domain.ErrTLS, domain.ErrNetwork, domain.ErrProtocol,
-		domain.ErrTooLarge, domain.ErrOAuthConfig, domain.ErrCredentialMissing, domain.ErrCredentialUnavailable, domain.ErrCredentialInvalid, domain.ErrSendUncertain} {
+		domain.ErrTooLarge, domain.ErrOAuthConfig, domain.ErrCredentialMissing, domain.ErrCredentialUnavailable, domain.ErrCredentialInvalid, domain.ErrSendUncertain, domain.ErrActionUnsupported, domain.ErrActionUncertain} {
 		if errors.Is(err, known) {
 			return known.Error()
 		}

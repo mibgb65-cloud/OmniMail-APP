@@ -14,12 +14,69 @@
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
-  max-width: 360px;
+  max-width: 760px;
+  flex-wrap: wrap;
 }
 .search {
   flex: 1 1 auto;
   min-width: 100px;
   max-width: 360px;
+}
+.filters {
+  position: relative;
+  flex-shrink: 0;
+}
+.filters summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.filters summary::-webkit-details-marker {
+  display: none;
+}
+.filters summary:hover,
+.filters summary[data-active='true'] {
+  background: var(--color-bg-selected);
+  color: var(--color-text-primary);
+}
+.filters summary:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+.filter-popover {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  inset-inline-start: 0;
+  z-index: 10;
+  display: grid;
+  gap: var(--space-3);
+  width: 240px;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--panel-shadow);
+  font-size: var(--text-sm);
+}
+.filter-popover label {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  cursor: pointer;
+}
+.filter-popover input {
+  width: 16px;
+  height: 16px;
 }
 .mail-controls {
   display: flex;
@@ -48,9 +105,10 @@
   min-height: var(--control-height);
   height: var(--control-height);
   padding: 0;
-  color: var(--color-text-secondary);
-  background: transparent;
   user-select: none;
+  transition:
+    background-color var(--motion-interaction) ease,
+    color var(--motion-interaction) ease;
 }
 .icon-button {
   width: var(--control-height);
@@ -58,22 +116,11 @@
 .sync-button {
   gap: var(--space-2);
   padding: 0 var(--space-3);
-  border-color: var(--color-border-subtle);
   font-size: var(--text-sm);
   white-space: nowrap;
-  transition:
-    background-color var(--motion-interaction) ease,
-    color var(--motion-interaction) ease;
-}
-/* 同步是工具栏次级操作，不能继承全局主按钮的深色悬停底。 */
-.sync-button:hover:not(:disabled) {
-  color: var(--color-text-primary);
-  background: var(--color-bg-selected);
 }
 .icon-button:disabled,
 .sync-button:disabled {
-  color: var(--color-text-secondary);
-  background: transparent;
   opacity: 0.6;
   cursor: not-allowed;
 }

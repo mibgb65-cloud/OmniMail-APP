@@ -9,6 +9,10 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
+export function CopyMailAddresses(value: string): $CancellablePromise<void> {
+    return $Call.ByID(2083995052, value);
+}
+
 export function Version(): $CancellablePromise<$models.VersionInfo> {
     return $Call.ByID(3369945998);
 }

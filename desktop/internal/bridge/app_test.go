@@ -8,7 +8,7 @@ import (
 )
 
 func TestVersion(t *testing.T) {
-	info, err := NewAppBridge().Version(context.Background())
+	info, err := NewAppBridge(nil).Version(context.Background())
 	if err != nil || info.Version == "" || info.GoVersion == "" || info.Platform == "" {
 		t.Fatalf("版本信息无效: %+v, %v", info, err)
 	}
@@ -30,7 +30,7 @@ func TestVersion(t *testing.T) {
 func TestVersionCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := NewAppBridge().Version(ctx)
+	_, err := NewAppBridge(nil).Version(ctx)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("取消错误 = %v", err)
 	}

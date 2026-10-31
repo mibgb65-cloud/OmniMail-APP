@@ -1,6 +1,21 @@
 import { expect, it } from 'vitest';
 import { buildMailDocument } from './mailDocument';
 
+it('提供暗色阅读与原始配色退出条件，不反转图片且保留原始颜色值', () => {
+  const { source } = buildMailDocument(
+    '<div style="color:#123456!important;background-color:#ffffff!important"><img data-mail-image="data:image/png;base64,AAAA"></div>',
+    'inline',
+  );
+  const doc = new DOMParser().parseFromString(source, 'text/html');
+  const content = doc.querySelector<HTMLElement>('#omnimail-content div');
+  expect(content?.style.color).toBe('rgb(18, 52, 86)');
+  expect(content?.style.getPropertyPriority('color')).toBe('');
+  expect(source).toContain('data-mail-theme="dark"');
+  expect(source).toContain(':not([data-mail-original="true"])');
+  expect(source).not.toContain('filter:invert');
+  expect(doc.querySelector('img')?.getAttribute('src')).toBe('data:image/png;base64,AAAA');
+});
+
 const image = 'data:image/png;base64,aGVsbG8=';
 const html = `<p>富文本</p><img data-mail-image="${image}"><img data-mail-remote="https://images.example.invalid/a.png"><a href="#omnimail-link" data-mail-url="https://example.invalid">外链</a>`;
 
@@ -50,4 +65,20 @@ it('邮件链接不保留原生黑色 title，提供真实地址的统一提示'
   expect(link?.getAttribute('data-tooltip')).toBe('https://example.invalid/path');
   expect(link?.getAttribute('data-tooltip-kind')).toBe('link');
   expect(link?.querySelector('[title]')).toBeNull();
+});
+it('邮件文档具有可信测量包装并关闭内部滚动，不通过横向裁切冒充适应宽度', () => {
+  const result = buildMailDocument(
+    '<table style="width:900px"><tr><td>宽邮件</td></tr></table>',
+    'inline',
+  );
+  const doc = new DOMParser().parseFromString(result.source, 'text/html');
+  expect(doc.getElementById('omnimail-content')?.textContent).toBe('宽邮件');
+  expect(result.source).toContain('overflow:hidden');
+});
+it('视口高度单位不能驱动 iframe 自我增高，固定布局尺寸仍保留', () => {
+  const result = buildMailDocument('<div style="height:100vh;width:700px">布局</div>', 'inline');
+  const doc = new DOMParser().parseFromString(result.source, 'text/html');
+  const node = doc.getElementById('omnimail-content')?.querySelector('div');
+  expect(node?.style.height).toBe('');
+  expect(node?.style.width).toBe('700px');
 });

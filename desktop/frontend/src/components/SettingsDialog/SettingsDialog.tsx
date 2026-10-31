@@ -17,6 +17,7 @@ import {
 } from './SettingsNavigation';
 import { SettingsStorage } from './SettingsStorage';
 import { SettingsMailImages } from './SettingsMailImages';
+import { SettingsMailAppearance } from './SettingsMailAppearance';
 import styles from './SettingsDialog.module.css';
 
 interface AppearanceProps {
@@ -67,6 +68,7 @@ function SettingsPreferences({ theme, onToggleTheme }: AppearanceProps) {
             </button>
           </div>
         </div>
+        <SettingsMailAppearance />
       </section>
       <SettingsMailImages />
     </>
