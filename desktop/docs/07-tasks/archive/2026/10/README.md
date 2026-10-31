@@ -34,6 +34,7 @@
 | [TASK-0052](TASK-0052-mail-header-copy.md) | 邮件头信息排版与邮箱复制 | @Codex | 2026-10-31 |
 | [TASK-0053](TASK-0053-reader-switch-transition.md) | 阅读体验、邮件操作与服务商自动已读 | @Codex | 2026-10-31 |
 | [TASK-0054](TASK-0054-reader-header-star.md) | 标题星标入口与紧凑邮件头 | @Codex | 2026-10-31 |
+| [TASK-0055](TASK-0055-gmail-account-connection.md) | Gmail 添加失败诊断、密码兼容与认证错误分类 | @Codex | 2026-10-31 |
 
 ## 本月取消
 

@@ -1,6 +1,6 @@
 # TASK-0055 Gmail 添加失败诊断与修复
 
-> 状态：待评审
+> 状态：已完成
 > 负责人：@Codex | 创建：2026-10-31 | 优先级：P1
 
 ## 需求与目标
@@ -71,8 +71,8 @@
 
 ## Git 与交付
 
-- 提交/推送授权：均未授权。
-- 关联实现提交：未提交，待评审；保留 active。
+- 首次交付时提交/推送授权：均未授权。
+- 首次交付时关联实现提交：未提交，待评审；当时保留 active。最终处置见完成记录。
 - 用户既有改动：无，不修改用户运行目录、凭据或邮件数据。
 - 验证构建：`desktop/.task/verify-bin/OmniMail.exe`；verify 不覆盖常规运行产物。随后按用户要求启动 `task dev`，第二轮修复已热重启到桌面窗口，继续使用 `.devdata`。
 - 第一轮遗留风险当时为“尚无真实失败阶段证据”；第二轮已通过用户重试定位并修复 IMAP 认证后清理误判，用户确认添加成功。OAuth 未新增，邮件完整同步/实际发送仍不在已验收结论内。
@@ -117,7 +117,7 @@
 - `go -C desktop test ./internal/mailnet ./internal/service -run 'Test(AuthenticatedIMAPCleanupDoesNotRejectAccount|SMTPVerificationKeepsSuccessfulAuthenticationAfterQuitFailure|AccountValidationFailureLogsOnlySafeStageMetadata|ConnectionFailureIncludesSafeAuthenticationStage|AccountAppPasswordNormalization|FailedAuthenticationOrCredentialsDoesNotSave)$' -count=10` 通过，覆盖两阶段验证、清理、凭据补偿和取消。
 - 开发应用已于 11:10:57 自动载入修复，数据目录不变。用户再次在本机重试后回复“完成了”，确认 Gmail 添加已完成。11:13:46 的安全日志记录清理失败为非阻断警告，没有再次出现该次账号添加失败事件。
 - 未读取真实账号密码或邮件正文；用户已确认添加完成，不据此宣称新 Gmail 的全部邮件同步或实际收发均已验收。同步日志不携带账号标识，不能将其他账号的 `SYNC_COMPLETE` 当成新 Gmail 验收。
-- 本轮未提交或推送；“完成了”按用户操作结果记录，不视为 Git 提交/归档授权。仍留 active 待评审。
+- 第三步交付时未提交或推送；当时“完成了”按用户操作结果记录，不视为 Git 提交/归档授权，当时仍留 active 待评审。
 - 清理修复后的最终 `go -C desktop tool wails3 task verify` 退出码 0：格式、静态检查、类型检查、全量 Go 测试、59 文件 / 536 前端测试、绑定生成、Windows production 构建全部通过。`git diff --check` 与累计 19 个变更文件的严格 UTF-8 无 BOM 检查通过；绑定未引入额外受版本控制的改动。`-race` 仍受前述 CGO 环境限制，未宣称通过。
 - 后台遗留项：11:14:47、11:16:01 出现 `MAIL_PROTOCOL_FAILED / stage=select / mailbox_kind=other / reason=command_no`。安全日志不包含账号标识，无法归因到本次 Gmail，不能据用户添加完成宣称邮件同步全部成功；本轮不盲改服务商文件夹或忽略合理同步错误。
 
@@ -129,11 +129,23 @@
 - 本轮起始差异均为本任务累计 19 个文件，暂存区为空；保留原有分步实现和验证历史，不将早期“未提交/未定位”改写为当时已完成。
 - [x] 审阅全部本任务代码与新增测试，复核定向测试、差异与敏感文件边界；代码未变，沿用上一轮已通过的完整 verify，不把文档结案声称为新增真实收发验证。
 - [x] 补充变更日志，将未归因的文件夹选择失败转交 TASK-0037 后续清单，不扩大本任务的成功范围。
-- [ ] 仅显式暂存本任务文件，创建实现提交；取得真实 SHA 后登记、移动同一任务记录至 `archive/2026/10/`、更新索引，再以文档提交完成结案。不得预填 SHA 或 amend 追逐自身哈希。
+- [x] 仅显式暂存本任务文件，创建实现提交；取得真实 SHA 后登记、移动同一任务记录至 `archive/2026/10/`、更新索引，再以文档提交完成结案。不得预填 SHA 或 amend 追逐自身哈希。
 
 ### 本轮结果
 
 - 提交前复核：`go -C desktop test ./internal/mailnet ./internal/service -count=1` 两个包通过；
   `npm run test -- src/components/MailDialogs/SameProviderBatch.test.tsx`（目录 `desktop/frontend`）12/12 通过。
 - 上轮完整 verify 后没有修改代码或配置，本轮仅补充结案文档；完整门禁结果与未运行的 race 限制仍按前述记录保留。
-- 用户已授权本地提交；实现提交尚未创建，成功后登记真实 SHA。
+- 用户已授权本地提交；实现提交已创建，真实 SHA 见下方完成记录。
+
+## 完成记录（2026-10-31）
+
+- 用户已确认真实 Gmail 添加成功，并明确授权“提交代码完成任务记录”；本任务验收范围为账号添加修复，不扩大为完整同步/实际发送验收。
+- 实现提交：`55815d1db730fe94a6612bdfd33ec447e63f7f60`
+  （`fix(mail): 修复 Gmail 添加时连接清理误报失败`）。
+- 验证：最终完整 `go -C desktop tool wails3 task verify` 通过，包含 Go/前端格式、静态检查、类型检查、全量 Go 测试、59 文件 / 536 前端测试、绑定生成与 Windows production 构建；提交前 Go 两包和前端 12 项定向回归再次通过。
+- 边界：未读取用户密码或邮件正文，未新增依赖、数据库迁移、OAuth 或代理配置；`-race` 因 CGO 工具链限制未运行，macOS 未验收。
+- 后续同步选择失败已转交 [TASK-0037](../../../active/TASK-0037-mail-advanced-followups.md)，不将其记录为本任务已修复的能力。
+- 文档：当前索引、月度归档索引、变更日志和后续清单已更新；同一任务记录移入归档，不保留冲突副本。
+- Git：仅本地 `main` 提交，未推送、未切换分支、未重写历史；早期“未提交/未定位”保留其当轮历史含义。
+- 状态：已完成；完成/归档日期：2026-10-31。

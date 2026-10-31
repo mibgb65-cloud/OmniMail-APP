@@ -9,7 +9,7 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
-| [TASK-0055](TASK-0055-gmail-account-connection.md) | Gmail 添加失败诊断、密码兼容与认证错误分类 | @Codex | 待评审 | P1 |
+| [TASK-0055](../archive/2026/10/TASK-0055-gmail-account-connection.md) | Gmail 添加失败诊断、密码兼容与认证错误分类（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0054](../archive/2026/10/TASK-0054-reader-header-star.md) | 标题星标入口与紧凑邮件头（已归档） | @Codex | 已完成 | P2 |
 | [TASK-0053](../archive/2026/10/TASK-0053-reader-switch-transition.md) | 阅读体验、邮件操作与服务商自动已读（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0052](../archive/2026/10/TASK-0052-mail-header-copy.md) | 邮件头信息排版、邮箱复制与技术说明移除（已归档） | @Codex | 已完成 | P2 |
@@ -67,6 +67,8 @@
 
 ## 说明
 
+- TASK-0055 已于 2026-10-31 经用户确认 Gmail 添加成功、按授权本地提交并归档，
+  实现提交 `55815d1db730fe94a6612bdfd33ec447e63f7f60`；未推送，后续同步观察项保留在 TASK-0037。
 - TASK-0051～0054 已于 2026-10-31 经用户审阅通过、按授权提交并归档，
   实现提交 `bf283e41c46abe508333eac6b366c5e9d0ba85d3`；仅本地提交，未推送。
 - TASK-0047～0050 已于 2026-10-30 按用户授权提交并归档，实现提交 `771619c5a546b385ce71def39f300a1824b26b31`；未推送。

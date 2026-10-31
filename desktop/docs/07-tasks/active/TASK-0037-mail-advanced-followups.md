@@ -28,7 +28,7 @@ TASK-0032～0036 交付的是密码/应用授权码、TLS 认证、OS 凭据主�
 
 ### 2026-10-31 转入的同步观察项
 
-- 来源：[TASK-0055](TASK-0055-gmail-account-connection.md) 的 Gmail 添加修复与用户本机重试。
+- 来源：[TASK-0055](../archive/2026/10/TASK-0055-gmail-account-connection.md) 的 Gmail 添加修复与用户本机重试。
   Gmail 添加已由用户确认完成，不能据此勾选真实服务商的完整同步/收发验收。
 - 后台于 11:14:47、11:16:01 记录
   `MAIL_PROTOCOL_FAILED / stage=select / mailbox_kind=other / reason=command_no`；
