@@ -1,7 +1,25 @@
 # 数据库设计
 
-> 状态：草稿 | 负责人：@backend-lead | 最后更新：2026-10-15
-> 相关：[Schema 详情](schema.md) · [迁移与备份](migrations.md) · [ADR-0002](../adr/ADR-0002-local-storage.md)
+> 状态：账号及基础存储已落地，正文自动补齐实现待评审 | 最后更新：2026-10-31
+> 相关：[当前 Schema](schema-current.md) · [迁移与备份](migrations.md) · [ADR-0002](../adr/ADR-0002-local-storage.md)
+
+## 当前实现（TASK-0030）
+
+- 纯 Go SQLite 驱动、启动初始化与关闭、身份校验、版本及校验和迁移、升级前一致性备份。
+- `account`、`account_endpoint`、`schema_migration` 三张表及账号内部仓储；输入校验、原子读写、
+  断开保留配置、级联清除及未引用凭据识别。
+- 服务商预设在领域层集中定义，新增预设无需迁移；真实连接配置随账号保存。
+- TASK-0032～0036 已接入应用码账号 UI、系统凭据、TLS 认证、邮件缓存/轮询和纯文本发送；
+  OAuth、IDLE、草稿/离线队列、缓存回收与性能指标仍是目标，真实服务商未实测。
+- 实际结构及扩展步骤见 [当前 Schema](schema-current.md)，后续模型见 [实施设计](account-storage.md)。
+- TASK-0058 已复用 schema v3 实现后台正文补齐：受支持的文字/HTML 正文持久保存在 SQLite，
+  图片/附件使用文件及数据库引用，不需要新迁移；详见
+  [ADR-0008](../adr/ADR-0008-offline-mail-bodies.md) 与
+  [任务记录](../../07-tasks/archive/2026/10/TASK-0058-offline-mail-persistence.md)。
+  历史下载仍受预算/格式/大小限制，不把分批进行中说成所有真实账号已完整离线。
+- 下方历史草稿中的标识、去重、状态和查询示例仍需按实施设计修订，不能直接作为后续 DDL。
+
+## 后续完整邮件模型草稿（不等同于当前缓存结构）
 
 ---
 
@@ -9,7 +27,7 @@
 
 | 项 | 结论 |
 | --- | --- |
-| 引擎 | SQLite 3（`modernc.org/sqlite` 或 `mattn/go-sqlite3`，需在 ADR-0002 定稿） |
+| 引擎 | 当前已使用 `modernc.org/sqlite v1.61.0`，见 [ADR-0007](../adr/ADR-0007-sqlite-driver.md) |
 | 模式 | WAL，`synchronous=NORMAL`，`foreign_keys=ON` |
 | 位置 | Windows `%APPDATA%\OmniMail\omnimail.db`；macOS `~/Library/Application Support/OmniMail/omnimail.db` |
 | 附件 | 文件系统 `attachments/<sha256 前2位>/<sha256>`，DB 只存引用 |

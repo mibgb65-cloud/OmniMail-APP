@@ -1,0 +1,15 @@
+{
+  "eyebrow": "Runtime",
+  "title": "Desktop service connection",
+  "checking": "Checking…",
+  "check": "Check connection",
+  "loading": "Connecting to the Go service. Please wait…",
+  "errorTitle": "Unable to connect to the desktop service",
+  "errorDescription": "Launch the desktop app through Wails, then select “Check connection” to retry. The browser preview does not include the Go service.",
+  "connected": "Desktop service connected · React ↔ Go",
+  "appVersion": "App version",
+  "commit": "Build commit",
+  "goVersion": "Go version",
+  "platform": "Platform",
+  "buildTime": "Build time"
+}

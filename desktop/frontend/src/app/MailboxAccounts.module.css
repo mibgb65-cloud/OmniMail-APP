@@ -1,0 +1,127 @@
+.list {
+  max-height: calc(var(--space-10) * 4);
+  min-height: 0;
+}
+.all {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  color: var(--color-text-secondary);
+  text-align: start;
+}
+.all[aria-pressed='true'],
+.all:hover:not(:disabled) {
+  background: var(--color-bg-selected);
+  color: var(--color-text-primary);
+}
+.accounts {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding-inline-end: var(--space-2);
+  border-radius: var(--radius-sm);
+}
+.row[data-selected='true'],
+.row:hover,
+.row:focus-within {
+  background: var(--color-bg-selected);
+}
+.select {
+  display: grid;
+  flex: 1;
+  gap: var(--space-1);
+  min-width: 0;
+  min-height: var(--space-10);
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: start;
+}
+/* 显式覆盖全局按钮悬停，避免出现深色底配深色文字。 */
+.select:hover:not(:disabled) {
+  background: transparent;
+}
+.identity,
+.status > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.identity {
+  font-size: var(--text-base);
+}
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+.dot {
+  flex-shrink: 0;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: 50%;
+  background: currentColor;
+}
+.status[data-state='ready'] {
+  color: var(--color-success);
+}
+.status[data-state='error'],
+.status[data-state='reauth'] {
+  color: var(--color-danger);
+}
+.spinner {
+  display: flex;
+  flex-shrink: 0;
+  animation: spin var(--motion-sync-spin) linear infinite;
+}
+.disconnect {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--space-7);
+  min-height: var(--space-7);
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  opacity: 0;
+  pointer-events: none;
+}
+.row:hover .disconnect,
+.row:focus-within .disconnect {
+  opacity: 1;
+  pointer-events: auto;
+}
+.disconnect:hover:not(:disabled) {
+  background: var(--color-bg-sunken);
+  color: var(--color-danger);
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (hover: none), (forced-colors: active) {
+  .disconnect {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

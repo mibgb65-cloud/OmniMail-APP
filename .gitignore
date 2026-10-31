@@ -14,7 +14,14 @@ secrets/
 
 # --- 构建产物 ---
 desktop/build/bin/
+desktop/bin/
+desktop/.task/
+desktop/.devdata/
 desktop/frontend/dist/
+desktop/frontend/coverage/
+desktop/frontend/*.tsbuildinfo
+desktop/frontend/.bindings-tmp-*/
+desktop/wails_*.syso
 build-output/
 dist/
 

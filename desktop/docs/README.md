@@ -1,7 +1,12 @@
 # OmniMail Desktop 文档中心
 
-> 本目录是 **OmniMail 桌面端（Wails + Go + React）** 的唯一事实来源（Single Source of Truth）。
+> 状态：已生效 | 最后更新：2026-10-25
+> 本目录是 **OmniMail 桌面端（Wails + Go + React）** 的文档统一索引。
 > Android / iOS 端文档位于各自目录下的 `docs/`，跨端共性内容以本仓库根 `docs/` 为准。
+
+项目级 AI 入口与来源优先级见[根目录 AGENTS.md](../../AGENTS.md)。
+当前实现以代码、测试和依赖清单核对，任务历史以[具体任务记录](07-tasks/README.md)为准；
+本目录中的草稿与历史方案不等于已实现能力。
 
 ---
 
@@ -25,7 +30,7 @@
 
 1. **了解项目**：[产品介绍](01-product/overview.md) → [总体架构](02-architecture/overview.md)
 2. **跑起代码**：[环境准备](04-development/getting-started.md) → [工程结构](04-development/project-structure.md)
-3. **开始干活**：[任务看板](07-tasks/README.md) → [进行中任务](07-tasks/active) → [AI 协作规范](00-guidelines/ai-agent-rules.md)
+3. **开始干活**：[AI 入口](../../AGENTS.md) → [任务管理](07-tasks/README.md) → [进行中任务](07-tasks/active/README.md) → [AI 细则](00-guidelines/ai-agent-rules.md)
 
 ---
 
@@ -49,6 +54,7 @@ NN-领域/                 NN = 流水号，保证侧边栏顺序稳定
 
 - 我要改一个后端接口 → [API 契约](04-development/api) + [后端架构](02-architecture/backend)
 - 我要新增一个页面 → [页面规格](03-design/pages) + [组件库](03-design/components) + [前端架构](02-architecture/frontend)
+- 我要新增界面文案或语言 → [多语言开发约定](04-development/internationalization.md)
 - 我要打包发版 → [构建与发布](06-release/build.md) + [发布检查单](06-release/release-checklist.md)
 - 代码跑不起来 → [故障排查](04-development/troubleshooting)
 - 想记录一次架构取舍 → [ADR 模板](02-architecture/adr/README.md)

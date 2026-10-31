@@ -1,0 +1,8 @@
+bindings/
+.bindings-tmp-*/
+dist/
+node_modules/
+coverage/
+package-lock.json
+# 保留用户提供的原始品牌资源，与源文件逐字节一致。
+public/brand/

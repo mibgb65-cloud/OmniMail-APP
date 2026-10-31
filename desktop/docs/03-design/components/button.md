@@ -1,11 +1,28 @@
 # Button 按钮
 
-> 状态：草稿 | 负责人：@design-lead | 最后更新：2026-10-15
+> 状态：草稿（含当前实现） | 负责人：@design-lead | 最后更新：2026-10-31
 > 相关：[组件规范](README.md) · [设计系统](../design-system.md)
 
 ## 用途
 
 触发操作。工具栏用 `ghost`，表单用 `secondary`/`primary`，破坏性操作只在确认框内用 `danger`。
+
+## 当前实现：基础层与视觉变体（TASK-0053）
+
+- 当前仍使用原生 `<button>`，并未实现下文设想的通用 React `Button` 组件或全部 Props。
+- `frontend/src/styles/globals.css` 的按钮默认/hover/active/disabled 位于低优先级
+  `@layer button-defaults`；各 CSS Module 组件的非分层样式优先，不依赖 import 顺序或叠加 `!important`。
+- 未声明变体的按钮保持现有主按钮默认配色。工具栏使用 `data-button-variant="ghost"`，
+  同步、排序及清除筛选使用 `data-button-variant="secondary"`（带细边线）。
+  两者默认透明、次级前景；hover 使用 `--color-bg-selected` 与 `--color-text-primary`，
+  active 使用 `--color-bg-sunken`；disabled 不响应悬浮并保留透明底，游标为 `not-allowed`。
+- 共同状态通过 `--button-background` / `--button-foreground`、
+  `--button-hover-background` / `--button-hover-foreground`、
+  `--button-active-background` / `--button-disabled-background` /
+  `--button-disabled-foreground` 配对定义。组件若希望复用默认状态，应只覆写所需变量，
+  避免再次用非分层的固定 background 把主按钮自身的 hover/disabled 状态锁死。
+- 自定义组件的状态仍由所属 CSS Module 管理，键盘焦点沿用全局 focus-visible 轮廓；
+  工具栏仅共享视觉行为，不改变禁用条件、同步进度、提示或邮件操作。
 
 ## Props
 

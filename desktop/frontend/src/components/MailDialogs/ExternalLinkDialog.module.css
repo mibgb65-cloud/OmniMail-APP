@@ -1,0 +1,47 @@
+.dialog {
+  width: min(var(--external-link-dialog-width), calc(100vw - var(--space-8)));
+  height: fit-content;
+  max-height: calc(100dvh - var(--space-8));
+  overflow: auto;
+}
+.content {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-7);
+}
+.eyebrow {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+.destination {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-surface);
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.destination span {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.cancel {
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
+  border-color: var(--color-border-subtle);
+}
+.cancel:hover:not(:disabled) {
+  background: var(--color-bg-selected);
+}
+.error {
+  color: var(--color-danger);
+}

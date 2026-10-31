@@ -1,9 +1,38 @@
 # 工程结构
 
-> 状态：已生效 | 负责人：@arch-lead | 最后更新：2026-10-15
+> 状态：已生效 | 负责人：@arch-lead | 最后更新：2026-10-24
 > 相关：[后端架构](../02-architecture/backend/README.md) · [前端架构](../02-architecture/frontend/README.md) · [快速开始](getting-started.md)
 
 ---
+
+## 0. 当前已实现结构
+
+以下为实际工程骨架。后文的业务分层与文件树描述后续目标，不代表对应模块已经实现。
+
+```text
+OmniMail-APP/
+├── README.md
+├── desktop/
+│   ├── main.go                 # 入口
+│   ├── assets_dev.go           # 开发模式嵌入入口，运行时代理 Vite
+│   ├── assets_production.go    # production 标签下嵌入 frontend/dist
+│   ├── go.mod / go.sum         # Go 依赖与固定版本 Wails CLI
+│   ├── Taskfile.yml            # setup / dev / check / build / run / bindings
+│   ├── build/config.yml        # Wails v3 开发进程编排与应用元数据
+│   ├── internal/
+│   │   ├── app/app.go          # 窗口、生命周期、单实例与绑定装配
+│   │   ├── bridge/             # AppBridge.Version 与测试
+│   │   ├── config/             # 环境配置、输入校验与测试
+│   │   └── logger/             # 结构化日志、按天轮转、脱敏与测试
+│   ├── frontend/
+│   │   ├── bindings/           # Wails 自动生成的 TypeScript 绑定
+│   │   ├── public/mail.svg
+│   │   └── src/{app,lib,styles,test}
+│   └── docs/
+└── android/、ios/、docs/        # 预留目录
+```
+
+`desktop/bin/`、`desktop/.devdata/`、`frontend/node_modules/` 与 `frontend/dist/` 为本地产物，由 Git 忽略。当前没有数据库、邮件业务服务、安装包资源或 CI 配置；工程根配置为 `Taskfile.yml` 和 `build/config.yml`，不使用 Wails v2 的 `wails.json`。
 
 ## 1. 顶层结构
 
@@ -118,14 +147,14 @@ desktop/
 
 见 [前端文件组织](../02-architecture/frontend/file-organization.md)。
 
-## 4. 生成代码（勿手改）
+## 4. 当前生成代码（勿手改）
 
 | 路径 | 生成方式 | 说明 |
 | --- | --- | --- |
-| `frontend/wailsjs/**` | `wails dev` / `wails generate module` | 绑定与模型，随 Go 变更自动更新 |
-| `frontend/src/lib/bridge/types.ts` | 手写镜像（可校验） | 与 `bridge/dto.go` 保持同构 |
+| `frontend/bindings/**` | 在 `desktop/` 执行 `go tool wails3 task bindings` | 当前版本绑定、模型与运行时类型 |
+| `frontend/src/lib/bridge/app.ts` | 手写封装 | 校验不可信返回值，统一超时、取消与错误处理 |
 
-> `wailsjs/` 目录不手改；需要的封装写进 `src/lib/bridge/`。
+> `bindings/` 目录不手改；需要的封装写进 `src/lib/bridge/`。
 
 ## 5. 新增一个功能的改动路径（模板）
 

@@ -1,0 +1,15 @@
+{
+  "eyebrow": "运行环境",
+  "title": "桌面服务连接",
+  "checking": "正在检查…",
+  "check": "检查连接",
+  "loading": "正在连接 Go 服务，请稍候…",
+  "errorTitle": "暂时无法连接桌面服务",
+  "errorDescription": "请确认已通过 Wails 启动桌面应用，再点击“检查连接”重试。浏览器预览不包含 Go 服务。",
+  "connected": "桌面服务已连接 · React ↔ Go",
+  "appVersion": "应用版本",
+  "commit": "构建提交",
+  "goVersion": "Go 版本",
+  "platform": "运行平台",
+  "buildTime": "构建时间"
+}

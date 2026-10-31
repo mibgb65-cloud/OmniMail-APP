@@ -1,6 +1,6 @@
 # 组件规范
 
-> 状态：草稿 | 负责人：@design-lead | 最后更新：2026-10-15
+> 状态：草稿（含已实现组件） | 负责人：@design-lead | 最后更新：2026-10-30
 > 相关：[设计系统](../design-system.md) · [页面规格](../pages/README.md)
 
 ---
@@ -14,9 +14,9 @@
 | --- | --- | --- | --- |
 | [Button](button.md) | ui | 5 | primary / secondary / ghost / danger |
 | [Input](input.md) | ui | 6 | 文本、搜索、密码 |
-| Dialog | ui | 4 | 模态、抽屉 |
+| [DialogFrame](dialog.md) | ui | 标准模态 / 响应式 / 滚动 | 已实现：设置、添加邮箱与撰写共用 900×580 基准；后续同类弹窗复用 |
 | Toast | ui | 4 | 成功/错误/信息，带动作 |
-| Tooltip | ui | 2 | 延迟 400ms |
+| [Tooltip](tooltip.md) | ui | 悬停 / 焦点 / 清理 | 已实现：统一主题浮层，悬停延迟 400ms、键盘即时显示 |
 | Tabs | ui | 4 | 面板切换 |
 | Menu | ui | 4 | 右键与下拉 |
 | Checkbox / Radio / Switch | ui | 4 | — |
@@ -24,6 +24,7 @@
 | `AccountBadge` | composite | 3 | 账号色标 + 名称 |
 | [MailRow](mail-row.md) | feature | 6 | 列表行 |
 | EmptyState | ui | 1 | 图标 + 标题 + 描述 + 动作 |
+| [UiIcon](icons.md) | ui | 装饰性 SVG | Lucide 静态按需引用，统一尺寸、描边与无障碍标记 |
 | Skeleton | ui | 1 | 列表/正文骨架 |
 
 ## 2. 组件文档格式
@@ -56,7 +57,8 @@
 
 ## 4. 图标
 
-必需图标（内联 SVG 组件，24×24 视框、1.5px 线宽）：
+当前功能图标按 [UiIcon 规范](icons.md)使用 Morphicons 与 Lucide 图形数据，24×24 视框、默认显示 18px、1.6 描边、
+currentColor。以下是后续业务候选清单，并非全部已经实现或需要预先导入：
 
 ```
 inbox, send, file-edit(drafts), trash, archive, star, star-filled,

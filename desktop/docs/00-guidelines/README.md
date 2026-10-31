@@ -1,15 +1,16 @@
 # 项目规范（00-guidelines）
 
-> 状态：已生效 | 最后更新：2026-10-15
+> 状态：已生效 | 最后更新：2026-10-25
 
-本目录定义 OmniMail Desktop 的**强制**协作规则。规范与个人习惯冲突时，以本目录为准；
-要修改规范，走 PR + 至少一名维护者 approve。
+本目录定义 OmniMail Desktop 的领域协作细则，统一工作流入口为[根目录 AGENTS.md](../../../AGENTS.md)。
+规范修改需要明确授权；合入团队主分支时按 Git 规范走 PR 与维护者评审，本地修改不等于已获远端批准。
+任务状态与模板以[任务管理](../07-tasks/README.md)为准，验证命令以 Taskfile 为准，避免重复定义。
 
 ## 文档清单
 
 | 文档 | 管什么 | 违反后果 |
 | --- | --- | --- |
-| [coding-standards.md](coding-standards.md) | Go / TypeScript / CSS 写法、命名、错误处理 | CI lint 失败 |
+| [coding-standards.md](coding-standards.md) | Go / TypeScript / CSS 写法、命名、错误处理 | 本地门禁失败、review 不通过 |
 | [git-conventions.md](git-conventions.md) | 分支模型、Commit 格式、PR 流程、版本号 | PR 被拒 |
 | [documentation.md](documentation.md) | 文档位置、模板、状态标记、链接规则 | review 不通过 |
 | [ai-agent-rules.md](ai-agent-rules.md) | AI 助手（含 Claude / Copilot / Codex）的工作边界 | 回滚 + 记录 |

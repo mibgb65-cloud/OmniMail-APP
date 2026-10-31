@@ -1,0 +1,77 @@
+.frame {
+  --wails-draggable: no-drag;
+  width: min(var(--dialog-width), calc(100vw - var(--space-8)));
+  height: min(var(--dialog-height), calc(100dvh - var(--space-8)));
+  max-width: calc(100vw - var(--space-8));
+  max-height: calc(100dvh - var(--space-8));
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-canvas);
+  color: var(--color-text-primary);
+  box-shadow: var(--modal-shadow);
+}
+.frame[open] {
+  animation: appear var(--motion-interaction) var(--ease-out);
+}
+.frame:has([role='menu']) {
+  animation: none;
+}
+.frame[open][data-closing='true'] {
+  pointer-events: none;
+  animation: disappear var(--motion-modal-exit) ease-in both;
+}
+.frame::backdrop {
+  background: var(--color-modal-scrim);
+  backdrop-filter: blur(var(--modal-backdrop-blur));
+  animation: scrim-appear var(--motion-interaction) var(--ease-out) both;
+}
+.frame[data-closing='true']::backdrop {
+  animation: scrim-disappear var(--motion-modal-exit) ease-in both;
+}
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-3));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes disappear {
+  from {
+    opacity: var(--dialog-exit-opacity, 1);
+    transform: var(--dialog-exit-transform, translateY(0));
+  }
+  to {
+    opacity: 0;
+    transform: translateY(var(--space-3));
+  }
+}
+@keyframes scrim-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes scrim-disappear {
+  from {
+    opacity: var(--dialog-exit-backdrop-opacity, 1);
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .frame[open],
+  .frame[open][data-closing='true'],
+  .frame::backdrop,
+  .frame[data-closing='true']::backdrop {
+    animation: none;
+  }
+}

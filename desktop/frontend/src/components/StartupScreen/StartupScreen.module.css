@@ -1,0 +1,90 @@
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-startup);
+  display: grid;
+  place-items: center;
+  background: var(--color-bg-canvas);
+  transition: opacity var(--motion-startup-exit) ease;
+}
+.center {
+  width: min(var(--startup-width), calc(100% - var(--space-10)));
+  text-align: center;
+}
+.wordmark {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-5);
+  margin-bottom: var(--space-8);
+  animation: arrive var(--motion-startup-enter) var(--ease-out) both;
+}
+.wordmark strong {
+  font-size: var(--text-display);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+.mark {
+  width: var(--brand-size-large);
+  height: var(--brand-size-large);
+  animation: lift var(--motion-startup-loop) ease-in-out infinite;
+}
+.track {
+  height: var(--startup-line-height);
+  overflow: hidden;
+  background: var(--color-border-subtle);
+}
+.track span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--color-text-primary);
+  transform-origin: left;
+  animation: flow var(--motion-startup-loop) var(--ease-out) infinite;
+}
+.center p {
+  margin-top: var(--space-6);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  animation: arrive var(--motion-startup-enter) ease both;
+}
+.leaving {
+  opacity: 0;
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-4));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes lift {
+  50% {
+    transform: translateY(calc(-1 * var(--space-2))) rotate(-3deg);
+  }
+}
+@keyframes flow {
+  0% {
+    transform: translateX(-100%) scaleX(0.3);
+  }
+  65% {
+    transform: translateX(0) scaleX(0.85);
+  }
+  100% {
+    transform: translateX(100%) scaleX(0.3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen {
+    transition: none;
+  }
+  .wordmark,
+  .mark,
+  .track span,
+  .center p {
+    animation: none;
+  }
+}

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="OmniMail logo">
+<defs>
+<linearGradient id="blue" x1="0.06" y1="1" x2="0.94" y2="0"><stop offset="0" stop-color="#0066FF"/><stop offset="0.57" stop-color="#0066FF"/><stop offset="1" stop-color="#00D1FF"/></linearGradient>
+<linearGradient id="face" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#00D1FF"/></linearGradient>
+<linearGradient id="lower" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#00D1FF" stop-opacity=".22"/></linearGradient>
+<filter id="foldShadow" x="-10%" y="-25%" width="120%" height="160%"><feDropShadow dx="0" dy="11" stdDeviation="10" flood-color="#0066FF" flood-opacity=".34"/></filter>
+<linearGradient id="ring" x1="0.13" y1="0.02" x2="0.95" y2="0.98"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".82"/><stop offset="0.44" stop-color="#00D1FF" stop-opacity=".95"/><stop offset="1" stop-color="#00D1FF" stop-opacity=".65"/></linearGradient>
+</defs><rect width="1024" height="1024" rx="216" fill="url(#blue)"/>
+<!-- The circular orbit stands for Omni: every inbox, in one place. -->
+<circle cx="512" cy="498" r="259" fill="none" stroke="url(#ring)" stroke-width="92"/>
+<!-- Envelope, deliberately wide enough to stay legible at mobile sizes. -->
+<rect x="203" y="352" width="618" height="394" rx="74" fill="url(#face)"/>
+<!-- Blue side folds give the envelope structure without extra colors. -->
+<path d="M203 406 L468 592 L203 716 Z" fill="#00D1FF" opacity=".46"/>
+<path d="M821 406 L556 592 L821 716 Z" fill="#0066FF" opacity=".32"/>
+<!-- Lower folded face, pale white/cyan like a real letter. -->
+<path d="M216 710 L429 539 Q512 478 595 539 L808 710 Q790 746 745 746 H279 Q234 746 216 710 Z" fill="url(#lower)"/>
+<!-- Distinct white upper envelope flap with a gentle fold shadow. -->
+<path d="M217 375 Q233 352 265 352 H759 Q791 352 807 375 L554 579 Q512 611 470 579 Z" fill="#FFFFFF" filter="url(#foldShadow)"/>
+
+</svg>

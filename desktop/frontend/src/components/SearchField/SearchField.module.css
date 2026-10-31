@@ -1,0 +1,124 @@
+.field {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--field-gap);
+  min-width: 0;
+  height: var(--field-height);
+  padding: 0 var(--field-padding-inline);
+  border: 1px solid var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  box-shadow: 0 0 0 0 transparent;
+  transition:
+    background-color 200ms var(--ease-out),
+    border-color 200ms var(--ease-out),
+    box-shadow 200ms var(--ease-out);
+}
+.field:hover {
+  background: var(--field-bg-hover);
+  border-color: var(--field-border-hover);
+}
+/* 聚焦状态由容器统一表达：边框、光晕与图标颜色同时过渡，输入框本身不再画原生轮廓 */
+.field:focus-within {
+  background: var(--field-bg-focus);
+  border-color: var(--field-border-focus);
+  box-shadow:
+    0 0 0 3px var(--field-ring),
+    var(--field-shadow);
+}
+.icon {
+  flex-shrink: 0;
+  color: var(--field-icon);
+  transition: color 200ms var(--ease-out);
+}
+.field:focus-within .icon {
+  color: var(--field-icon-focus);
+}
+.input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  appearance: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--field-font-size);
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+/* 全局 :focus-visible 会在输入框内部画出硬轮廓，这里交给 .field:focus-within 表达焦点 */
+.input:focus,
+.input:focus-visible {
+  outline: none;
+}
+.input::placeholder {
+  color: var(--field-placeholder);
+  opacity: 1;
+}
+/* type=search 在 WebKit/Chromium 下的原生放大镜与清除按钮与自定义元素重复 */
+.input::-webkit-search-cancel-button,
+.input::-webkit-search-decoration,
+.input::-webkit-search-results-button,
+.input::-webkit-search-results-decoration {
+  display: none;
+  appearance: none;
+}
+.shortcut {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border: 1px solid var(--field-kbd-border);
+  border-radius: 6px;
+  background: var(--field-kbd-bg);
+  color: var(--field-kbd-text);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: var(--font-medium);
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+  white-space: nowrap;
+  user-select: none;
+  animation: badge-in 180ms var(--ease-out);
+}
+.clear {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--field-icon);
+  cursor: pointer;
+  animation: badge-in 160ms var(--ease-out);
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out);
+}
+/* 清除按钮沿用输入框强调色，悬停时底色与图标一起转蓝，和聚焦态保持同一色语言 */
+.clear:hover:not(:disabled) {
+  background: var(--field-accent-soft);
+  color: var(--field-accent);
+}
+.clear:focus-visible {
+  outline: var(--outline-width) solid var(--field-border-focus);
+  outline-offset: 1px;
+}
+@keyframes badge-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

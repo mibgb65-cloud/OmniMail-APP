@@ -1,0 +1,177 @@
+.list {
+  container-type: inline-size;
+  display: flex;
+  flex: 0 0 clamp(var(--mail-list-min-width), var(--mail-list-width), var(--mail-list-max-width));
+  flex-direction: column;
+  max-width: var(--mail-list-max-share);
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  border-inline-end: 1px solid var(--color-border-subtle);
+}
+.list ul {
+  flex: 1;
+  margin: 0;
+  padding: var(--space-3);
+  list-style: none;
+}
+.list li + li {
+  margin-top: var(--space-2);
+}
+.item {
+  position: relative;
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  text-align: start;
+  background: transparent;
+  color: var(--color-text-primary);
+  transition: background-color var(--motion-interaction) ease;
+}
+.item:hover:not(:disabled) {
+  background: var(--color-bg-surface);
+}
+.item[aria-pressed='true']:not(:disabled) {
+  background: var(--color-bg-selected);
+}
+.item[aria-pressed='true']::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: var(--space-4);
+  width: var(--mail-selection-width);
+  border-radius: var(--radius-xs);
+  background: var(--color-accent);
+}
+.item:focus-visible,
+.list:focus-visible {
+  outline-offset: calc(-1 * var(--outline-width));
+}
+.item-header {
+  display: grid;
+  grid-template-columns: var(--avatar-size) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: var(--avatar-size);
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-surface);
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+}
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.sender {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+}
+.unread {
+  flex: 0 0 var(--mail-unread-size);
+  height: var(--mail-unread-size);
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+.item time {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.subject {
+  padding-inline-end: var(--space-8);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-width: 0;
+  min-height: calc(2em * var(--mail-subject-line-height));
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+  line-height: var(--mail-subject-line-height);
+}
+.item[data-read='true'] .subject {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-medium);
+}
+.item[data-read='false'] .sender {
+  font-weight: var(--font-bold);
+}
+.list-status {
+  display: grid;
+  justify-items: center;
+  min-height: var(--space-10);
+  padding: var(--space-4);
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+.list-status button {
+  min-height: var(--control-height);
+  background: var(--color-bg-canvas);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-subtle);
+}
+.list-status button:hover:not(:disabled) {
+  background: var(--color-bg-selected);
+}
+.error {
+  color: var(--color-danger);
+}
+.empty {
+  margin: auto;
+  padding: var(--space-7);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+/* 窄列表优先让出发件人与日期空间，装饰头像不挤占正文。 */
+@container (max-width: 260px) {
+  .item-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .avatar {
+    display: none;
+  }
+}
+.message-row {
+  position: relative;
+}
+.star-button {
+  position: absolute;
+  inset-inline-end: var(--space-4);
+  inset-block-end: var(--space-4);
+  display: grid;
+  place-items: center;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  min-height: var(--avatar-size);
+  padding: 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+}
+.star-button[aria-pressed='true'] {
+  color: var(--color-accent);
+}
+.star-button:hover:not(:disabled) {
+  background: var(--color-bg-surface);
+}
+.star-button:disabled {
+  background: transparent;
+  cursor: progress;
+}
