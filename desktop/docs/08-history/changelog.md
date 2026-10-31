@@ -14,13 +14,13 @@
 - 邮件正文成功展示后自动回写对应服务商的 IMAP 已读标记，确认后更新本地与未读计数，
   保留快切/后台/读取失败保护、手动未读优先与失败提示；本地 TLS 服务的独立连接核对已通过，
   真实 QQ 等服务商网页同步尚待账号验收，见
-  [TASK-0053](../07-tasks/active/TASK-0053-reader-switch-transition.md)。
+  [TASK-0053](../07-tasks/archive/2026/10/TASK-0053-reader-switch-transition.md)。
 - TASK-0053 续作：工具栏接通已读/未读、已加载筛选结果的批量已读、服务端归档与移入垃圾箱，
   新增未读/已确认附件组合筛选、已加载邮件时间正倒序和一致的前后导航。
   HTML 正文支持跟随暗色与恢复原始配色；切换统一实色流光骨架，不再混显旧邮件。
   移动要求唯一目标文件夹与 MOVE/UIDPLUS，不支持时明确提示，不降级 EXPUNGE；
-  附件筛选暂仅覆盖已下载正文中的非内嵌附件。未提交待评审，详见
-  [TASK-0053](../07-tasks/active/TASK-0053-reader-switch-transition.md)。
+  附件筛选暂仅覆盖已下载正文中的非内嵌附件。已审阅、提交并归档，详见
+  [TASK-0053](../07-tasks/archive/2026/10/TASK-0053-reader-switch-transition.md)。
 - 邮件阅读支持安全 HTML、表格和内嵌图片，设置提供图片显示策略；
   外链打开前需当次安全确认，星标可独立操作并持久保存，见
   [TASK-0048](../07-tasks/archive/2026/10/TASK-0048-rich-mail-reader.md)、
@@ -34,15 +34,19 @@
 - 桌面工作台支持简体中文和英语，提供即时切换、系统语言识别及本地偏好保存；语言包按公共、导航、工作台和连接面板拆分，附一致性校验与接入约定。
 
 ### 变更
+- TASK-0051～0054 已经用户审阅通过并于 2026-10-31 完成本地提交与归档，
+  实现提交 `bf283e41c46abe508333eac6b366c5e9d0ba85d3`。完整本地门禁通过，
+  包含 59 个前端文件/532 项用例、全部 Go 测试和 Windows 构建；未推送，
+  真实服务商网页、macOS 与已披露的观察项仍保留在任务记录中，不作为已验证能力。
 - 移除 HTML 邮件正文外层额外添加的边线与圆角，保留邮件自身排版、表格边线及阅读安全策略，
-  详见 [TASK-0053](../07-tasks/active/TASK-0053-reader-switch-transition.md)。
+  详见 [TASK-0053](../07-tasks/archive/2026/10/TASK-0053-reader-switch-transition.md)。
 - 移除邮件阅读区的“查看原始配色”按钮，将正文配色控制移至
   “设置 → 通用设置 → 语言与外观”的“邮件正文跟随暗色模式”开关；
   默认开启、即时生效并本机持久化，关闭后保留 HTML 原始配色，不重载正文或改变图片许可，
-  详见 [TASK-0053](../07-tasks/active/TASK-0053-reader-switch-transition.md)。
+  详见 [TASK-0053](../07-tasks/archive/2026/10/TASK-0053-reader-switch-transition.md)。
 - 邮件加载骨架随阅读区高度铺满，并在高窗口补充下半段占位；正文就绪后按标题、
   邮件信息、正文段落和附件自上而下错峰入场，保留减少动态、快切取消与长邮件单滚动区，
-  详见 [TASK-0053](../07-tasks/active/TASK-0053-reader-switch-transition.md)。
+  详见 [TASK-0053](../07-tasks/archive/2026/10/TASK-0053-reader-switch-transition.md)。
 - 邮件列表优化发件人/日期/两行主题与状态层级；同步进度移至工具栏按钮，
   正文与星标使用独立有界前台通道，不因后台同步而取消或等待账号空闲；
   旧同步快照不得覆盖新星标。已验收提交 `771619c`，
@@ -78,7 +82,7 @@
 - 修复邮件工具栏图标按钮在悬浮时被全局主按钮底色覆盖的问题；
   全局按钮默认状态移入低优先级基础层，工具栏采用共享 ghost/secondary 变体，
   保留明暗主题、按下/禁用/键盘焦点及主按钮状态，见
-  [TASK-0053](../07-tasks/active/TASK-0053-reader-switch-transition.md)。
+  [TASK-0053](../07-tasks/archive/2026/10/TASK-0053-reader-switch-transition.md)。
 - 标准弹窗补充外框/遮罩同步退出动效，快速关闭不跳帧，保留减少动效、即时取消和发送保护，
   见 [TASK-0045](../07-tasks/archive/2026/10/TASK-0045-dialog-exit-motion.md)。
 - 开发期语言资源热更新保留语言、表单与实例，避免新增键仅显示键名，见

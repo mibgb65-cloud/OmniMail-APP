@@ -9,10 +9,10 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
-| [TASK-0054](TASK-0054-reader-header-star.md) | 标题星标入口与紧凑邮件头 | @Codex | 待评审 | P2 |
-| [TASK-0053](TASK-0053-reader-switch-transition.md) | 阅读体验、邮件操作与服务商自动已读 | @Codex | 待评审 | P1 |
-| [TASK-0052](TASK-0052-mail-header-copy.md) | 邮件头信息排版、邮箱复制与技术说明移除 | @Codex | 待评审 | P2 |
-| [TASK-0051](TASK-0051-reader-loading-skeleton.md) | 邮件骨架屏、就绪淡入与单一滚动区 | @Codex | 待评审 | P1 |
+| [TASK-0054](../archive/2026/10/TASK-0054-reader-header-star.md) | 标题星标入口与紧凑邮件头（已归档） | @Codex | 已完成 | P2 |
+| [TASK-0053](../archive/2026/10/TASK-0053-reader-switch-transition.md) | 阅读体验、邮件操作与服务商自动已读（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0052](../archive/2026/10/TASK-0052-mail-header-copy.md) | 邮件头信息排版、邮箱复制与技术说明移除（已归档） | @Codex | 已完成 | P2 |
+| [TASK-0051](../archive/2026/10/TASK-0051-reader-loading-skeleton.md) | 邮件骨架屏、就绪淡入与单一滚动区（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0050](../archive/2026/10/TASK-0050-foreground-mail-concurrency.md) | 星标与正文读取不被后台同步阻塞 | @Codex | 已完成 | P1 |
 | [TASK-0049](../archive/2026/10/TASK-0049-mail-reader-interactions.md) | 链接安全交互、同步按钮状态、正文持久化核对与星标 | @Codex | 已完成 | P1 |
 | [TASK-0048](../archive/2026/10/TASK-0048-rich-mail-reader.md) | 邮件正文与图片安全完整展示、图片显示设置 | @Codex | 已完成 | P1 |
@@ -66,6 +66,8 @@
 
 ## 说明
 
+- TASK-0051～0054 已于 2026-10-31 经用户审阅通过、按授权提交并归档，
+  实现提交 `bf283e41c46abe508333eac6b366c5e9d0ba85d3`；仅本地提交，未推送。
 - TASK-0047～0050 已于 2026-10-30 按用户授权提交并归档，实现提交 `771619c5a546b385ce71def39f300a1824b26b31`；未推送。
 - 2026-10-27 按用户授权整理 Git：工程与累计界面基线为 `b1c49ebe66c479ebdb6b5ea4724b4fe47e6a2033`。
   旧任务记录中的“未提交”保留当轮历史含义；纳入基线不等于验收或归档，未完成项仍按各记录处理。

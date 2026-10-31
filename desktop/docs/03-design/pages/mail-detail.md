@@ -79,8 +79,8 @@
   未读筛选成功后移除该列表行，但保留当前正文供继续阅读；没有实现历史设计中的 3 秒延迟或离线回写队列。
 - 验证结果与未验证项以 [TASK-0048](../../07-tasks/archive/2026/10/TASK-0048-rich-mail-reader.md) 为准；
   后续交互修正见 [TASK-0049](../../07-tasks/archive/2026/10/TASK-0049-mail-reader-interactions.md)；
-  加载与滚动见 [TASK-0051](../../07-tasks/active/TASK-0051-reader-loading-skeleton.md)；
-  连续切换与抗闪烁见 [TASK-0053](../../07-tasks/active/TASK-0053-reader-switch-transition.md)；
+  加载与滚动见 [TASK-0051](../../07-tasks/archive/2026/10/TASK-0051-reader-loading-skeleton.md)；
+  连续切换与抗闪烁见 [TASK-0053](../../07-tasks/archive/2026/10/TASK-0053-reader-switch-transition.md)；
   以下布局和操作仍包含未落地的历史设计目标。
 
 主界面右栏（宽屏分栏）或覆盖层（< 960px）。目标：快速读懂内容、安全地打开外部资源、
