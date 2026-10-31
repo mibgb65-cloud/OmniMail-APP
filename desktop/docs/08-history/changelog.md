@@ -37,6 +37,11 @@
 - 桌面工作台支持简体中文和英语，提供即时切换、系统语言识别及本地偏好保存；语言包按公共、导航、工作台和连接面板拆分，附一致性校验与接入约定。
 
 ### 变更
+- TASK-0056～0060 经本地完整门禁后，通过受保护分支
+  [PR #1](https://github.com/mibgb65-cloud/OmniMail-APP/pull/1) 正常 Squash 合入 dev，
+  远端代码提交 `95e3480e0a944bfa98080b73cb8a142198e66d24`，源实现 `67b2bc3`；
+  主分支与 test 未推送，未绕过分支保护或改写历史，真实结果见
+  [TASK-0060](../07-tasks/archive/2026/10/TASK-0060-sync-stability-dev-delivery.md)。
 - 网易 163 / 126 合并为一个“网易邮箱”选择入口，单个或混合批次按每个完整地址选择对应真实预设；
   兼容旧账号代码与已保存端点，不迁移数据库，不把未确认的 162 域名映射到 126，
   详见 [TASK-0059](../07-tasks/archive/2026/10/TASK-0059-mail-provider-integration.md)。
@@ -99,7 +104,7 @@
   不补造文字或编码数据；IMAP literal 长度、传输中断、FETCH 完成确认和正文/附件预算仍严格检查。
   Gmail 等 IMAP 认证前遇到瞬时 TLS/问候断线时可取消地重试一次，
   证书、认证及写操作不自动重试，并细化安全诊断，见
-  [TASK-0060](../07-tasks/active/TASK-0060-sync-stability-dev-delivery.md)。
+  [TASK-0060](../07-tasks/archive/2026/10/TASK-0060-sync-stability-dev-delivery.md)。
 - 修复网易邮箱认证后因 EXAMINE 缺少 UIDNEXT 而中断同步：通过标准 STATUS 补取，
   必要时以只读 UID SEARCH 的已有集合确定本轮读取上界；不编造 UIDVALIDITY，
   冲突、拒绝、溢出仍报错，并保留旧 UID 范围核对，

@@ -39,6 +39,7 @@
 | [TASK-0057](TASK-0057-stable-unread-filter.md) | 未读筛选会话保持列表位置 | @Codex | 2026-10-31 |
 | [TASK-0058](TASK-0058-offline-mail-persistence.md) | 后台正文同步与数据库持久化 | @Codex | 2026-10-31 |
 | [TASK-0059](TASK-0059-mail-provider-integration.md) | LinuxDo 与网易邮箱接入及兼容 | @Codex | 2026-10-31 |
+| [TASK-0060](TASK-0060-sync-stability-dev-delivery.md) | QQ/Gmail 同步稳定性与 dev 交付 | @Codex | 2026-10-31 |
 
 ## 本月取消
 

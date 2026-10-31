@@ -9,7 +9,7 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
-| [TASK-0060](TASK-0060-sync-stability-dev-delivery.md) | QQ/Gmail 同步稳定性与 dev 交付 | @Codex | 进行中 | P1 |
+| [TASK-0060](../archive/2026/10/TASK-0060-sync-stability-dev-delivery.md) | QQ/Gmail 同步稳定性与 dev 交付（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0059](../archive/2026/10/TASK-0059-mail-provider-integration.md) | LinuxDo 接入、网易统一入口与同步兼容（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0058](../archive/2026/10/TASK-0058-offline-mail-persistence.md) | 后台同步完整正文并持久保存数据库（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0057](../archive/2026/10/TASK-0057-stable-unread-filter.md) | 未读筛选会话保持列表位置（已归档） | @Codex | 已完成 | P1 |
@@ -72,6 +72,9 @@
 
 ## 说明
 
+- TASK-0056～0060 已于 2026-10-31 按用户授权联合交付；源实现 `67b2bc33a6f1341e497ad2c1e2cb3d5f26236176`，
+  已通过受保护分支 [PR #1](https://github.com/mibgb65-cloud/OmniMail-APP/pull/1) Squash 合入 dev，
+  实际 dev 提交 `95e3480e0a944bfa98080b73cb8a142198e66d24`；并非直推成功，main/test 未推送。
 - TASK-0055 已于 2026-10-31 经用户确认 Gmail 添加成功、按授权本地提交并归档，
   实现提交 `55815d1db730fe94a6612bdfd33ec447e63f7f60`；未推送，后续同步观察项保留在 TASK-0037。
 - TASK-0051～0054 已于 2026-10-31 经用户审阅通过、按授权提交并归档，
