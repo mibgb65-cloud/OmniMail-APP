@@ -13,20 +13,20 @@
 ### 新增
 - 新增 Yahoo Mail 官方 IMAP 993／SMTP 465 隐式 TLS 预设、本地图标与中英文应用密码说明；
   单个/批量均使用完整邮箱地址，精确识别 `yahoo.com`，不混同 Yahoo Japan 或宣称 OAuth；
-  真实账号收发未验收，见 [TASK-0070](../07-tasks/active/TASK-0070-yahoo-mail-preset.md)。
+  真实账号收发未验收，见 [TASK-0070](../07-tasks/archive/2026/11/TASK-0070-yahoo-mail-preset.md)。
 - 统一滚动条活动逻辑：默认仅占位、滚动或精确滚动槽悬浮时淡入，停止后缓冲淡出；
   移除原生上下箭头，保留键盘/触控/拖拽和减少动态效果。悬浮正文/列表内容不再常显，
-  见 [TASK-0065](../07-tasks/active/TASK-0065-scrollbar-activity-visibility.md)。
+  见 [TASK-0065](../07-tasks/archive/2026/11/TASK-0065-scrollbar-activity-visibility.md)。
 - “我的邮箱”标题右侧新增账号管理设置入口，使用设置页同款双栏浮窗查看账号状态、
   同步及断开；外侧移除断开按钮，保留二次确认、失败反馈和已下载邮件，
-  避免邮箱选择时误触。见 [TASK-0064](../07-tasks/active/TASK-0064-mailbox-account-management.md)。
+  避免邮箱选择时误触。见 [TASK-0064](../07-tasks/archive/2026/11/TASK-0064-mailbox-account-management.md)。
 - 收信原始邮件/单附件/正文上限调整为 100/50/8 MiB，schema v4 升级前自动备份；
   单封超限持久保留原因与摘要/旧缓存，不再阻塞其他邮件或冒充完整同步。边界、恢复及验证见
-  [TASK-0063](../07-tasks/active/TASK-0063-large-mail-sync-isolation.md)。
+  [TASK-0063](../07-tasks/archive/2026/11/TASK-0063-large-mail-sync-isolation.md)。
 - 新增 NAVER Mail、Yandex Mail、iCloud Mail 预设、精确域名识别、官方本地图标和中英文应用密码指引；
   NAVER/iCloud 使用 SMTP 587 STARTTLS，Yandex 个人/企业域按官方用户名规则处理，
   单个与同服务商批量添加共用原有验证/保存路径，无数据库迁移或新增 OAuth 能力。
-  真实账号收发未验收，见 [TASK-0062](../07-tasks/active/TASK-0062-naver-yandex-icloud-presets.md)。
+  真实账号收发未验收，见 [TASK-0062](../07-tasks/archive/2026/11/TASK-0062-naver-yandex-icloud-presets.md)。
 - 增加 LINUX DO Mail 服务商与本地官方品牌图标，预设 `mail.linux.do` 的 IMAP 993 / SMTP 465 TLS，
   完整邮箱用户名、专用令牌提示与严格域名识别；图标来源及哈希随资源记录，
   不将论坛 OAuth 冒充邮件认证。详见 [TASK-0059](../07-tasks/archive/2026/10/TASK-0059-mail-provider-integration.md)。
@@ -55,7 +55,7 @@
 ### 变更
 - 邮箱列表改为填充侧栏剩余高度，状态点固定右侧列，并用条件 CSS mask 提供上下边缘羽化；
   账号同步告警从邮件列表顶部移到侧栏状态点/管理窗，保留列表本身加载与操作错误。
-  见 [TASK-0066](../07-tasks/active/TASK-0066-naver-sync-sidebar-layout.md)。
+  见 [TASK-0066](../07-tasks/archive/2026/11/TASK-0066-naver-sync-sidebar-layout.md)。
 - TASK-0056～0060 经本地完整门禁后，通过受保护分支
   [PR #1](https://github.com/mibgb65-cloud/OmniMail-APP/pull/1) 正常 Squash 合入 dev，
   远端代码提交 `95e3480e0a944bfa98080b73cb8a142198e66d24`，源实现 `67b2bc3`；
@@ -121,16 +121,16 @@
 ### 修复
 - 邮件列表时间由仅日期改为右侧两行日期与 24 小时时分，跨年、无效时间、完整提示和
   ISO datetime 语义保留，骨架占位同步适配，见
-  [TASK-0071](../07-tasks/active/TASK-0071-mail-list-clock.md)。
+  [TASK-0071](../07-tasks/archive/2026/11/TASK-0071-mail-list-clock.md)。
 - 修复“我的邮箱”切换导致邮件列表从空白直接跳变：首批使用详情同款流光骨架，
   数据就绪后首屏邮件行从上到下有界错峰入场；快切清理旧动画，后台刷新/追加不重播，
   保留滚动 mask、键盘、错误重试和减少动态效果，见
-  [TASK-0069](../07-tasks/active/TASK-0069-mail-list-switch-transition.md)。
+  [TASK-0069](../07-tasks/archive/2026/11/TASK-0069-mail-list-switch-transition.md)。
 - 修复 NAVER 零 UIDVALIDITY 的自动已读及工具栏已读/未读被统一拦截的问题：
   仅官方 TLS 端点启用完整摘要、显式零值、写入回执和最终状态核验，
   服务器确认后才保存本地；错误提示不再专指移动。零值星标/移动继续受限，
   同连接核验不等于远端原子身份保证，见
-  [TASK-0068](../07-tasks/active/TASK-0068-naver-verified-read.md)。
+  [TASK-0068](../07-tasks/archive/2026/11/TASK-0068-naver-verified-read.md)。
 - NAVER 实际明确返回 `UIDVALIDITY=0` 时不再混同为字段缺失：官方 TLS 端点保守只读兼容，
   schema v5 升级前自动备份，分段重核对摘要并防止常见 UID 重用继承旧正文/附件；
   零值邮箱暂不支持远端标记和移动，不宣称具备标准纪元保证，见
@@ -138,7 +138,7 @@
 - NAVER 的 EXAMINE/STATUS 缺少 UIDVALIDITY 时，仅对官方主机有界补取一次 SELECT 的真实元数据；
   继续保留权限/身份缺失保护及 BODY.PEEK，不编造身份或自动写标志。本轮进一步处理显式零值，
   本地账号已观察到同步完成；其他真实账号和远端写入不在本次验收范围，
-  详见 [TASK-0066](../07-tasks/active/TASK-0066-naver-sync-sidebar-layout.md)。
+  详见 [TASK-0066](../07-tasks/archive/2026/11/TASK-0066-naver-sync-sidebar-layout.md)。
 - 修复完整邮件缺失顶层 MIME 终结边界时正文无法保存的问题：只补经标准库校验的结构分隔符，
   不补造文字或编码数据；IMAP literal 长度、传输中断、FETCH 完成确认和正文/附件预算仍严格检查。
   Gmail 等 IMAP 认证前遇到瞬时 TLS/问候断线时可取消地重试一次，

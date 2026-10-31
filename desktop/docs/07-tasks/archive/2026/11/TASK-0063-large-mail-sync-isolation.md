@@ -2,7 +2,8 @@
 
 > 2026-11-01 收尾：用户已接受本批交付并授权本地提交，未授权推送；联合验证和归档由 TASK-0072 登记。下方未授权文字保留当轮历史含义。
 
-> 状态：待评审
+> 状态：已完成
+> 实现提交：be3b7596d6b299a6a210c4257181bb1e71867deb | 归档：2026-11-01 | 本地提交，未推送
 > 负责人：@Codex | 创建：2026-10-31 | 优先级：P1
 
 ## 用户确认与范围
@@ -78,7 +79,7 @@
 - 验证程序：`desktop/.task/verify-bin/OmniMail.exe`，未覆盖 `desktop/bin/OmniMail.exe`，未替换/重启正在运行的应用。
 - 忽略目录中的浏览器夹具：`desktop/.task/t63-*`，模拟 `.invalid` 地址，不发送真实请求或处理用户邮件。
 - 截图位于 `C:/Users/mimanchi/.codex/visualizations/2026/10/31/01a1910b-39fa-7021-ab01-8379dfaa9c46/t63-limited-{light,dark}.png`。
-- 结构与备份/降级说明见 [ADR-0009](../../02-architecture/adr/ADR-0009-large-mail-isolation.md)；
+- 结构与备份/降级说明见 [ADR-0009](../../../../02-architecture/adr/ADR-0009-large-mail-isolation.md)；
   运行新版本首次打开旧库才执行实际迁移，本轮没有操作用户真实数据库或凭据。
 
 ## 遗留风险

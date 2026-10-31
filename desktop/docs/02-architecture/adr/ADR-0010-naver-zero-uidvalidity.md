@@ -1,7 +1,7 @@
 # ADR-0010 NAVER 显式零 UIDVALIDITY 的保守兼容
 
-> 状态：提议（用户已确认方案，实现待评审） | 最后更新：2026-10-31
-> 关联：[TASK-0066](../../07-tasks/active/TASK-0066-naver-sync-sidebar-layout.md)
+> 状态：已生效（2026-11-01 用户验收并授权提交） | 最后更新：2026-11-01
+> 关联：[TASK-0066](../../07-tasks/archive/2026/11/TASK-0066-naver-sync-sidebar-layout.md)
 
 ## 背景与证据
 真实 NAVER 连接中，TLS 登录及 EXAMINE/STATUS/SELECT 均成功，服务器在三者中明确返回

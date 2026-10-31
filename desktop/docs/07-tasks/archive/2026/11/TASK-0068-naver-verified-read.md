@@ -2,9 +2,10 @@
 
 > 2026-11-01 收尾：用户已接受本批交付并授权本地提交，未授权推送；联合验证和归档由 TASK-0072 登记。下方未授权文字保留当轮历史含义。
 
-> 状态：待评审
+> 状态：已完成
+> 实现提交：be3b7596d6b299a6a210c4257181bb1e71867deb | 归档：2026-11-01 | 本地提交，未推送
 > 负责人：@Codex | 创建：2026-10-31 | 优先级：P1
-> 关联：[TASK-0066](TASK-0066-naver-sync-sidebar-layout.md)、[ADR-0010](../../02-architecture/adr/ADR-0010-naver-zero-uidvalidity.md)
+> 关联：[TASK-0066](TASK-0066-naver-sync-sidebar-layout.md)、[ADR-0010](../../../../02-architecture/adr/ADR-0010-naver-zero-uidvalidity.md)
 
 ## 需求、证据及边界
 - 用户反馈 NAVER 正文可阅读，但自动标为已读失败，错误说明却指向安全移动能力。

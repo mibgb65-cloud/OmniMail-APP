@@ -1,7 +1,7 @@
 # ADR-0009 大邮件有界读取与单封失败隔离
 
-> 状态：提议（用户已确认方案，实现待评审） | 日期：2026-10-31 | 提议人：@Codex
-> 任务：[TASK-0063](../../07-tasks/active/TASK-0063-large-mail-sync-isolation.md)
+> 状态：已生效（2026-11-01 用户验收并授权提交） | 日期：2026-10-31 | 提议人：@Codex
+> 任务：[TASK-0063](../../07-tasks/archive/2026/11/TASK-0063-large-mail-sync-isolation.md)
 
 ## 背景与授权
 

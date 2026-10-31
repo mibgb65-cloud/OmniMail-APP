@@ -1,7 +1,7 @@
 # 滚动条占位与活动显示
 
 > 状态：已实现，待评审 | 最后更新：2026-10-31
-> 任务：[TASK-0065](../../07-tasks/active/TASK-0065-scrollbar-activity-visibility.md)
+> 任务：[TASK-0065](../../07-tasks/archive/2026/11/TASK-0065-scrollbar-activity-visibility.md)
 
 ## 显示规则
 

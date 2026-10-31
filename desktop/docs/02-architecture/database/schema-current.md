@@ -1,6 +1,6 @@
 # 当前数据库结构：账号与邮件持久化 v5
 
-> 状态：schema v5 已实现，待评审 | 最后更新：2026-10-31
+> 状态：schema v5 已实现 | 最后更新：2026-11-01
 > 任务：[TASK-0030](../../07-tasks/archive/2026/10/TASK-0030-account-storage-foundation.md)
 
 ## 1. 权威来源

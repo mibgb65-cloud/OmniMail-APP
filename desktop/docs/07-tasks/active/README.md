@@ -9,17 +9,18 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
-| [TASK-0071](TASK-0071-mail-list-clock.md) | 邮件列表显示具体时分 | @Codex | 待评审 | P2 |
-| [TASK-0070](TASK-0070-yahoo-mail-preset.md) | Yahoo Mail 服务商接入 | @Codex | 待评审 | P1 |
-| [TASK-0069](TASK-0069-mail-list-switch-transition.md) | 邮箱切换列表骨架与顺序入场 | @Codex | 待评审 | P1 |
-| [TASK-0068](TASK-0068-naver-verified-read.md) | NAVER 自动已读与安全标记修复 | @Codex | 待评审 | P1 |
-| [TASK-0067](TASK-0067-mail-list-edge-fade.md) | 邮件列表上下滚动边缘羽化 | @Codex | 待评审 | P2 |
-| [TASK-0066](TASK-0066-naver-sync-sidebar-layout.md) | NAVER 同步兼容与邮箱侧栏布局 | @Codex | 待评审 | P1 |
-| [TASK-0065](TASK-0065-scrollbar-activity-visibility.md) | 滚动条按活动显示与淡入淡出 | @Codex | 待评审 | P1 |
-| [TASK-0064](TASK-0064-mailbox-account-management.md) | 我的邮箱设置入口与账号管理浮窗 | @Codex | 待评审 | P1 |
-| [TASK-0063](TASK-0063-large-mail-sync-isolation.md) | 大邮件 100／50／8 MiB 与单封超限隔离 | @Codex | 待评审 | P1 |
-| [TASK-0062](TASK-0062-naver-yandex-icloud-presets.md) | NAVER、Yandex 与 iCloud 邮箱预设 | @Codex | 待评审 | P1 |
-| [TASK-0061](TASK-0061-mailbox-status-polish.md) | 邮箱单行状态、流光边框与断开确认弹窗 | @Codex | 待评审 | P1 |
+| [TASK-0072](../archive/2026/11/TASK-0072-mail-baseline-delivery.md) | TASK-0061～0071 联合本地交付（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0071](../archive/2026/11/TASK-0071-mail-list-clock.md) | 邮件列表显示具体时分（已归档） | @Codex | 已完成 | P2 |
+| [TASK-0070](../archive/2026/11/TASK-0070-yahoo-mail-preset.md) | Yahoo Mail 服务商接入（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0069](../archive/2026/11/TASK-0069-mail-list-switch-transition.md) | 邮箱切换列表骨架与顺序入场（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0068](../archive/2026/11/TASK-0068-naver-verified-read.md) | NAVER 自动已读与安全标记修复（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0067](../archive/2026/11/TASK-0067-mail-list-edge-fade.md) | 邮件列表上下滚动边缘羽化（已归档） | @Codex | 已完成 | P2 |
+| [TASK-0066](../archive/2026/11/TASK-0066-naver-sync-sidebar-layout.md) | NAVER 同步兼容与邮箱侧栏布局（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0065](../archive/2026/11/TASK-0065-scrollbar-activity-visibility.md) | 滚动条按活动显示与淡入淡出（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0064](../archive/2026/11/TASK-0064-mailbox-account-management.md) | 我的邮箱设置入口与账号管理浮窗（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0063](../archive/2026/11/TASK-0063-large-mail-sync-isolation.md) | 大邮件 100／50／8 MiB 与单封超限隔离（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0062](../archive/2026/11/TASK-0062-naver-yandex-icloud-presets.md) | NAVER、Yandex 与 iCloud 邮箱预设（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0061](../archive/2026/11/TASK-0061-mailbox-status-polish.md) | 邮箱单行状态、流光边框与断开确认弹窗（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0060](../archive/2026/10/TASK-0060-sync-stability-dev-delivery.md) | QQ/Gmail 同步稳定性与 dev 交付（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0059](../archive/2026/10/TASK-0059-mail-provider-integration.md) | LinuxDo 接入、网易统一入口与同步兼容（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0058](../archive/2026/10/TASK-0058-offline-mail-persistence.md) | 后台同步完整正文并持久保存数据库（已归档） | @Codex | 已完成 | P1 |
@@ -82,6 +83,10 @@
 | [TASK-0040](../archive/2026/10/TASK-0040-mail-infinite-scroll.md) | 邮件列表无限滚动（已归档） | @Codex | 已完成 | P1 |
 
 ## 说明
+
+- TASK-0061～0071 已于 2026-11-01 按用户授权联合本地提交并归档，
+  实现提交 `be3b7596d6b299a6a210c4257181bb1e71867deb`；未推送。
+  原任务中的“未授权/未提交”保留当轮历史含义，最终处置以归档头部和 TASK-0072 为准。
 
 - TASK-0056～0060 已于 2026-10-31 按用户授权联合交付；源实现 `67b2bc33a6f1341e497ad2c1e2cb3d5f26236176`，
   已通过受保护分支 [PR #1](https://github.com/mibgb65-cloud/OmniMail-APP/pull/1) Squash 合入 dev，
