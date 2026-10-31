@@ -61,6 +61,7 @@ function addSecond() {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(api.addAccount).mockReset();
   localStorage.clear();
   vi.mocked(api.providers).mockResolvedValue(presets);
 });
@@ -69,6 +70,58 @@ it('Gmail 不显示顶部填写说明，仍保留应用专用密码提示', asyn
   await setup();
   expect(screen.queryByText('填写 Gmail 地址和应用专用密码。')).not.toBeInTheDocument();
   expect(screen.getByText(/不是 Google 登录密码/)).toBeVisible();
+});
+
+it.each([
+  ['AUTH_INVALID', 'Gmail 拒绝了登录'],
+  ['NETWORK_FAILED', '无法连接 Gmail 收发信服务器'],
+])('单个 Gmail 的 %s 显示对应指引，不显示服务器原文', async (code, message) => {
+  vi.mocked(api.addAccount).mockRejectedValueOnce(new Error(`${code} private-server-marker`));
+  const view = await setup();
+  fireEvent.click(screen.getByRole('button', { name: '验证并添加' }));
+  await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(message));
+  expect(screen.getByRole('alert')).toHaveFocus();
+  expect(screen.queryByText(/private-server-marker/)).not.toBeInTheDocument();
+  expect(screen.getByLabelText('应用专用密码')).toBeEnabled();
+  expect(view.onSaved).not.toHaveBeenCalled();
+});
+
+it('批量 Gmail 的失败项使用同一认证指引，不影响成功项', async () => {
+  vi.mocked(api.addAccount)
+    .mockRejectedValueOnce(new Error('AUTH_INVALID private-server-marker'))
+    .mockResolvedValueOnce(summary('second@gmail.com'));
+  const view = await setup();
+  addSecond();
+  fireEvent.click(screen.getByRole('button', { name: '验证并添加 2 个账号' }));
+  await waitFor(() => expect(view.onSaved).toHaveBeenCalledOnce());
+  await waitFor(() => expect(screen.getByText(/Gmail 拒绝了登录/)).toBeVisible());
+  expect(screen.queryByText(/private-server-marker/)).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '重试未添加账号' })).toBeEnabled();
+});
+
+it('自定义服务商保留通用认证错误，不错误提示 Google 账号', async () => {
+  vi.mocked(api.addAccount).mockRejectedValueOnce(new Error('AUTH_INVALID private-server-marker'));
+  await setup();
+  fireEvent.click(screen.getByRole('button', { name: '返回选择服务商' }));
+  fireEvent.click(screen.getByRole('button', { name: '自定义 IMAP/SMTP' }));
+  fireEvent.change(screen.getByLabelText('邮箱地址'), {
+    target: { value: 'person@example.invalid' },
+  });
+  const incoming = within(screen.getByRole('group', { name: 'IMAP' }));
+  const outgoing = within(screen.getByRole('group', { name: 'SMTP' }));
+  for (const group of [incoming, outgoing]) {
+    fireEvent.change(group.getByLabelText('服务器'), { target: { value: 'mail.example.invalid' } });
+  }
+  fireEvent.change(incoming.getByLabelText('登录用户名'), {
+    target: { value: 'person@example.invalid' },
+  });
+  fireEvent.change(incoming.getByLabelText('密码 / 应用授权码'), {
+    target: { value: 'synthetic-password' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '验证并添加' }));
+  await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('服务器拒绝登录'));
+  expect(screen.queryByText(/Gmail 拒绝了登录/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/private-server-marker/)).not.toBeInTheDocument();
 });
 
 it('同服务商可填写多组独立邮箱和应用密码，不重复展示协议或选择其他服务商', async () => {

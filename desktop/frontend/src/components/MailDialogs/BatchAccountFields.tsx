@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef } from 'react';
-import * as api from '../../lib/bridge/mail';
 import { useTranslation } from '../../lib/i18n/useTranslation';
 import { UiIcon } from '../UiIcon/UiIcon';
 import { buildBatchRequests, type AccountDraft, type DraftField } from './accountBatch';
+import { accountErrorKey } from './accountErrors';
 import type { AccountFormState } from './useAccountForm';
 import { AccountInput } from './AccountFormValidation';
 import { ACCOUNT_FIELD_FOCUS, requestAccountFieldFocus } from './accountFieldFocus';
@@ -261,7 +261,7 @@ export function BatchAccountFields({ form }: Props) {
                 <BatchAccountCredentials form={form} draft={draft} index={index} />
                 {failed && (
                   <p id={errorId} className={styles.error}>
-                    {t(api.errorKey(result.errorCode))}
+                    {t(accountErrorKey(form.provider, result.errorCode))}
                   </p>
                 )}
               </div>

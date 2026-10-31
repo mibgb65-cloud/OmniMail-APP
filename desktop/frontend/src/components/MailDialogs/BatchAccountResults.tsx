@@ -1,6 +1,7 @@
 import * as api from '../../lib/bridge/mail';
 import { useTranslation } from '../../lib/i18n/useTranslation';
 import type { AccountFormState } from './useAccountForm';
+import { accountErrorKey } from './accountErrors';
 import styles from './MailDialogs.module.css';
 import wizard from './AccountDialog.module.css';
 
@@ -47,7 +48,9 @@ export function BatchAccountResults({
                 </span>
               </div>
               {result?.status === 'failed' && (
-                <p className={styles.error}>{t(api.errorKey(result.errorCode))}</p>
+                <p className={styles.error}>
+                  {t(accountErrorKey(form.provider, result.errorCode))}
+                </p>
               )}
               {added && (
                 <p className={syncError ? styles.error : styles.hint}>

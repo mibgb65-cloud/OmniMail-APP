@@ -131,18 +131,37 @@ func (s *Mail) AddAccount(ctx context.Context, input AddAccountInput) (AccountSu
 	if err != nil {
 		return AccountSummary{}, err
 	}
+	if input.ProviderCode == "gmail" {
+		// Google 的应用密码按组显示；去除复制的普通空格，并让收发认证与凭据存储使用同一值。
+		// 必须在原始长度和控制字符校验之后处理，不能借归一化绕过输入边界。
+		input.IMAP.Password = strings.ReplaceAll(input.IMAP.Password, " ", "")
+		input.SMTP.Password = strings.ReplaceAll(input.SMTP.Password, " ", "")
+		if input.IMAP.Password == "" || input.SMTP.Password == "" {
+			return AccountSummary{}, domain.ErrCredentialInvalid
+		}
+	}
 	if err := s.acquire(ctx); err != nil {
 		return AccountSummary{}, err
 	}
 	defer func() { <-s.network }()
 	session, err := s.transport.Connect(ctx, account.Endpoints[0], []byte(input.IMAP.Password))
 	if err != nil {
+		s.logAccountValidationFailure("imap", "connect", err)
 		return AccountSummary{}, err
 	}
 	if err := session.Close(); err != nil {
-		return AccountSummary{}, domain.ErrNetwork
+		// Connect 已完成认证；主动关闭时的读循环/TLS 清理错误不能推翻已确认的登录结果。
+		// 仍须验证 SMTP，并在取消时中止，不能用“忽略清理”绕过收发验证或保存边界。
+		s.log.Warn("收信认证已通过，连接清理失败", "code", "NETWORK_FAILED", "protocol", "imap", "stage", "close")
+	}
+	if err := ctx.Err(); err != nil {
+		return AccountSummary{}, err
 	}
 	if err := s.transport.CheckSMTP(ctx, account.Endpoints[1], []byte(input.SMTP.Password)); err != nil {
+		s.logAccountValidationFailure("smtp", "connect", err)
+		return AccountSummary{}, err
+	}
+	if err := ctx.Err(); err != nil {
 		return AccountSummary{}, err
 	}
 	// 两种认证全部成功后才写 OS 和 DB；每次使用新引用，不覆盖任何已保存账号的秘密。

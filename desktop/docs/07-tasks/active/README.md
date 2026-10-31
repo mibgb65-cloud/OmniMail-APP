@@ -9,6 +9,7 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
+| [TASK-0055](TASK-0055-gmail-account-connection.md) | Gmail 添加失败诊断、密码兼容与认证错误分类 | @Codex | 待评审 | P1 |
 | [TASK-0054](../archive/2026/10/TASK-0054-reader-header-star.md) | 标题星标入口与紧凑邮件头（已归档） | @Codex | 已完成 | P2 |
 | [TASK-0053](../archive/2026/10/TASK-0053-reader-switch-transition.md) | 阅读体验、邮件操作与服务商自动已读（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0052](../archive/2026/10/TASK-0052-mail-header-copy.md) | 邮件头信息排版、邮箱复制与技术说明移除（已归档） | @Codex | 已完成 | P2 |

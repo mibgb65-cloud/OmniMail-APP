@@ -79,6 +79,11 @@
 - 多语言底层迁移到 i18next + react-i18next，保留中英文即时切换、离线使用与已有偏好；增加插值、复数及中文回退能力，见 [TASK-0004](../07-tasks/archive/2026/10/TASK-0004-i18n-migration.md) 与 [ADR-0006](../02-architecture/adr/ADR-0006-i18n-framework.md)。
 
 ### 修复
+- 修复 Gmail 添加时 IMAP 已认证成功、却因关闭验证连接报错而中止的问题；
+  SMTP AUTH 成功后的 QUIT 清理失败同样不再推翻验证结果，SMTP 拒绝和取消仍阻止保存。
+  兼容应用密码的普通分组空格，区分认证、网络、TLS 与协议错误，补充中英文指引和
+  不含账号、凭据或服务器原文的阶段诊断。用户已确认真实 Gmail 添加完成，未据此宣称
+  全部邮件同步或实际发送通过，详见 [TASK-0055](../07-tasks/active/TASK-0055-gmail-account-connection.md)。
 - 修复邮件工具栏图标按钮在悬浮时被全局主按钮底色覆盖的问题；
   全局按钮默认状态移入低优先级基础层，工具栏采用共享 ghost/secondary 变体，
   保留明暗主题、按下/禁用/键盘焦点及主按钮状态，见
@@ -107,6 +112,10 @@
 - 功能设计文档 FEAT-0001 ~ FEAT-0007 起草。
 
 ### 已知问题
+- 账号添加修复后的后台曾出现“其他文件夹选择被服务器拒绝”
+  （`MAIL_PROTOCOL_FAILED / select / other / command_no`），安全日志不足以归因到具体账号；
+  已转交 [TASK-0037](../07-tasks/active/TASK-0037-mail-advanced-followups.md) 后续清单，
+  不作为 Gmail 添加修复已解决的同步能力。
 - SQLite 驱动选型未定（CGO / 纯 Go），影响交叉编译方案。
 - 富文本 ↔ 纯文本转换规则未定稿。
 - 构建与签名流程尚为文档描述，未实际执行验证。

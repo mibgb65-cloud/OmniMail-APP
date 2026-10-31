@@ -73,15 +73,15 @@ func closeIMAP(c *imapclient.Client) {
 
 func (t *Transport) dial(ctx context.Context, endpoint domain.AccountEndpoint) (net.Conn, func() bool, error) {
 	if ctx.Err() != nil {
-		return nil, nil, ctx.Err()
+		return nil, nil, connectionStepError("dial", ctx.Err(), ctx.Err())
 	}
 	conn, err := (&net.Dialer{Timeout: 10 * time.Second}).DialContext(ctx, "tcp",
 		net.JoinHostPort(endpoint.Host, strconv.Itoa(endpoint.Port)))
 	if err != nil {
 		if ctx.Err() != nil {
-			return nil, nil, ctx.Err()
+			return nil, nil, connectionStepError("dial", ctx.Err(), ctx.Err())
 		}
-		return nil, nil, domain.ErrNetwork
+		return nil, nil, connectionStepError("dial", domain.ErrNetwork, err)
 	}
 	// 总读取预算同时约束伪造的大 envelope 和字符串，不只限制正常正文 literal。
 	conn = &limitedConn{Conn: conn, remaining: 64 << 20}
@@ -93,7 +93,7 @@ func (t *Transport) dial(ctx context.Context, endpoint domain.AccountEndpoint) (
 	if err := conn.SetDeadline(deadline); err != nil {
 		stop()
 		releaseConnection(conn)
-		return nil, nil, domain.ErrNetwork
+		return nil, nil, connectionStepError("dial", domain.ErrNetwork, err)
 	}
 	if endpoint.TLSMode == domain.TLSImplicit {
 		secure := tls.Client(conn, t.tlsConfig(endpoint.Host))
@@ -101,16 +101,16 @@ func (t *Transport) dial(ctx context.Context, endpoint domain.AccountEndpoint) (
 			stop()
 			releaseConnection(conn)
 			if ctx.Err() != nil {
-				return nil, nil, ctx.Err()
+				return nil, nil, connectionStepError("tls", ctx.Err(), ctx.Err())
 			}
-			return nil, nil, domain.ErrTLS
+			return nil, nil, connectionStepError("tls", domain.ErrTLS, err)
 		}
 		return secure, stop, nil
 	}
 	if endpoint.TLSMode != domain.TLSStartTLS {
 		stop()
 		releaseConnection(conn)
-		return nil, nil, domain.ErrTLS
+		return nil, nil, connectionStepError("tls", domain.ErrTLS, domain.ErrTLS)
 	}
 	return conn, stop, nil
 }
@@ -134,33 +134,32 @@ func (t *Transport) Connect(ctx context.Context, endpoint domain.AccountEndpoint
 	} else {
 		c = imapclient.New(conn, options)
 	}
-	if err != nil || c.WaitGreeting() != nil {
+	stage := "starttls"
+	if err == nil {
+		stage = "greeting"
+		err = c.WaitGreeting()
+	}
+	if err != nil {
 		stop()
 		releaseConnection(conn)
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return nil, connectionStepError(stage, ctx.Err(), ctx.Err())
 		}
-		return nil, domain.ErrTLS
+		return nil, connectionStepError(stage, domain.ErrTLS, err)
 	}
 	// 部分服务商要求 IMAP ID；只发送应用标识，不发送系统信息、账号或环境变量。
 	if c.Caps().Has(imap.CapID) {
 		if _, err := c.ID(&imap.IDData{Name: "OmniMail", Version: "0.1.0"}).Wait(); err != nil {
 			stop()
 			closeIMAP(c)
-			return nil, domain.ErrProtocol
+			return nil, connectionStepError("identify", domain.ErrProtocol, err)
 		}
 	}
 	if err := c.Login(endpoint.Username, string(secret)).Wait(); err != nil {
+		failure := authenticationError(ctx, conn, err)
 		stop()
 		releaseConnection(conn)
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		var response *imap.Error
-		if errors.As(err, &response) && (response.Code == imap.ResponseCodeAuthenticationFailed || response.Code == "") {
-			return nil, domain.ErrAuthentication
-		}
-		return nil, domain.ErrNetwork
+		return nil, connectionStepError("authenticate", failure, err)
 	}
 	return &session{client: c, stop: stop, ctx: ctx, conn: conn}, nil
 }
@@ -177,17 +176,18 @@ func (t *Transport) smtp(ctx context.Context, endpoint domain.AccountEndpoint, s
 	c, err := smtp.NewClient(conn, endpoint.Host)
 	if err != nil {
 		closeConnection()
-		return nil, nil, domain.ErrNetwork
+		return nil, nil, connectionStepError("greeting", domain.ErrNetwork, err)
 	}
 	if endpoint.TLSMode == domain.TLSStartTLS {
 		if err := c.StartTLS(t.tlsConfig(endpoint.Host)); err != nil {
 			closeConnection()
-			return nil, nil, domain.ErrTLS
+			return nil, nil, connectionStepError("starttls", domain.ErrTLS, err)
 		}
 	}
 	if err := c.Auth(smtp.PlainAuth("", endpoint.Username, string(secret), endpoint.Host)); err != nil {
+		failure := authenticationError(ctx, conn, err)
 		closeConnection()
-		return nil, nil, domain.ErrAuthentication
+		return nil, nil, connectionStepError("authenticate", failure, err)
 	}
 	return c, closeConnection, nil
 }
@@ -199,9 +199,13 @@ func (t *Transport) CheckSMTP(ctx context.Context, endpoint domain.AccountEndpoi
 	}
 	defer closeConnection()
 	if err := c.Quit(); err != nil {
-		return domain.ErrNetwork
+		if ctx.Err() != nil {
+			return connectionStepError("quit", ctx.Err(), ctx.Err())
+		}
+		// SMTP AUTH 已成功，QUIT 仅用于礼貌退出；退出失败不能把有效账号误报成认证失败。
+		slog.Warn("SMTP 认证已通过，退出连接失败", "code", "NETWORK_FAILED", "stage", "quit", "reason", connectionFailureReason(err))
 	}
-	return nil
+	return ctx.Err()
 }
 
 func (t *Transport) Send(ctx context.Context, endpoint domain.AccountEndpoint, secret []byte,

@@ -12,6 +12,7 @@ import { useStepIndicator } from './useStepIndicator';
 import { BatchAccountFields } from './BatchAccountFields';
 import { BatchAccountResults } from './BatchAccountResults';
 import { MAX_BATCH_ACCOUNTS } from './accountBatch';
+import { accountErrorKey } from './accountErrors';
 import {
   AccountInput,
   AccountSelect,
@@ -340,7 +341,7 @@ export function AccountDialog({ onClose, onSaved }: { onClose: () => void; onSav
               )}
             {(form.error != null || batchProblem) && (
               <p ref={errorRef} tabIndex={-1} role="alert" className={styles.error}>
-                {form.error != null ? t(api.errorKey(form.error)) : batchProblem}
+                {form.error != null ? t(accountErrorKey(form.provider, form.error)) : batchProblem}
               </p>
             )}
             {form.batch.running || form.batchComplete ? (
