@@ -227,7 +227,9 @@
   见 [TASK-0090](../07-tasks/archive/2026/11/TASK-0090-translation-reliability.md)。
 
 ### 交付与边界
-- 本版用于本地 Windows x64 签名生产包交付，不代表已推送 tag 或 GitHub Release；
+- 本版已构建并核验本地 Windows x64 签名生产包，交付于 `desktop/bin/releases/v0.0.4/`；
+  记录见 [TASK-0096](../07-tasks/archive/2026/11/TASK-0096-release-0.0.4.md)。
+  不代表已推送 tag 或 GitHub Release；
   版本详情与兼容边界见 [v0.0.4](../06-release/notes/v0.0.4.md)。
 - 未使用真实邮件/API Key 做 DeepSeek 公网质量验收，未执行真实生产覆盖升级。
   应用内自动更新仍未启用；安装前请先处理未发送内容。

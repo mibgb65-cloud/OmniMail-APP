@@ -9,7 +9,7 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
-| [TASK-0096](TASK-0096-release-0.0.4.md) | AI 功能收尾提交与 0.0.4 生产版本 | @Codex | 进行中 | P1 |
+| [TASK-0096](../archive/2026/11/TASK-0096-release-0.0.4.md) | AI 功能收尾提交与 0.0.4 生产版本（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0095](../archive/2026/11/TASK-0095-deepseek-flash-default.md) | DeepSeek V4.1 Flash 默认配置与官方 API 适配（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0094](../archive/2026/11/TASK-0094-ai-reply-draft.md) | AI 回复草稿与人工采用（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0093](../archive/2026/11/TASK-0093-ai-cache-progress.md) | AI 本地缓存、进度与清理（已归档） | @Codex | 已完成 | P1 |
