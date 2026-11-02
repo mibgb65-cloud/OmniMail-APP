@@ -12,13 +12,16 @@
 | `/compose` | 撰写（独立窗口或覆盖面板） | [compose.md](compose.md) | 草稿 |
 | `/accounts/new` | 添加账号向导 | [account-wizard.md](account-wizard.md) | 草稿 |
 | `/search` | 搜索结果（复用主界面左+中栏） | [search.md](search.md) | 草稿 |
-| `/settings` | 设置 | — | 待编写 |
+| `/settings`（当前为模态窗口） | 设置 | [settings.md](settings.md) | 分类与本机存储已实现；通知/AI/更新未接入 |
 | `/onboarding` | 首次启动引导 | — | 待编写 |
 
 当前 `/` 实际呈现工程初始化工作台，启动过渡与视觉覆盖规范见
 [启动页与初始化工作台](startup.md)。上表的邮件业务页面仍为后续设计，并非已实现功能。
 
 ## 通用布局约束
+
+邮件标题与正文翻译见 [邮件翻译](mail-translation.md)
+（TASK-0085，首期手动翻译已接入；与界面国际化是不同能力）。
 
 ```
 ┌──────────┬────────────────┬─────────────────────────────┐

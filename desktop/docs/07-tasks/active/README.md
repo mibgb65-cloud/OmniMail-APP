@@ -9,6 +9,20 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
+| [TASK-0086](../archive/2026/11/TASK-0086-about-page-flat-layout.md) | 关于页去掉重复圆角卡片、改为简洁排版（已归档） | @Codex | 已完成 | P2 |
+| [TASK-0085](TASK-0085-mail-translation-design.md) | 工具栏邮件标题/正文翻译与目标语言 | @Codex | 待评审 | P1 |
+| [TASK-0084](TASK-0084-account-management-provider-icons.md) | 账号管理列表显示服务商品牌图标 | @Codex | 待评审 | P2 |
+| [TASK-0083](TASK-0083-release-update-design.md) | Windows 安装发布实现与后续更新链路 | @Codex | 进行中 | P1 |
+| [TASK-0082](TASK-0082-mailbox-status-hover-background.md) | 邮箱状态点去除悬停底色 | @Codex | 待评审 | P2 |
+| [TASK-0081](TASK-0081-mail-image-options-ui.md) | 邮件图片策略选择项视觉统一（与 0080 联合） | @Codex | 待评审 | P2 |
+| [TASK-0080](TASK-0080-custom-provider-templates.md) | 自定义服务商模板保存与复用 | @Codex | 待评审 | P1 |
+| [TASK-0079](TASK-0079-window-close-behavior.md) | 关闭偏好、后台托盘与选择器视觉统一 | @Codex | 待评审 | P1 |
+| [TASK-0078](TASK-0078-settings-sections-storage.md) | 设置分类、真实存储与三态外观滑块 | @Codex | 待评审 | P1 |
+| [TASK-0077](TASK-0077-linuxdo-icon-transparency.md) | LINUX DO 邮箱图标透明背景 | @Codex | 待评审 | P2 |
+| [TASK-0076](TASK-0076-sidebar-width.md) | 适度加宽左侧邮箱栏 | @Codex | 待评审 | P2 |
+| [TASK-0075](TASK-0075-window-minimum-width.md) | 主窗口最小宽度保护 | @Codex | 待评审 | P1 |
+| [TASK-0074](TASK-0074-mailbox-provider-browser.md) | 我的邮箱服务商分组浏览 | @Codex | 待评审 | P2 |
+| [TASK-0073](TASK-0073-workspace-compose.md) | 工作区内撰写邮件 | @Codex | 待评审 | P1 |
 | [TASK-0072](../archive/2026/11/TASK-0072-mail-baseline-delivery.md) | TASK-0061～0071 联合本地交付（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0071](../archive/2026/11/TASK-0071-mail-list-clock.md) | 邮件列表显示具体时分（已归档） | @Codex | 已完成 | P2 |
 | [TASK-0070](../archive/2026/11/TASK-0070-yahoo-mail-preset.md) | Yahoo Mail 服务商接入（已归档） | @Codex | 已完成 | P1 |
@@ -83,6 +97,12 @@
 | [TASK-0040](../archive/2026/10/TASK-0040-mail-infinite-scroll.md) | 邮件列表无限滚动（已归档） | @Codex | 已完成 | P1 |
 
 ## 说明
+
+- TASK-0073～0086 的实现已于 2026-11-02 按用户授权作为本地 0.0.2 基线提交：
+  `072367750f3f99ff03a655f9aa63b7c59ffe1cc2`（父提交
+  `5c97c37cc40621a90e5b9b0ef7d4b5f7d5ab8674`）；0.0.2 签名生产包由该提交构建，
+  未推送、未创建 GitHub Release。TASK-0073～0085 记录中的“未提交、待评审”保留当轮历史含义，
+  最终处置以各记录与 TASK-0083 的交付段落为准；TASK-0086 已完成并归档。
 
 - TASK-0061～0071 已于 2026-11-01 按用户授权联合本地提交并归档，
   实现提交 `be3b7596d6b299a6a210c4257181bb1e71867deb`；未推送。
