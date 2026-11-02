@@ -42,7 +42,10 @@ it('全局提示使用统一浮层，不再显示原生 title，悬停侧栏可�
   expect(document.querySelector('[title]')).toBeNull();
   const trigger = screen.getByRole('button', { name: '草稿箱' });
   fireEvent.pointerOver(trigger, { pointerType: 'mouse' });
-  expect(await screen.findByRole('tooltip')).toHaveTextContent('仅切换界面预览');
+  // 提示有 400ms 展示延迟；负载较高时默认 1s 轮询容易在定时器触发前超时。
+  expect(await screen.findByRole('tooltip', {}, { timeout: 3000 })).toHaveTextContent(
+    '仅切换界面预览',
+  );
   fireEvent.pointerOut(trigger, { relatedTarget: document.body });
   await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
 });

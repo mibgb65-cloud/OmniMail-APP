@@ -57,17 +57,6 @@
 - 桌面工作台支持简体中文和英语，提供即时切换、系统语言识别及本地偏好保存；语言包按公共、导航、工作台和连接面板拆分，附一致性校验与接入约定。
 
 ### 变更
-- 侧栏“写邮件”按实际可用状态提示：未添加可用邮箱显示“未添加邮箱”，邮箱加载中显示“加载中”，
-  不再标注“待开发”；“添加邮箱”禁用态同步改为“加载中”，见
-  [TASK-0087](../07-tasks/active/TASK-0087-compose-entry-availability-copy.md)。
-- 设置“关于”页去掉嵌套圆角卡片：取消外层卡片，改用 1px 细分隔线分区，连接区只保留小标题、
-  文字按钮、状态行与等宽元数据列，三步引导改为“序号＋标题＋说明”的纯文本三列；
-  失败态用左侧语义色竖线表达，见
-  [TASK-0086](../07-tasks/archive/2026/11/TASK-0086-about-page-flat-layout.md)。
-- 2026-11-02 以本地基线提交 `0723677` 打包 0.0.2 签名生产安装包用于本地覆盖升级
-  （安装包 9,256,376 字节，SHA-256 `409207d7c8e775215b9bd009ec9186e1b44d0a4f1d2be29c84099f433492562d`），
-  仅本地交付，未推送 tag、未创建 GitHub Release；范围与验证见
-  [TASK-0083](../07-tasks/active/TASK-0083-release-update-design.md)。
 - 左侧导航/邮箱栏由 208px 加宽到 240px，标题栏对齐随共享 token 自动更新，
   保持 1280 窗口下限与邮件交互不变，见
   [TASK-0076](../07-tasks/active/TASK-0076-sidebar-width.md)。
@@ -141,10 +130,6 @@
 - 多语言底层迁移到 i18next + react-i18next，保留中英文即时切换、离线使用与已有偏好；增加插值、复数及中文回退能力，见 [TASK-0004](../07-tasks/archive/2026/10/TASK-0004-i18n-migration.md) 与 [ADR-0006](../02-architecture/adr/ADR-0006-i18n-framework.md)。
 
 ### 修复
-- 覆盖升级与卸载会先结束正在运行的 OmniMail（含托盘常驻与“关闭时询问”偏好），
-  不再出现 `DeleteFile 失败：错误代码 5，拒绝访问`；无法结束时在复制文件前中止并提示，
-  升级关闭过实例时完成页默认勾选启动，见
-  [TASK-0088](../07-tasks/active/TASK-0088-installer-close-running-app.md)。
 - LINUX DO 邮箱标识替换为官网公开的透明 SVG，移除原 PNG 的深色方形画布，
   保留标志自身黑白黄圆形区域；添加邮箱和服务商分组统一更新，见
   [TASK-0077](../07-tasks/active/TASK-0077-linuxdo-icon-transparency.md)。
@@ -221,6 +206,30 @@
   不作为 Gmail 添加修复已解决的同步能力。后续
   [TASK-0056](../07-tasks/archive/2026/10/TASK-0056-gmail-mailbox-sync.md) 已定位并修复其中 Gmail 虚拟分组分支，
   其他服务商及完整同步验收边界继续保留。
+
+---
+
+## [0.0.3] - 2026-11-02
+
+本地打包版本（Windows x64 当前用户安装包），未推送 tag、未创建 GitHub Release。
+把 0.0.2 本地打包期间的三处修复并入同一版本号，功能面与 0.0.2 最后一次修复一致。
+
+### 修复
+- 覆盖升级与卸载会先结束正在运行的 OmniMail（含托盘常驻与“关闭时询问”偏好），
+  不再出现 `DeleteFile 失败：错误代码 5，拒绝访问`；无法结束时在复制文件前中止并提示，
+  升级关闭过实例时完成页默认勾选启动，见
+  [TASK-0088](../07-tasks/active/TASK-0088-installer-close-running-app.md)。
+
+### 变更
+- 设置“关于”页去掉嵌套圆角卡片：取消外层卡片，改用 1px 细分隔线分区，连接区只保留小标题、
+  文字按钮、状态行与等宽元数据列，三步引导改为“序号＋标题＋说明”的纯文本三列；
+  失败态用左侧语义色竖线表达，见
+  [TASK-0086](../07-tasks/archive/2026/11/TASK-0086-about-page-flat-layout.md)。
+- 侧栏“写邮件”按实际可用状态提示：未添加可用邮箱显示“未添加邮箱”，邮箱加载中显示“加载中”，
+  不再标注“待开发”；“添加邮箱”禁用态同步改为“加载中”，见
+  [TASK-0087](../07-tasks/active/TASK-0087-compose-entry-availability-copy.md)。
+- 版本说明见 [v0.0.3](../06-release/notes/v0.0.3.md)；0.0.1/0.0.2 的本地打包记录保留在
+  [TASK-0083](../07-tasks/active/TASK-0083-release-update-design.md)。
 
 ---
 
