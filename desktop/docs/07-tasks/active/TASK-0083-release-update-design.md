@@ -398,3 +398,20 @@
   `%LOCALAPPDATA%\OmniMail\release-tools\powershell-7.6.9`，未做系统级安装、未改项目依赖。
 - 未执行：真实安装/覆盖升级冒烟、安装后邮件业务验收、GitHub tag 推送与 CI、远端 Release 上传。
   本地安装包不等于正式发布验收；用户自行在本机覆盖安装即为本次更新路径。
+
+## 第十一轮 0.0.2 重打包（撰写入口文案修复，2026-11-02）
+- 触发：用户指出未添加邮箱时侧栏“写邮件”标注“待开发”不成立，撰写能力已接入；
+  修复见 [TASK-0087](TASK-0087-compose-entry-availability-copy.md)，实现提交
+  `43ac80fd`（父提交 `0723677`）。
+- 同版本 0.0.2 重打包，产物目录
+  `desktop/.task/release/0.0.2-release-4d05c23691284d54a91003e061044c60/`，
+  交付副本 `desktop/bin/releases/v0.0.2-compose-hint/`；上一版交付目录
+  `desktop/bin/releases/v0.0.2/` 保留不覆盖，便于对照。
+- 安装包 9,253,864 字节，SHA-256
+  `a266c9eeb5b6e35623f0831ef19bbf20cb0429a459c850bd7a299ad12e6359d3`；
+  清单 Ed25519 签名用同一公钥回验通过；Authenticode 有效，签名者 `CN=OmniMail`，
+  指纹 `3BD397BA3312A314126141BDD816905D7D5F5D41`；EXE 内嵌提交 `43ac80f`、版本 `0.0.2`。
+- 前端全量测试 91 文件 788 项通过（含新增禁用态/加载态用例），
+  浏览器核对三种入口状态，日志 `desktop/.task/t87-package-0.0.2.log`。
+- 未执行：安装/覆盖升级冒烟与安装后业务验收；未推送 tag、未创建远端 Release。
+  同版本重打包仅为本地更新，不代表新的对外版本号。
