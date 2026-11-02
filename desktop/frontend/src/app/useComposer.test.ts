@@ -18,6 +18,24 @@ const account = (id: string): api.AccountSummary => ({
 });
 const first = account('first');
 const accounts = [first, account('second')];
+it('AI 采用不发送、不填收件人，连续采用及已有会话均不能覆盖', () => {
+  const { result } = renderHook(() => useComposer(accounts, vi.fn()));
+  act(() => {
+    expect(result.current.adoptDraft('first', 'synthetic draft')).toBe(true);
+    expect(result.current.adoptDraft('first', 'replacement')).toBe(false);
+  });
+  expect(result.current.session).toMatchObject({
+    accountId: 'first',
+    to: '',
+    subject: '',
+    body: 'synthetic draft',
+    status: 'editing',
+  });
+  expect(api.send).not.toHaveBeenCalled();
+  act(() => result.current.update('body', 'user content'));
+  act(() => expect(result.current.adoptDraft('second', 'replacement')).toBe(false));
+  expect(result.current.session?.body).toBe('user content');
+});
 beforeEach(() => {
   vi.mocked(api.send).mockReset().mockResolvedValue(undefined);
 });

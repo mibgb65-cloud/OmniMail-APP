@@ -9,6 +9,12 @@ export {
 } from "./models.js";
 
 export type {
+    AIConfig,
+    AIConfigInput,
+    AIFact,
+    AIRequest,
+    AIResult,
+    AITask,
     AttachmentInfo,
     EndpointPreset,
     MailDetail,

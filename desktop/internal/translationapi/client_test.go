@@ -3,6 +3,7 @@ package translationapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"omnimail/desktop/internal/domain"
@@ -78,7 +79,7 @@ func TestTranslateRejectsUnsafeResponses(t *testing.T) {
 			}))
 			defer server.Close()
 			_, err := (&Client{http: server.Client(), endpoint: server.URL}).Translate(t.Context(), domain.TranslatedText{Subject: "s", Body: "b"}, "zh")
-			if err != test.want {
+			if !errors.Is(err, test.want) {
 				t.Fatalf("错误结果 %v", err)
 			}
 		})

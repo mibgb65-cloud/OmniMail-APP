@@ -34,10 +34,12 @@ export function useComposer(accounts: api.AccountSummary[], onSent: () => void) 
   const [invalidField, setInvalidField] = useState<ComposeField>();
   const inFlight = useRef(false);
   const resultLocked = useRef(false);
+  const draftClaimed = useRef(false);
   const request = useRef<AbortController>();
   useEffect(() => () => request.current?.abort(), []);
 
   const open = (preferred: string) => {
+    draftClaimed.current = true;
     if (!session || session.status === 'sent') resultLocked.current = false;
     const available = accounts.filter((account) => account.status === 'configured');
     const accountId = preferred
@@ -112,6 +114,7 @@ export function useComposer(accounts: api.AccountSummary[], onSent: () => void) 
       if (request.current === controller) request.current = undefined;
     }
     if (accepted && !controller.signal.aborted) {
+      draftClaimed.current = false;
       setSession({ ...input, status: 'sent' });
       onSent();
     }
@@ -134,6 +137,7 @@ export function useComposer(accounts: api.AccountSummary[], onSent: () => void) 
   const confirmDiscard = () => {
     if (inFlight.current) return;
     resultLocked.current = false;
+    draftClaimed.current = false;
     setConfirmation(null);
     setSession(null);
     setInvalidField(undefined);
@@ -158,6 +162,29 @@ export function useComposer(accounts: api.AccountSummary[], onSent: () => void) 
       (account) => account.id === session?.accountId && account.status === 'configured',
     ),
     open,
+    adoptDraft: (preferred: string, body: string) => {
+      // 同步占位防止一次渲染前连续采用；AI 不得覆盖编辑/发送中/结果不确定的会话。
+      if (
+        draftClaimed.current ||
+        inFlight.current ||
+        (session && session.status !== 'sent') ||
+        !body.trim() ||
+        new TextEncoder().encode(body).length > 16 * 1024
+      )
+        return false;
+      const available = accounts.filter((account) => account.status === 'configured');
+      if (!available.length) return false;
+      const accountId =
+        available.find((account) => account.id === preferred)?.id ??
+        (available.length === 1 ? (available[0]?.id ?? '') : '');
+      draftClaimed.current = true;
+      resultLocked.current = false;
+      setConfirmation(null);
+      setInvalidField(undefined);
+      setSession({ accountId, to: '', subject: '', body, status: 'editing' });
+      setVisible(true);
+      return true;
+    },
     show: () => {
       if (session) setVisible(true);
     },

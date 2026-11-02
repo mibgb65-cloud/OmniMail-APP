@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 	"unicode/utf8"
 
@@ -73,13 +74,27 @@ func (c *Client) complete(ctx context.Context, data []byte) (string, error) {
 	}
 	defer response.Body.Close()
 	if response.StatusCode == http.StatusTooManyRequests {
-		return "", domain.ErrTranslationRate
+		seconds, err := strconv.Atoi(response.Header.Get("Retry-After"))
+		if err != nil {
+			seconds = 30
+			if date, err := http.ParseTime(response.Header.Get("Retry-After")); err == nil {
+				seconds = int(time.Until(date).Seconds())
+			}
+		}
+		return "", &domain.TranslationRateLimit{Seconds: max(1, min(seconds, 300))}
 	}
 	if response.StatusCode != http.StatusOK {
 		return "", domain.ErrTranslationUnavailable
 	}
 	body, err := io.ReadAll(io.LimitReader(response.Body, maxResponse+1))
-	if err != nil || len(body) > maxResponse {
+	if err != nil {
+		// 已收到响应头不代表正文完整；保留取消/超时，避免误导用户反复调整格式。
+		if ctx.Err() != nil {
+			return "", ctx.Err()
+		}
+		return "", domain.ErrTranslationUnavailable
+	}
+	if len(body) > maxResponse {
 		return "", domain.ErrTranslationResponse
 	}
 	return decodeEnvelope(body)

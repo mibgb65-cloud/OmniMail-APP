@@ -9,6 +9,8 @@ import type { MailController } from './useMail';
 import { MailConnectionState, mailSyncState } from './MailAccountNotice';
 import type { Composer } from './useComposer';
 import { errorKey } from '../lib/bridge/mail';
+import { MailAIPanel } from '../components/MailAI/MailAIPanel';
+import { ScrollArea } from '../components/ScrollArea/ScrollArea';
 
 export function MailWorkspace({
   mail,
@@ -122,19 +124,30 @@ export function MailWorkspace({
             <UiIcon name={analysisOpen ? 'panelRightClose' : 'panelRightOpen'} />
           </button>
         </header>
-        <div id={analysisId} hidden={!analysisOpen} className={styles['analysis-content']}>
-          <div className={styles['analysis-empty']}>
-            <span className={styles['ai-orb']}>
-              <UiIcon name="sparkles" size={25} />
-            </span>
-            <h3>{t('analysisEmpty')}</h3>
+        <ScrollArea
+          id={analysisId}
+          hidden={!analysisOpen}
+          className={styles['analysis-scroll']}
+          viewportClassName={styles['analysis-content']}
+        >
+          {mail?.ready ? (
+            <MailAIPanel
+              key={mail.selected}
+              detail={mail.detail}
+              selectedId={mail.selected}
+              suspended={!analysisOpen || !!composer?.visible}
+              onAdopt={
+                composer
+                  ? (body) => composer.adoptDraft(mail.detail?.accountId ?? mail.accountId, body)
+                  : undefined
+              }
+              hasDraft={composer?.hasSession}
+              hasSender={mail.accounts.some((account) => account.status === 'configured')}
+            />
+          ) : (
             <p>{t('analysisHint')}</p>
-          </div>
-          <div className={styles['analysis-note']}>
-            <UiIcon name="about" size={16} />
-            <span>{t('analysisUnavailable')}</span>
-          </div>
-        </div>
+          )}
+        </ScrollArea>
       </aside>
     </div>
   );

@@ -23,3 +23,6 @@ func (b *TranslationBridge) Translate(ctx context.Context, id, target string) (d
 func (b *TranslationBridge) Cached(ctx context.Context, id string) (*domain.TranslationResult, error) {
 	return b.service.Cached(ctx, id)
 }
+func (b *TranslationBridge) Progress(ctx context.Context, id string) (service.TranslationProgress, error) {
+	return b.service.Progress(ctx, id)
+}

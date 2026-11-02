@@ -1,6 +1,6 @@
 # 进行中的任务（active）
 
-> 状态：已生效 | 最后更新：2026-11-01
+> 状态：已生效 | 最后更新：2026-11-02
 
 本目录存放**当前迭代进行中**的任务，一个任务一个文件：`TASK-<4位序号>-<slug>.md`。
 模板与规则见 [任务管理](../README.md#4-任务记录模板)，项目入口见 [AGENTS.md](../../../../AGENTS.md)。
@@ -9,6 +9,13 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
+| [TASK-0096](TASK-0096-release-0.0.4.md) | AI 功能收尾提交与 0.0.4 生产版本 | @Codex | 进行中 | P1 |
+| [TASK-0095](TASK-0095-deepseek-flash-default.md) | DeepSeek V4.1 Flash 默认配置与官方 API 适配 | @Codex | 待评审 | P1 |
+| [TASK-0094](TASK-0094-ai-reply-draft.md) | AI 回复草稿与人工采用 | @Codex | 待评审 | P1 |
+| [TASK-0093](TASK-0093-ai-cache-progress.md) | AI 本地缓存、进度与清理 | @Codex | 待评审 | P1 |
+| [TASK-0092](TASK-0092-mail-ai-analysis.md) | 单封邮件摘要、要点与待办 | @Codex | 待评审 | P1 |
+| [TASK-0091](TASK-0091-ai-configuration.md) | AI 配置、凭据与连接测试 | @Codex | 待评审 | P1 |
+| [TASK-0090](TASK-0090-translation-reliability.md) | 翻译错误分类与生命周期回归 | @Codex | 待评审 | P1 |
 | [TASK-0089](TASK-0089-release-0.0.3.md) | 本地 0.0.3 生产版本交付 | @Codex | 已完成 | P1 |
 | [TASK-0088](TASK-0088-installer-close-running-app.md) | 安装与卸载自动关闭运行中的 OmniMail | @Codex | 已完成 | P1 |
 | [TASK-0087](TASK-0087-compose-entry-availability-copy.md) | 写邮件入口不再标注“待开发” | @Codex | 已完成 | P2 |

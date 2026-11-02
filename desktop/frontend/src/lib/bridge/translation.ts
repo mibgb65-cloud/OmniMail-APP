@@ -4,11 +4,13 @@ import {
   SetPreferences,
   Translate,
   Cached,
+  Progress,
 } from '../../../bindings/omnimail/desktop/internal/bridge/translationbridge';
 import type {
   TranslationPreferences as NativePreferences,
   TranslationResult as NativeResult,
 } from '../../../bindings/omnimail/desktop/internal/domain/models';
+import type { TranslationProgress } from '../../../bindings/omnimail/desktop/internal/service/models';
 export const translationLanguages = ['zh', 'en', 'ja', 'ko', 'de', 'fr', 'es'] as const;
 export type TranslationLanguage = (typeof translationLanguages)[number];
 export type TranslationPreferences = Omit<NativePreferences, 'target'> & {
@@ -139,4 +141,42 @@ export async function cachedTranslation(
   if (!isTranslationResult(value) || value.mailId !== id || !value.cached)
     throw new Error('TRANSLATION_INVALID_RESPONSE');
   return value;
+}
+export async function translationProgress(
+  id: string,
+  signal?: AbortSignal,
+): Promise<TranslationProgress> {
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) throw new Error('TRANSLATION_INVALID_INPUT');
+  const value: unknown = await call((abort) => Progress(id).cancelOn(abort), signal);
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('stage' in value) ||
+    (value.stage !== 'idle' &&
+      value.stage !== 'preparing' &&
+      value.stage !== 'generating' &&
+      value.stage !== 'savingResult') ||
+    !('current' in value) ||
+    typeof value.current !== 'number' ||
+    !Number.isInteger(value.current) ||
+    value.current < 0 ||
+    value.current > 16 ||
+    !('total' in value) ||
+    typeof value.total !== 'number' ||
+    !Number.isInteger(value.total) ||
+    value.total < value.current ||
+    value.total > 16 ||
+    !('retrySeconds' in value) ||
+    typeof value.retrySeconds !== 'number' ||
+    !Number.isInteger(value.retrySeconds) ||
+    value.retrySeconds < 0 ||
+    value.retrySeconds > 300
+  )
+    throw new Error('TRANSLATION_INVALID_RESPONSE');
+  return {
+    stage: value.stage,
+    current: value.current,
+    total: value.total,
+    retrySeconds: value.retrySeconds,
+  };
 }

@@ -1,6 +1,6 @@
 # 变更日志
 
-> 状态：已生效 | 最后更新：2026-10-31
+> 状态：已生效 | 最后更新：2026-11-02
 
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [SemVer](../00-guidelines/git-conventions.md#4-版本号semver)。
 
@@ -11,6 +11,16 @@
 ## [未发布]
 
 ### 新增
+- AI 首次配置默认预填 DeepSeek V4.1 Flash 的官方地址与 `deepseek-flash` API 别名，
+  保留已有配置，增加显式填入入口；官方 DeepSeek 请求关闭思考并启用 JSON 输出，
+  不污染其他兼容接口，不自动保存、授权或外发，见
+  [TASK-0095](../07-tasks/active/TASK-0095-deepseek-flash-default.md)。
+- 新增可选 OpenAI-compatible AI 配置、独立系统密钥存储、固定合成文本连接测试；
+  单封邮件可手动生成摘要/要点/待办及原文引文、回复建议。采用需明确点击，禁止覆盖已有撰写内容，
+  不设置收件人、不自动发送；新增有界本地结果缓存、重新生成与二次确认清理。
+  翻译增加分段进度与限流冷却，修正响应体超时/断流误报格式错误；
+  见 [TASK-0090](../07-tasks/active/TASK-0090-translation-reliability.md)～
+  [TASK-0094](../07-tasks/active/TASK-0094-ai-reply-draft.md)。
 - “我的邮箱”新增平铺/服务商分组切换：本地品牌、邮箱数量、进入组选择及返回；
   分组浏览不改变实际邮箱选择，保留全局全部、管理/添加、状态重试和滚动羽化，
   网易 163/126 统一品牌分组，见

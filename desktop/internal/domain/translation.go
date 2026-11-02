@@ -8,6 +8,11 @@ import (
 const TranslationModel = "Index-Translate-35B-A3B"
 const TranslationFormat = "subject-body-v1"
 
+type TranslationRateLimit struct{ Seconds int }
+
+func (e *TranslationRateLimit) Error() string        { return ErrTranslationRate.Error() }
+func (e *TranslationRateLimit) Is(target error) bool { return target == ErrTranslationRate }
+
 var (
 	ErrTranslationInput       = errors.New("TRANSLATION_INVALID_INPUT")
 	ErrTranslationConsent     = errors.New("TRANSLATION_CONSENT_REQUIRED")
@@ -51,6 +56,7 @@ type TranslationStore interface {
 	SavePreferences(context.Context, TranslationPreferences) error
 	ReadCache(context.Context, string) (TranslationResult, bool, error)
 	WriteCache(context.Context, string, TranslationResult) error
+	ClearCache(context.Context) error
 }
 type TranslationReader interface {
 	ReadMail(context.Context, string) (MailDetail, error)

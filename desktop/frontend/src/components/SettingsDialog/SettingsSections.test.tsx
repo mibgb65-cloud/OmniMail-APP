@@ -3,6 +3,17 @@ import { expect, it, vi } from 'vitest';
 import { I18nProvider } from '../../lib/i18n/I18nProvider';
 import { VERSION_INFO } from '../../test/fixtures';
 import { SettingsDialog } from './SettingsDialog';
+vi.mock('../../lib/bridge/ai', async (original) => ({
+  ...(await original<typeof import('../../lib/bridge/ai')>()),
+  aiConfig: vi.fn(async () => ({
+    endpoint: '',
+    model: '',
+    language: 'zh',
+    consent: false,
+    hasKey: false,
+    revision: '',
+  })),
+}));
 
 function renderSettings(onManageAccounts?: () => void, accountCount?: number) {
   const onClose = vi.fn();
@@ -45,17 +56,20 @@ it('邮箱设置显示真实数量，完成退出后才转到管理窗口', asyn
   expect(close).toHaveBeenCalledOnce();
   expect(close.mock.invocationCallOrder[0]).toBeLessThan(manage.mock.invocationCallOrder[0] ?? 0);
 });
-it('未连接邮件服务不提供无效管理入口，通知与 AI 不伪造开关', () => {
+it('未连接邮件服务不提供无效管理入口，通知占位与真实 AI 配置区分', async () => {
   renderSettings();
   fireEvent.click(screen.getByRole('tab', { name: '邮箱设置' }));
   expect(screen.getByRole('button', { name: '管理邮箱' })).toBeDisabled();
   expect(screen.getByText('桌面邮件服务尚未连接。')).toBeVisible();
-  for (const name of ['通知设置', 'AI 设置']) {
+  for (const name of ['通知设置']) {
     fireEvent.click(screen.getByRole('tab', { name }));
     const panel = screen.getByRole('tabpanel', { name });
     expect(within(panel).getByText('暂未接入')).toBeVisible();
     expect(within(panel).queryByRole('switch')).not.toBeInTheDocument();
   }
+  fireEvent.click(screen.getByRole('tab', { name: 'AI 设置' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: '保存配置' })).toBeEnabled());
+  expect(screen.getByRole('button', { name: '测试已保存配置' })).toBeDisabled();
 });
 it('更新页显示安装版本，不把未接入宣称为最新版本', () => {
   renderSettings();

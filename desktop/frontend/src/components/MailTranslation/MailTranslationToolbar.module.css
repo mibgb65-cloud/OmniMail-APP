@@ -105,3 +105,7 @@
     transition: none;
   }
 }
+.progress {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}

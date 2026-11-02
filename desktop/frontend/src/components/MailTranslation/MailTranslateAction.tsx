@@ -36,8 +36,19 @@ export function MailTranslateAction({ disabled = false }: { disabled?: boolean }
     : translation?.result
       ? `${t('machine')} · ${t(translation.result.target)}${translation.result.cached ? ` · ${t('cached')}` : ''}`
       : t(translation?.available ? 'button' : 'unavailable');
+  const progress = translation?.progress;
   return (
     <div ref={root} className={styles.root}>
+      {translation?.busy && progress && progress.total > 0 && (
+        <span role="status" className={styles.progress}>
+          {t('chunkProgress', { current: progress.current, total: progress.total })}
+        </span>
+      )}
+      {!!progress?.retrySeconds && (
+        <span role="status" className={styles.progress}>
+          {t('cooldown', { seconds: progress.retrySeconds })}
+        </span>
+      )}
       <button
         type="button"
         data-button-variant="ghost"

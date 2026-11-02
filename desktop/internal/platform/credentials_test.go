@@ -43,12 +43,25 @@ func TestCredentialValidationAndErrors(t *testing.T) {
 	}
 }
 
+func TestAICredentialsUseSeparateNamespace(t *testing.T) {
+	if !validReference("omnimail/ai/test_config") || validReference("omnimail/ai/test/imap") ||
+		validReference("omnimail/ai/../account/test") || validReference("omnimail/ai/test\n") {
+		t.Fatal("AI 凭据命名空间边界无效")
+	}
+}
+
 func TestNativeCredentialsRoundTrip(t *testing.T) {
 	if os.Getenv("OMNIMAIL_TEST_NATIVE_KEYRING") != "1" {
 		t.Skip("原生条目测试需显式开启，只操作随机临时条目")
 	}
+	for _, reference := range []string{"omnimail/account/" + rand.Text() + "/imap", "omnimail/ai/" + rand.Text()} {
+		t.Run(reference, func(t *testing.T) { nativeCredentialRoundTrip(t, reference) })
+	}
+}
+
+func nativeCredentialRoundTrip(t *testing.T, reference string) {
+	t.Helper()
 	store := NewCredentials()
-	reference := "omnimail/account/" + rand.Text() + "/imap"
 	secret := []byte(rand.Text())
 	t.Cleanup(func() {
 		if err := store.Delete(context.Background(), reference); err != nil {

@@ -36,7 +36,7 @@ func Run(assets fs.FS, icon []byte) (err error) {
 	}()
 
 	lifecycle := newWindowLifecycle(context.Background(), cfg, resources.log)
-	desktop := newApplication(assets, icon, cfg, resources.log, resources.shutdown, resources.mail, lifecycle, resources.translation)
+	desktop := newApplication(assets, icon, cfg, resources.log, resources.shutdown, resources.mail, lifecycle, resources.translation, resources.ai)
 	window := desktop.Window.NewWithOptions(mainWindowOptions())
 	configureWindowClose(desktop, window, lifecycle, icon)
 	if info, readErr := platform.Installation(); readErr == nil && info.CanAutoStart && info.AutoStart && platform.StartupLaunch() {
@@ -64,7 +64,7 @@ func mainWindowOptions() application.WebviewWindowOptions {
 	}
 }
 
-func newApplication(assets fs.FS, icon []byte, cfg config.Config, log *slog.Logger, shutdown func(), mail *service.Mail, lifecycle *service.WindowLifecycle, translation *service.Translation) *application.App {
+func newApplication(assets fs.FS, icon []byte, cfg config.Config, log *slog.Logger, shutdown func(), mail *service.Mail, lifecycle *service.WindowLifecycle, translation *service.Translation, ai *service.AI) *application.App {
 	// 开发与正式数据目录隔离时，也应使用不同的单实例标识。
 	dataHash := sha256.Sum256([]byte(cfg.DataDir))
 	return application.New(application.Options{
@@ -79,6 +79,7 @@ func newApplication(assets fs.FS, icon []byte, cfg config.Config, log *slog.Logg
 			application.NewService(bridge.NewWindowLifecycleBridge(lifecycle)),
 			application.NewService(bridge.NewCustomProvidersBridge(service.NewCustomProviders(config.NewCustomProviders(cfg.DataDir)))),
 			application.NewService(bridge.NewTranslationBridge(translation)),
+			application.NewService(bridge.NewAIBridge(ai, translation)),
 			application.NewService(bridge.NewInstallationBridge())},
 		Assets: application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
 		Mac: application.MacOptions{

@@ -5,16 +5,20 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react';
 import type { MailDetail } from '../../lib/bridge/mail';
 import {
   translateMail,
   cachedTranslation,
+  translationProgress,
+  translationErrorKey,
   type TranslationLanguage,
   type TranslationResult,
 } from '../../lib/bridge/translation';
 import { MailTranslationDialog } from './MailTranslationDialog';
+import { cacheRevision, subscribeCache } from '../../lib/bridge/cacheInvalidation';
 
 interface Controller {
   available: boolean;
@@ -25,6 +29,7 @@ interface Controller {
   result?: TranslationResult;
   source?: MailDetail;
   show: boolean;
+  progress?: Awaited<ReturnType<typeof translationProgress>>;
   setShow: (value: boolean) => void;
 }
 const Context = createContext<Controller | undefined>(undefined);
@@ -43,6 +48,7 @@ export function MailTranslationProvider({
   suspended?: boolean;
   children: ReactNode;
 }) {
+  const cacheEpoch = useSyncExternalStore(subscribeCache, cacheRevision);
   const request = useRef<AbortController>();
   const actionEpoch = useRef(0);
   const requestScope = useRef<{ detail: MailDetail; selectedId: string; suspended: boolean }>();
@@ -53,7 +59,15 @@ export function MailTranslationProvider({
   const [dialog, setDialog] = useState<MailDetail>();
   const [busy, setBusy] = useState(false);
   const [jobSource, setJobSource] = useState<MailDetail>();
-  const [snapshot, setSnapshot] = useState<{ source: MailDetail; result: TranslationResult }>();
+  const [snapshot, setSnapshot] = useState<{
+    source: MailDetail;
+    result: TranslationResult;
+    cacheEpoch: number;
+  }>();
+  const [progress, setProgress] = useState<{
+    source: MailDetail;
+    value: Awaited<ReturnType<typeof translationProgress>>;
+  }>();
   const [error, setError] = useState<{ source: MailDetail; error: unknown }>();
   const [show, setShow] = useState(true);
   const available =
@@ -79,7 +93,7 @@ export function MailTranslationProvider({
             current.current.selectedId === source.id &&
             !current.current.suspended
           ) {
-            setSnapshot({ source, result });
+            setSnapshot({ source, result, cacheEpoch });
             setShow(false);
           }
         },
@@ -104,9 +118,45 @@ export function MailTranslationProvider({
       )
         request.current?.abort();
     };
-  }, [detail, selectedId, suspended, available]);
+  }, [detail, selectedId, suspended, available, cacheEpoch]);
   const valid =
-    !!snapshot && !!detail && snapshot.source === detail && detail.id === selectedId && !suspended;
+    !!snapshot &&
+    !!detail &&
+    snapshot.source === detail &&
+    snapshot.cacheEpoch === cacheEpoch &&
+    detail.id === selectedId &&
+    !suspended;
+  const status = progress && progress.source === detail ? progress.value : undefined;
+  const rateLimited =
+    !!error &&
+    error.source === detail &&
+    translationErrorKey(error.error) === 'TRANSLATION_RATE_LIMITED';
+  const polling = !!available && (busy || rateLimited);
+  useEffect(() => {
+    if (!polling || !detail) return;
+    const source = detail,
+      controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const poll = async () => {
+      try {
+        const value = await translationProgress(source.id, controller.signal);
+        if (!controller.signal.aborted && current.current.detail === source) {
+          setProgress({ source, value });
+          if (busy || value.retrySeconds > 0) timer = setTimeout(() => void poll(), 1000);
+        }
+      } catch (reason) {
+        if (!controller.signal.aborted && current.current.detail === source)
+          setError((previous) =>
+            previous?.source === source ? previous : { source, error: reason },
+          );
+      }
+    };
+    void poll();
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [polling, detail, busy, rateLimited]);
   const start = (target: TranslationLanguage) => {
     if (!available || !detail) return;
     request.current?.abort();
@@ -128,7 +178,7 @@ export function MailTranslationProvider({
             current.current.selectedId === source.id &&
             !current.current.suspended
           ) {
-            setSnapshot({ source, result });
+            setSnapshot({ source, result, cacheEpoch });
             setShow(true);
           }
         },
@@ -162,6 +212,7 @@ export function MailTranslationProvider({
         source: valid ? detail : undefined,
         result: valid ? snapshot.result : undefined,
         show: valid && show,
+        progress: available ? status : undefined,
         setShow: (value) => {
           actionEpoch.current++;
           setShow(value);

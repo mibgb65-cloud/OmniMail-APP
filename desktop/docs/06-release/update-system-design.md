@@ -74,6 +74,8 @@
   webview/                 # WebView profile、缓存和现有 localStorage
   updates/                 # 下载、临时包、升级任务、有限历史
   translations/            # 已实现的邮件翻译派生缓存
+  ai-config.json           # 可选 AI 配置与凭据引用，不含 API Key
+  ai-results/              # 可选 AI 本地派生缓存
   已有关闭偏好、自定义服务商及新增应用偏好
 ```
 

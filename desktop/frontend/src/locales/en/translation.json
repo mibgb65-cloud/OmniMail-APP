@@ -22,6 +22,8 @@
   "retry": "Retry",
   "status": "Email translation status",
   "translating": "Translating subject and body…",
+  "chunkProgress": "Translating part {{current}} of {{total}}",
+  "cooldown": "Rate limited. Retry manually in about {{seconds}} seconds.",
   "original": "Original",
   "originalShort": "O",
   "translatedShort": "T",

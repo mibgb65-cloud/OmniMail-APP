@@ -132,22 +132,28 @@ func (s *TranslationStore) write(ctx context.Context, name string, value interfa
 		return domain.ErrTranslationStorage
 	}
 	defer root.Close()
-	cache := strings.HasPrefix(name, "translations/")
+	cacheDir := ""
+	for _, dir := range []string{"translations", "ai-results"} {
+		if strings.HasPrefix(name, dir+"/") {
+			cacheDir = dir
+		}
+	}
+	cache := cacheDir != ""
 	if cache {
-		if err := root.Mkdir("translations", 0o700); err != nil && !errors.Is(err, fs.ErrExist) {
+		if err := root.Mkdir(cacheDir, 0o700); err != nil && !errors.Is(err, fs.ErrExist) {
 			return domain.ErrTranslationStorage
 		}
-		info, err := root.Lstat("translations")
+		info, err := root.Lstat(cacheDir)
 		if err != nil || !info.IsDir() || info.Mode()&fs.ModeSymlink != 0 {
 			return domain.ErrTranslationStorage
 		}
-		if err := pruneTranslations(root, len(data)); err != nil {
+		if err := pruneResultCache(root, cacheDir, len(data)); err != nil {
 			return err
 		}
 	}
 	temp := ".translation-" + rand.Text() + ".tmp"
 	if cache {
-		temp = "translations/" + temp
+		temp = cacheDir + "/" + temp
 	}
 	file, err := root.OpenFile(temp, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
@@ -171,8 +177,8 @@ func (s *TranslationStore) write(ctx context.Context, name string, value interfa
 	}
 	return nil
 }
-func pruneTranslations(root *os.Root, incoming int) error {
-	entries, err := fs.ReadDir(root.FS(), "translations")
+func pruneResultCache(root *os.Root, directory string, incoming int) error {
+	entries, err := fs.ReadDir(root.FS(), directory)
 	if err != nil {
 		return domain.ErrTranslationStorage
 	}
@@ -183,6 +189,13 @@ func pruneTranslations(root *os.Root, incoming int) error {
 	files := []entry{}
 	total := int64(incoming)
 	for _, file := range entries {
+		if validResultTemp(file.Name()) {
+			info, err := file.Info()
+			if err != nil || !info.Mode().IsRegular() || root.Remove(directory+"/"+file.Name()) != nil {
+				return domain.ErrTranslationStorage
+			}
+			continue
+		}
 		name := strings.TrimSuffix(file.Name(), ".json")
 		if !strings.HasSuffix(file.Name(), ".json") || !validTranslationKey(name) {
 			continue
@@ -203,7 +216,7 @@ func pruneTranslations(root *os.Root, incoming int) error {
 			return domain.ErrTranslationStorage
 		}
 		old := files[0]
-		if root.Remove("translations/"+old.name) != nil {
+		if root.Remove(directory+"/"+old.name) != nil {
 			return domain.ErrTranslationStorage
 		}
 		total -= old.info.Size()

@@ -13,6 +13,7 @@ vi.mock('../../lib/bridge/translation', async (original) => ({
   saveTranslationPreferences: vi.fn(),
   translateMail: vi.fn(),
   cachedTranslation: vi.fn(),
+  translationProgress: vi.fn(),
 }));
 const detail: MailDetail = {
   id: 'mail_test',
@@ -68,6 +69,9 @@ beforeEach(() => {
     .mockReset()
     .mockImplementation(async (_id, target) => ({ ...result, target }));
   vi.mocked(api.cachedTranslation).mockReset().mockResolvedValue(null);
+  vi.mocked(api.translationProgress)
+    .mockReset()
+    .mockResolvedValue({ stage: 'generating', current: 1, total: 1, retrySeconds: 0 });
 });
 async function open() {
   fireEvent.click(screen.getByRole('button', { name: '翻译标题和正文' }));
@@ -88,6 +92,26 @@ it('没有选中或正文不完整时禁用，不自动发送邮件', () => {
   rendered.rerender(view(detail, detail.id, true));
   expect(screen.getByRole('button', { name: '翻译标题和正文' })).toBeDisabled();
   expect(api.translateMail).not.toHaveBeenCalled();
+});
+it('收到限流后重新读取冷却状态，不沿用请求期间的零秒进度', async () => {
+  let reject: (reason: unknown) => void = () => {};
+  vi.mocked(api.translateMail).mockReturnValueOnce(
+    new Promise((_resolve, fail) => {
+      reject = fail;
+    }),
+  );
+  render(view());
+  await start();
+  await waitFor(() => expect(api.translationProgress).toHaveBeenCalled());
+  await screen.findByText('正在翻译第 1／1 段');
+  vi.mocked(api.translationProgress).mockResolvedValue({
+    stage: 'idle',
+    current: 0,
+    total: 0,
+    retrySeconds: 2,
+  });
+  await act(async () => reject(new Error('TRANSLATION_RATE_LIMITED')));
+  await screen.findByText('服务限流，请约 2 秒后手动重试。');
 });
 it('源语言自动、目标可保存，授权后同时显示标题和正文译文且不执行 HTML', async () => {
   render(view());

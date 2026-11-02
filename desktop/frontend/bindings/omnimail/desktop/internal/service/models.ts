@@ -5,6 +5,11 @@
 // @ts-ignore: Unused imports
 import * as domain$0 from "../domain/models.js";
 
+export interface AIProgress {
+    "stage": string;
+    "retrySeconds": number;
+}
+
 export interface AccountSummary {
     "id": string;
     "email": string;
@@ -60,6 +65,13 @@ export interface SyncState {
     "more": boolean;
     "errorCode": string;
     "lastSyncAt": number;
+}
+
+export interface TranslationProgress {
+    "stage": string;
+    "current": number;
+    "total": number;
+    "retrySeconds": number;
 }
 
 export interface WindowCloseState {

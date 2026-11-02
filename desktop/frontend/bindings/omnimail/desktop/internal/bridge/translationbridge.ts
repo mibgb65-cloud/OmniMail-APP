@@ -8,6 +8,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as domain$0 from "../domain/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as service$0 from "../service/models.js";
 
 export function Cached(id: string): $CancellablePromise<domain$0.TranslationResult | null> {
     return $Call.ByID(2551114096, id);
@@ -15,6 +18,10 @@ export function Cached(id: string): $CancellablePromise<domain$0.TranslationResu
 
 export function Preferences(): $CancellablePromise<domain$0.TranslationPreferences> {
     return $Call.ByID(2576462332);
+}
+
+export function Progress(id: string): $CancellablePromise<service$0.TranslationProgress> {
+    return $Call.ByID(4225608729, id);
 }
 
 export function SetPreferences(prefs: domain$0.TranslationPreferences): $CancellablePromise<void> {

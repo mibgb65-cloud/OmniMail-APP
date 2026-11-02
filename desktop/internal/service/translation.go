@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -23,6 +24,9 @@ type Translation struct {
 	closed   bool
 	active   context.CancelFunc
 	slot     chan struct{}
+	activeID string
+	progress TranslationProgress
+	cooldown time.Time
 }
 
 func NewTranslation(reader domain.TranslationReader, store domain.TranslationStore, provider domain.TranslationProvider) *Translation {
@@ -59,6 +63,10 @@ func (s *Translation) Translate(ctx context.Context, id, target string) (domain.
 		s.mu.Unlock()
 		return empty, context.Canceled
 	}
+	if time.Now().Before(s.cooldown) {
+		s.mu.Unlock()
+		return empty, domain.ErrTranslationRate
+	}
 	select {
 	case s.slot <- struct{}{}:
 	default:
@@ -68,6 +76,7 @@ func (s *Translation) Translate(ctx context.Context, id, target string) (domain.
 	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	stop := context.AfterFunc(s.ctx, cancel)
 	s.active = cancel
+	s.activeID, s.progress = id, TranslationProgress{Stage: "preparing"}
 	s.wg.Add(1)
 	s.mu.Unlock()
 	defer func() {
@@ -75,6 +84,7 @@ func (s *Translation) Translate(ctx context.Context, id, target string) (domain.
 		cancel()
 		s.mu.Lock()
 		s.active = nil
+		s.activeID, s.progress = "", TranslationProgress{}
 		s.mu.Unlock()
 		<-s.slot
 		s.wg.Done()
@@ -110,12 +120,21 @@ func (s *Translation) Translate(ctx context.Context, id, target string) (domain.
 	result := domain.TranslationResult{MailID: id, SourceHash: sourceHash, Target: target, Model: domain.TranslationModel}
 	var body strings.Builder
 	for index, chunk := range chunks {
+		s.mu.Lock()
+		s.progress = TranslationProgress{Stage: "generating", Current: index + 1, Total: len(chunks)}
+		s.mu.Unlock()
 		part := domain.TranslatedText{Body: chunk}
 		if index == 0 {
 			part.Subject = source.Subject
 		}
 		translated, err := s.provider.Translate(ctx, part, target)
 		if err != nil {
+			var rate *domain.TranslationRateLimit
+			if errors.As(err, &rate) {
+				s.mu.Lock()
+				s.cooldown = time.Now().Add(time.Duration(max(1, min(rate.Seconds, 300))) * time.Second)
+				s.mu.Unlock()
+			}
 			return empty, err
 		}
 		if index == 0 {
@@ -130,9 +149,12 @@ func (s *Translation) Translate(ctx context.Context, id, target string) (domain.
 		}
 	}
 	result.Body = body.String()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if ctx.Err() != nil {
 		return empty, ctx.Err()
 	}
+	s.progress.Stage = "savingResult"
 	if err := s.store.WriteCache(ctx, key, result); err != nil {
 		result.Warning = "CACHE_NOT_SAVED"
 	} else if cacheErr != nil {
@@ -201,4 +223,21 @@ func (s *Translation) Close() {
 	s.cancel()
 	s.mu.Unlock()
 	s.wg.Wait()
+}
+
+func (s *Translation) ClearCache(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return context.Canceled
+	}
+	if s.active != nil {
+		s.active()
+	}
+	if s.store.ClearCache(ctx) != nil {
+		return domain.ErrTranslationStorage
+	}
+	return nil
 }

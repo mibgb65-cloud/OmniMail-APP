@@ -143,8 +143,9 @@ it('自动已读失败不隐藏正文，提示原因且不暴露底层错误', a
     </I18nProvider>,
   );
   expect(await screen.findByRole('heading', { name: '真实主题' })).toBeVisible();
-  expect(screen.getByRole('alert')).toHaveTextContent('自动标为已读失败');
-  expect(screen.getByRole('alert')).not.toHaveTextContent('private-marker');
+  const alert = within(screen.getByRole('region', { name: '邮件工作区' })).getByRole('alert');
+  expect(alert).toHaveTextContent('自动标为已读失败');
+  expect(alert).not.toHaveTextContent('private-marker');
   expect(screen.getByRole('button', { name: '标为已读' })).toBeEnabled();
 });
 
@@ -156,7 +157,7 @@ it('自动已读不支持时使用通用安全提示，不误报目标文件夹�
     </I18nProvider>,
   );
   await screen.findByRole('heading', { name: '真实主题' });
-  const alert = screen.getByRole('alert');
+  const alert = within(screen.getByRole('region', { name: '邮件工作区' })).getByRole('alert');
   expect(alert).toHaveTextContent('自动标为已读失败');
   expect(alert).not.toHaveTextContent('目标文件夹');
   expect(alert).not.toHaveTextContent('private-marker');

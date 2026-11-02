@@ -22,6 +22,7 @@ import { SettingsAccounts, SettingsCapability, SettingsUpdates } from './Setting
 import { SettingsAppearance, type SettingsAppearanceProps } from './SettingsAppearance';
 import { SettingsCloseBehavior } from './SettingsCloseBehavior';
 import styles from './SettingsDialog.module.css';
+import { AISettings } from '../MailAI/AISettings';
 
 interface SettingsDialogProps extends SettingsAppearanceProps {
   onClose: () => void;
@@ -185,7 +186,8 @@ export function SettingsDialog({
                   }
                 />
               )}
-              {(name === 'notifications' || name === 'ai') && <SettingsCapability kind={name} />}
+              {name === 'notifications' && <SettingsCapability kind={name} />}
+              {name === 'ai' && section === 'ai' && <AISettings />}
               {name === 'reading' && (
                 <>
                   <section

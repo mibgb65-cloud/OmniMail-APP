@@ -22,6 +22,8 @@
   "retry": "重试",
   "status": "邮件翻译状态",
   "translating": "正在翻译标题和正文…",
+  "chunkProgress": "正在翻译第 {{current}}／{{total}} 段",
+  "cooldown": "服务限流，请约 {{seconds}} 秒后手动重试。",
   "original": "原文",
   "originalShort": "原",
   "translatedShort": "译",
