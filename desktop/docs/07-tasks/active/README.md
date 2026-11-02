@@ -10,12 +10,12 @@
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
 | [TASK-0096](TASK-0096-release-0.0.4.md) | AI 功能收尾提交与 0.0.4 生产版本 | @Codex | 进行中 | P1 |
-| [TASK-0095](TASK-0095-deepseek-flash-default.md) | DeepSeek V4.1 Flash 默认配置与官方 API 适配 | @Codex | 待评审 | P1 |
-| [TASK-0094](TASK-0094-ai-reply-draft.md) | AI 回复草稿与人工采用 | @Codex | 待评审 | P1 |
-| [TASK-0093](TASK-0093-ai-cache-progress.md) | AI 本地缓存、进度与清理 | @Codex | 待评审 | P1 |
-| [TASK-0092](TASK-0092-mail-ai-analysis.md) | 单封邮件摘要、要点与待办 | @Codex | 待评审 | P1 |
-| [TASK-0091](TASK-0091-ai-configuration.md) | AI 配置、凭据与连接测试 | @Codex | 待评审 | P1 |
-| [TASK-0090](TASK-0090-translation-reliability.md) | 翻译错误分类与生命周期回归 | @Codex | 待评审 | P1 |
+| [TASK-0095](../archive/2026/11/TASK-0095-deepseek-flash-default.md) | DeepSeek V4.1 Flash 默认配置与官方 API 适配（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0094](../archive/2026/11/TASK-0094-ai-reply-draft.md) | AI 回复草稿与人工采用（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0093](../archive/2026/11/TASK-0093-ai-cache-progress.md) | AI 本地缓存、进度与清理（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0092](../archive/2026/11/TASK-0092-mail-ai-analysis.md) | 单封邮件摘要、要点与待办（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0091](../archive/2026/11/TASK-0091-ai-configuration.md) | AI 配置、凭据与连接测试（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0090](../archive/2026/11/TASK-0090-translation-reliability.md) | 翻译错误分类与生命周期回归（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0089](TASK-0089-release-0.0.3.md) | 本地 0.0.3 生产版本交付 | @Codex | 已完成 | P1 |
 | [TASK-0088](TASK-0088-installer-close-running-app.md) | 安装与卸载自动关闭运行中的 OmniMail | @Codex | 已完成 | P1 |
 | [TASK-0087](TASK-0087-compose-entry-availability-copy.md) | 写邮件入口不再标注“待开发” | @Codex | 已完成 | P2 |
