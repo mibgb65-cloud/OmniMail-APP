@@ -31,8 +31,14 @@
   color: var(--color-text-secondary);
   text-align: start;
 }
-.account > svg {
+.account > svg,
+.account > img {
+  width: var(--icon-size);
+  height: var(--icon-size);
   flex-shrink: 0;
+}
+.account > img {
+  object-fit: contain;
 }
 .account > span {
   display: grid;

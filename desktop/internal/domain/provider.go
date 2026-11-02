@@ -14,7 +14,8 @@ type ProviderPreset struct {
 	Endpoints []EndpointPreset `json:"endpoints"`
 }
 
-// ProviderPresets 是新增服务商的单一入口。每次返回独立配置，调用方不能改写其他账号的默认值。
+// ProviderPresets 是新增内置服务商的单一入口。用户保存的连接模板不改写此列表。
+// 每次返回独立配置，调用方不能改写其他账号的默认值。
 // 这些参数只用于填充向导；连通性、服务商授权政策与用户认证必须另外校验。
 func ProviderPresets() []ProviderPreset {
 	return []ProviderPreset{

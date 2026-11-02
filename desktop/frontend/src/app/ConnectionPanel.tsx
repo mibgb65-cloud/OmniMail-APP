@@ -1,6 +1,6 @@
 import { useTranslation } from '../lib/i18n/useTranslation';
 import type { ConnectionState } from './useVersion';
-import styles from './App.module.css';
+import styles from './ConnectionPanel.module.css';
 
 interface ConnectionPanelProps {
   state: ConnectionState;
@@ -13,19 +13,22 @@ export function ConnectionPanel({ state, onRetry }: ConnectionPanelProps) {
   const displayValue = (value: string) => (value === 'unknown' ? common('unknownValue') : value);
 
   return (
-    <section className={styles['connection-panel']} aria-labelledby="connection-title">
-      <div className={styles['panel-heading']}>
-        <div>
-          <p className={styles.eyebrow}>{t('eyebrow')}</p>
-          <h2 id="connection-title">{t('title')}</h2>
-        </div>
-        <button type="button" onClick={onRetry} disabled={state.status === 'loading'}>
+    <section aria-labelledby="connection-title">
+      <div className={styles.heading}>
+        <h3 id="connection-title">{t('title')}</h3>
+        <button
+          type="button"
+          className={styles.action}
+          data-button-variant="ghost"
+          onClick={onRetry}
+          disabled={state.status === 'loading'}
+        >
           {state.status === 'loading' ? t('checking') : t('check')}
         </button>
       </div>
       {state.status === 'loading' && (
         <>
-          <p role="status" className={styles.muted}>
+          <p role="status" className={styles.status} data-tone="muted">
             {t('loading')}
           </p>
           <div className={styles.skeleton} aria-hidden="true" />
@@ -39,7 +42,7 @@ export function ConnectionPanel({ state, onRetry }: ConnectionPanelProps) {
       )}
       {state.status === 'success' && (
         <>
-          <p role="status" className={styles.success}>
+          <p role="status" className={styles.status} data-tone="success">
             {t('connected')}
           </p>
           <dl className={styles.metadata}>
@@ -59,7 +62,7 @@ export function ConnectionPanel({ state, onRetry }: ConnectionPanelProps) {
               <dt>{t('platform')}</dt>
               <dd>{state.info.platform}</dd>
             </div>
-            <div className={styles['metadata-wide']}>
+            <div className={styles.wide}>
               <dt>{t('buildTime')}</dt>
               <dd>{displayValue(state.info.buildTime)}</dd>
             </div>

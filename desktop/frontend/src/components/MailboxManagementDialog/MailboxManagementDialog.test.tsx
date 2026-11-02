@@ -56,6 +56,36 @@ const setup = (
   return { close, add, sync };
 };
 
+it.each([
+  ['qq', '/providers/qq.ico'],
+  ['gmail', '/providers/gmail.ico'],
+  ['netease_163', '/providers/netease-163.png'],
+  ['netease_126', '/providers/netease-163.png'],
+  ['linuxdo', '/providers/linuxdo.svg'],
+  ['yandex', '/providers/yandex.ico'],
+  ['naver', '/providers/naver.ico'],
+  ['icloud', '/providers/icloud.ico'],
+  ['yahoo', '/providers/yahoo.png'],
+])('账号管理按保存的 %s 服务商代码展示本地图标', (providerCode, source) => {
+  setup(undefined, [{ ...account, providerCode }]);
+  const button = screen.getByRole('button', { name: account.email });
+  const image = button.querySelector('img');
+  expect(image).toHaveAttribute('src', source);
+  expect(image).toHaveAttribute('alt', '');
+  expect(image).toHaveAttribute('width', '18');
+  expect(image).toHaveAttribute('height', '18');
+  expect(button).toHaveTextContent(account.displayName);
+});
+it.each(['custom', 'unknown', 'constructor'])(
+  '无品牌的 %s 服务商使用通用图标，不按邮箱猜测品牌',
+  (providerCode) => {
+    setup(undefined, [{ ...account, providerCode, email: 'reader@qq.com.invalid' }]);
+    const button = screen.getByRole('button', { name: 'reader@qq.com.invalid' });
+    expect(button.querySelector('img')).not.toBeInTheDocument();
+    expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+  },
+);
+
 it('管理选择独立于工作区，显示完整邮箱、服务商、真实数量，已断开账号没有重复断开', () => {
   const { sync } = setup();
   const dialog = screen.getByRole('dialog', { name: '邮箱账号管理' });

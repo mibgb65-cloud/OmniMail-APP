@@ -1,0 +1,79 @@
+.control {
+  width: min(100%, calc(var(--space-9) * 7));
+  flex-shrink: 0;
+}
+.track {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+}
+.indicator {
+  position: absolute;
+  inset-block: var(--space-1);
+  inset-inline-start: var(--space-1);
+  border-radius: var(--radius-lg);
+  background: var(--color-accent);
+  box-shadow: var(--panel-shadow);
+  pointer-events: none;
+  transition: transform var(--motion-interaction) var(--ease-out);
+}
+.option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--space-8);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--motion-interaction) var(--ease-out);
+}
+.option svg {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+.option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.option:has(input:checked) {
+  color: var(--color-text-inverse);
+  font-weight: var(--font-medium);
+}
+.option:has(input:focus-visible) {
+  outline: var(--outline-width) solid var(--color-accent);
+  outline-offset: var(--space-1);
+}
+.option:not(:has(input:checked)):not(:has(input:disabled)):hover {
+  color: var(--color-text-primary);
+}
+.option:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.track:disabled .indicator {
+  opacity: 0.5;
+}
+.hint {
+  margin-top: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .indicator,
+  .option {
+    transition: none;
+  }
+}

@@ -7,7 +7,9 @@ import { useTranslation } from '../lib/i18n/useTranslation';
 import { useTheme } from '../lib/theme/useTheme';
 import { MailWorkspace } from './MailWorkspace';
 import { AccountDialog } from '../components/MailDialogs/AccountDialog';
-import { ComposeDialog } from '../components/MailDialogs/ComposeDialog';
+import { WindowCloseManager } from '../components/WindowCloseDialog/WindowCloseManager';
+import { MailTranslationProvider } from '../components/MailTranslation/MailTranslationContext';
+import { useComposer } from './useComposer';
 import { useMail } from './useMail';
 import { useVersion } from './useVersion';
 import { WorkspaceSidebar, type MailFolder } from './WorkspaceSidebar';
@@ -18,11 +20,12 @@ export function App() {
   useNativeScrollbarActivity();
   const { t: nav } = useTranslation('navigation');
   const { state, retry } = useVersion();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, themePreference, selectTheme, toggleTheme } = useTheme();
   const [startupVisible, setStartupVisible] = useState(true);
   const [selectedFolder, setSelectedFolder] = useState<MailFolder>('inbox');
-  const [mailDialog, setMailDialog] = useState<'account' | 'compose' | null>(null);
+  const [mailDialog, setMailDialog] = useState<'account' | null>(null);
   const mail = useMail(selectedFolder);
+  const composer = useComposer(mail.accounts, mail.refresh);
   const shellRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const dismissStartup = useCallback(() => setStartupVisible(false), []);
@@ -68,23 +71,30 @@ export function App() {
         </a>
         <div className={styles.shell}>
           <WorkspaceSidebar
-            theme={theme}
-            onToggleTheme={toggleTheme}
+            themePreference={themePreference}
+            onThemePreferenceChange={selectTheme}
             selectedFolder={selectedFolder}
             onSelectFolder={(folder) => {
+              composer.hide();
               mail.resetView();
               setSelectedFolder(folder);
             }}
             accounts={mail.accounts}
             mailReady={mail.ready}
             selectedAccount={mail.accountId}
-            onSelectAccount={mail.chooseAccount}
+            onSelectAccount={(id) => {
+              composer.hide();
+              mail.chooseAccount(id);
+            }}
             onAddAccount={mail.ready ? () => setMailDialog('account') : undefined}
             onCompose={
-              mail.ready && mail.accounts.some((account) => account.status === 'configured')
-                ? () => setMailDialog('compose')
+              mail.ready &&
+              (composer.hasSession ||
+                mail.accounts.some((account) => account.status === 'configured'))
+                ? () => composer.open(mail.accountId)
                 : undefined
             }
+            composePending={composer.hasSession}
             onDisconnect={mail.disconnectAccount}
             onRetryAccount={mail.retryAccount}
             versionInfo={state.status === 'success' ? state.info : undefined}
@@ -94,7 +104,22 @@ export function App() {
           />
           <div className={styles.workspace}>
             <main ref={mainRef} id="workspace" className={styles.main} tabIndex={-1}>
-              <MailWorkspace mail={mail} />
+              <MailTranslationProvider
+                detail={mail.detail}
+                selectedId={mail.selected}
+                suspended={!!composer.visible}
+              >
+                <MailWorkspace
+                  composer={composer}
+                  mail={{
+                    ...mail,
+                    setSelected: (id) => {
+                      composer.hide();
+                      mail.setSelected(id);
+                    },
+                  }}
+                />
+              </MailTranslationProvider>
             </main>
           </div>
         </div>
@@ -102,14 +127,7 @@ export function App() {
       {mailDialog === 'account' && (
         <AccountDialog onClose={() => setMailDialog(null)} onSaved={mail.refresh} />
       )}
-      {mailDialog === 'compose' && (
-        <ComposeDialog
-          accounts={mail.accounts}
-          selectedAccount={mail.accountId}
-          onClose={() => setMailDialog(null)}
-          onSent={mail.refresh}
-        />
-      )}
+      <WindowCloseManager />
     </>
   );
 }

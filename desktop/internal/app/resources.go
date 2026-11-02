@@ -13,15 +13,17 @@ import (
 	"omnimail/desktop/internal/platform"
 	"omnimail/desktop/internal/repository"
 	"omnimail/desktop/internal/service"
+	"omnimail/desktop/internal/translationapi"
 )
 
 type resources struct {
-	log      *slog.Logger
-	storage  *repository.Store
-	mail     *service.Mail
-	logFile  io.Closer
-	once     sync.Once
-	closeErr error
+	log         *slog.Logger
+	storage     *repository.Store
+	mail        *service.Mail
+	translation *service.Translation
+	logFile     io.Closer
+	once        sync.Once
+	closeErr    error
 }
 
 func openResources(ctx context.Context, cfg config.Config) (*resources, error) {
@@ -37,13 +39,15 @@ func openResources(ctx context.Context, cfg config.Config) (*resources, error) {
 		return nil, errors.Join(err, logFile.Close())
 	}
 	mail := service.NewMail(storage, platform.NewCredentials(), mailnet.New(), log)
-	return &resources{log: log, storage: storage, logFile: logFile, mail: mail}, nil
+	translation := service.NewTranslation(storage, repository.NewTranslationStore(cfg.DataDir), translationapi.New())
+	return &resources{log: log, storage: storage, logFile: logFile, mail: mail, translation: translation}, nil
 }
 
 func (r *resources) shutdown() {
 	r.once.Do(func() {
 		// Wails 回调不能返回错误，先保存关闭结果，由 Run 的 defer 统一交付给入口。
 		r.log.Info("应用关闭")
+		r.translation.Close()
 		mailError := r.mail.Close()
 		r.closeErr = errors.Join(mailError, r.storage.Close(), r.logFile.Close())
 	})

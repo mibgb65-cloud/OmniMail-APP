@@ -88,6 +88,15 @@ export interface ProviderPreset {
     "endpoints": EndpointPreset[] | null;
 }
 
+/**
+ * ProviderServer 不含认证字段，避免将账号凭据意外复制到可复用的服务商模板。
+ */
+export interface ProviderServer {
+    "host": string;
+    "port": number;
+    "tlsMode": TLSMode;
+}
+
 export enum TLSMode {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -97,3 +106,19 @@ export enum TLSMode {
     TLSImplicit = "implicit_tls",
     TLSStartTLS = "starttls",
 };
+
+export interface TranslationPreferences {
+    "target": string;
+    "consent": boolean;
+}
+
+export interface TranslationResult {
+    "mailId": string;
+    "sourceHash": string;
+    "target": string;
+    "model": string;
+    "subject": string;
+    "body": string;
+    "cached": boolean;
+    "warning"?: string;
+}

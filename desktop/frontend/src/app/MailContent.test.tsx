@@ -6,6 +6,7 @@ import { MailWorkspace } from './MailWorkspace';
 import { MailList } from './MailList';
 import { AccountStatus } from '../../bindings/omnimail/desktop/internal/domain/models';
 import { DEFAULT_MAIL_VIEW, selectMailView } from './mailView';
+import { useComposer } from './useComposer';
 
 function makeController(overrides: Partial<MailController> = {}): MailController {
   const message = {
@@ -78,6 +79,45 @@ function makeController(overrides: Partial<MailController> = {}): MailController
     ...overrides,
   };
 }
+
+function ComposeWorkspaceFixture() {
+  const mail = makeController();
+  const composer = useComposer(mail.accounts, mail.refresh);
+  return (
+    <>
+      <button onClick={() => composer.open('account-test')}>工作区撰写</button>
+      <MailWorkspace mail={mail} composer={composer} />
+    </>
+  );
+}
+
+it('撰写占用右侧阅读区但保留列表与阅读挂载，返回恢复分析面板原偏好', () => {
+  render(
+    <I18nProvider initialLocale="zh-CN">
+      <ComposeWorkspaceFixture />
+    </I18nProvider>,
+  );
+  const reader = document.querySelector('[data-mail-reader]');
+  const list = screen.getByRole('region', { name: '邮件列表' });
+  const analysis = screen.getByRole('complementary');
+  expect(screen.getByRole('button', { name: '归档' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: '收起 AI 分析' }));
+  fireEvent.click(screen.getByRole('button', { name: '工作区撰写' }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(analysis).not.toBeVisible();
+  expect(reader).not.toBeVisible();
+  expect(screen.getByRole('region', { name: '邮件列表' })).toBe(list);
+  expect(screen.getByRole('region', { name: '写邮件' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '归档' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '删除' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: '返回邮件' }));
+  expect(list).toHaveFocus();
+  expect(reader).toBeVisible();
+  expect(document.querySelector('[data-mail-reader]')).toBe(reader);
+  expect(analysis).toBeVisible();
+  expect(screen.getByRole('button', { name: '归档' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '展开 AI 分析' })).toBeVisible();
+});
 
 it('真实邮件视图移除分页按钮，正文始终作为文本而不是 HTML', async () => {
   const controller = makeController();

@@ -24,6 +24,12 @@ export interface AddAccountInput {
     "smtp": ServerInput;
 }
 
+export interface CustomProviderInput {
+    "name": string;
+    "imap": domain$0.ProviderServer;
+    "smtp": domain$0.ProviderServer;
+}
+
 export interface SendInput {
     "accountId": string;
     "to": string;
@@ -40,9 +46,24 @@ export interface ServerInput {
     "authKind": domain$0.AuthKind;
 }
 
+export interface StorageUsage {
+    "totalBytes": number;
+    "mailDataBytes": number;
+    "attachmentsBytes": number;
+    "logsBytes": number;
+    "backupsBytes": number;
+    "otherBytes": number;
+}
+
 export interface SyncState {
     "running": boolean;
     "more": boolean;
     "errorCode": string;
     "lastSyncAt": number;
+}
+
+export interface WindowCloseState {
+    "mode": string;
+    "pending": boolean;
+    "backgroundAvailable": boolean;
 }

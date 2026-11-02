@@ -22,17 +22,21 @@ export function detectLocale(languages: readonly unknown[]): Locale {
   return DEFAULT_LOCALE;
 }
 
+export function readStoredLocale(): Locale | null {
+  try {
+    const stored: unknown = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    return isLocale(stored) ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
 export function readInitialLocale(): Locale {
   const detected = detectLocale(
     navigator.languages.length > 0 ? navigator.languages : [navigator.language],
   );
-  try {
-    const stored: unknown = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-    return isLocale(stored) ? stored : detected;
-  } catch {
-    // WebView 的存储策略可能禁止访问；语言偏好不可用时仍可正常启动。
-    return detected;
-  }
+  // WebView 的存储策略可能禁止访问；语言偏好不可用时仍可正常启动。
+  return readStoredLocale() ?? detected;
 }
 
 export function persistLocale(locale: Locale): boolean {

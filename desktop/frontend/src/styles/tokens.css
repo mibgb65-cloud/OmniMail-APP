@@ -39,7 +39,7 @@
   --radius-sm: 10px;
   --radius-md: 20px;
   --radius-lg: 24px;
-  --sidebar-width: 208px;
+  --sidebar-width: 240px;
   --workspace-inset-start: calc(var(--sidebar-width) + var(--space-4) + var(--space-3));
   --content-width: 960px;
   --metadata-min-width: 160px;
@@ -127,6 +127,7 @@
   --storage-tone-2: rgb(32 32 35 / 76%);
   --storage-tone-3: rgb(32 32 35 / 50%);
   --storage-tone-4: rgb(32 32 35 / 26%);
+  --storage-tone-5: rgb(32 32 35 / 12%);
   --storage-track: var(--color-bg-sunken);
   /* 滚动条：始终预留占位保持排版稳定，滑块默认透明，悬停/聚焦时淡入 */
   --scrollbar-reserve: 12px;
@@ -178,6 +179,7 @@
   --storage-tone-2: rgb(239 239 242 / 76%);
   --storage-tone-3: rgb(239 239 242 / 50%);
   --storage-tone-4: rgb(239 239 242 / 26%);
+  --storage-tone-5: rgb(239 239 242 / 12%);
   --storage-track: var(--color-bg-sunken);
   --scrollbar-thumb: rgb(239 239 242 / 22%);
   --scrollbar-thumb-hover: rgb(239 239 242 / 44%);

@@ -5,6 +5,7 @@
   "primaryLabel": "主要功能",
   "workspace": "工作台",
   "compose": "写邮件",
+  "resumeCompose": "继续写邮件",
   "composeUnavailable": "邮箱接入与邮件撰写尚未实现。",
   "inbox": "全部收件箱",
   "starred": "星标邮件",

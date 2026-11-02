@@ -6,6 +6,7 @@ import type { MailHeaderStar } from './MailHeader';
 import { MailBody } from './MailBody';
 import type { ReaderPageOptions } from './MailReaderTransition';
 import styles from './MailContent.module.css';
+import { useMailTranslation } from '../components/MailTranslation/MailTranslationContext';
 
 export function MailReaderPage({
   detail,
@@ -21,6 +22,11 @@ export function MailReaderPage({
   star?: MailHeaderStar;
 }) {
   const { t } = useTranslation('mail');
+  const translation = useMailTranslation();
+  const translated =
+    translation?.show && translation.source === detail && translation.result?.mailId === detail.id
+      ? translation.result
+      : undefined;
   const [saving, setSaving] = useState('');
   const [error, setError] = useState<unknown>();
   const save = async (id: string) => {
@@ -38,7 +44,7 @@ export function MailReaderPage({
   return (
     <>
       <MailHeader
-        subject={detail.subject}
+        subject={translated?.subject ?? detail.subject}
         from={detail.from}
         to={detail.to}
         receivedAt={detail.receivedAt}
@@ -64,15 +70,27 @@ export function MailReaderPage({
           </button>
         </div>
       )}
-      <MailBody
-        id={detail.id}
-        html={detail.bodyHtml}
-        text={detail.body}
-        interactive={options.interactive}
-        transitionManaged={options.transitionManaged}
-        onReady={options.onReady}
-        onSlow={options.onSlow}
-      />
+      <div hidden={!!translated}>
+        <MailBody
+          id={detail.id}
+          html={detail.bodyHtml}
+          text={detail.body}
+          interactive={options.interactive && !translated}
+          transitionManaged={options.transitionManaged}
+          onReady={options.onReady}
+          onSlow={options.onSlow}
+        />
+      </div>
+      {translated && (
+        <MailBody
+          id={`${detail.id}-translation`}
+          text={translated.body}
+          interactive={options.interactive}
+          transitionManaged={options.transitionManaged}
+          onReady={options.onReady}
+          onSlow={options.onSlow}
+        />
+      )}
       {(detail.attachments?.length ?? 0) > 0 && (
         <section aria-label={t('attachments')} data-mail-reveal>
           <h3>{t('attachments')}</h3>

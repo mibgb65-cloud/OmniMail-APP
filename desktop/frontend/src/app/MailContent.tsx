@@ -4,8 +4,10 @@ import type { MailController } from './useMail';
 import { MailList } from './MailList';
 import { MailReaderTransition } from './MailReaderTransition';
 import styles from './MailContent.module.css';
+import { ComposePanel } from './ComposePanel';
+import type { Composer } from './useComposer';
 
-export function MailContent({ mail }: { mail: MailController }) {
+export function MailContent({ mail, composer }: { mail: MailController; composer?: Composer }) {
   const { t, locale } = useTranslation('mail');
   const formatTime = (time: number) => {
     const date = new Date(time);
@@ -16,7 +18,10 @@ export function MailContent({ mail }: { mail: MailController }) {
   return (
     <>
       <MailList mail={mail} formatTime={formatTime} />
+      {composer?.session && <ComposePanel composer={composer} accounts={mail.accounts} />}
       <section
+        hidden={composer?.visible}
+        aria-hidden={composer?.visible ? true : undefined}
         data-native-scrollbar=""
         data-mail-reader
         className={styles.reader}

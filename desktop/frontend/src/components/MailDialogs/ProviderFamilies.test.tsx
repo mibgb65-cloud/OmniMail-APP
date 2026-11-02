@@ -52,7 +52,7 @@ it('网易只有一个品牌入口，LinuxDo 显示本地官方品牌图标', as
   expect(screen.getAllByRole('button', { name: '网易邮箱' })).toHaveLength(1);
   expect(screen.queryByRole('button', { name: /网易 163|网易 126/ })).not.toBeInTheDocument();
   const linuxdo = screen.getByRole('button', { name: 'LINUX DO Mail' });
-  expect(linuxdo.querySelector('img')).toHaveAttribute('src', '/providers/linuxdo.png');
+  expect(linuxdo.querySelector('img')).toHaveAttribute('src', '/providers/linuxdo.svg');
   expect(linuxdo.querySelector('img')).toHaveAttribute('alt', '');
 });
 

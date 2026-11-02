@@ -1,0 +1,104 @@
+name: Release Windows
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: desktop/go.mod
+          cache-dependency-path: desktop/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.19.0'
+          cache: npm
+          cache-dependency-path: desktop/frontend/package-lock.json
+      - name: Validate tag and trust source
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_NAME -notmatch '^v(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$') { throw 'Invalid release tag' }
+          git merge-base --is-ancestor HEAD origin/main
+          if ($LASTEXITCODE) { throw 'Tag must be on main history' }
+          if ($env:GITHUB_REPOSITORY -ne 'mibgb65-cloud/OmniMail-APP') { throw 'Release repository mismatch' }
+          try {
+            $existing = Invoke-WebRequest -Uri "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/tags/$env:GITHUB_REF_NAME" -Headers @{ Authorization="Bearer $env:GH_TOKEN" }
+          } catch {
+            if ([int]$_.Exception.Response.StatusCode -ne 404) { throw 'Cannot determine existing release; refusing to publish' }
+          }
+          if ($existing) { throw 'Existing releases, including drafts, must not be overwritten' }
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Locked dependencies and verify
+        shell: pwsh
+        run: |
+          npm --prefix desktop/frontend ci
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          go -C desktop tool wails3 task verify
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          git diff --exit-code
+          if ($LASTEXITCODE) { throw 'Generated bindings differ from the tagged source' }
+          ./desktop/scripts/test-release-windows.ps1
+      - name: Install pinned Inno Setup compiler
+        shell: pwsh
+        run: |
+          $download = Join-Path $env:RUNNER_TEMP 'innosetup-6.7.0.exe'
+          Invoke-WebRequest 'https://github.com/jrsoftware/issrc/releases/download/is-6_7_0/innosetup-6.7.0.exe' -OutFile $download
+          if ((Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash -ne 'F45C7D68D1E660CF13877EC36738A5179CE72A33414F9959D35E99B68C52A697') { throw 'Inno Setup checksum mismatch' }
+          $dir = Join-Path $env:RUNNER_TEMP 'omnimail-inno-6.7.0'
+          $process = Start-Process -FilePath $download -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=`"$dir`"") -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw 'Inno Setup installation failed' }
+      - name: Build isolated unsigned installer for smoke test only
+        id: smoke_package
+        shell: pwsh
+        run: |
+          ./desktop/scripts/package-windows.ps1 -Version $env:GITHUB_REF_NAME.Substring(1) -NotesFile desktop/docs/08-history/changelog.md -AllowUnsignedDevelopment -ISCC (Join-Path $env:RUNNER_TEMP 'omnimail-inno-6.7.0/ISCC.exe')
+      - name: Installer retention smoke test
+        shell: pwsh
+        env:
+          SMOKE_DIRECTORY: ${{ steps.smoke_package.outputs.release_directory }}
+        run: |
+          $files = @(Get-ChildItem -LiteralPath $env:SMOKE_DIRECTORY -Filter '*-dev-unsigned-windows-amd64-setup.exe' -File)
+          if ($files.Count -ne 1) { throw 'Expected exactly one isolated smoke installer' }
+          ./desktop/scripts/test-installer-windows.ps1 -Package $files[0].FullName
+      - name: Signed installer and manifest
+        id: package
+        shell: pwsh
+        env:
+          WINDOWS_SIGN_CERT_PFX_BASE64: ${{ secrets.WINDOWS_SIGN_CERT_PFX_BASE64 }}
+          WINDOWS_SIGN_CERT_PASSWORD: ${{ secrets.WINDOWS_SIGN_CERT_PASSWORD }}
+          UPDATE_MANIFEST_PRIVATE_KEY: ${{ secrets.UPDATE_MANIFEST_PRIVATE_KEY }}
+          UPDATE_PUBLIC_KEY: ${{ vars.UPDATE_PUBLIC_KEY }}
+        run: |
+          $notes = "desktop/docs/06-release/notes/$env:GITHUB_REF_NAME.md"
+          if (-not (Test-Path -LiteralPath $notes -PathType Leaf)) { throw 'Missing version-specific release notes' }
+          ./desktop/scripts/package-windows.ps1 -Version $env:GITHUB_REF_NAME.Substring(1) -NotesFile $notes -ISCC (Join-Path $env:RUNNER_TEMP 'omnimail-inno-6.7.0/ISCC.exe')
+      - name: Publish complete release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_DIRECTORY: ${{ steps.package.outputs.release_directory }}
+        run: |
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          $names = @("OmniMail-$version-windows-amd64-setup.exe",'update-windows-amd64.json','update-windows-amd64.sig','SHA256SUMS.txt','RELEASE_NOTES.txt')
+          if (-not $env:RELEASE_DIRECTORY) { throw 'Missing package output directory' }
+          $actual = @(Get-ChildItem -LiteralPath $env:RELEASE_DIRECTORY -File | Select-Object -ExpandProperty Name)
+          if (@(Compare-Object $names $actual).Count -ne 0) { throw 'Unexpected or incomplete release assets' }
+          $files = @($names | ForEach-Object { Join-Path $env:RELEASE_DIRECTORY $_ })
+          # 先上传完整私有草稿，任何上传失败都不暴露半成品，也不覆盖旧版本。
+          gh release create $env:GITHUB_REF_NAME @files --draft --verify-tag --title "OmniMail $env:GITHUB_REF_NAME" --notes-file (Join-Path $env:RELEASE_DIRECTORY 'RELEASE_NOTES.txt')
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          gh release edit $env:GITHUB_REF_NAME --draft=false
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }

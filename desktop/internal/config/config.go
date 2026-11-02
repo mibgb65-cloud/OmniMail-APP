@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log/slog"
+	"omnimail/desktop/internal/platform"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,18 @@ type Config struct {
 
 func Load() (Config, error) {
 	override := os.Getenv("OMNIMAIL_DATA_DIR")
+	if override == "" {
+		installed, err := platform.Installation()
+		if err != nil {
+			return Config{}, err
+		}
+		if installed.Installed {
+			if !platform.InstallationDataAvailable(installed.DataDir) {
+				return Config{}, fmt.Errorf("安装时选择的数据目录不可用，请检查磁盘；不会回退到系统盘")
+			}
+			override = installed.DataDir
+		}
+	}
 	var home string
 	if override == "" {
 		var err error

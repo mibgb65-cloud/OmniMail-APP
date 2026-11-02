@@ -19,8 +19,8 @@ function setup(value = account, locale: 'zh-CN' | 'en' = 'zh-CN') {
   render(
     <I18nProvider initialLocale={locale}>
       <WorkspaceSidebar
-        theme="light"
-        onToggleTheme={vi.fn()}
+        themePreference="light"
+        onThemePreferenceChange={vi.fn(() => true)}
         selectedFolder="inbox"
         onSelectFolder={vi.fn()}
         accounts={[value]}
@@ -148,8 +148,8 @@ it('已接入邮箱的分类提示说明真实查看能力，不再声称邮件�
   render(
     <I18nProvider initialLocale="zh-CN">
       <WorkspaceSidebar
-        theme="light"
-        onToggleTheme={vi.fn()}
+        themePreference="light"
+        onThemePreferenceChange={vi.fn(() => true)}
         selectedFolder="inbox"
         onSelectFolder={vi.fn()}
         accounts={[account]}
@@ -166,8 +166,8 @@ it('已接入邮箱的分类提示说明真实查看能力，不再声称邮件�
 
 it('账号尚未读取时不把未知数据展示成没有账号，已读取的空列表仍可管理', async () => {
   const props = {
-    theme: 'light' as const,
-    onToggleTheme: vi.fn(),
+    themePreference: 'light' as const,
+    onThemePreferenceChange: vi.fn(() => true),
     selectedFolder: 'inbox' as const,
     onSelectFolder: vi.fn(),
     accounts: [],

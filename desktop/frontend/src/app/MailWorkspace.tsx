@@ -7,16 +7,45 @@ import styles from './MailWorkspace.module.css';
 import { MailContent } from './MailContent';
 import type { MailController } from './useMail';
 import { MailConnectionState, mailSyncState } from './MailAccountNotice';
+import type { Composer } from './useComposer';
+import { errorKey } from '../lib/bridge/mail';
 
-export function MailWorkspace({ mail }: { mail?: MailController } = {}) {
+export function MailWorkspace({
+  mail,
+  composer,
+}: { mail?: MailController; composer?: Composer } = {}) {
   const { t } = useTranslation('workspace');
+  const { t: mailText } = useTranslation('mail');
   const [analysisOpen, setAnalysisOpen] = useState(true);
   const analysisId = useId();
 
   return (
-    <div className={styles.layout}>
+    <div className={styles.layout} data-composing={composer?.visible ? 'true' : undefined}>
       <section className={styles.mail} aria-label={t('mailArea')}>
+        {composer?.session &&
+          !composer.visible &&
+          (composer.session.status !== 'editing' || composer.session.error != null) && (
+            <div
+              className={styles['compose-notice']}
+              role={composer.session.error != null ? 'alert' : 'status'}
+            >
+              <span>
+                {composer.session.error != null
+                  ? mailText(errorKey(composer.session.error))
+                  : mailText(composer.session.status === 'sent' ? 'sent' : 'sending')}
+              </span>
+              <button type="button" onClick={composer.show}>
+                {mailText('composeViewStatus')}
+              </button>
+              {composer.session.status === 'sent' && (
+                <button type="button" onClick={composer.discard}>
+                  {mailText('close')}
+                </button>
+              )}
+            </div>
+          )}
         <MailToolbar
+          suspendWrites={!!composer?.visible}
           controller={mail?.ready ? mail : undefined}
           onSync={mail?.ready && mail.accounts.length ? () => void mail.sync() : undefined}
           syncState={mail ? mailSyncState(mail) : 'idle'}
@@ -33,7 +62,7 @@ export function MailWorkspace({ mail }: { mail?: MailController } = {}) {
         />
         <div className={styles.panes}>
           {mail?.ready ? (
-            <MailContent mail={mail} />
+            <MailContent mail={mail} composer={composer} />
           ) : mail ? (
             <MailConnectionState mail={mail} />
           ) : (
@@ -68,7 +97,7 @@ export function MailWorkspace({ mail }: { mail?: MailController } = {}) {
           )}
         </div>
       </section>
-      <aside className={styles.analysis} aria-label={t('analysisTitle')}>
+      <aside className={styles.analysis} hidden={composer?.visible} aria-label={t('analysisTitle')}>
         <header className={styles['analysis-header']}>
           {analysisOpen && (
             <div className={styles['analysis-title']}>

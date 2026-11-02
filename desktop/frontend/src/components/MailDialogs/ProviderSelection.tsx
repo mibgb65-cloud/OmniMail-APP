@@ -10,6 +10,7 @@ import { isNeteaseProvider } from './providerInput';
 import { usesAppPassword } from './providerAuthentication';
 import { AccountInput } from './AccountFormValidation';
 import styles from './AccountDialog.module.css';
+import { isSavedProviderCode } from '../../lib/bridge/customProviders';
 
 // 这里只定义展示信息；可用服务商及端点仍以 Providers 返回值为准。
 const PROVIDER_LABELS = new Map<string, { label: keyof Translations['mail']; icon?: string }>([
@@ -17,13 +18,15 @@ const PROVIDER_LABELS = new Map<string, { label: keyof Translations['mail']; ico
   ['qq', { label: 'providerQQ', icon: '/providers/qq.ico' }],
   ['netease_163', { label: 'providerNetease', icon: '/providers/netease-163.png' }],
   ['netease_126', { label: 'providerNetease', icon: '/providers/netease-163.png' }],
-  ['linuxdo', { label: 'providerLinuxDo', icon: '/providers/linuxdo.png' }],
+  ['linuxdo', { label: 'providerLinuxDo', icon: '/providers/linuxdo.svg' }],
   ['naver', { label: 'providerNaver', icon: '/providers/naver.ico' }],
   ['yandex', { label: 'providerYandex', icon: '/providers/yandex.ico' }],
   ['icloud', { label: 'providerICloud', icon: '/providers/icloud.ico' }],
   ['yahoo', { label: 'providerYahoo', icon: '/providers/yahoo.png' }],
   ['custom', { label: 'customProvider' }],
 ]);
+
+export const getProviderIcon = (code: string) => PROVIDER_LABELS.get(code)?.icon;
 
 export function getProviderLabel(
   preset: Pick<ProviderPreset, 'code' | 'name'>,
@@ -40,6 +43,7 @@ export function ProviderSelection({
   onRetry,
   email,
   onEmailChange,
+  onCreateCustom,
 }: {
   presets: ProviderPreset[];
   status: 'loading' | 'success' | 'error';
@@ -47,6 +51,7 @@ export function ProviderSelection({
   onRetry: () => void;
   email: string;
   onEmailChange: (email: string) => void;
+  onCreateCustom?: () => void;
 }) {
   const { t } = useTranslation('mail');
   const id = useId();
@@ -105,7 +110,8 @@ export function ProviderSelection({
       </div>
       {(['preset', 'custom'] as const).map((kind) => {
         const values = displayed.filter(
-          (preset) => (preset.code === 'custom') === (kind === 'custom'),
+          (preset) =>
+            (preset.code === 'custom' || isSavedProviderCode(preset.code)) === (kind === 'custom'),
         );
         if (!values.length) return null;
         return (
@@ -143,15 +149,17 @@ export function ProviderSelection({
                     <strong>{getProviderLabel(preset, t)}</strong>
                     <span id={`${id}-${kind}-${index}`}>
                       {t(
-                        kind === 'custom'
-                          ? 'customProviderDescription'
-                          : preset.code === 'gmail'
-                            ? 'gmailProviderDescription'
-                            : usesAppPassword(preset.code)
-                              ? 'appPasswordProviderDescription'
-                              : isNeteaseProvider(preset.code)
-                                ? 'neteaseProviderDescription'
-                                : 'presetProviderDescription',
+                        isSavedProviderCode(preset.code)
+                          ? 'savedCustomProviderDescription'
+                          : kind === 'custom'
+                            ? 'customProviderDescription'
+                            : preset.code === 'gmail'
+                              ? 'gmailProviderDescription'
+                              : usesAppPassword(preset.code)
+                                ? 'appPasswordProviderDescription'
+                                : isNeteaseProvider(preset.code)
+                                  ? 'neteaseProviderDescription'
+                                  : 'presetProviderDescription',
                       )}
                     </span>
                   </span>
@@ -159,6 +167,16 @@ export function ProviderSelection({
                 </button>
               ))}
             </div>
+            {kind === 'custom' && onCreateCustom && (
+              <button
+                type="button"
+                className={styles['add-custom-provider']}
+                onClick={onCreateCustom}
+              >
+                <UiIcon name="addMailbox" size={16} />
+                {t('addCustomProvider')}
+              </button>
+            )}
           </section>
         );
       })}

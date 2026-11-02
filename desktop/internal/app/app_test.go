@@ -10,7 +10,7 @@ func TestMainWindowOptions(t *testing.T) {
 	if options.Name != "main" || options.Title != "OmniMail" || options.URL != "/" {
 		t.Error("主窗口身份或入口发生非预期变化")
 	}
-	if options.Width != 1750 || options.Height != 950 || options.MinWidth != 860 || options.MinHeight != 600 {
+	if options.Width != 1750 || options.Height != 950 || options.MinWidth != 1280 || options.MinHeight != 600 {
 		t.Error("窗口默认尺寸或最小尺寸发生非预期变化")
 	}
 	if options.DisableResize || options.Windows.DisableFramelessWindowDecorations {

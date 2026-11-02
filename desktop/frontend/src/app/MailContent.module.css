@@ -1,3 +1,6 @@
+.reader[hidden] {
+  display: none;
+}
 .reader {
   display: flex;
   flex-direction: column;

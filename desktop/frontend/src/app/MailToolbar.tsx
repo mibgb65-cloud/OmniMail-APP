@@ -6,6 +6,7 @@ import { useTranslation } from '../lib/i18n/useTranslation';
 import styles from './MailToolbar.module.css';
 import type { MailController } from './useMail';
 import { DEFAULT_MAIL_VIEW } from './mailView';
+import { MailTranslateAction } from '../components/MailTranslation/MailTranslateAction';
 
 const actions = [
   { label: 'archiveAction', icon: 'archive' },
@@ -22,6 +23,7 @@ export function MailToolbar({
   query: controlledQuery,
   onQuery,
   controller,
+  suspendWrites = false,
 }: {
   onSync?: () => void;
   syncBusy?: boolean;
@@ -30,6 +32,7 @@ export function MailToolbar({
   query?: string;
   onQuery?: (query: string) => void;
   controller?: MailController;
+  suspendWrites?: boolean;
 } = {}) {
   const { t } = useTranslation('workspace');
   const { t: mail } = useTranslation('mail');
@@ -50,19 +53,21 @@ export function MailToolbar({
   const selectedIndex = items.findIndex((message) => message.id === controller?.selected);
   const selected = items[selectedIndex];
   const writable =
+    !suspendWrites &&
     selected &&
     controller?.accounts.some(
       (account) => account.id === selected.accountId && account.status === 'configured',
     );
   const unread = items.filter(
     (message) =>
+      !suspendWrites &&
       !message.read &&
       controller?.accounts.some(
         (account) => account.id === message.accountId && account.status === 'configured',
       ),
   );
   const invoke = (label: (typeof actions)[number]['label']) => {
-    if (!controller || controller.actionBusy) return;
+    if (suspendWrites || !controller || controller.actionBusy) return;
     if (label === 'markAllReadAction') void controller.runAction('allRead', unread);
     else if (selected && writable)
       void controller.runAction(
@@ -212,6 +217,7 @@ export function MailToolbar({
           </span>
         )}
         <div className={styles.actions}>
+          <MailTranslateAction disabled={suspendWrites || !selected} />
           {actions.map(({ label, icon }) => (
             <button
               key={label}

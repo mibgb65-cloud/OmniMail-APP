@@ -5,6 +5,7 @@
   "primaryLabel": "Main features",
   "workspace": "Dashboard",
   "compose": "Compose",
+  "resumeCompose": "Resume writing",
   "composeUnavailable": "Email account connection and composing are not available yet.",
   "inbox": "All inboxes",
   "starred": "Starred",

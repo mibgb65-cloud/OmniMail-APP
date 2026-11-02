@@ -5,7 +5,7 @@ import { useTranslation } from '../../lib/i18n/useTranslation';
 import { DialogFrame } from '../DialogFrame/DialogFrame';
 import { useDialogExit } from '../DialogFrame/useDialogExit';
 import { DisconnectAccountDialog } from '../MailDialogs/DisconnectAccountDialog';
-import { getProviderLabel } from '../MailDialogs/ProviderSelection';
+import { getProviderIcon, getProviderLabel } from '../MailDialogs/ProviderSelection';
 import { ScrollArea } from '../ScrollArea/ScrollArea';
 import { UiIcon } from '../UiIcon/UiIcon';
 import { MailboxAccountDetails } from './MailboxAccountDetails';
@@ -145,7 +145,11 @@ export function MailboxManagementDialog({
                     setError(undefined);
                   }}
                 >
-                  <UiIcon name="mailOpen" size={17} />
+                  {getProviderIcon(item.providerCode) ? (
+                    <img src={getProviderIcon(item.providerCode)} width={18} height={18} alt="" />
+                  ) : (
+                    <UiIcon name="mailOpen" size={18} />
+                  )}
                   <span>
                     <strong>{item.displayName || item.email}</strong>
                     <small>

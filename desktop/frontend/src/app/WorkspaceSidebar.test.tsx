@@ -7,12 +7,12 @@ import { useTheme } from '../lib/theme/useTheme';
 import { WorkspaceSidebar, type MailFolder } from './WorkspaceSidebar';
 
 function SidebarPreview() {
-  const { theme, toggleTheme } = useTheme();
+  const { themePreference, selectTheme } = useTheme();
   const [folder, setFolder] = useState<MailFolder>('inbox');
   return (
     <WorkspaceSidebar
-      theme={theme}
-      onToggleTheme={toggleTheme}
+      themePreference={themePreference}
+      onThemePreferenceChange={selectTheme}
       selectedFolder={folder}
       onSelectFolder={setFolder}
     />
@@ -218,6 +218,30 @@ describe('侧栏底部设置入口', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(button).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(button);
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+  });
+
+  it('邮箱设置复用真实管理窗口，关闭设置后只保留一个模态层', async () => {
+    render(
+      <I18nProvider initialLocale="zh-CN">
+        <WorkspaceSidebar
+          themePreference="light"
+          onThemePreferenceChange={vi.fn(() => true)}
+          selectedFolder="inbox"
+          onSelectFolder={vi.fn()}
+          mailReady
+          accounts={[]}
+        />
+      </I18nProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '设置' }));
+    fireEvent.click(screen.getByRole('tab', { name: '邮箱设置' }));
+    expect(screen.getByText('0 个邮箱')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: '管理邮箱' }));
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: '邮箱账号管理' })).toHaveAttribute('open');
+    });
+    expect(screen.queryByRole('dialog', { name: '设置' })).not.toBeInTheDocument();
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
   });
 

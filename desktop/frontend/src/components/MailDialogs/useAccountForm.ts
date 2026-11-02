@@ -13,6 +13,11 @@ import {
 } from './accountBatch';
 import { useSameProviderBatch } from './useSameProviderBatch';
 import { resolveProviderInput } from './providerInput';
+import {
+  isSavedProviderCode,
+  listCustomProviders,
+  supportsCustomProviders,
+} from '../../lib/bridge/customProviders';
 
 const emptyServer = (port: number): ServerInput => ({
   host: '',
@@ -28,6 +33,8 @@ export function useAccountForm(onSaved: () => void) {
   const [loadStatus, setLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [provider, setProvider] = useState<string | null>(null);
+  const [template, setTemplate] = useState<api.ProviderPreset>();
+  const [templateLoadError, setTemplateLoadError] = useState(false);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [imap, setIMAP] = useState(emptyServer(993));
@@ -91,9 +98,17 @@ export function useAccountForm(onSaved: () => void) {
     const controller = new AbortController();
     api
       .providers(controller.signal)
-      .then((values) => {
+      .then(async (values) => {
+        let templates: api.ProviderPreset[] = [];
+        if (supportsCustomProviders()) {
+          try {
+            templates = await listCustomProviders(controller.signal);
+          } catch {
+            if (!controller.signal.aborted) setTemplateLoadError(true);
+          }
+        }
         if (controller.signal.aborted) return;
-        setPresets(values);
+        setPresets([...values, ...templates]);
         setLoadStatus('success');
       })
       .catch((error: unknown) => {
@@ -113,6 +128,7 @@ export function useAccountForm(onSaved: () => void) {
   }, [error, batchIssue, batch.started, batch.running, batchFailed, batchReview]);
 
   const retryProviders = () => {
+    setTemplateLoadError(false);
     setError(undefined);
     setLoadStatus('loading');
     setLoadAttempt((attempt) => attempt + 1);
@@ -131,7 +147,9 @@ export function useAccountForm(onSaved: () => void) {
         smtpPassword: '',
       })),
     );
-    setProvider(code);
+    const savedTemplate = isSavedProviderCode(code);
+    setTemplate(savedTemplate ? preset : undefined);
+    setProvider(savedTemplate ? 'custom' : code);
     setEmail(address);
     setError(undefined);
     const incoming = preset.endpoints?.find((endpoint) => endpoint.protocol === 'imap');
@@ -161,6 +179,30 @@ export function useAccountForm(onSaved: () => void) {
     setSMTP((value) => ({ ...value, password: '' }));
     setError(undefined);
     setProvider(null);
+    setTemplate(undefined);
+  };
+  const acceptTemplate = (preset: api.ProviderPreset) => {
+    setPresets((values) => [...values.filter((value) => value.code !== preset.code), preset]);
+    setTemplate(preset);
+    setProvider('custom');
+    setError(undefined);
+    const incoming = preset.endpoints?.find((value) => value.protocol === 'imap');
+    const outgoing = preset.endpoints?.find((value) => value.protocol === 'smtp');
+    // 从当前配置保存时只更新连接参数，保留本次账号输入；新弹窗仍从空凭据开始。
+    if (incoming)
+      setIMAP((value) => ({
+        ...value,
+        host: incoming.host,
+        port: incoming.port,
+        tlsMode: incoming.tlsMode,
+      }));
+    if (outgoing)
+      setSMTP((value) => ({
+        ...value,
+        host: outgoing.host,
+        port: outgoing.port,
+        tlsMode: outgoing.tlsMode,
+      }));
   };
   const changeEmail = (value: string) => {
     if (['added', 'review'].includes(batch.results[0]?.status ?? '')) return;
@@ -313,6 +355,9 @@ export function useAccountForm(onSaved: () => void) {
   };
   return {
     presets,
+    template,
+    templateLoadError,
+    acceptTemplate,
     loadStatus,
     provider,
     email,

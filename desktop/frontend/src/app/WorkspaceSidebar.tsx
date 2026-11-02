@@ -9,7 +9,7 @@ import { MailboxManagementDialog } from '../components/MailboxManagementDialog/M
 import type { AccountSummary } from '../lib/bridge/mail';
 import type { VersionInfo } from '../lib/bridge/app';
 import { useTranslation } from '../lib/i18n/useTranslation';
-import type { Theme } from '../lib/theme/theme';
+import type { ThemePreference } from '../lib/theme/theme';
 import styles from './App.module.css';
 import type { ConnectionState } from './useVersion';
 
@@ -25,8 +25,8 @@ const mailFolders = [
 export type MailFolder = (typeof mailFolders)[number]['name'];
 
 interface WorkspaceSidebarProps {
-  theme: Theme;
-  onToggleTheme: () => void;
+  themePreference: ThemePreference;
+  onThemePreferenceChange: (preference: ThemePreference) => boolean;
   versionInfo?: VersionInfo;
   connectionState?: ConnectionState;
   onRetryConnection?: () => void;
@@ -38,14 +38,15 @@ interface WorkspaceSidebarProps {
   onSelectAccount?: (id: string) => void;
   onAddAccount?: () => void;
   onCompose?: () => void;
+  composePending?: boolean;
   onDisconnect?: (id: string) => Promise<void> | void;
   onRetryAccount?: (id: string) => Promise<void>;
   mailReady?: boolean;
 }
 
 export function WorkspaceSidebar({
-  theme,
-  onToggleTheme,
+  themePreference,
+  onThemePreferenceChange,
   versionInfo,
   connectionState,
   onRetryConnection,
@@ -57,6 +58,7 @@ export function WorkspaceSidebar({
   onSelectAccount,
   onAddAccount,
   onCompose,
+  composePending = false,
   onDisconnect,
   onRetryAccount,
   mailReady = false,
@@ -68,6 +70,7 @@ export function WorkspaceSidebar({
   const mailboxStatusId = useId();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [accountsOpen, setAccountsOpen] = useState(false);
+  const [groupByProvider, setGroupByProvider] = useState(false);
   const manageAccountsRef = useRef<HTMLButtonElement>(null);
   const navigationRef = useRef<HTMLElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
@@ -121,15 +124,17 @@ export function WorkspaceSidebar({
       <button
         type="button"
         className={styles['compose-button']}
-        aria-label={t('compose')}
+        aria-label={t(composePending ? 'resumeCompose' : 'compose')}
         aria-describedby={!onCompose ? composeStatusId : undefined}
-        data-tooltip={onCompose ? t('compose') : t('composeUnavailable')}
+        data-tooltip={
+          onCompose ? t(composePending ? 'resumeCompose' : 'compose') : t('composeUnavailable')
+        }
         disabled={!onCompose}
         onClick={onCompose}
       >
         <span className={styles['nav-label']}>
           <UiIcon name="compose" className={styles.icon} />
-          {t('compose')}
+          {t(composePending ? 'resumeCompose' : 'compose')}
         </span>
         {!onCompose && <small id={composeStatusId}>{t('pending')}</small>}
       </button>
@@ -162,22 +167,37 @@ export function WorkspaceSidebar({
           <p id={mailboxLabelId} className={styles['sidebar-label']}>
             {t('mailboxesLabel')}
           </p>
-          <button
-            ref={manageAccountsRef}
-            type="button"
-            className={styles['mailbox-settings']}
-            aria-label={mail('manageAccounts')}
-            data-tooltip={mail('manageAccounts')}
-            aria-haspopup="dialog"
-            aria-expanded={accountsOpen}
-            disabled={!mailReady && accounts.length === 0}
-            onClick={() => setAccountsOpen(true)}
-          >
-            <UiIcon name="settings" size={14} />
-          </button>
+          <div className={styles['mailbox-tools']}>
+            <button
+              type="button"
+              className={styles['mailbox-settings']}
+              aria-label={mail('mailboxProviderView')}
+              aria-pressed={groupByProvider}
+              data-tooltip={mail(groupByProvider ? 'mailboxShowAccounts' : 'mailboxShowProviders')}
+              disabled={!accounts.length}
+              onClick={() => setGroupByProvider((value) => !value)}
+            >
+              <UiIcon name={groupByProvider ? 'list' : 'providers'} size={14} />
+            </button>
+            <button
+              ref={manageAccountsRef}
+              type="button"
+              className={styles['mailbox-settings']}
+              aria-label={mail('manageAccounts')}
+              data-tooltip={mail('manageAccounts')}
+              aria-haspopup="dialog"
+              aria-expanded={accountsOpen}
+              disabled={!mailReady && accounts.length === 0}
+              onClick={() => setAccountsOpen(true)}
+            >
+              <UiIcon name="settings" size={14} />
+            </button>
+          </div>
         </div>
         {accounts.length > 0 ? (
           <MailboxAccounts
+            key={groupByProvider ? 'providers' : 'accounts'}
+            groupByProvider={groupByProvider}
             accounts={accounts}
             selectedAccount={selectedAccount}
             onSelectAccount={onSelectAccount}
@@ -237,8 +257,10 @@ export function WorkspaceSidebar({
       </div>
       {settingsOpen && (
         <SettingsDialog
-          theme={theme}
-          onToggleTheme={onToggleTheme}
+          themePreference={themePreference}
+          accountCount={mailReady ? accounts.length : undefined}
+          onManageAccounts={mailReady ? () => setAccountsOpen(true) : undefined}
+          onThemePreferenceChange={onThemePreferenceChange}
           versionInfo={versionInfo}
           connectionState={connectionState}
           onRetryConnection={onRetryConnection}

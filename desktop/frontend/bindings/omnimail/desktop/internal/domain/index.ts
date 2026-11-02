@@ -13,5 +13,8 @@ export type {
     EndpointPreset,
     MailDetail,
     MailSummary,
-    ProviderPreset
+    ProviderPreset,
+    ProviderServer,
+    TranslationPreferences,
+    TranslationResult
 } from "./models.js";

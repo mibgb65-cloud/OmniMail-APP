@@ -92,10 +92,10 @@ tasks:
           OUTPUT: '.task/verify-bin/{{.APP_NAME}}{{if eq OS "windows"}}.exe{{end}}'
 
   go:format:check:
-    desc: 只读检查根目录与 internal 下的 Go 源文件格式
+    desc: 只读检查根目录、internal 与发布命令的 Go 源文件格式
     cmds:
       - |
-        unformatted=$(gofmt -l *.go internal) || exit $?
+        unformatted=$(gofmt -l *.go internal cmd) || exit $?
         if [ -n "$unformatted" ]; then
           printf 'Go 文件需要格式化：\n%s\n' "$unformatted"
           exit 1
@@ -108,7 +108,7 @@ tasks:
 
   go:vet:
     cmds:
-      - go vet . ./internal/...
+      - go vet . ./internal/... ./cmd/...
 
   frontend:lint:
     dir: frontend
@@ -122,7 +122,7 @@ tasks:
 
   go:test:
     cmds:
-      - go test . ./internal/...
+      - go test . ./internal/... ./cmd/...
 
   frontend:test:
     dir: frontend
