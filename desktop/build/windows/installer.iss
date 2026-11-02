@@ -11,6 +11,14 @@
 #ifndef OutputPath
   #define OutputPath "..\..\.task\packages"
 #endif
+; 程序与升级助手的文件名集中在此，安装、卸载和结束运行实例都用同一份定义。
+; 可用 /DMainExe=... 覆盖，仅用于隔离的安装器探针，正式打包使用默认名。
+#ifndef MainExe
+  #define MainExe "OmniMail.exe"
+#endif
+#ifndef HelperExe
+  #define HelperExe "OmniMailUpdate.exe"
+#endif
 #ifdef AllowUnsignedDevelopment
   #define SigningRequired "no"
   #define PackageVersion AppVersion + "-dev-unsigned"
@@ -54,11 +62,13 @@ DisableProgramGroupPage=yes
 OutputDir={#OutputPath}
 OutputBaseFilename=OmniMail-{#PackageVersion}-windows-amd64-setup
 SetupIconFile=..\..\frontend\public\brand\omnimail.ico
-UninstallDisplayIcon={app}\OmniMail.exe
+UninstallDisplayIcon={app}\{#MainExe}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-CloseApplications=no
+; 运行中的 OmniMail 会锁住程序文件；安装前先按名字结束，再由 Restart Manager 兜底，
+; 避免出现 DeleteFile 访问被拒绝。升级后不自动重启，由安装完成页的选项决定。
+CloseApplications=force
 RestartApplications=no
 UsePreviousAppDir=yes
 UsePreviousTasks=yes
@@ -84,6 +94,7 @@ chinesesimp.RunNow=安装完成后启动 OmniMail
 chinesesimp.MissingData=原数据磁盘或目录不可用。请恢复磁盘后重试，安装器不会回退到 C 盘。
 chinesesimp.FixedInstall=升级必须保留原程序目录；如需迁移，请先备份并卸载。
 chinesesimp.Downgrade=不能用旧版本覆盖当前安装。请使用相同或更新的版本。
+chinesesimp.CloseFailed=正在运行的 OmniMail 无法自动关闭。请从托盘图标退出后重试；安装程序未改动任何文件。
 english.DataTitle=Choose mail data location
 english.DataDescription=Database, attachments, caches, logs and update files are stored here.
 english.DataPrompt=Choose a dedicated writable local folder, preferably outside C:. Program and data directories must not contain one another.
@@ -96,18 +107,19 @@ english.RunNow=Start OmniMail after installation
 english.MissingData=The original data drive/folder is unavailable. Restore it and retry. No fallback directory will be created.
 english.FixedInstall=Keep the original program directory when upgrading. Back up and uninstall before moving it.
 english.Downgrade=Cannot replace this installation with an older version.
+english.CloseFailed=The running OmniMail instance could not be closed automatically. Quit it from the tray icon and retry; no files were changed.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:DesktopIcon}"; Flags:
 
 [Files]
-Source: "{#BinaryDir}\OmniMail.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#BinaryDir}\OmniMailUpdate.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BinaryDir}\{#MainExe}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BinaryDir}\{#HelperExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BinaryDir}\RELEASE_NOTES.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{userprograms}\{#ProductName}"; Filename: "{app}\OmniMail.exe"
-Name: "{userdesktop}\{#ProductName}"; Filename: "{app}\OmniMail.exe"; Tasks: desktopicon
+Name: "{userprograms}\{#ProductName}"; Filename: "{app}\{#MainExe}"
+Name: "{userdesktop}\{#ProductName}"; Filename: "{app}\{#MainExe}"; Tasks: desktopicon
 
 [Registry]
 Root: HKCU; Subkey: "{#InstallKey}"; ValueType: string; ValueName: "InstallDir"; ValueData: "{app}"; Flags: uninsdeletevalue uninsdeletekeyifempty
@@ -116,12 +128,42 @@ Root: HKCU; Subkey: "{#InstallKey}"; ValueType: string; ValueName: "Language"; V
 Root: HKCU; Subkey: "{#InstallKey}"; ValueType: string; ValueName: "Version"; ValueData: "{#AppVersion}"; Flags: uninsdeletevalue
 
 [Run]
-Filename: "{app}\OmniMail.exe"; Description: "{cm:RunNow}"; Flags: postinstall nowait skipifsilent unchecked
+Filename: "{app}\{#MainExe}"; Description: "{cm:RunNow}"; Flags: postinstall nowait skipifsilent unchecked
 
 [Code]
 var DataPage: TInputDirWizardPage; OriginalData, OriginalInstall, OriginalLanguage, OriginalVersion: String;
+var ClosedRunningInstance: Boolean;
 function GetFileAttributes(Path: String): LongWord; external 'GetFileAttributesW@kernel32.dll stdcall';
 function GetDriveType(RootPath: String): LongWord; external 'GetDriveTypeW@kernel32.dll stdcall';
+
+{ 结束同名进程：先请求正常退出，再强制结束；返回 False 表示仍可能有实例锁住文件。 }
+function StopImage(const Image: String): Boolean;
+var Code: Integer; Started: Boolean;
+begin
+  Result := True;
+  Started := Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM '+Image, '', SW_HIDE, ewWaitUntilTerminated, Code);
+  { 128 = 没有同名进程；0 = 已结束。只有确实存在实例时才等待正常退出。 }
+  if Started and (Code = 0) then begin
+    ClosedRunningInstance := True;
+    Sleep(3000);
+  end else if not Started then
+    Exit;
+  { 托盘常驻或“关闭时询问”偏好不会响应正常关闭，这里强制结束。 }
+  Started := Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM '+Image, '', SW_HIDE, ewWaitUntilTerminated, Code);
+  if Started and (Code = 0) then begin
+    ClosedRunningInstance := True;
+    Sleep(500);
+    Started := Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM '+Image, '', SW_HIDE, ewWaitUntilTerminated, Code);
+  end;
+  { 128 说明已无同名进程，可以安全替换文件。 }
+  if Started then Result := (Code = 0) or (Code = 128);
+end;
+
+function CloseRunningInstances: Boolean;
+begin
+  Result := StopImage('{#MainExe}');
+  if Result then Result := StopImage('{#HelperExe}');
+end;
 
 function DataPath(Param: String): String;
 begin Result := RemoveBackslashUnlessRoot(DataPage.Values[0]); end;
@@ -278,14 +320,28 @@ begin
     if not VersionAllowed('{#AppVersion}',OriginalVersion) then begin Result:=CustomMessage('Downgrade');Exit;end;
   end;
   if not LocalDataValid(DataPath('')) then begin Result:=CustomMessage('InvalidData');Exit;end;
-  if Overlap(ExpandConstant('{app}'),DataPath('')) then Result:=CustomMessage('Overlap');
+  if Overlap(ExpandConstant('{app}'),DataPath('')) then begin Result:=CustomMessage('Overlap');Exit;end;
+  // 运行中的实例会锁住程序目录里的文件；先关掉它，再让复制阶段接管。
+  if not CloseRunningInstances then Result:=CustomMessage('CloseFailed');
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  { 升级时关闭了正在运行的应用，默认勾选完成后启动，让用户回到原来的使用状态。 }
+  if (CurPageID <> wpFinished) or WizardSilent or (not ClosedRunningInstance) then Exit;
+  if WizardForm.RunList = nil then Exit;
+  if WizardForm.RunList.Items.Count > 0 then WizardForm.RunList.Checked[0] := True;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var Command: String;
 begin
-  if CurUninstallStep=usUninstall then
+  if CurUninstallStep=usUninstall then begin
+    // 卸载同样会删除程序目录下的文件，先结束运行中的实例。
+    StopImage('{#MainExe}');
+    StopImage('{#HelperExe}');
     if RegQueryStringValue(HKCU,'Software\Microsoft\Windows\CurrentVersion\Run','{#ProductName}',Command) then
-      if Command='"'+ExpandConstant('{app}\OmniMail.exe')+'" --startup' then
+      if Command='"'+ExpandConstant('{app}\{#MainExe}')+'" --startup' then
         RegDeleteValue(HKCU,'Software\Microsoft\Windows\CurrentVersion\Run','{#ProductName}');
+  end;
 end;
