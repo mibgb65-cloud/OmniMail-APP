@@ -75,6 +75,8 @@ export function WorkspaceSidebar({
   const navigationRef = useRef<HTMLElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
   const folderRefs = useRef(new Map<MailFolder, HTMLButtonElement>());
+  // 撰写能力已接入：禁用只表示当前没有可用邮箱，或邮箱仍在加载，不能说成“待开发”。
+  const composeDisabledHint = mailReady ? t('composeNeedsMailbox') : t('mailLoading');
 
   useLayoutEffect(() => {
     const navigation = navigationRef.current;
@@ -127,7 +129,7 @@ export function WorkspaceSidebar({
         aria-label={t(composePending ? 'resumeCompose' : 'compose')}
         aria-describedby={!onCompose ? composeStatusId : undefined}
         data-tooltip={
-          onCompose ? t(composePending ? 'resumeCompose' : 'compose') : t('composeUnavailable')
+          onCompose ? t(composePending ? 'resumeCompose' : 'compose') : composeDisabledHint
         }
         disabled={!onCompose}
         onClick={onCompose}
@@ -136,7 +138,7 @@ export function WorkspaceSidebar({
           <UiIcon name="compose" className={styles.icon} />
           {t(composePending ? 'resumeCompose' : 'compose')}
         </span>
-        {!onCompose && <small id={composeStatusId}>{t('pending')}</small>}
+        {!onCompose && <small id={composeStatusId}>{composeDisabledHint}</small>}
       </button>
       <p className={styles['sidebar-label']}>{t('workspaceLabel')}</p>
       <nav ref={navigationRef} className={styles['mail-navigation']} aria-label={t('primaryLabel')}>
@@ -214,7 +216,7 @@ export function WorkspaceSidebar({
           className={styles['mailbox-add']}
           aria-label={t('addMailbox')}
           aria-describedby={!onAddAccount ? mailboxStatusId : undefined}
-          data-tooltip={onAddAccount ? t('addMailbox') : t('addMailboxUnavailable')}
+          data-tooltip={onAddAccount ? t('addMailbox') : t('mailLoading')}
           disabled={!onAddAccount}
           onClick={onAddAccount}
         >
@@ -222,7 +224,7 @@ export function WorkspaceSidebar({
             <UiIcon name="addMailbox" className={styles.icon} />
             {t('addMailbox')}
           </span>
-          {!onAddAccount && <small id={mailboxStatusId}>{t('pending')}</small>}
+          {!onAddAccount && <small id={mailboxStatusId}>{t('mailLoading')}</small>}
         </button>
       </section>
       {accountsOpen && (

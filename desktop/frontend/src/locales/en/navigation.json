@@ -6,7 +6,8 @@
   "workspace": "Dashboard",
   "compose": "Compose",
   "resumeCompose": "Resume writing",
-  "composeUnavailable": "Email account connection and composing are not available yet.",
+  "composeNeedsMailbox": "No mailbox added yet",
+  "mailLoading": "Loading",
   "inbox": "All inboxes",
   "starred": "Starred",
   "sent": "Sent",
@@ -20,8 +21,6 @@
   "mailboxesLabel": "My mailboxes",
   "mailboxesEmpty": "No mailbox added yet",
   "addMailbox": "Add mailbox",
-  "addMailboxUnavailable": "Mailbox connection is not available yet; UI preview only.",
   "settings": "Settings",
-  "pending": "Planned",
   "breadcrumb": "Desktop / Dashboard"
 }

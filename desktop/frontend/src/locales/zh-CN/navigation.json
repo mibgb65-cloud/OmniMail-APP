@@ -6,7 +6,8 @@
   "workspace": "工作台",
   "compose": "写邮件",
   "resumeCompose": "继续写邮件",
-  "composeUnavailable": "邮箱接入与邮件撰写尚未实现。",
+  "composeNeedsMailbox": "未添加邮箱",
+  "mailLoading": "加载中",
   "inbox": "全部收件箱",
   "starred": "星标邮件",
   "sent": "已发送邮件",
@@ -20,8 +21,6 @@
   "mailboxesLabel": "我的邮箱",
   "mailboxesEmpty": "尚未添加邮箱",
   "addMailbox": "添加邮箱",
-  "addMailboxUnavailable": "邮箱账号接入尚未实现，当前仅展示界面。",
   "settings": "设置",
-  "pending": "待开发",
   "breadcrumb": "桌面端 / 工作台"
 }
