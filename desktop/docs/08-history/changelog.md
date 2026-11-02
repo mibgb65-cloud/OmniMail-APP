@@ -141,6 +141,10 @@
 - 多语言底层迁移到 i18next + react-i18next，保留中英文即时切换、离线使用与已有偏好；增加插值、复数及中文回退能力，见 [TASK-0004](../07-tasks/archive/2026/10/TASK-0004-i18n-migration.md) 与 [ADR-0006](../02-architecture/adr/ADR-0006-i18n-framework.md)。
 
 ### 修复
+- 覆盖升级与卸载会先结束正在运行的 OmniMail（含托盘常驻与“关闭时询问”偏好），
+  不再出现 `DeleteFile 失败：错误代码 5，拒绝访问`；无法结束时在复制文件前中止并提示，
+  升级关闭过实例时完成页默认勾选启动，见
+  [TASK-0088](../07-tasks/active/TASK-0088-installer-close-running-app.md)。
 - LINUX DO 邮箱标识替换为官网公开的透明 SVG，移除原 PNG 的深色方形画布，
   保留标志自身黑白黄圆形区域；添加邮箱和服务商分组统一更新，见
   [TASK-0077](../07-tasks/active/TASK-0077-linuxdo-icon-transparency.md)。

@@ -9,6 +9,7 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
+| [TASK-0088](TASK-0088-installer-close-running-app.md) | 安装与卸载自动关闭运行中的 OmniMail | @Codex | 已完成 | P1 |
 | [TASK-0087](TASK-0087-compose-entry-availability-copy.md) | 写邮件入口不再标注“待开发” | @Codex | 已完成 | P2 |
 | [TASK-0086](../archive/2026/11/TASK-0086-about-page-flat-layout.md) | 关于页去掉重复圆角卡片、改为简洁排版（已归档） | @Codex | 已完成 | P2 |
 | [TASK-0085](TASK-0085-mail-translation-design.md) | 工具栏邮件标题/正文翻译与目标语言 | @Codex | 待评审 | P1 |
@@ -98,6 +99,9 @@
 | [TASK-0040](../archive/2026/10/TASK-0040-mail-infinite-scroll.md) | 邮件列表无限滚动（已归档） | @Codex | 已完成 | P1 |
 
 ## 说明
+
+- TASK-0088 于 2026-11-02 修复覆盖安装/卸载被运行实例锁住的问题，实现提交 `05a669e`
+  （父提交 `2395fbb`）；重打 0.0.2 交付副本 `desktop/bin/releases/v0.0.2-close-app/`，未推送。
 
 - TASK-0087 于 2026-11-02 修复撰写入口文案并重打 0.0.2 本地包，实现提交 `43ac80fd`
   （父提交 `0723677`）；交付副本 `desktop/bin/releases/v0.0.2-compose-hint/`，未推送。

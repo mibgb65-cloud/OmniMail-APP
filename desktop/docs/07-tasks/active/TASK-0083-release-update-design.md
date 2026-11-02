@@ -415,3 +415,17 @@
   浏览器核对三种入口状态，日志 `desktop/.task/t87-package-0.0.2.log`。
 - 未执行：安装/覆盖升级冒烟与安装后业务验收；未推送 tag、未创建远端 Release。
   同版本重打包仅为本地更新，不代表新的对外版本号。
+
+## 第十二轮 0.0.2 重打包（安装器自动关闭运行实例，2026-11-02）
+- 触发：用户覆盖安装时报 `DeleteFile 失败；错误代码 5，拒绝访问`，要求安装器自动关闭运行中的程序；
+  修复见 [TASK-0088](TASK-0088-installer-close-running-app.md)，实现提交 `05a669e`（父提交 `2395fbb`）。
+- 同版本 0.0.2 重打包，产物目录
+  `desktop/.task/release/0.0.2-release-912beb5d75da4fe98b98728b01258600/`，
+  交付副本 `desktop/bin/releases/v0.0.2-close-app/`；此前 `v0.0.2/`、`v0.0.2-compose-hint/` 保留不覆盖。
+- 安装包 9,256,904 字节，SHA-256
+  `cbb79cdf67e10d8171ce9a462d5ff121cb5d48176a5bcef0acc70c7cb088a1f2`；
+  清单 Ed25519 签名与安装包哈希一致；Authenticode 有效（`CN=OmniMail`，指纹
+  `3BD397BA3312A314126141BDD816905D7D5F5D41`）；EXE 内嵌提交 `05a669e`、版本 `0.0.2`。
+- 隔离探针（同名覆盖、`/DMainExe=OmniMailProbe.exe`、开发 AppId）验证：运行中覆盖安装与卸载
+  均自动结束实例、文件被真正替换、无占用错误，且不结束用户正在运行的正式实例。
+- 未执行：在用户真实生产安装上跑覆盖升级；未推送 tag、未创建远端 Release。
