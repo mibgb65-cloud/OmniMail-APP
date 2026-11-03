@@ -93,7 +93,7 @@ func TestLargeMailMigrationPreservesReferencesAndExpandsConstraints(t *testing.T
 	if err := rows.Close(); err != nil {
 		t.Fatal(err)
 	}
-	backups, err := filepath.Glob(filepath.Join(dir, "backups", "pre-migration-v0005-*.db"))
+	backups, err := filepath.Glob(filepath.Join(dir, "backups", currentMigrationBackupPattern(t)))
 	if err != nil || len(backups) != 1 {
 		t.Fatal("缺少当前目标版本的迁移前备份")
 	}

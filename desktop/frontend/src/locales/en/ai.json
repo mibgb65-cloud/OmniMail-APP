@@ -1,7 +1,7 @@
 {
   "title": "Mail AI assistant",
   "settings": "AI service configuration",
-  "description": "Supports OpenAI-compatible APIs. Configuration stays on this device and keys are stored in the system credential store. Emails are never analyzed automatically.",
+  "description": "Supports OpenAI-compatible APIs. Configuration stays on this device and keys are stored in the system credential store. The single-email panel never analyzes automatically; background batches require separate consent.",
   "deepseekPreset": "Fill DeepSeek defaults",
   "deepseekHint": "First-time setup defaults to DeepSeek V4.1 Flash (API model: deepseek-flash) and requires your own API key. Saved configurations are never replaced automatically. The assistant disables thinking and requests JSON output. Connection tests and analysis may consume provider credits. The Bilibili translation toolbar remains separate.",
   "endpoint": "API base URL",
@@ -49,7 +49,7 @@
   "cached": "Local cache",
   "cacheWarning": "The result was generated but could not be cached locally.",
   "clearCache": "Clear AI and translation caches",
-  "clearHint": "Deletes local derived results only, not emails, attachments, or keys. Sharing consent is unchanged.",
+  "clearHint": "Deletes local AI/translation caches only, not emails, attachments, keys, tasks, or their excerpts. Sharing consent is unchanged.",
   "confirmClear": "Click again to confirm clearing",
   "cleared": "Local AI and translation caches cleared.",
   "cooldown": "The service is rate limiting requests. Wait about {{seconds}} seconds, then retry manually.",

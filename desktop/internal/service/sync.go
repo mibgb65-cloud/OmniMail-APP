@@ -211,6 +211,9 @@ func (s *Mail) syncMailbox(ctx context.Context, accountID string, box domain.Rem
 	if err != nil {
 		return false, syncStepError("cache_mailbox", box.Kind, err)
 	}
+	if err := s.store.ObserveMailboxHead(ctx, accountID, cursor.ID, validity, next-1); err != nil {
+		return false, syncStepError("cache_mailbox", box.Kind, err)
+	}
 	if validity == 0 {
 		more, err := s.syncZeroMailbox(ctx, accountID, cursor, next, session)
 		return more, syncMailboxError(box.Kind, err)

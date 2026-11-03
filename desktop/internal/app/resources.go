@@ -23,6 +23,7 @@ type resources struct {
 	mail        *service.Mail
 	translation *service.Translation
 	ai          *service.AI
+	tasks       *service.Tasks
 	logFile     io.Closer
 	once        sync.Once
 	closeErr    error
@@ -42,14 +43,22 @@ func openResources(ctx context.Context, cfg config.Config) (*resources, error) {
 	}
 	mail := service.NewMail(storage, platform.NewCredentials(), mailnet.New(), log)
 	translation := service.NewTranslation(storage, repository.NewTranslationStore(cfg.DataDir), translationapi.New())
-	ai := service.NewAI(storage, repository.NewAIStore(cfg.DataDir), platform.NewCredentials(), aiapi.New())
-	return &resources{log: log, storage: storage, logFile: logFile, mail: mail, translation: translation, ai: ai}, nil
+	api := aiapi.New()
+	ai := service.NewAI(storage, repository.NewAIStore(cfg.DataDir), platform.NewCredentials(), api)
+	tasks, err := service.NewTasks(storage, ai, api, mail.SyncForTasks)
+	if err != nil {
+		ai.Close()
+		translation.Close()
+		return nil, errors.Join(err, mail.Close(), storage.Close(), logFile.Close())
+	}
+	return &resources{log: log, storage: storage, logFile: logFile, mail: mail, translation: translation, ai: ai, tasks: tasks}, nil
 }
 
 func (r *resources) shutdown() {
 	r.once.Do(func() {
 		// Wails 回调不能返回错误，先保存关闭结果，由 Run 的 defer 统一交付给入口。
 		r.log.Info("应用关闭")
+		r.tasks.Close()
 		r.translation.Close()
 		r.ai.Close()
 		mailError := r.mail.Close()

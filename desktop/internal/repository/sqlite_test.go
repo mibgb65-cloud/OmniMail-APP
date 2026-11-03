@@ -26,6 +26,15 @@ func openTestStore(t *testing.T) *Store {
 	return store
 }
 
+func currentMigrationBackupPattern(t *testing.T) string {
+	t.Helper()
+	migrations, err := loadMigrations(migrationFiles)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return fmt.Sprintf("pre-migration-v%04d-*.db", len(migrations))
+}
+
 func TestOpenAndReopen(t *testing.T) {
 	directory := filepath.Join(t.TempDir(), "数据库 空格#&")
 	for range 2 {

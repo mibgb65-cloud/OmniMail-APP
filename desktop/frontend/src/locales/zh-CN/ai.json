@@ -1,7 +1,7 @@
 {
   "title": "邮件 AI 助手",
   "settings": "AI 服务配置",
-  "description": "支持 OpenAI-compatible 接口。配置保存在本机，密钥保存在系统凭据库；不会自动分析邮件。",
+  "description": "支持 OpenAI-compatible 接口。配置保存在本机，密钥保存在系统凭据库；单封面板不自动分析，后台批次需单独授权。",
   "deepseekPreset": "填入 DeepSeek 默认配置",
   "deepseekHint": "首次配置默认 DeepSeek V4.1 Flash（API 模型名：deepseek-flash），需填写你自己的 API Key。已有配置不会自动替换。邮件助手关闭思考并请求 JSON 输出；连接测试和分析可能消耗服务方额度。工具栏的 B 站翻译保持独立。",
   "endpoint": "API 地址（Base URL）",
@@ -49,7 +49,7 @@
   "cached": "本地缓存",
   "cacheWarning": "结果已生成，但本地缓存未保存。",
   "clearCache": "清理 AI 和翻译缓存",
-  "clearHint": "仅删除本机派生结果，不删除邮件、附件或密钥；不撤销外发授权。",
+  "clearHint": "仅删除本机 AI/翻译缓存，不删除邮件、附件、密钥或待办及其引文；不撤销外发授权。",
   "confirmClear": "再次点击确认清理",
   "cleared": "本机 AI 和翻译缓存已清理。",
   "cooldown": "服务限流，请等待约 {{seconds}} 秒后手动重试。",

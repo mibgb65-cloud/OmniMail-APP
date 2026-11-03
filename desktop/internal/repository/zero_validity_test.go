@@ -151,9 +151,10 @@ func TestZeroValidityMigrationPreservesCacheAndBacksUpVersionFour(t *testing.T) 
 	if err != nil || string(attachment) != "before" {
 		t.Fatal("迁移损坏附件")
 	}
-	backups, err := filepath.Glob(filepath.Join(dir, "backups", "pre-migration-v0005-*.db"))
+	// 一份来自故意失败的 v5 迁移，一份来自随后升级到当前目标；两份都应保留 v4 数据。
+	backups, err := filepath.Glob(filepath.Join(dir, "backups", "pre-migration-v*-*.db"))
 	if err != nil || len(backups) != 2 {
-		t.Fatal("没有 v5 迁移前备份")
+		t.Fatal("没有保留失败迁移及当前目标的两份迁移前备份")
 	}
 	backup, err := sql.Open("sqlite", databaseURI(backups[0]))
 	if err != nil {

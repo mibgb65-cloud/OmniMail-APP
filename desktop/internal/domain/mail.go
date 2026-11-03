@@ -36,6 +36,7 @@ type MailBodyTarget struct {
 
 type MailRepository interface {
 	AccountRepository
+	ObserveMailboxHead(context.Context, string, string, uint32, uint32) error
 	MailCounts(context.Context) (map[string]int, error)
 	MailLimitCounts(context.Context) (map[string]int, error)
 	MarkMailBodyLimit(context.Context, string, string) error

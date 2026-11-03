@@ -61,7 +61,7 @@ func TestRichMigrationPreservesLegacyTextAndCreatesBackup(t *testing.T) {
 	if err != nil || !got.Cached || got.Body != "历史正文" || got.BodyVersion != 0 || got.RawHTML != "" {
 		t.Fatal("升级丢失旧缓存或错误标记为完整正文")
 	}
-	backups, err := filepath.Glob(filepath.Join(dir, "backups", "pre-migration-v0005-*.db"))
+	backups, err := filepath.Glob(filepath.Join(dir, "backups", currentMigrationBackupPattern(t)))
 	if err != nil || len(backups) != 1 {
 		t.Fatal("未生成迁移前备份")
 	}

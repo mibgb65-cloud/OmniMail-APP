@@ -21,6 +21,18 @@ export type {
     MailSummary,
     ProviderPreset,
     ProviderServer,
+    TaskBatchInput,
+    TaskPreferences,
+    TaskPreferencesInput,
+    TaskRun,
+    TaskRunDetails,
+    TaskRunMail,
+    Todo,
+    TodoDetails,
+    TodoEdit,
+    TodoProposal,
+    TodoSource,
+    TodoSourceView,
     TranslationPreferences,
     TranslationResult
 } from "./models.js";

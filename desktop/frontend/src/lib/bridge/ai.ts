@@ -50,6 +50,7 @@ export async function aiCall<T>(
   operation: (signal: AbortSignal) => Promise<T>,
   signal?: AbortSignal,
   timeout = 10_000,
+  errorKey: (error: unknown) => string = aiErrorKey,
 ) {
   const controller = new AbortController();
   const abort = () => controller.abort();
@@ -66,11 +67,7 @@ export async function aiCall<T>(
     if (!System.IsDesktop()) throw new Error('AI_UNAVAILABLE');
     return await operation(controller.signal);
   } catch (error) {
-    failure = timedOut
-      ? 'AI_TIMEOUT'
-      : controller.signal.aborted
-        ? 'AI_CANCELED'
-        : aiErrorKey(error);
+    failure = timedOut ? 'AI_TIMEOUT' : controller.signal.aborted ? 'AI_CANCELED' : errorKey(error);
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener('abort', abort);

@@ -10,6 +10,7 @@ export type {
     ServerInput,
     StorageUsage,
     SyncState,
+    TaskState,
     TranslationProgress,
     WindowCloseState
 } from "./models.js";

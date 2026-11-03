@@ -1,0 +1,111 @@
+.dialog {
+  width: min(calc(var(--space-10) * 20), 94vw);
+  max-height: 90vh;
+}
+.header,
+.actions,
+.tabs {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.header {
+  justify-content: space-between;
+  padding: var(--space-5);
+}
+.tabs {
+  padding: 0 var(--space-5) var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.tabs button[aria-selected='true'] {
+  background: var(--color-bg-selected);
+  color: var(--color-text-primary);
+}
+.body {
+  padding: var(--space-5);
+  max-height: 65vh;
+  overflow-y: auto;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
+}
+.field textarea {
+  min-height: calc(var(--space-10) * 2);
+  resize: vertical;
+}
+.hint {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+}
+.card {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+}
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: start;
+  white-space: normal;
+}
+.check {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+.check input {
+  flex-shrink: 0;
+  margin-top: var(--space-2);
+}
+.quote {
+  margin: 0;
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--color-border-subtle);
+  white-space: pre-wrap;
+}
+.bodytext {
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.error {
+  padding: var(--space-3);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+}
+.fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.stack button {
+  max-width: 100%;
+  white-space: normal;
+}

@@ -162,6 +162,130 @@ export enum TLSMode {
     TLSStartTLS = "starttls",
 };
 
+export interface TaskBatchInput {
+    "mailIds": string[] | null;
+    "retryUnknown": boolean;
+}
+
+export interface TaskPreferences {
+    "enabled": boolean;
+    "consent": boolean;
+    "accounts": string[] | null;
+    "folders": string[] | null;
+    "time": string;
+    "timezone": string;
+    "limit": number;
+    "revision": string;
+    "aiRevision": string;
+}
+
+export interface TaskPreferencesInput {
+    "enabled": boolean;
+    "consent": boolean;
+    "accounts": string[] | null;
+    "folders": string[] | null;
+    "time": string;
+    "timezone": string;
+    "limit": number;
+}
+
+export interface TaskRun {
+    "id": string;
+    "kind": string;
+    "state": string;
+    "slot": string;
+    "prefsRevision": string;
+    "startedAt": number;
+    "finishedAt": number;
+    "total": number;
+    "done": number;
+    "failed": number;
+    "unknown": number;
+    "pending": number;
+    "waitingBody": number;
+    "remaining": number;
+    "error": string;
+    "retryUnknown": boolean;
+    "newTodos": number;
+    "changes": number;
+    "syncPending": boolean;
+}
+
+export interface TaskRunDetails {
+    "run": TaskRun;
+    "mails": TaskRunMail[] | null;
+}
+
+export interface TaskRunMail {
+    "mailId": string;
+    "subject": string;
+    "state": string;
+    "error": string;
+}
+
+export interface Todo {
+    "id": string;
+    "accountId": string;
+    "title": string;
+    "notes": string;
+    "owner": string;
+    "due": string;
+    "status": string;
+    "version": number;
+    "createdAt": number;
+    "updatedAt": number;
+}
+
+export interface TodoDetails {
+    "item": Todo;
+    "sources": TodoSource[] | null;
+    "proposals": TodoProposal[] | null;
+    "truncated": boolean;
+}
+
+export interface TodoEdit {
+    "id": string;
+    "accountId": string;
+    "version": number;
+    "title": string;
+    "notes": string;
+    "owner": string;
+    "due": string;
+    "status": string;
+}
+
+export interface TodoProposal {
+    "id": string;
+    "todoId": string;
+    "sourceId": string;
+    "kind": string;
+    "title": string;
+    "owner": string;
+    "due": string;
+    "reason": string;
+    "evidence": string;
+    "state": string;
+    "createdAt": number;
+}
+
+export interface TodoSource {
+    "id": string;
+    "todoId": string;
+    "mailId": string;
+    "accountId": string;
+    "subject": string;
+    "evidence": string;
+    "receivedAt": number;
+    "available": boolean;
+}
+
+export interface TodoSourceView {
+    "source": TodoSource;
+    "body": string;
+    "changed": boolean;
+    "error": string;
+}
+
 export interface TranslationPreferences {
     "target": string;
     "consent": boolean;

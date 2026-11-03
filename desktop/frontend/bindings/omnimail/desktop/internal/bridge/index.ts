@@ -7,6 +7,7 @@ import * as CustomProvidersBridge from "./customprovidersbridge.js";
 import * as InstallationBridge from "./installationbridge.js";
 import * as MailBridge from "./mailbridge.js";
 import * as StorageBridge from "./storagebridge.js";
+import * as TasksBridge from "./tasksbridge.js";
 import * as TranslationBridge from "./translationbridge.js";
 import * as WindowLifecycleBridge from "./windowlifecyclebridge.js";
 export {
@@ -16,6 +17,7 @@ export {
     InstallationBridge,
     MailBridge,
     StorageBridge,
+    TasksBridge,
     TranslationBridge,
     WindowLifecycleBridge
 };

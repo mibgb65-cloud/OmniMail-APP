@@ -1,6 +1,6 @@
 # 进行中的任务（active）
 
-> 状态：已生效 | 最后更新：2026-11-02
+> 状态：已生效 | 最后更新：2026-11-03
 
 本目录存放**当前迭代进行中**的任务，一个任务一个文件：`TASK-<4位序号>-<slug>.md`。
 模板与规则见 [任务管理](../README.md#4-任务记录模板)，项目入口见 [AGENTS.md](../../../../AGENTS.md)。
@@ -9,6 +9,11 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
+| [TASK-0101](TASK-0101-release-0.0.5.md) | 待办与每日需求收尾提交及 0.0.5 生产交付 | @Codex | 进行中 | P1 |
+| [TASK-0100](TASK-0100-todos-workspace.md) | 待办与每日分析界面、桥接及交付验证 | @Codex | 待评审 | P1 |
+| [TASK-0099](TASK-0099-daily-requirements.md) | 每日增量分析、托盘执行与启动补跑 | @Codex | 待评审 | P1 |
+| [TASK-0098](TASK-0098-cross-mail-requirements.md) | 跨邮件需求提取与关联 | @Codex | 待评审 | P1 |
+| [TASK-0097](TASK-0097-local-todos.md) | 本地待办、来源与需求变更 | @Codex | 待评审 | P1 |
 | [TASK-0096](../archive/2026/11/TASK-0096-release-0.0.4.md) | AI 功能收尾提交与 0.0.4 生产版本（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0095](../archive/2026/11/TASK-0095-deepseek-flash-default.md) | DeepSeek V4.1 Flash 默认配置与官方 API 适配（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0094](../archive/2026/11/TASK-0094-ai-reply-draft.md) | AI 回复草稿与人工采用（已归档） | @Codex | 已完成 | P1 |

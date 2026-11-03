@@ -67,6 +67,12 @@ export interface SyncState {
     "lastSyncAt": number;
 }
 
+export interface TaskState {
+    "running": boolean;
+    "runId": string;
+    "error": string;
+}
+
 export interface TranslationProgress {
     "stage": string;
     "current": number;

@@ -19,6 +19,7 @@ ADR 记录**为什么**这样设计，以及当时否掉了哪些方案。代码
 | [ADR-0008](ADR-0008-offline-mail-bodies.md) | 邮件正文自动同步并持久保存在 SQLite | 草稿（实现待评审） | 2026-10-31 |
 | [ADR-0009](ADR-0009-large-mail-isolation.md) | 大邮件有界读取与单封失败隔离 | 已生效 | 2026-11-01 |
 | [ADR-0010](ADR-0010-naver-zero-uidvalidity.md) | NAVER 显式零 UIDVALIDITY 的保守兼容 | 已生效 | 2026-11-01 |
+| [ADR-0011](ADR-0011-local-requirement-jobs.md) | 本地待办与应用内增量需求调度 | 提议（已实现待评审） | 2026-11-03 |
 
 ## 待决策（未编号前先在此登记）
 

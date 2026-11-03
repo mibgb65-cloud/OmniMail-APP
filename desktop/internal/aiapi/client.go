@@ -30,13 +30,24 @@ func New() *Client {
 
 func (c *Client) Generate(ctx context.Context, config domain.AIConfig, key []byte, source domain.TranslatedText, request domain.AIRequest) (domain.AIOutput, error) {
 	var empty domain.AIOutput
-	endpoint, err := domain.NormalizeAIEndpoint(config.Endpoint)
-	if err != nil || len(source.Subject) > 4096 || len(source.Body) > 32<<10 {
+	if len(source.Subject) > 4096 || len(source.Body) > 32<<10 {
 		return empty, domain.ErrAIInput
 	}
 	data, err := payload(config, source, request)
 	if err != nil {
 		return empty, err
+	}
+	body, err := c.complete(ctx, config, key, data)
+	if err != nil {
+		return empty, err
+	}
+	return decode(body, source, request.Action)
+}
+
+func (c *Client) complete(ctx context.Context, config domain.AIConfig, key, data []byte) ([]byte, error) {
+	endpoint, err := domain.NormalizeAIEndpoint(config.Endpoint)
+	if err != nil || len(data) > 128<<10 {
+		return nil, domain.ErrAIInput
 	}
 	// localhost 的 HTTP 例外固定拨往回环，不能经环境代理或 DNS 重绑定外发。
 	u, _ := url.Parse(endpoint)
@@ -61,7 +72,7 @@ func (c *Client) Generate(ctx context.Context, config domain.AIConfig, key []byt
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint+"/chat/completions", bytes.NewReader(data))
 	if err != nil {
-		return empty, domain.ErrAIInput
+		return nil, domain.ErrAIInput
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
@@ -70,23 +81,23 @@ func (c *Client) Generate(ctx context.Context, config domain.AIConfig, key []byt
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return empty, safeError(ctx)
+		return nil, safeError(ctx)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == 429 {
-		return empty, &domain.AIRateLimit{Seconds: retrySeconds(resp.Header.Get("Retry-After"))}
+		return nil, &domain.AIRateLimit{Seconds: retrySeconds(resp.Header.Get("Retry-After"))}
 	}
 	if resp.StatusCode != 200 {
-		return empty, domain.ErrAIUnavailable
+		return nil, domain.ErrAIUnavailable
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, (256<<10)+1))
 	if err != nil {
-		return empty, safeError(ctx)
+		return nil, safeError(ctx)
 	}
 	if len(body) > 256<<10 {
-		return empty, domain.ErrAIResponse
+		return nil, domain.ErrAIResponse
 	}
-	return decode(body, source, request.Action)
+	return body, nil
 }
 
 func safeError(ctx context.Context) error {
@@ -151,6 +162,20 @@ func isDeepSeekEndpoint(endpoint string) bool {
 }
 
 func decode(body []byte, source domain.TranslatedText, action string) (domain.AIOutput, error) {
+	text, err := decodeContent(body)
+	if err != nil {
+		return domain.AIOutput{}, err
+	}
+	var result domain.AIOutput
+	decoder := json.NewDecoder(strings.NewReader(text))
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(&result) != nil || decoder.Decode(new(json.RawMessage)) != io.EOF || result.Validate(source, action) != nil {
+		return domain.AIOutput{}, domain.ErrAIResponse
+	}
+	return result, nil
+}
+
+func decodeContent(body []byte) (string, error) {
 	var envelope struct {
 		Choices []struct {
 			Finish  string `json:"finish_reason"`
@@ -159,19 +184,13 @@ func decode(body []byte, source domain.TranslatedText, action string) (domain.AI
 			} `json:"message"`
 		} `json:"choices"`
 	}
-	var result domain.AIOutput
 	if json.Unmarshal(body, &envelope) != nil || len(envelope.Choices) != 1 || envelope.Choices[0].Finish != "stop" {
-		return result, domain.ErrAIResponse
+		return "", domain.ErrAIResponse
 	}
 	text := strings.TrimSpace(envelope.Choices[0].Message.Content)
 	// 只兼容完整 JSON 围栏，不从解释或思维文本中猜测、截取 JSON。
 	if strings.HasPrefix(text, "```json\n") && strings.HasSuffix(text, "\n```") {
 		text = text[8 : len(text)-4]
 	}
-	decoder := json.NewDecoder(strings.NewReader(text))
-	decoder.DisallowUnknownFields()
-	if decoder.Decode(&result) != nil || decoder.Decode(new(json.RawMessage)) != io.EOF || result.Validate(source, action) != nil {
-		return domain.AIOutput{}, domain.ErrAIResponse
-	}
-	return result, nil
+	return text, nil
 }

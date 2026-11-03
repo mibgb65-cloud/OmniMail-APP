@@ -36,7 +36,7 @@ func Run(assets fs.FS, icon []byte) (err error) {
 	}()
 
 	lifecycle := newWindowLifecycle(context.Background(), cfg, resources.log)
-	desktop := newApplication(assets, icon, cfg, resources.log, resources.shutdown, resources.mail, lifecycle, resources.translation, resources.ai)
+	desktop := newApplication(assets, icon, cfg, resources.log, resources.shutdown, resources.mail, lifecycle, resources.translation, resources.ai, resources.tasks)
 	window := desktop.Window.NewWithOptions(mainWindowOptions())
 	configureWindowClose(desktop, window, lifecycle, icon)
 	if info, readErr := platform.Installation(); readErr == nil && info.CanAutoStart && info.AutoStart && platform.StartupLaunch() {
@@ -44,7 +44,7 @@ func Run(assets fs.FS, icon []byte) (err error) {
 	}
 	// 通过单实例启动后才开启同步，避免第二次启动短暂重复连接同一邮箱。
 	// 自动更新的通知/草稿保护尚未闭环，安装发布阶段不启动后台更新调度。
-	desktop.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) { resources.mail.Start() })
+	desktop.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) { resources.mail.Start(); resources.tasks.Start() })
 	resources.log.Info("应用启动", "version", bridge.Version, "commit", bridge.Commit)
 	if err := desktop.Run(); err != nil {
 		return fmt.Errorf("桌面应用运行失败: %w", err)
@@ -64,7 +64,7 @@ func mainWindowOptions() application.WebviewWindowOptions {
 	}
 }
 
-func newApplication(assets fs.FS, icon []byte, cfg config.Config, log *slog.Logger, shutdown func(), mail *service.Mail, lifecycle *service.WindowLifecycle, translation *service.Translation, ai *service.AI) *application.App {
+func newApplication(assets fs.FS, icon []byte, cfg config.Config, log *slog.Logger, shutdown func(), mail *service.Mail, lifecycle *service.WindowLifecycle, translation *service.Translation, ai *service.AI, tasks *service.Tasks) *application.App {
 	// 开发与正式数据目录隔离时，也应使用不同的单实例标识。
 	dataHash := sha256.Sum256([]byte(cfg.DataDir))
 	return application.New(application.Options{
@@ -80,6 +80,7 @@ func newApplication(assets fs.FS, icon []byte, cfg config.Config, log *slog.Logg
 			application.NewService(bridge.NewCustomProvidersBridge(service.NewCustomProviders(config.NewCustomProviders(cfg.DataDir)))),
 			application.NewService(bridge.NewTranslationBridge(translation)),
 			application.NewService(bridge.NewAIBridge(ai, translation)),
+			application.NewService(bridge.NewTasksBridge(tasks)),
 			application.NewService(bridge.NewInstallationBridge())},
 		Assets: application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
 		Mac: application.MacOptions{
