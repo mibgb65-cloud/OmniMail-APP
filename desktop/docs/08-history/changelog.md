@@ -224,7 +224,9 @@
 ### 数据与边界
 - 数据库升级至 schema v6，迁移前备份，旧版不能直接打开升级后的库。
   首次授权建立基线，不自动回扫历史；未知外发结果不自动重试。
-- 本版用于本地 Windows x64 签名生产包交付，不代表已推送 tag 或 GitHub Release；
+- 本版已构建并核验本地 Windows x64 签名生产包，交付于 `desktop/bin/releases/v0.0.5/`，
+  记录见 [TASK-0101](../07-tasks/archive/2026/11/TASK-0101-release-0.0.5.md)。
+  不代表已推送 tag 或 GitHub Release；
   详细内容及升级提示见 [v0.0.5](../06-release/notes/v0.0.5.md)。
 - 未做真实 Key/邮件公网质量、真实数据迁移/生产覆盖升级、原生托盘连续运行验收。
 

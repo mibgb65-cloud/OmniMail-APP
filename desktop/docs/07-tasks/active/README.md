@@ -9,7 +9,7 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
-| [TASK-0101](TASK-0101-release-0.0.5.md) | 待办与每日需求收尾提交及 0.0.5 生产交付 | @Codex | 进行中 | P1 |
+| [TASK-0101](../archive/2026/11/TASK-0101-release-0.0.5.md) | 待办与每日需求收尾提交及 0.0.5 生产交付（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0100](../archive/2026/11/TASK-0100-todos-workspace.md) | 待办与每日分析界面、桥接及交付验证（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0099](../archive/2026/11/TASK-0099-daily-requirements.md) | 每日增量分析、托盘执行与启动补跑（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0098](../archive/2026/11/TASK-0098-cross-mail-requirements.md) | 跨邮件需求提取与关联（已归档） | @Codex | 已完成 | P1 |
