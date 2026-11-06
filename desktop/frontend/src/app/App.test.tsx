@@ -1,7 +1,8 @@
 import { StrictMode } from 'react';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { TOOLTIP_DELAY, TOOLTIP_HIDE_DELAY } from '../components/Tooltip/useTooltip';
 import { getVersion } from '../lib/bridge/app';
 import { I18nProvider } from '../lib/i18n/I18nProvider';
 import type { Locale } from '../lib/i18n/resources';
@@ -38,16 +39,22 @@ function openAbout(locale: Locale = 'zh-CN') {
 
 it('全局提示使用统一浮层，不再显示原生 title，悬停侧栏可看到说明', async () => {
   vi.mocked(getVersion).mockResolvedValue(VERSION_INFO);
-  await renderApp();
-  expect(document.querySelector('[title]')).toBeNull();
-  const trigger = screen.getByRole('button', { name: '草稿箱' });
-  fireEvent.pointerOver(trigger, { pointerType: 'mouse' });
-  // 提示有 400ms 展示延迟；负载较高时默认 1s 轮询容易在定时器触发前超时。
-  expect(await screen.findByRole('tooltip', {}, { timeout: 3000 })).toHaveTextContent(
-    '仅切换界面预览',
-  );
-  fireEvent.pointerOut(trigger, { relatedTarget: document.body });
-  await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
+  const view = await renderApp();
+  // 全量并行测试下使用确定性时钟，避免把机器负载造成的延迟误判为提示失效。
+  vi.useFakeTimers();
+  try {
+    expect(document.querySelector('[title]')).toBeNull();
+    const trigger = screen.getByRole('button', { name: '草稿箱' });
+    fireEvent.pointerOver(trigger, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(TOOLTIP_DELAY));
+    expect(screen.getByRole('tooltip')).toHaveTextContent('仅切换界面预览');
+    fireEvent.pointerOut(trigger, { relatedTarget: document.body });
+    act(() => vi.advanceTimersByTime(TOOLTIP_HIDE_DELAY));
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+  } finally {
+    view.unmount();
+    vi.useRealTimers();
+  }
 });
 
 function switchToolbarLanguage(locale: Locale) {
