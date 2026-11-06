@@ -49,8 +49,9 @@ f45c7d68d1e660cf13877ec36738a5179ce72a33414f9959d35e99b68c52a697
 
 CI 下载后先核对哈希，安装到 runner 临时目录；脚本编译期也校验 `VER=6.7.0`。
 仓库内 `build/windows/ChineseSimplified.isl` 取自该 tag 的上游用户贡献语言文件，
-blob `d6a11c4490de07dad443ade668289fc954dfa1ed`，保留译者声明，转换为 UTF-8 无 BOM，
-本地 SHA-256 为 `7d544b9bb1d142cfa11f2e5d3cc8abe2e55f8e066c5124e3772675aa236e1278`。
+上游 blob `d6a11c4490de07dad443ade668289fc954dfa1ed`，保留译者声明，转换为 UTF-8 无 BOM，
+并清理一处注释尾部空格；本地 SHA-256 为
+`75ec648a9c1b547b1c35113b06bc85cede51c1c1d7d089af8fd974331f930570`。
 不假定 Inno 默认安装附带简体中文。
 
 ## 本地开发安装包
