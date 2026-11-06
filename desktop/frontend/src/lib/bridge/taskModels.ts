@@ -14,6 +14,7 @@ export const taskFolders = ['inbox', 'archive', 'sent', 'other'] as const;
 export type TodoStatus = (typeof todoStatuses)[number];
 export type Todo = Omit<Native.Todo, 'status'> & { status: TodoStatus };
 export type TodoEdit = Native.TodoEdit;
+export type TodoCounts = Native.TodoCounts;
 export type TaskPreferencesInput = Omit<Native.TaskPreferencesInput, 'accounts' | 'folders'> & {
   accounts: string[];
   folders: string[];
@@ -70,6 +71,15 @@ export function isTodo(v: unknown): v is Todo {
     v.version >= 1 &&
     integer(v.createdAt) &&
     integer(v.updatedAt)
+  );
+}
+export function isTodoCounts(v: unknown): v is TodoCounts {
+  if (!record(v)) return false;
+  const keys = ['suggested', 'open', 'waiting', 'done', 'dismissed'] as const;
+  return (
+    integer(v.all, 10000) &&
+    keys.every((key) => integer(v[key], 10000)) &&
+    keys.reduce((sum, key) => sum + Number(v[key]), 0) === v.all
   );
 }
 export function isPreferencesInput(v: unknown): v is TaskPreferencesInput {

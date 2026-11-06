@@ -46,6 +46,15 @@ type Todo struct {
 	UpdatedAt int64  `json:"updatedAt"`
 }
 
+type TodoCounts struct {
+	All       int `json:"all"`
+	Suggested int `json:"suggested"`
+	Open      int `json:"open"`
+	Waiting   int `json:"waiting"`
+	Done      int `json:"done"`
+	Dismissed int `json:"dismissed"`
+}
+
 type TodoEdit struct {
 	ID        string `json:"id"`
 	AccountID string `json:"accountId"`

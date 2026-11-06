@@ -13,6 +13,9 @@ func NewTasksBridge(s *service.Tasks) *TasksBridge { return &TasksBridge{service
 func (b *TasksBridge) List(ctx context.Context, status string, offset int) ([]domain.Todo, error) {
 	return b.service.List(ctx, status, offset)
 }
+func (b *TasksBridge) Counts(ctx context.Context) (domain.TodoCounts, error) {
+	return b.service.Counts(ctx)
+}
 func (b *TasksBridge) Edit(ctx context.Context, input domain.TodoEdit) (domain.Todo, error) {
 	return b.service.Edit(ctx, input)
 }
@@ -36,6 +39,9 @@ func (b *TasksBridge) SetPreferences(ctx context.Context, input domain.TaskPrefe
 }
 func (b *TasksBridge) RunBatch(ctx context.Context, input domain.TaskBatchInput) (string, error) {
 	return b.service.RunBatch(ctx, input)
+}
+func (b *TasksBridge) CheckBatch(ctx context.Context, input domain.TaskBatchInput) error {
+	return b.service.CheckBatch(ctx, input)
 }
 func (b *TasksBridge) RunPending(ctx context.Context) (string, error) {
 	return b.service.RunPending(ctx)

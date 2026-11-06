@@ -6,6 +6,7 @@ type TaskRepository interface {
 	ReadTaskPreferences(context.Context) (TaskPreferences, error)
 	WriteTaskPreferences(context.Context, TaskPreferences) error
 	ListTodos(context.Context, string, int) ([]Todo, error)
+	TodoCounts(context.Context) (TodoCounts, error)
 	EditTodo(context.Context, TodoEdit) (Todo, error)
 	DeleteTodo(context.Context, string, int) error
 	TodoDetails(context.Context, string) (TodoDetails, error)

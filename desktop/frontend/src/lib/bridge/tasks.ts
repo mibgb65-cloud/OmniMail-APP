@@ -2,6 +2,7 @@ import * as native from '../../../bindings/omnimail/desktop/internal/bridge/task
 import { aiCall, aiErrorKey } from './ai';
 import {
   isTodo,
+  isTodoCounts,
   isDetails,
   isPreferences,
   isPreferencesInput,
@@ -44,6 +45,11 @@ export async function listTodos(status: string, offset = 0, signal?: AbortSignal
   const v: unknown = await call((abort) => native.List(status, offset).cancelOn(abort), signal);
   if (!Array.isArray(v) || v.length > 100 || !v.every(isTodo)) return invalid();
   return v;
+}
+export async function todoCounts(signal?: AbortSignal) {
+  const value: unknown = await call((abort) => native.Counts().cancelOn(abort), signal);
+  if (!isTodoCounts(value)) return invalid();
+  return value;
 }
 export async function todoDetail(id: string, signal?: AbortSignal) {
   inputID(id);
@@ -133,6 +139,12 @@ export async function startTaskBatch(ids: string[], retryUnknown: boolean, signa
   if (typeof v !== 'string') return invalid();
   inputID(v);
   return v;
+}
+export async function checkTaskBatch(ids: string[], retryUnknown: boolean, signal?: AbortSignal) {
+  if (!ids.length || ids.length > 100 || new Set(ids).size !== ids.length)
+    throw new Error('TASK_INVALID_INPUT');
+  ids.forEach(inputID);
+  await call((abort) => native.CheckBatch({ mailIds: ids, retryUnknown }).cancelOn(abort), signal);
 }
 export async function runPendingTasks(signal?: AbortSignal) {
   const v: unknown = await call((abort) => native.RunPending().cancelOn(abort), signal);

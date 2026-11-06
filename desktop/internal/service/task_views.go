@@ -10,6 +10,9 @@ import (
 func (s *Tasks) List(ctx context.Context, status string, offset int) ([]domain.Todo, error) {
 	return s.store.ListTodos(ctx, status, offset)
 }
+func (s *Tasks) Counts(ctx context.Context) (domain.TodoCounts, error) {
+	return s.store.TodoCounts(ctx)
+}
 func (s *Tasks) Edit(ctx context.Context, input domain.TodoEdit) (domain.Todo, error) {
 	return s.store.EditTodo(ctx, input)
 }

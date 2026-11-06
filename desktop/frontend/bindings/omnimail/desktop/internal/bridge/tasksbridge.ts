@@ -12,6 +12,14 @@ import * as domain$0 from "../domain/models.js";
 // @ts-ignore: Unused imports
 import * as service$0 from "../service/models.js";
 
+export function CheckBatch(input: domain$0.TaskBatchInput): $CancellablePromise<void> {
+    return $Call.ByID(4100416045, input);
+}
+
+export function Counts(): $CancellablePromise<domain$0.TodoCounts> {
+    return $Call.ByID(4047904697);
+}
+
 export function Delete(id: string, version: number): $CancellablePromise<void> {
     return $Call.ByID(4061285614, id, version);
 }

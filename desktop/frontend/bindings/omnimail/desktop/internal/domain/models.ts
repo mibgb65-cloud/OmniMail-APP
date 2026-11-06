@@ -236,6 +236,15 @@ export interface Todo {
     "updatedAt": number;
 }
 
+export interface TodoCounts {
+    "all": number;
+    "suggested": number;
+    "open": number;
+    "waiting": number;
+    "done": number;
+    "dismissed": number;
+}
+
 export interface TodoDetails {
     "item": Todo;
     "sources": TodoSource[] | null;

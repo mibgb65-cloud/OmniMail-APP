@@ -28,6 +28,7 @@ export type {
     TaskRunDetails,
     TaskRunMail,
     Todo,
+    TodoCounts,
     TodoDetails,
     TodoEdit,
     TodoProposal,

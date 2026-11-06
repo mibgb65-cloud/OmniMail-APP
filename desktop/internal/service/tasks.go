@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"slices"
 	"sort"
 	"sync"
 	_ "time/tzdata"
@@ -48,6 +49,8 @@ func (s *Tasks) SavePreferences(ctx context.Context, input domain.TaskPreference
 	if input.Validate() != nil {
 		return domain.TaskPreferences{}, domain.ErrTaskInput
 	}
+	input.Accounts = append([]string(nil), input.Accounts...)
+	input.Folders = append([]string(nil), input.Folders...)
 	sort.Strings(input.Accounts)
 	sort.Strings(input.Folders)
 	config, err := s.ai.Config(ctx)
@@ -62,6 +65,17 @@ func (s *Tasks) SavePreferences(ctx context.Context, input domain.TaskPreference
 	defer s.mu.Unlock()
 	if s.closed {
 		return value, context.Canceled
+	}
+	stored, err := s.store.ReadTaskPreferences(ctx)
+	if err != nil {
+		return domain.TaskPreferences{}, err
+	}
+	old := stored.TaskPreferencesInput
+	if stored.Revision != "" && stored.AIRevision == config.Revision && old.Enabled == input.Enabled && old.Consent == input.Consent &&
+		old.Time == input.Time && old.Timezone == input.Timezone && old.Limit == input.Limit &&
+		slices.Equal(old.Accounts, input.Accounts) && slices.Equal(old.Folders, input.Folders) {
+		// 重复保存不是重新授权或停止命令；保留修订与在途任务，避免无意义取消/未知计费。
+		return stored, nil
 	}
 	if s.activeCancel != nil {
 		s.stopped = true
@@ -99,34 +113,48 @@ func (s *Tasks) guard(ctx context.Context, expected domain.TaskPreferences) erro
 }
 
 func (s *Tasks) RunBatch(ctx context.Context, input domain.TaskBatchInput) (string, error) {
-	p, err := s.store.ReadTaskPreferences(ctx)
+	p, err := s.checkBatch(ctx, input)
 	if err != nil {
 		return "", err
 	}
+	return s.createRun(ctx, p, "manual", "", input.MailIDs, input.RetryUnknown)
+}
+func (s *Tasks) CheckBatch(ctx context.Context, input domain.TaskBatchInput) error {
+	_, err := s.checkBatch(ctx, input)
+	return err
+}
+func (s *Tasks) checkBatch(ctx context.Context, input domain.TaskBatchInput) (domain.TaskPreferences, error) {
+	p, err := s.store.ReadTaskPreferences(ctx)
+	if err != nil {
+		return p, err
+	}
 	if len(input.MailIDs) < 1 || len(input.MailIDs) > p.Limit {
-		return "", domain.ErrTaskInput
+		return p, domain.ErrTaskInput
 	}
 	if err := s.guard(ctx, p); err != nil {
-		return "", err
+		return p, err
 	}
 	seen := map[string]bool{}
 	for _, id := range input.MailIDs {
 		if !domain.ValidAccountID(id) || seen[id] {
-			return "", domain.ErrTaskInput
+			return p, domain.ErrTaskInput
 		}
 		seen[id] = true
 		mail, err := s.store.ReadTaskMail(ctx, id)
 		if err != nil {
-			return "", err
+			return p, err
 		}
 		if !p.Allows(mail.AccountID, mail.Folder) {
-			return "", domain.ErrTaskConsent
+			return p, domain.ErrTaskConsent
 		}
 		if _, err := translationText(mail.MailDetail); err != nil {
-			return "", domain.ErrAINotReady
+			if errors.Is(err, domain.ErrTranslationTooLarge) {
+				return p, domain.ErrAITooLarge
+			}
+			return p, domain.ErrAINotReady
 		}
 	}
-	return s.createRun(ctx, p, "manual", "", input.MailIDs, input.RetryUnknown)
+	return p, nil
 }
 
 func (s *Tasks) RunPending(ctx context.Context) (string, error) {
