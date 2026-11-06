@@ -9,11 +9,11 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
-| [TASK-0106](TASK-0106-workspace-git-dev-delivery.md) | 工作区提交整理与 dev PR 交付 | @Codex | 进行中 | P1 |
-| [TASK-0105](TASK-0105-release-0.0.6.md) | 跳过测试直接构建 0.0.6 生产安装包 | @Codex | 待评审 | P1 |
-| [TASK-0104](TASK-0104-task-editor-polish.md) | 编辑与来源建议布局、安全交互及视觉验收 | @Codex | 待评审 | P1 |
-| [TASK-0103](TASK-0103-task-action-flow.md) | 分析外发确认与每日设置操作保护 | @Codex | 待评审 | P1 |
-| [TASK-0102](TASK-0102-task-ui-shell.md) | 待办工作台信息层级与列表体验 | @Codex | 待评审 | P1 |
+| [TASK-0106](../archive/2026/11/TASK-0106-workspace-git-dev-delivery.md) | 工作区提交整理与 dev PR 交付（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0105](../archive/2026/11/TASK-0105-release-0.0.6.md) | 跳过测试直接构建 0.0.6 生产安装包（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0104](../archive/2026/11/TASK-0104-task-editor-polish.md) | 编辑与来源建议布局、安全交互及视觉验收（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0103](../archive/2026/11/TASK-0103-task-action-flow.md) | 分析外发确认与每日设置操作保护（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0102](../archive/2026/11/TASK-0102-task-ui-shell.md) | 待办工作台信息层级与列表体验（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0101](../archive/2026/11/TASK-0101-release-0.0.5.md) | 待办与每日需求收尾提交及 0.0.5 生产交付（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0100](../archive/2026/11/TASK-0100-todos-workspace.md) | 待办与每日分析界面、桥接及交付验证（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0099](../archive/2026/11/TASK-0099-daily-requirements.md) | 每日增量分析、托盘执行与启动补跑（已归档） | @Codex | 已完成 | P1 |
