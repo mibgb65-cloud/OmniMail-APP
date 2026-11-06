@@ -1,23 +1,27 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { AccountSummary, MailSummary } from '../../lib/bridge/mail';
-import * as api from '../../lib/bridge/tasks';
-import type { TaskPreferences, Todo, Run } from '../../lib/bridge/taskModels';
-import { todoStatuses } from '../../lib/bridge/taskModels';
+import type { TodoStatus } from '../../lib/bridge/taskModels';
 import { useTranslation } from '../../lib/i18n/useTranslation';
 import { DialogFrame } from '../DialogFrame/DialogFrame';
 import { useDialogExit } from '../DialogFrame/useDialogExit';
+import { ScrollArea } from '../ScrollArea/ScrollArea';
+import { UiIcon, type UiIconName } from '../UiIcon/UiIcon';
 import { TaskError } from './TaskError';
 import { TaskSettings } from './TaskSettings';
 import { TaskBatches } from './TaskBatches';
 import { TodoEditor } from './TodoEditor';
+import { TodoList } from './TodoList';
+import { TaskConfirm } from './TaskConfirm';
+import { useTaskWorkspace } from './useTaskWorkspace';
 import styles from './Tasks.module.css';
 
-interface Data {
-  items: Todo[];
-  runs: Run[];
-  prefs: TaskPreferences;
-  state: Awaited<ReturnType<typeof api.taskState>>;
-}
+const tabs = ['todos', 'sources', 'settings'] as const;
+const icons: Record<(typeof tabs)[number], UiIconName> = {
+  todos: 'list',
+  sources: 'sparkles',
+  settings: 'settings',
+};
+
 export function TasksDialog({
   accounts,
   mails,
@@ -30,48 +34,52 @@ export function TasksDialog({
   const { t } = useTranslation('tasks');
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
+  const scrollPositions = useRef<Partial<Record<(typeof tabs)[number], number>>>({});
   const exit = useDialogExit(ref, onClose);
-  const [tab, setTab] = useState<'todos' | 'sources' | 'settings'>('todos');
-  const [filter, setFilter] = useState('all');
+  const [tab, setTab] = useState<(typeof tabs)[number]>('todos');
+  const [filter, setFilter] = useState<'all' | TodoStatus>('all');
   const [offset, setOffset] = useState(0);
-  const [revision, setRevision] = useState(0);
-  const [data, setData] = useState<Data>();
-  const [error, setError] = useState<unknown>();
   const [editing, setEditing] = useState<string>();
-  const refresh = () => setRevision((value) => value + 1);
+  const [settingsVisited, setSettingsVisited] = useState(false);
+  const [settingsDirty, setSettingsDirty] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [discard, setDiscard] = useState(false);
+  const data = useTaskWorkspace(filter, offset, setOffset);
+  const overview = data.overview;
   useEffect(() => {
     const node = ref.current;
     node?.showModal();
+    node?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
     return () => {
       if (node?.open) node.close();
     };
   }, []);
-  useEffect(() => {
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const load = async () => {
-      try {
-        const [items, runs, prefs, state] = await Promise.all([
-          api.listTodos(filter, offset, controller.signal),
-          api.taskRuns(controller.signal),
-          api.taskPreferences(controller.signal),
-          api.taskState(controller.signal),
-        ]);
-        if (!controller.signal.aborted) {
-          setData({ items, runs, prefs, state });
-          setError(undefined);
-          timer = setTimeout(() => void load(), state.running ? 1500 : 5000);
-        }
-      } catch (reason) {
-        if (!controller.signal.aborted) setError(reason);
-      }
-    };
-    void load();
-    return () => {
-      controller.abort();
-      clearTimeout(timer);
-    };
-  }, [filter, offset, revision]);
+  const selectTab = (value: (typeof tabs)[number]) => {
+    if (settingsSaving) return;
+    const viewport = ref.current?.querySelector<HTMLElement>('[data-custom-scrollbar]');
+    if (viewport) scrollPositions.current[tab] = viewport.scrollTop;
+    setTab(value);
+    if (value === 'settings') setSettingsVisited(true);
+  };
+  useLayoutEffect(() => {
+    const viewport = ref.current?.querySelector<HTMLElement>('[data-custom-scrollbar]');
+    if (viewport) viewport.scrollTop = scrollPositions.current[tab] ?? 0;
+  }, [tab]);
+  const close = () => {
+    if (settingsSaving) return;
+    if (settingsDirty) {
+      setDiscard(true);
+      return;
+    }
+    exit.close();
+  };
+  const status = overview?.state.running
+    ? 'backgroundRunning'
+    : overview?.state.error
+      ? 'backgroundNeedsReview'
+      : overview?.prefs.enabled
+        ? 'dailyEnabled'
+        : 'dailyDisabled';
   return (
     <>
       <DialogFrame
@@ -81,141 +89,188 @@ export function TasksDialog({
         aria-label={t('title')}
         onCancel={(event) => {
           event.preventDefault();
-          exit.close();
+          close();
         }}
       >
         <header className={styles.header}>
-          <h2>{t('title')}</h2>
-          <div className={styles.actions}>
-            <button type="button" onClick={refresh}>
-              {t('refresh')}
+          <div>
+            <div className={styles.eyebrow}>{t('workspaceEyebrow')}</div>
+            <h2 className={styles.dialogTitle} tabIndex={-1}>
+              {t('title')}
+            </h2>
+            <p className={styles.hint}>{t('workspaceDescription')}</p>
+          </div>
+          <div className={styles.headerActions}>
+            {settingsDirty && <span className={styles.unsavedBadge}>{t('unsavedShort')}</span>}
+            <button
+              type="button"
+              data-button-variant="ghost"
+              className={styles.iconButton}
+              aria-label={t('refresh')}
+              data-tooltip={t('refresh')}
+              onClick={data.refresh}
+            >
+              <UiIcon name="sync" />
             </button>
-            <button type="button" onClick={exit.close}>
-              {t('close')}
+            <button
+              type="button"
+              data-button-variant="ghost"
+              className={styles.iconButton}
+              aria-label={t('close')}
+              data-tooltip={t('close')}
+              disabled={settingsSaving}
+              onClick={close}
+            >
+              <UiIcon name="close" />
             </button>
           </div>
         </header>
-        <div className={styles.tabs} role="tablist" aria-label={t('title')}>
-          {(['todos', 'sources', 'settings'] as const).map((value) => (
-            <button
-              type="button"
-              role="tab"
-              id={`${id}-tab-${value}`}
-              aria-controls={`${id}-panel`}
-              tabIndex={tab === value ? 0 : -1}
-              aria-selected={tab === value}
-              key={value}
-              onClick={() => setTab(value)}
-              onKeyDown={(event) => {
-                const tabs = ['todos', 'sources', 'settings'] as const;
-                const index = tabs.indexOf(value);
-                const next =
-                  event.key === 'ArrowRight'
-                    ? tabs[(index + 1) % tabs.length]
-                    : event.key === 'ArrowLeft'
-                      ? tabs[(index + tabs.length - 1) % tabs.length]
-                      : event.key === 'Home'
-                        ? tabs[0]
-                        : event.key === 'End'
-                          ? tabs[2]
-                          : undefined;
-                if (!next) return;
-                event.preventDefault();
-                setTab(next);
-                document.getElementById(`${id}-tab-${next}`)?.focus();
+        <div className={styles.navigation}>
+          <div className={styles.tabs} role="tablist" aria-label={t('title')}>
+            {tabs.map((value) => (
+              <button
+                type="button"
+                data-button-variant="ghost"
+                role="tab"
+                aria-label={t(value)}
+                id={`${id}-tab-${value}`}
+                aria-controls={`${id}-panel-${value}`}
+                tabIndex={tab === value ? 0 : -1}
+                aria-selected={tab === value}
+                disabled={settingsSaving}
+                key={value}
+                onClick={() => selectTab(value)}
+                onKeyDown={(event) => {
+                  const index = tabs.indexOf(value);
+                  const next =
+                    event.key === 'ArrowRight'
+                      ? tabs[(index + 1) % tabs.length]
+                      : event.key === 'ArrowLeft'
+                        ? tabs[(index + tabs.length - 1) % tabs.length]
+                        : event.key === 'Home'
+                          ? tabs[0]
+                          : event.key === 'End'
+                            ? tabs[2]
+                            : undefined;
+                  if (!next || settingsSaving) return;
+                  event.preventDefault();
+                  selectTab(next);
+                  document.getElementById(`${id}-tab-${next}`)?.focus();
+                }}
+              >
+                <UiIcon name={icons[value]} />
+                {t(value)}
+                {value === 'todos' && data.counts?.suggested ? (
+                  <span className={styles.navCount}>{data.counts.suggested}</span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+          <span
+            className={styles.backgroundStatus}
+            data-running={overview?.state.running || undefined}
+          >
+            <span />
+            {t(overview ? status : 'backgroundLoading')}
+          </span>
+        </div>
+        <ScrollArea className={styles.contentArea} viewportClassName={styles.body}>
+          <section
+            role="tabpanel"
+            id={`${id}-panel-todos`}
+            aria-labelledby={`${id}-tab-todos`}
+            hidden={tab !== 'todos'}
+          >
+            <TodoList
+              page={data.page}
+              counts={data.counts}
+              error={data.listError}
+              filter={filter}
+              offset={offset}
+              accounts={accounts}
+              onFilter={(value) => {
+                setFilter(value);
+                setOffset(0);
               }}
-            >
-              {t(value)}
-            </button>
-          ))}
-        </div>
-        <div
-          className={`${styles.body} ${styles.stack}`}
-          role="tabpanel"
-          id={`${id}-panel`}
-          aria-labelledby={`${id}-tab-${tab}`}
-        >
-          {error != null && <TaskError error={error} />}
-          {!data && !error && <p role="status">{t('loading')}</p>}
-          {data?.state.error && <TaskError error={new Error(data.state.error)} />}
-          {tab === 'todos' && (
-            <>
-              <div className={styles.actions}>
-                <label>
-                  {t('status')}{' '}
-                  <select
-                    value={filter}
-                    onChange={(event) => {
-                      setFilter(event.target.value);
-                      setOffset(0);
-                    }}
-                  >
-                    <option value="all">{t('all')}</option>
-                    {todoStatuses.map((value) => (
-                      <option key={value} value={value}>
-                        {t(`status_${value}`)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button type="button" onClick={() => setEditing('')}>
-                  {t('create')}
-                </button>
-              </div>
-              {data && !data.items.length && <p>{t('empty')}</p>}
-              {data?.items.map((item) => (
-                <button
-                  type="button"
-                  data-button-variant="secondary"
-                  className={styles.item}
-                  key={item.id}
-                  onClick={() => setEditing(item.id)}
-                >
-                  <span>
-                    {item.title}
-                    {item.due && <small> · {item.due}</small>}
-                  </span>
-                  <span>{t(`status_${item.status}`)}</span>
-                </button>
-              ))}
-              <div className={styles.actions}>
-                <button
-                  type="button"
-                  disabled={!offset}
-                  onClick={() => setOffset((n) => Math.max(0, n - 100))}
-                >
-                  {t('previous')}
-                </button>
-                <button
-                  type="button"
-                  disabled={data?.items.length !== 100 || offset >= 10000}
-                  onClick={() => setOffset((n) => n + 100)}
-                >
-                  {t('more')}
-                </button>
-              </div>
-              <p className={styles.hint}>{t('retention')}</p>
-            </>
-          )}
-          {tab === 'sources' && data && (
-            <TaskBatches
-              mails={mails}
-              runs={data.runs}
-              prefs={data.prefs}
-              running={data.state.running}
-              onChanged={refresh}
+              onOffset={setOffset}
+              onEdit={setEditing}
+              onSources={() => selectTab('sources')}
+              onRefresh={data.refresh}
             />
-          )}
-          {tab === 'settings' && <TaskSettings accounts={accounts} onSaved={refresh} />}
-        </div>
+          </section>
+          <section
+            role="tabpanel"
+            id={`${id}-panel-sources`}
+            aria-labelledby={`${id}-tab-sources`}
+            hidden={tab !== 'sources'}
+          >
+            {data.overviewError != null && <TaskError error={data.overviewError} />}
+            {!overview && !data.overviewError && <p role="status">{t('loading')}</p>}
+            {overview && (
+              <TaskBatches
+                accounts={accounts}
+                mails={mails}
+                runs={overview.runs}
+                prefs={overview.prefs}
+                running={overview.state.running}
+                onChanged={data.refresh}
+                onSettings={() => selectTab('settings')}
+              />
+            )}
+          </section>
+          <section
+            role="tabpanel"
+            id={`${id}-panel-settings`}
+            aria-labelledby={`${id}-tab-settings`}
+            hidden={tab !== 'settings'}
+          >
+            {settingsVisited && (
+              <TaskSettings
+                accounts={accounts}
+                onSaved={data.refresh}
+                running={overview?.state.running}
+                onDirtyChange={setSettingsDirty}
+                onBusyChange={setSettingsSaving}
+              />
+            )}
+          </section>
+        </ScrollArea>
+        <footer className={styles.workspaceFooter}>
+          <details>
+            <summary>
+              <UiIcon name="about" size={15} />
+              {t('privacyAndRetention')}
+            </summary>
+            <p>{t('retention')}</p>
+          </details>
+          <span>{t('localFirst')}</span>
+        </footer>
       </DialogFrame>
       {editing !== undefined && (
         <TodoEditor
           id={editing}
           accounts={accounts}
           onClose={() => setEditing(undefined)}
-          onSaved={refresh}
+          onSaved={data.refresh}
         />
+      )}
+      {discard && (
+        <TaskConfirm
+          title={t('leaveSettingsTitle')}
+          confirm={t('discardSettings')}
+          cancel={t('continueEditing')}
+          danger
+          onCancel={() => {
+            setDiscard(false);
+            selectTab('settings');
+          }}
+          onConfirm={() => {
+            setDiscard(false);
+            exit.close();
+          }}
+        >
+          <p>{t('leaveSettingsDescription')}</p>
+        </TaskConfirm>
       )}
     </>
   );

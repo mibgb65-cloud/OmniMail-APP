@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import * as api from '../../lib/bridge/tasks';
 import { aiConfig } from '../../lib/bridge/ai';
@@ -38,11 +38,12 @@ async function setup() {
       <TaskSettings accounts={[account]} onSaved={vi.fn()} />
     </I18nProvider>,
   );
-  await waitFor(() => expect(screen.getByRole('button', { name: '保存' })).toBeEnabled());
+  await screen.findByLabelText('时区（IANA）');
 }
 it('每日功能不自动开启或外发；变更范围取消授权及每日开关', async () => {
   await setup();
   expect(screen.getByRole('checkbox', { name: '启用每日自动分析' })).not.toBeChecked();
+  expect(screen.getByRole('button', { name: '保存设置' })).toBeDisabled();
   expect(api.startTaskBatch).not.toHaveBeenCalled();
   expect(api.runPendingTasks).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('checkbox', { name: '归档' }));
@@ -50,7 +51,7 @@ it('每日功能不自动开启或外发；变更范围取消授权及每日开�
   expect(screen.getByRole('checkbox', { name: '启用每日自动分析' })).toBeDisabled();
   fireEvent.click(screen.getByRole('checkbox', { name: /允许后台/ }));
   fireEvent.click(screen.getByRole('checkbox', { name: '启用每日自动分析' }));
-  fireEvent.click(screen.getByRole('button', { name: '保存' }));
+  fireEvent.click(screen.getByRole('button', { name: '保存并启用每日分析' }));
   await screen.findByText('设置已保存。');
   expect(api.saveTaskPreferences).toHaveBeenCalledWith(
     expect.objectContaining({ enabled: true, consent: true, folders: ['inbox', 'archive'] }),
@@ -69,4 +70,20 @@ it('AI 配置变化不能沿用旧勾选授权', async () => {
   await setup();
   expect(screen.getByRole('checkbox', { name: /允许后台/ })).not.toBeChecked();
   expect(screen.getByText(/旧后台授权已失效/)).toBeVisible();
+});
+it('后台运行时保存修改须明确确认，未修改状态不能重复保存', async () => {
+  render(
+    <I18nProvider initialLocale="zh-CN">
+      <TaskSettings accounts={[account]} onSaved={vi.fn()} running />
+    </I18nProvider>,
+  );
+  await screen.findByLabelText('时区（IANA）');
+  expect(screen.getByRole('button', { name: '保存设置' })).toBeDisabled();
+  fireEvent.change(screen.getByLabelText('每批最多处理封数（1–100）'), { target: { value: '25' } });
+  fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+  expect(api.saveTaskPreferences).not.toHaveBeenCalled();
+  const confirm = screen.getByRole('dialog', { name: '保存设置并停止当前批次？' });
+  fireEvent.click(within(confirm).getByRole('button', { name: '确认保存' }));
+  await screen.findByText('设置已保存。');
+  expect(api.saveTaskPreferences).toHaveBeenCalledOnce();
 });
