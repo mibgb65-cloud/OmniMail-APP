@@ -5,6 +5,11 @@
 // @ts-ignore: Unused imports
 import * as domain$0 from "../domain/models.js";
 
+export interface AIProgress {
+    "stage": string;
+    "retrySeconds": number;
+}
+
 export interface AccountSummary {
     "id": string;
     "email": string;
@@ -12,6 +17,8 @@ export interface AccountSummary {
     "providerCode": string;
     "status": domain$0.AccountStatus;
     "sync": SyncState;
+    "messageCount"?: number | null;
+    "limitedMessageCount"?: number | null;
 }
 
 export interface AddAccountInput {
@@ -20,6 +27,12 @@ export interface AddAccountInput {
     "displayName": string;
     "imap": ServerInput;
     "smtp": ServerInput;
+}
+
+export interface CustomProviderInput {
+    "name": string;
+    "imap": domain$0.ProviderServer;
+    "smtp": domain$0.ProviderServer;
 }
 
 export interface SendInput {
@@ -38,9 +51,37 @@ export interface ServerInput {
     "authKind": domain$0.AuthKind;
 }
 
+export interface StorageUsage {
+    "totalBytes": number;
+    "mailDataBytes": number;
+    "attachmentsBytes": number;
+    "logsBytes": number;
+    "backupsBytes": number;
+    "otherBytes": number;
+}
+
 export interface SyncState {
     "running": boolean;
     "more": boolean;
     "errorCode": string;
     "lastSyncAt": number;
+}
+
+export interface TaskState {
+    "running": boolean;
+    "runId": string;
+    "error": string;
+}
+
+export interface TranslationProgress {
+    "stage": string;
+    "current": number;
+    "total": number;
+    "retrySeconds": number;
+}
+
+export interface WindowCloseState {
+    "mode": string;
+    "pending": boolean;
+    "backgroundAvailable": boolean;
 }

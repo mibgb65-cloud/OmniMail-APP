@@ -1,7 +1,15 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { applyTheme, isTheme, persistTheme, readInitialTheme, THEME_STORAGE_KEY } from './theme';
+import {
+  applyTheme,
+  isTheme,
+  isThemePreference,
+  persistTheme,
+  readInitialTheme,
+  readThemePreference,
+  THEME_STORAGE_KEY,
+} from './theme';
 import { useTheme } from './useTheme';
 
 afterEach(() => {
@@ -100,5 +108,68 @@ describe('主题偏好', () => {
     act(() => view.result.current.toggleTheme());
     system.change(false);
     expect(view.result.current.theme).toBe('dark');
+  });
+
+  it('偏好与实际主题分离，明确保存跟随系统并在重开后恢复', () => {
+    const system = mockSystemTheme(false);
+    const view = renderHook(useTheme);
+    expect(view.result.current.themePreference).toBe('system');
+    act(() => view.result.current.selectTheme('dark'));
+    expect(view.result.current.theme).toBe('dark');
+    expect(view.result.current.themePreference).toBe('dark');
+    act(() => view.result.current.selectTheme('system'));
+    expect(view.result.current.theme).toBe('light');
+    expect(view.result.current.themePreference).toBe('system');
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('system');
+    system.change(true);
+    expect(view.result.current.theme).toBe('dark');
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+    view.unmount();
+    const reopened = renderHook(useTheme);
+    expect(reopened.result.current.themePreference).toBe('system');
+    expect(reopened.result.current.theme).toBe('dark');
+  });
+
+  it('系统监听保留最新状态，固定主题不被覆盖，恢复跟随立即应用', () => {
+    const system = mockSystemTheme(false);
+    const view = renderHook(useTheme);
+    act(() => view.result.current.selectTheme('light'));
+    system.change(true);
+    expect(view.result.current.theme).toBe('light');
+    act(() => view.result.current.selectTheme('system'));
+    expect(view.result.current.theme).toBe('dark');
+    act(() => view.result.current.toggleTheme());
+    expect(view.result.current.themePreference).toBe('light');
+    system.change(false);
+    system.change(true);
+    expect(view.result.current.theme).toBe('light');
+  });
+
+  it('仅三种偏好有效，非法存储回退系统且不接受作为实际主题', () => {
+    for (const value of ['light', 'dark', 'system']) expect(isThemePreference(value)).toBe(true);
+    for (const value of [null, undefined, '', '<script>', {}, 1]) {
+      expect(isThemePreference(value)).toBe(false);
+    }
+    expect(isTheme('system')).toBe(false);
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'invalid');
+    expect(readThemePreference()).toBe('system');
+    expect(persistTheme('system')).toBe(true);
+    mockSystemTheme(true);
+    expect(readInitialTheme()).toBe('dark');
+  });
+
+  it('保存失败仍能在本会话切回系统，失败状态由返回值交付界面', () => {
+    const system = mockSystemTheme(false);
+    const view = renderHook(useTheme);
+    act(() => view.result.current.selectTheme('dark'));
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('private');
+    });
+    act(() => expect(view.result.current.selectTheme('system')).toBe(false));
+    expect(view.result.current.themePreference).toBe('system');
+    system.change(true);
+    expect(view.result.current.theme).toBe('dark');
+    system.change(false);
+    expect(view.result.current.theme).toBe('light');
   });
 });

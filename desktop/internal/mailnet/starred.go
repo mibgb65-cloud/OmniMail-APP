@@ -1,11 +1,13 @@
 package mailnet
 
 import (
-	"github.com/emersion/go-imap/v2"
-	"omnimail/desktop/internal/domain"
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"omnimail/desktop/internal/domain"
+
+	"github.com/emersion/go-imap/v2"
 )
 
 func (s *session) SetStarred(mailbox string, validity, uid uint32, starred bool) error {
@@ -28,6 +30,10 @@ func (s *session) setFlag(mailbox string, validity, uid uint32, flag imap.Flag, 
 		return domain.ErrProtocol
 	}
 	s.uids, s.searched = nil, false
+	return s.storeFlag(uid, flag, enabled, false)
+}
+
+func (s *session) storeFlag(uid uint32, flag imap.Flag, enabled, allowEmptyReply bool) error {
 	op := imap.StoreFlagsDel
 	if enabled {
 		op = imap.StoreFlagsAdd
@@ -38,6 +44,10 @@ func (s *session) setFlag(mailbox string, validity, uid uint32, flag imap.Flag, 
 	result, err := s.client.Store(set, &imap.StoreFlags{Op: op, Flags: []imap.Flag{flag}}, nil).Collect()
 	if err != nil {
 		return s.commandError(err)
+	}
+	// 仅凭 tagged OK 不能发布成功；只有随后会按完整摘要和 FLAGS 再核验的已读路径可接受空回执。
+	if len(result) == 0 && allowEmptyReply {
+		return nil
 	}
 	if len(result) != 1 || uint32(result[0].UID) != uid || contains(result[0].Flags, flag) != enabled {
 		return domain.ErrProtocol

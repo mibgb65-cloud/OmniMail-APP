@@ -14,7 +14,7 @@ var (
 	ErrCredentialMissing     = domain.ErrCredentialMissing
 	ErrCredentialUnavailable = domain.ErrCredentialUnavailable
 	ErrCredentialInvalid     = domain.ErrCredentialInvalid
-	credentialReference      = regexp.MustCompile(`^omnimail/account/[A-Za-z0-9_-]{1,64}(/(imap|smtp))?$`)
+	credentialReference      = regexp.MustCompile(`^omnimail/(account/[A-Za-z0-9_-]{1,64}(/(imap|smtp))?|ai/[A-Za-z0-9_-]{1,64})$`)
 )
 
 type keyringBackend struct {

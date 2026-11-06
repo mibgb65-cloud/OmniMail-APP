@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { I18nProvider } from '../lib/i18n/I18nProvider';
 import type { MailController } from './useMail';
@@ -6,6 +6,7 @@ import { MailWorkspace } from './MailWorkspace';
 import { MailList } from './MailList';
 import { AccountStatus } from '../../bindings/omnimail/desktop/internal/domain/models';
 import { DEFAULT_MAIL_VIEW, selectMailView } from './mailView';
+import { useComposer } from './useComposer';
 
 function makeController(overrides: Partial<MailController> = {}): MailController {
   const message = {
@@ -74,9 +75,49 @@ function makeController(overrides: Partial<MailController> = {}): MailController
     setFilter: vi.fn(),
     resetView: vi.fn(),
     disconnectAccount: vi.fn(),
+    retryAccount: vi.fn(),
     ...overrides,
   };
 }
+
+function ComposeWorkspaceFixture() {
+  const mail = makeController();
+  const composer = useComposer(mail.accounts, mail.refresh);
+  return (
+    <>
+      <button onClick={() => composer.open('account-test')}>工作区撰写</button>
+      <MailWorkspace mail={mail} composer={composer} />
+    </>
+  );
+}
+
+it('撰写占用右侧阅读区但保留列表与阅读挂载，返回恢复分析面板原偏好', () => {
+  render(
+    <I18nProvider initialLocale="zh-CN">
+      <ComposeWorkspaceFixture />
+    </I18nProvider>,
+  );
+  const reader = document.querySelector('[data-mail-reader]');
+  const list = screen.getByRole('region', { name: '邮件列表' });
+  const analysis = screen.getByRole('complementary');
+  expect(screen.getByRole('button', { name: '归档' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: '收起 AI 分析' }));
+  fireEvent.click(screen.getByRole('button', { name: '工作区撰写' }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(analysis).not.toBeVisible();
+  expect(reader).not.toBeVisible();
+  expect(screen.getByRole('region', { name: '邮件列表' })).toBe(list);
+  expect(screen.getByRole('region', { name: '写邮件' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '归档' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '删除' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: '返回邮件' }));
+  expect(list).toHaveFocus();
+  expect(reader).toBeVisible();
+  expect(document.querySelector('[data-mail-reader]')).toBe(reader);
+  expect(analysis).toBeVisible();
+  expect(screen.getByRole('button', { name: '归档' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '展开 AI 分析' })).toBeVisible();
+});
 
 it('真实邮件视图移除分页按钮，正文始终作为文本而不是 HTML', async () => {
   const controller = makeController();
@@ -102,9 +143,24 @@ it('自动已读失败不隐藏正文，提示原因且不暴露底层错误', a
     </I18nProvider>,
   );
   expect(await screen.findByRole('heading', { name: '真实主题' })).toBeVisible();
-  expect(screen.getByRole('alert')).toHaveTextContent('自动标为已读失败');
-  expect(screen.getByRole('alert')).not.toHaveTextContent('private-marker');
+  const alert = within(screen.getByRole('region', { name: '邮件工作区' })).getByRole('alert');
+  expect(alert).toHaveTextContent('自动标为已读失败');
+  expect(alert).not.toHaveTextContent('private-marker');
   expect(screen.getByRole('button', { name: '标为已读' })).toBeEnabled();
+});
+
+it('自动已读不支持时使用通用安全提示，不误报目标文件夹或泄漏底层错误', async () => {
+  const mail = makeController({ autoReadError: new Error('ACTION_UNSUPPORTED private-marker') });
+  render(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace mail={mail} />
+    </I18nProvider>,
+  );
+  await screen.findByRole('heading', { name: '真实主题' });
+  const alert = within(screen.getByRole('region', { name: '邮件工作区' })).getByRole('alert');
+  expect(alert).toHaveTextContent('自动标为已读失败');
+  expect(alert).not.toHaveTextContent('目标文件夹');
+  expect(alert).not.toHaveTextContent('private-marker');
 });
 
 it('工具栏真实操作、组合筛选和排序导航使用同一可见列表，保存中防止重复请求', () => {
@@ -172,7 +228,7 @@ it('初始账号读取失败显示安全原因和重试入口，不伪装成尚�
   expect(controller.refresh).toHaveBeenCalledOnce();
 });
 
-it('同步失败的空列表显示原因和重新同步，不误报这个文件夹没有邮件', () => {
+it('账号同步失败不再在邮件列表重复显示告警，也不误报这个文件夹没有邮件', () => {
   const controller = makeController({
     messages: [],
     detail: undefined,
@@ -193,10 +249,10 @@ it('同步失败的空列表显示原因和重新同步，不误报这个文件�
       <MailWorkspace mail={controller} />
     </I18nProvider>,
   );
-  expect(screen.getByRole('alert')).toHaveTextContent('无法连接邮件服务器');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   expect(screen.queryByText('此分类暂无已同步邮件')).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: '重新同步' }));
-  expect(controller.sync).toHaveBeenCalledOnce();
+  expect(screen.queryByRole('button', { name: '重新同步' })).not.toBeInTheDocument();
+  expect(controller.sync).not.toHaveBeenCalled();
 });
 
 it('正文失败有独立重试入口，提示不回显底层错误文本', () => {
@@ -212,6 +268,30 @@ it('正文失败有独立重试入口，提示不回显底层错误文本', () =
   expect(screen.queryByText(/private-body-marker/)).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '重新加载正文' }));
   expect(controller.retryBody).toHaveBeenCalledOnce();
+});
+
+it('账号受限提示收拢到侧栏，邮件列表不重复展示数量或引导全局重试', () => {
+  const controller = makeController({
+    accounts: [
+      {
+        id: 'account-test',
+        providerCode: 'qq',
+        email: 'work@example.invalid',
+        displayName: '',
+        status: AccountStatus.AccountConfigured,
+        limitedMessageCount: 1,
+        sync: { running: false, more: false, errorCode: '', lastSyncAt: 1 },
+      },
+    ],
+  });
+  render(
+    <I18nProvider initialLocale="zh-CN">
+      <MailWorkspace mail={controller} />
+    </I18nProvider>,
+  );
+  expect(screen.queryByText(/1 封邮件未完整下载/)).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '重新同步' })).not.toBeInTheDocument();
+  expect(screen.queryByText(/同步未完成，可重试/)).not.toBeInTheDocument();
 });
 
 function renderList(mail: MailController, locale: 'zh-CN' | 'en' = 'zh-CN') {
@@ -233,12 +313,12 @@ it('筛选后空列表仍可继续加载，不要求有滚动条才能读取下�
 });
 
 it.each(['zh-CN', 'en'] as const)(
-  '列表在 %s 下展示短日期，完整信息可通过名称及统一提示读取，选中行为不变',
+  '列表在 %s 下展示日期和具体时分，完整信息可通过名称及统一提示读取',
   (locale) => {
     const mail = makeController();
     const original = mail.messages[0];
     if (!original) throw new Error('测试邮件缺失');
-    const receivedAt = new Date(2026, 9, 30, 1, 33).getTime();
+    const receivedAt = new Date(new Date().getFullYear(), 9, 30, 1, 33).getTime();
     mail.messages = [{ ...original, receivedAt }];
     renderList(mail, locale);
     const row = screen.getByRole('button', { pressed: true });
@@ -254,6 +334,8 @@ it.each(['zh-CN', 'en'] as const)(
       new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(receivedAt),
     );
     expect(time?.textContent).not.toContain('12:00');
+    expect(time).toHaveTextContent('01:33');
+    expect(time?.children).toHaveLength(2);
     expect(row).toHaveAccessibleName(/12:00/);
     expect(row.querySelector('[aria-hidden="true"]')).toHaveTextContent('S');
     fireEvent.click(row);
@@ -292,6 +374,23 @@ it('跨年邮件保留年份，避免短日期混淆，时间格式化不改变�
     }).format(receivedAt),
   );
   expect(mail.messages[0]?.receivedAt).toBe(receivedAt);
+  expect(time).toHaveTextContent('09:30');
+});
+
+it.each([
+  { hour: 0, minute: 0, expected: '00:00' },
+  { hour: 23, minute: 59, expected: '23:59' },
+])('本地时分包含前导零并采用 24 小时制：$expected', ({ hour, minute, expected }) => {
+  const mail = makeController();
+  const original = mail.messages[0];
+  if (!original) throw new Error('测试邮件缺失');
+  const receivedAt = new Date(new Date().getFullYear(), 10, 1, hour, minute).getTime();
+  mail.messages = [{ ...original, receivedAt }];
+  renderList(mail, 'en');
+  const time = screen.getByRole('button', { pressed: true }).querySelector('time');
+  expect(time).toHaveTextContent(expected);
+  expect(time).toHaveAttribute('datetime', new Date(receivedAt).toISOString());
+  expect(mail.messages[0]?.receivedAt).toBe(receivedAt);
 });
 
 it('超长不可信主题只作为文本展示，提示受长度限制且筛选仍匹配原文', () => {
@@ -311,6 +410,113 @@ it('超长不可信主题只作为文本展示，提示受长度限制且筛选�
   expect(row.querySelector('img')).toBeNull();
   expect(row.getAttribute('data-tooltip')?.length).toBeLessThanOrEqual(1024);
   expect(screen.queryByText('不匹配的主题')).not.toBeInTheDocument();
+});
+
+it('邮箱切换先显示列表骨架，快数据也等待短过渡后出现，后台刷新不再遮罩', () => {
+  vi.useFakeTimers();
+  try {
+    const mail = makeController({ messages: [], listLoading: true, listPageCount: 0 });
+    const view = renderList(mail);
+    expect(screen.getByRole('status', { name: /正在读取/ })).toHaveAttribute(
+      'data-list-skeleton',
+      'true',
+    );
+    expect(screen.queryByText('此分类暂无已同步邮件')).not.toBeInTheDocument();
+    const loaded = makeController();
+    view.rerender(
+      <I18nProvider initialLocale="zh-CN">
+        <MailList mail={loaded} formatTime={() => '12:00'} />
+      </I18nProvider>,
+    );
+    act(() => vi.advanceTimersByTime(279));
+    expect(screen.getByRole('status', { name: /正在读取/ })).toBeInTheDocument();
+    expect(screen.queryByText('真实主题')).not.toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.queryByRole('status', { name: /正在读取/ })).not.toBeInTheDocument();
+    expect(screen.getByText('真实主题')).toBeVisible();
+    view.rerender(
+      <I18nProvider initialLocale="zh-CN">
+        <MailList mail={{ ...loaded, listLoading: true }} formatTime={() => '12:00'} />
+      </I18nProvider>,
+    );
+    expect(document.querySelector('[data-list-skeleton]')).toBeNull();
+    expect(screen.getByText('真实主题')).toBeVisible();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it('快切邮箱的旧骨架定时器不能提前揭开新邮箱，错误立即显示并可重试', () => {
+  vi.useFakeTimers();
+  try {
+    const mail = makeController({ messages: [], listLoading: true, listPageCount: 0 });
+    const view = renderList(mail);
+    act(() => vi.advanceTimersByTime(200));
+    const next = makeController({ listKey: 'another-mailbox' });
+    view.rerender(
+      <I18nProvider initialLocale="zh-CN">
+        <MailList
+          mail={{ ...next, messages: [], listLoading: true, listPageCount: 0 }}
+          formatTime={() => '12:00'}
+        />
+      </I18nProvider>,
+    );
+    view.rerender(
+      <I18nProvider initialLocale="zh-CN">
+        <MailList mail={next} formatTime={() => '12:00'} />
+      </I18nProvider>,
+    );
+    act(() => vi.advanceTimersByTime(80));
+    expect(screen.queryByText('真实主题')).not.toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /正在读取/ })).toBeInTheDocument();
+    view.rerender(
+      <I18nProvider initialLocale="zh-CN">
+        <MailList
+          mail={{ ...next, messages: [], listPageCount: 0, listError: new Error('NETWORK_FAILED') }}
+          formatTime={() => '12:00'}
+        />
+      </I18nProvider>,
+    );
+    expect(document.querySelector('[data-list-skeleton]')).toBeNull();
+    expect(screen.getByRole('alert')).toHaveTextContent('无法连接邮件服务器');
+    fireEvent.click(screen.getByRole('button', { name: '重试加载' }));
+    expect(next.retryList).toHaveBeenCalledOnce();
+    expect(screen.getByRole('region', { name: '邮件列表' })).toHaveFocus();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it('邮件列表按真实滚动边缘羽化，首尾和无溢出时对应边缘保持清晰', () => {
+  renderList(makeController());
+  const viewport = screen.getByRole('region', { name: '邮件列表' });
+  const root = viewport.parentElement;
+  expect(root).toHaveAttribute('data-edge-fade', 'true');
+  expect(viewport).toHaveAttribute('data-custom-scrollbar');
+  expect(viewport).not.toHaveAttribute('data-native-scrollbar');
+  const track = root?.querySelector<HTMLElement>('[data-scrollbar-track]');
+  if (!track) throw new Error('邮件列表缺少独立滚动轨道');
+  expect(track?.parentElement).toBe(root);
+  expect(viewport).not.toContainElement(track);
+  Object.defineProperties(viewport, {
+    clientHeight: { configurable: true, value: 400 },
+    scrollHeight: { configurable: true, value: 1200 },
+  });
+  for (const [position, top, bottom] of [
+    [0, 'false', 'true'],
+    [400, 'true', 'true'],
+    [800, 'true', 'false'],
+  ] as const) {
+    viewport.scrollTop = position;
+    fireEvent.scroll(viewport);
+    expect(root).toHaveAttribute('data-fade-top', top);
+    expect(root).toHaveAttribute('data-fade-bottom', bottom);
+  }
+  Object.defineProperty(viewport, 'scrollHeight', { configurable: true, value: 400 });
+  viewport.scrollTop = 0;
+  fireEvent.scroll(viewport);
+  expect(root).toHaveAttribute('data-fade-top', 'false');
+  expect(root).toHaveAttribute('data-fade-bottom', 'false');
 });
 
 it('仅接近列表底部时请求更多，读取中或错误后不自动触发', () => {

@@ -1,12 +1,20 @@
-import type { RefObject } from 'react';
-
 import { useTranslation } from '../../lib/i18n/useTranslation';
 import { ScrollArea } from '../ScrollArea/ScrollArea';
 import { UiIcon } from '../UiIcon/UiIcon';
 import styles from './SettingsDialog.module.css';
 
-export type SettingsSection = 'general' | 'storage' | 'about';
-const sections = ['general', 'storage', 'about'] as const satisfies readonly SettingsSection[];
+export const settingsSections = [
+  'general',
+  'accounts',
+  'notifications',
+  'reading',
+  'ai',
+  'storage',
+  'about',
+  'updates',
+] as const;
+export type SettingsSection = (typeof settingsSections)[number];
+const sections = settingsSections;
 
 function at(position: number, fallback: SettingsSection): SettingsSection {
   return sections.find((_name, index) => index === position) ?? fallback;
@@ -14,23 +22,33 @@ function at(position: number, fallback: SettingsSection): SettingsSection {
 
 const titles = {
   general: 'generalTitle',
+  accounts: 'accountsTitle',
+  notifications: 'notificationsTitle',
+  reading: 'readingTitle',
+  ai: 'aiTitle',
   storage: 'storageTitle',
   about: 'aboutTitle',
+  updates: 'updatesTitle',
+} as const;
+
+const icons = {
+  general: 'general',
+  accounts: 'accounts',
+  notifications: 'bell',
+  reading: 'mailOpen',
+  ai: 'sparkles',
+  storage: 'storage',
+  about: 'about',
+  updates: 'sync',
 } as const;
 
 interface SettingsNavigationProps {
   id: string;
   section: SettingsSection;
   onChange: (section: SettingsSection) => void;
-  firstControlRef: RefObject<HTMLButtonElement>;
 }
 
-export function SettingsNavigation({
-  id,
-  section,
-  onChange,
-  firstControlRef,
-}: SettingsNavigationProps) {
+export function SettingsNavigation({ id, section, onChange }: SettingsNavigationProps) {
   const { t } = useTranslation('settings');
   return (
     <aside className={styles.navigation}>
@@ -62,7 +80,6 @@ export function SettingsNavigation({
           {sections.map((name) => (
             <button
               key={name}
-              ref={name === section ? firstControlRef : undefined}
               type="button"
               role="tab"
               className={styles['navigation-button']}
@@ -73,7 +90,7 @@ export function SettingsNavigation({
               data-section={name}
               onClick={() => onChange(name)}
             >
-              <UiIcon name={name} selected={name === section} />
+              <UiIcon name={icons[name]} selected={name === section} />
               <span>{t(titles[name])}</span>
             </button>
           ))}

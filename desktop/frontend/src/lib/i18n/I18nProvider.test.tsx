@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { LanguageSwitcher } from '../../components/LanguageSwitcher/LanguageSwitcher';
@@ -6,6 +6,11 @@ import { I18nProvider } from './I18nProvider';
 import { LOCALE_STORAGE_KEY } from './locale';
 import type { Locale } from './resources';
 import { useTranslation } from './useTranslation';
+import { readInstallationLocale } from '../bridge/installation';
+
+vi.mock('../bridge/installation', () => ({
+  readInstallationLocale: vi.fn().mockResolvedValue(null),
+}));
 
 function ExamplePage() {
   const { t } = useTranslation('workspace');
@@ -41,9 +46,34 @@ function chooseLanguage(locale: Locale, scope: Pick<typeof screen, 'getByRole'> 
 afterEach(() => {
   vi.restoreAllMocks();
   window.localStorage.clear();
+  vi.mocked(readInstallationLocale).mockReset().mockResolvedValue(null);
 });
 
 describe('语言上下文与切换入口', () => {
+  it('首次使用安装语言，已有手动偏好优先', async () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US']);
+    vi.mocked(readInstallationLocale).mockResolvedValue('zh-CN');
+    const view = renderExample();
+    await waitFor(() => expect(document.documentElement.lang).toBe('zh-CN'));
+    chooseLanguage('en');
+    view.unmount();
+    renderExample();
+    expect(document.documentElement.lang).toBe('en');
+  });
+
+  it('迟到的安装语言不能覆盖本次手动选择', async () => {
+    let resolve: (value: 'zh-CN') => void = () => {};
+    vi.mocked(readInstallationLocale).mockReturnValue(
+      new Promise((done) => {
+        resolve = done;
+      }),
+    );
+    renderExample();
+    chooseLanguage('en');
+    await act(async () => resolve('zh-CN'));
+    expect(document.documentElement.lang).toBe('en');
+  });
+
   it('首次跟随系统语言但不自动保存偏好', () => {
     vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US']);
     renderExample();

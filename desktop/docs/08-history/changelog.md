@@ -1,6 +1,6 @@
 # 变更日志
 
-> 状态：已生效 | 最后更新：2026-10-31
+> 状态：已生效 | 最后更新：2026-11-03
 
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [SemVer](../00-guidelines/git-conventions.md#4-版本号semver)。
 
@@ -11,6 +11,29 @@
 ## [未发布]
 
 ### 新增
+- 待办工作台操作与视觉优化：状态计数筛选、可操作空态、准确分页、保留页签草稿/滚动、
+  外发前核对、设置关闭/保存保护与编辑来源对照；未修改的设置保存不再打断后台批次。
+  详情见 [工作台交互](../03-design/pages/requirements-tasks.md)与 TASK-0102～0104。
+- “我的邮箱”新增平铺/服务商分组切换：本地品牌、邮箱数量、进入组选择及返回；
+  分组浏览不改变实际邮箱选择，保留全局全部、管理/添加、状态重试和滚动羽化，
+  网易 163/126 统一品牌分组，见
+  [TASK-0074](../07-tasks/active/TASK-0074-mailbox-provider-browser.md)。
+- 新增 Yahoo Mail 官方 IMAP 993／SMTP 465 隐式 TLS 预设、本地图标与中英文应用密码说明；
+  单个/批量均使用完整邮箱地址，精确识别 `yahoo.com`，不混同 Yahoo Japan 或宣称 OAuth；
+  真实账号收发未验收，见 [TASK-0070](../07-tasks/archive/2026/11/TASK-0070-yahoo-mail-preset.md)。
+- 统一滚动条活动逻辑：默认仅占位、滚动或精确滚动槽悬浮时淡入，停止后缓冲淡出；
+  移除原生上下箭头，保留键盘/触控/拖拽和减少动态效果。悬浮正文/列表内容不再常显，
+  见 [TASK-0065](../07-tasks/archive/2026/11/TASK-0065-scrollbar-activity-visibility.md)。
+- “我的邮箱”标题右侧新增账号管理设置入口，使用设置页同款双栏浮窗查看账号状态、
+  同步及断开；外侧移除断开按钮，保留二次确认、失败反馈和已下载邮件，
+  避免邮箱选择时误触。见 [TASK-0064](../07-tasks/archive/2026/11/TASK-0064-mailbox-account-management.md)。
+- 收信原始邮件/单附件/正文上限调整为 100/50/8 MiB，schema v4 升级前自动备份；
+  单封超限持久保留原因与摘要/旧缓存，不再阻塞其他邮件或冒充完整同步。边界、恢复及验证见
+  [TASK-0063](../07-tasks/archive/2026/11/TASK-0063-large-mail-sync-isolation.md)。
+- 新增 NAVER Mail、Yandex Mail、iCloud Mail 预设、精确域名识别、官方本地图标和中英文应用密码指引；
+  NAVER/iCloud 使用 SMTP 587 STARTTLS，Yandex 个人/企业域按官方用户名规则处理，
+  单个与同服务商批量添加共用原有验证/保存路径，无数据库迁移或新增 OAuth 能力。
+  真实账号收发未验收，见 [TASK-0062](../07-tasks/archive/2026/11/TASK-0062-naver-yandex-icloud-presets.md)。
 - 增加 LINUX DO Mail 服务商与本地官方品牌图标，预设 `mail.linux.do` 的 IMAP 993 / SMTP 465 TLS，
   完整邮箱用户名、专用令牌提示与严格域名识别；图标来源及哈希随资源记录，
   不将论坛 OAuth 冒充邮件认证。详见 [TASK-0059](../07-tasks/archive/2026/10/TASK-0059-mail-provider-integration.md)。
@@ -37,6 +60,16 @@
 - 桌面工作台支持简体中文和英语，提供即时切换、系统语言识别及本地偏好保存；语言包按公共、导航、工作台和连接面板拆分，附一致性校验与接入约定。
 
 ### 变更
+- 左侧导航/邮箱栏由 208px 加宽到 240px，标题栏对齐随共享 token 自动更新，
+  保持 1280 窗口下限与邮件交互不变，见
+  [TASK-0076](../07-tasks/active/TASK-0076-sidebar-width.md)。
+- 写邮件由居中模态窗改为主工作区内撰写：会话内返回恢复、明确发件人选择、限高键盘账号菜单、
+  底部发送/放弃、空内容确认、发送状态可回看及不确定结果防重发；
+  不新增持久草稿/附件/富文本，不把临时保留称为自动保存，见
+  [TASK-0073](../07-tasks/active/TASK-0073-workspace-compose.md)。
+- 邮箱列表改为填充侧栏剩余高度，状态点固定右侧列，并用条件 CSS mask 提供上下边缘羽化；
+  账号同步告警从邮件列表顶部移到侧栏状态点/管理窗，保留列表本身加载与操作错误。
+  见 [TASK-0066](../07-tasks/archive/2026/11/TASK-0066-naver-sync-sidebar-layout.md)。
 - TASK-0056～0060 经本地完整门禁后，通过受保护分支
   [PR #1](https://github.com/mibgb65-cloud/OmniMail-APP/pull/1) 正常 Squash 合入 dev，
   远端代码提交 `95e3480e0a944bfa98080b73cb8a142198e66d24`，源实现 `67b2bc3`；
@@ -100,6 +133,32 @@
 - 多语言底层迁移到 i18next + react-i18next，保留中英文即时切换、离线使用与已有偏好；增加插值、复数及中文回退能力，见 [TASK-0004](../07-tasks/archive/2026/10/TASK-0004-i18n-migration.md) 与 [ADR-0006](../02-architecture/adr/ADR-0006-i18n-framework.md)。
 
 ### 修复
+- LINUX DO 邮箱标识替换为官网公开的透明 SVG，移除原 PNG 的深色方形画布，
+  保留标志自身黑白黄圆形区域；添加邮箱和服务商分组统一更新，见
+  [TASK-0077](../07-tasks/active/TASK-0077-linuxdo-icon-transparency.md)。
+- 主窗口最小宽度由 860 提高到 1280 逻辑像素，避免四栏展开时邮件正文过窄；
+  默认 1750×950 和最小高度 600 不变，保留缩放/最大化/还原，见
+  [TASK-0075](../07-tasks/active/TASK-0075-window-minimum-width.md)。
+- 邮件列表时间由仅日期改为右侧两行日期与 24 小时时分，跨年、无效时间、完整提示和
+  ISO datetime 语义保留，骨架占位同步适配，见
+  [TASK-0071](../07-tasks/archive/2026/11/TASK-0071-mail-list-clock.md)。
+- 修复“我的邮箱”切换导致邮件列表从空白直接跳变：首批使用详情同款流光骨架，
+  数据就绪后首屏邮件行从上到下有界错峰入场；快切清理旧动画，后台刷新/追加不重播，
+  保留滚动 mask、键盘、错误重试和减少动态效果，见
+  [TASK-0069](../07-tasks/archive/2026/11/TASK-0069-mail-list-switch-transition.md)。
+- 修复 NAVER 零 UIDVALIDITY 的自动已读及工具栏已读/未读被统一拦截的问题：
+  仅官方 TLS 端点启用完整摘要、显式零值、写入回执和最终状态核验，
+  服务器确认后才保存本地；错误提示不再专指移动。零值星标/移动继续受限，
+  同连接核验不等于远端原子身份保证，见
+  [TASK-0068](../07-tasks/archive/2026/11/TASK-0068-naver-verified-read.md)。
+- NAVER 实际明确返回 `UIDVALIDITY=0` 时不再混同为字段缺失：官方 TLS 端点保守只读兼容，
+  schema v5 升级前自动备份，分段重核对摘要并防止常见 UID 重用继承旧正文/附件；
+  零值邮箱暂不支持远端标记和移动，不宣称具备标准纪元保证，见
+  [ADR-0010](../02-architecture/adr/ADR-0010-naver-zero-uidvalidity.md)。
+- NAVER 的 EXAMINE/STATUS 缺少 UIDVALIDITY 时，仅对官方主机有界补取一次 SELECT 的真实元数据；
+  继续保留权限/身份缺失保护及 BODY.PEEK，不编造身份或自动写标志。本轮进一步处理显式零值，
+  本地账号已观察到同步完成；其他真实账号和远端写入不在本次验收范围，
+  详见 [TASK-0066](../07-tasks/archive/2026/11/TASK-0066-naver-sync-sidebar-layout.md)。
 - 修复完整邮件缺失顶层 MIME 终结边界时正文无法保存的问题：只补经标准库校验的结构分隔符，
   不补造文字或编码数据；IMAP literal 长度、传输中断、FETCH 完成确认和正文/附件预算仍严格检查。
   Gmail 等 IMAP 认证前遇到瞬时 TLS/问候断线时可取消地重试一次，
@@ -150,6 +209,76 @@
   不作为 Gmail 添加修复已解决的同步能力。后续
   [TASK-0056](../07-tasks/archive/2026/10/TASK-0056-gmail-mailbox-sync.md) 已定位并修复其中 Gmail 虚拟分组分支，
   其他服务商及完整同步验收边界继续保留。
+
+---
+
+## [0.0.5] - 2026-11-03
+
+### 新增
+- 本地待办、来源引文、人工版本冲突保护与跨邮件变更建议；
+  新事项先待确认，已有事项必须明确采用建议才更新，个人备注不发送至模型。
+  见 [TASK-0097](../07-tasks/archive/2026/11/TASK-0097-local-todos.md)、
+  [TASK-0098](../07-tasks/archive/2026/11/TASK-0098-cross-mail-requirements.md)。
+- 独立授权的每日增量分析与启动补跑，支持账号/文件夹类型、时区/时间/批次上限、
+  停止/继续及运行记录；只在程序运行/托盘常驻时执行，默认关闭，不修改邮件已读或自动发信。
+  见 [TASK-0099](../07-tasks/archive/2026/11/TASK-0099-daily-requirements.md)、
+  [TASK-0100](../07-tasks/archive/2026/11/TASK-0100-todos-workspace.md)。
+
+### 数据与边界
+- 数据库升级至 schema v6，迁移前备份，旧版不能直接打开升级后的库。
+  首次授权建立基线，不自动回扫历史；未知外发结果不自动重试。
+- 本版已构建并核验本地 Windows x64 签名生产包，交付于 `desktop/bin/releases/v0.0.5/`，
+  记录见 [TASK-0101](../07-tasks/archive/2026/11/TASK-0101-release-0.0.5.md)。
+  不代表已推送 tag 或 GitHub Release；
+  详细内容及升级提示见 [v0.0.5](../06-release/notes/v0.0.5.md)。
+- 未做真实 Key/邮件公网质量、真实数据迁移/生产覆盖升级、原生托盘连续运行验收。
+
+## [0.0.4] - 2026-11-02
+
+### 新增
+- 单封邮件 AI 摘要、要点、待办、原文引文与回复建议；显式授权、系统密钥存储、
+  固定合成文本连接测试和有界本地缓存。采用需明确点击，禁止覆盖已有撰写内容，
+  不设置收件人/主题、不自动发送。见
+  [TASK-0091](../07-tasks/archive/2026/11/TASK-0091-ai-configuration.md)～
+  [TASK-0094](../07-tasks/archive/2026/11/TASK-0094-ai-reply-draft.md)。
+- 首次配置默认预填 DeepSeek V4.1 Flash 的官方地址与 `deepseek-flash` API 别名，
+  保留已有配置；官方请求关闭思考并启用 JSON 输出，不影响其他兼容服务或 B 站翻译。
+  见 [TASK-0095](../07-tasks/archive/2026/11/TASK-0095-deepseek-flash-default.md)。
+
+### 修复
+- 翻译响应体超时/断流不再误报格式错误；新增分段进度、限流冷却和派生缓存清理，
+  补齐撤销授权、迟到结果、关闭再展开及中断临时文件回归。
+  见 [TASK-0090](../07-tasks/archive/2026/11/TASK-0090-translation-reliability.md)。
+
+### 交付与边界
+- 本版已构建并核验本地 Windows x64 签名生产包，交付于 `desktop/bin/releases/v0.0.4/`；
+  记录见 [TASK-0096](../07-tasks/archive/2026/11/TASK-0096-release-0.0.4.md)。
+  不代表已推送 tag 或 GitHub Release；
+  版本详情与兼容边界见 [v0.0.4](../06-release/notes/v0.0.4.md)。
+- 未使用真实邮件/API Key 做 DeepSeek 公网质量验收，未执行真实生产覆盖升级。
+  应用内自动更新仍未启用；安装前请先处理未发送内容。
+
+## [0.0.3] - 2026-11-02
+
+本地打包版本（Windows x64 当前用户安装包），未推送 tag、未创建 GitHub Release。
+把 0.0.2 本地打包期间的三处修复并入同一版本号，功能面与 0.0.2 最后一次修复一致。
+
+### 修复
+- 覆盖升级与卸载会先结束正在运行的 OmniMail（含托盘常驻与“关闭时询问”偏好），
+  不再出现 `DeleteFile 失败：错误代码 5，拒绝访问`；无法结束时在复制文件前中止并提示，
+  升级关闭过实例时完成页默认勾选启动，见
+  [TASK-0088](../07-tasks/active/TASK-0088-installer-close-running-app.md)。
+
+### 变更
+- 设置“关于”页去掉嵌套圆角卡片：取消外层卡片，改用 1px 细分隔线分区，连接区只保留小标题、
+  文字按钮、状态行与等宽元数据列，三步引导改为“序号＋标题＋说明”的纯文本三列；
+  失败态用左侧语义色竖线表达，见
+  [TASK-0086](../07-tasks/archive/2026/11/TASK-0086-about-page-flat-layout.md)。
+- 侧栏“写邮件”按实际可用状态提示：未添加可用邮箱显示“未添加邮箱”，邮箱加载中显示“加载中”，
+  不再标注“待开发”；“添加邮箱”禁用态同步改为“加载中”，见
+  [TASK-0087](../07-tasks/active/TASK-0087-compose-entry-availability-copy.md)。
+- 版本说明见 [v0.0.3](../06-release/notes/v0.0.3.md)；0.0.1/0.0.2 的本地打包记录保留在
+  [TASK-0083](../07-tasks/active/TASK-0083-release-update-design.md)。
 
 ---
 

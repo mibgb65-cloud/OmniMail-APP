@@ -70,3 +70,16 @@ it('桥接缺少端点数组时安全拒绝，不产生请求或猜测端点', (
     ),
   ).toBeUndefined();
 });
+
+it.each([
+  ['Person@yandex.com', 'Person'],
+  ['Person@YANDEX.RU', 'Person'],
+  ['Person@ya.ru', 'Person'],
+  ['Person@business.example.invalid', 'Person@business.example.invalid'],
+  ['Person@yandex.com.evil.invalid', 'Person@yandex.com.evil.invalid'],
+])('Yandex 官方个人域使用账户名，自定义域保留完整邮箱：%s', (email, username) => {
+  const result = resolveProviderInput({ ...base, providerCode: 'yandex', email }, presets);
+  expect(result?.imap.username).toBe(username);
+  expect(result?.smtp.username).toBe(username);
+  expect(result?.imap.password).toBe('synthetic-code');
+});

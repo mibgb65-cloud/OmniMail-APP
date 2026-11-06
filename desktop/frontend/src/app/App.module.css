@@ -56,7 +56,6 @@
   font-size: var(--text-sm);
   white-space: nowrap;
 }
-.eyebrow,
 .sidebar-label {
   color: var(--color-text-secondary);
   font-size: var(--text-sm);
@@ -129,9 +128,47 @@
 .mailbox-section {
   display: flex;
   flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
   margin-top: var(--space-5);
   padding-top: var(--space-4);
   border-top: 1px solid var(--color-border-subtle);
+}
+.mailbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-inline: var(--space-4);
+  margin-bottom: var(--space-1);
+  flex-shrink: 0;
+}
+.mailbox-header .sidebar-label {
+  display: block;
+  margin: 0;
+}
+.mailbox-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.mailbox-settings {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+.mailbox-settings:hover:not(:disabled),
+.mailbox-settings[aria-expanded='true'] {
+  background: var(--color-bg-selected);
+  color: var(--color-text-primary);
+}
+.mailbox-settings[aria-pressed='true'] {
+  background: var(--color-bg-selected);
+  color: var(--color-text-primary);
 }
 .mailbox-empty {
   display: flex;
@@ -155,6 +192,7 @@
   color: var(--color-text-secondary);
   text-align: start;
   cursor: pointer;
+  flex-shrink: 0;
 }
 /* 覆盖全局 button:disabled 的填充，保持与文件夹列表一致的幽灵行，避免看起来像可点击主按钮 */
 .mailbox-add:disabled {
@@ -177,6 +215,7 @@
   gap: var(--space-3);
   margin-top: auto;
   padding-top: var(--space-6);
+  flex-shrink: 0;
 }
 .settings-button {
   display: flex;
@@ -212,106 +251,9 @@
 .main:focus {
   outline: none;
 }
-.eyebrow {
-  margin-bottom: var(--space-3);
-  font-weight: var(--font-bold);
-  letter-spacing: 0.06em;
-}
 .intro {
   margin-top: var(--space-4);
   color: var(--color-text-secondary);
-}
-.connection-panel,
-.next-panel {
-  margin-top: var(--space-7);
-  padding: var(--space-6);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-canvas);
-}
-.connection-panel {
-  box-shadow: var(--panel-shadow);
-}
-.connection-panel .eyebrow {
-  display: none;
-}
-.connection-panel button {
-  border-radius: var(--radius-lg);
-}
-.next-panel {
-  margin-top: var(--space-7);
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-.next-panel > .eyebrow {
-  display: none;
-}
-.panel-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-5);
-  margin-bottom: var(--space-4);
-}
-.muted {
-  color: var(--color-text-secondary);
-}
-.success {
-  color: var(--color-success);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-.success::before {
-  content: '';
-  width: var(--space-3);
-  height: var(--space-3);
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: currentColor;
-}
-.error {
-  color: var(--color-danger);
-}
-.error p {
-  margin-top: var(--space-3);
-}
-.metadata {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-4) var(--space-5);
-  margin: var(--space-5) 0 0;
-}
-.metadata dt {
-  color: var(--color-text-secondary);
-  font-size: var(--text-sm);
-}
-.metadata dd {
-  margin: var(--space-2) 0 0;
-  font-family: var(--font-mono);
-  overflow-wrap: anywhere;
-}
-.metadata-wide {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-3);
-}
-.metadata-wide dd {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-}
-.skeleton {
-  margin-top: var(--space-6);
-  height: var(--space-10);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg-surface);
-}
-.next-panel > p {
-  margin-top: var(--space-3);
 }
 .roadmap {
   display: grid;
@@ -415,9 +357,6 @@
   .roadmap li {
     padding: var(--space-5);
   }
-  .metadata {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .welcome {
     gap: var(--space-4);
   }
@@ -426,6 +365,9 @@
   }
 }
 @media (max-width: 680px) {
+  .mailbox-section {
+    flex: none;
+  }
   .shell {
     flex-direction: column;
     padding-top: calc(var(--titlebar-height) + var(--space-4));
@@ -451,13 +393,6 @@
   }
   .main {
     padding: var(--space-5);
-  }
-  .panel-heading {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-  .metadata {
-    grid-template-columns: 1fr;
   }
   .welcome {
     align-items: flex-start;

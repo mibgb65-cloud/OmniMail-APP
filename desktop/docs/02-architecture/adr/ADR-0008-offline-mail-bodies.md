@@ -4,6 +4,10 @@
 > 需求依据：用户明确要求正文保存在本地数据库，图片可缓存
 > 任务：[TASK-0058](../../07-tasks/archive/2026/10/TASK-0058-offline-mail-persistence.md)
 
+> 2026-10-31 补充：用户后续已确认 100/50/8 MiB 与单封超限隔离，当前策略由
+> [ADR-0009](ADR-0009-large-mail-isolation.md)补充；下文 40/25/1 MiB 及“超限中止”保留为本轮历史背景，
+> 不再代表当前实现。
+
 ## 背景
 
 当前 schema v3 已有 `mail_message.body_text/body_html/body_version`，已下载正文能随数据库重开恢复；

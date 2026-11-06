@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentPropsWithoutRef, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 
 import styles from './ScrollArea.module.css';
+import { SCROLLBAR_IDLE_MS } from './scrollbarActivity';
 
 type ScrollAreaProps = Omit<ComponentPropsWithoutRef<'div'>, 'className' | 'children'> & {
   /** 外层容器样式：负责尺寸与布局（flex/grid 项）。 */
@@ -9,6 +10,8 @@ type ScrollAreaProps = Omit<ComponentPropsWithoutRef<'div'>, 'className' | 'chil
   /** 滚动视口样式：负责内边距、背景等原有排版。 */
   viewportClassName?: string;
   children: ReactNode;
+  /** 仅在对应边缘还有隐藏内容时，以透明遮罩羽化内容；滚动轨道不参与遮罩。 */
+  edgeFade?: boolean;
 };
 
 interface ThumbMetrics {
@@ -31,7 +34,8 @@ function joinClassNames(...values: Array<string | undefined>) {
 
 /**
  * 自带滚动条的滚动容器：原生滚动条常驻占位但不可见，改由覆盖层滑块呈现，
- * 仅在指针悬停、焦点进入或拖动时淡入，离开后淡出。
+ * 仅在窄槽悬停、滚动或拖动时淡入；焦点停留不常显，滚动停止后缓冲淡出。
+ * 滑块、拖拽和边缘羽化共享同一组视口/轨道度量，在此统一更新以避免滚动时状态错位。
  */
 export function ScrollArea({
   className,
@@ -39,6 +43,7 @@ export function ScrollArea({
   children,
   hidden,
   onScroll,
+  edgeFade = false,
   ...rest
 }: ScrollAreaProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -47,6 +52,15 @@ export function ScrollArea({
   const [thumb, setThumb] = useState<ThumbMetrics>({ height: 0, offset: 0 });
   const [scrollable, setScrollable] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [scrolling, setScrolling] = useState(false);
+  const [edges, setEdges] = useState({ top: false, bottom: false });
+  const idle = useRef<ReturnType<typeof setTimeout>>();
+  const activity = () => {
+    clearTimeout(idle.current);
+    setScrolling(true);
+    idle.current = setTimeout(() => setScrolling(false), SCROLLBAR_IDLE_MS);
+  };
+  useEffect(() => () => clearTimeout(idle.current), []);
 
   const measure = useCallback(() => {
     const viewport = viewportRef.current;
@@ -55,6 +69,13 @@ export function ScrollArea({
     const { clientHeight, scrollHeight, scrollTop } = viewport;
     const trackHeight = track.clientHeight;
     const range = scrollHeight - clientHeight;
+    if (edgeFade) {
+      const top = range > 1 && scrollTop > 1;
+      const bottom = range > 1 && scrollTop < range - 1;
+      setEdges((previous) =>
+        previous.top === top && previous.bottom === bottom ? previous : { top, bottom },
+      );
+    }
     // 轨道高度为 0 表示容器尚未布局（面板隐藏或首帧），保持上一次结果。
     if (trackHeight <= 0) return;
     if (range <= 1) {
@@ -73,7 +94,7 @@ export function ScrollArea({
         ? previous
         : { height, offset },
     );
-  }, []);
+  }, [edgeFade]);
 
   useEffect(() => {
     measure();
@@ -89,7 +110,7 @@ export function ScrollArea({
 
   const handleThumbPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     const viewport = viewportRef.current;
-    if (!viewport) return;
+    if (!viewport || !scrollable || event.button > 0) return;
     event.preventDefault();
     event.stopPropagation();
     dragRef.current = {
@@ -118,6 +139,7 @@ export function ScrollArea({
     if (!dragRef.current) return;
     dragRef.current = null;
     setDragging(false);
+    activity();
     if (
       typeof event.currentTarget.releasePointerCapture === 'function' &&
       event.currentTarget.hasPointerCapture?.(event.pointerId)
@@ -131,13 +153,19 @@ export function ScrollArea({
       className={joinClassNames(styles.root, className)}
       data-overflow={scrollable ? 'true' : 'false'}
       data-dragging={dragging ? 'true' : 'false'}
+      data-scrolling={scrolling ? 'true' : 'false'}
+      data-edge-fade={edgeFade ? 'true' : undefined}
+      data-fade-top={edgeFade ? String(edges.top) : undefined}
+      data-fade-bottom={edgeFade ? String(edges.bottom) : undefined}
       hidden={hidden}
     >
       <div
         ref={viewportRef}
+        data-custom-scrollbar=""
         className={joinClassNames(styles.viewport, viewportClassName)}
         onScroll={(event) => {
           measure();
+          activity();
           onScroll?.(event);
         }}
         {...rest}
@@ -153,6 +181,7 @@ export function ScrollArea({
           onPointerMove={handleThumbPointerMove}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
+          onLostPointerCapture={endDrag}
         />
       </div>
     </div>

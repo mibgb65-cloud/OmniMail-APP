@@ -1,6 +1,6 @@
-# 当前数据库结构：账号与邮件持久化 v3
+# 当前数据库结构：账号与邮件持久化 v5
 
-> 状态：schema v3 已落地，正文自动补齐实现待评审 | 最后更新：2026-10-31
+> 状态：schema v5 已实现 | 最后更新：2026-11-01
 > 任务：[TASK-0030](../../07-tasks/archive/2026/10/TASK-0030-account-storage-foundation.md)
 
 ## 1. 权威来源
@@ -9,6 +9,12 @@
 - 追加邮件缓存：[0002_mail.sql](../../../internal/repository/migrations/0002_mail.sql)，不修改 0001。
 - 富正文与内嵌图引用：[0003_rich_mail.sql](../../../internal/repository/migrations/0003_rich_mail.sql)；
   TASK-0058 复用现有列，不增加迁移或修改任何已应用脚本。
+- 大邮件及单封受限状态：[0004_large_mail.sql](../../../internal/repository/migrations/0004_large_mail.sql)，
+  放宽 Text + HTML 总字节及附件大小约束，并新增原因白名单列；不修改旧迁移校验和。
+- NAVER 显式零值兼容：[0005_zero_uidvalidity.sql](../../../internal/repository/migrations/0005_zero_uidvalidity.sql)；
+  迁移前自动备份，事务内保留邮件、正文、附件 ID/引用、标记和游标，重建约束与索引。
+  零值受官方 NAVER 端点触发器限制，不改写为虚构正整数；见
+  [ADR-0010](../adr/ADR-0010-naver-zero-uidvalidity.md)。
 - 数据库打开、身份校验及连接设置：[sqlite.go](../../../internal/repository/sqlite.go)。
 - 迁移执行：[migrations.go](../../../internal/repository/migrations.go)。
 - 输入校验与领域接口：[account.go](../../../internal/domain/account.go)。
@@ -85,35 +91,45 @@ WAL 数据库不作为网络共享文件使用。目录创建权限不等同于 
 ## 7. 服务商扩展
 
 只在 [provider.go](../../../internal/domain/provider.go) 的 `ProviderPresets()` 增加定义并补测试，
-不修改迁移、SQL 服务商约束或账号仓储。现有 Gmail、QQ、网易 163、网易 126、自定义预设
-均返回独立配置；保存的是账号连接快照，后续修改预设不影响已保存账号。
+不修改迁移、SQL 服务商约束或账号仓储。现有 Gmail、QQ、网易 163、网易 126、LINUX DO Mail、
+NAVER、Yandex、iCloud、自定义预设均返回独立配置；保存的是账号连接快照，后续修改预设不影响已保存账号。
 
 预设已接入账号弹窗，但不是服务商兼容性认证：没有访问真实邮箱，不保证特定账号启用了
 IMAP 或满足授权政策。当前使用密码/应用授权码；Gmail OAuth 需注册客户端，尚未实现，
 界面明确提示只有允许应用密码的账号可走该入口。QQ、网易通常需要服务商授权码。
 “新增预设无需迁移”适用于现有 IMAP/SMTP 和密码类/OAuth2 模型；新增协议或认证机制需另外评审。
 
-## 8. 邮件正文与附件持久化 v3
+## 8. 邮件正文与附件持久化 v5
 
 - `mailbox`：账号内远端文件夹、角色、UIDVALIDITY、新增游标、历史核对游标。
 - `mail_message`：一行对应一个远端实例，`(mailbox_id, uid_validity, uid)` 唯一；
   账号与文件夹复合外键防错关联，不以 Message-ID 去重。保存邮件头、服务器标志、大小，
   以及数据库文字正文 `body_text`、原始 HTML `body_html` 和 `body_version`。
   `body_text IS NULL` 或旧 `body_version=0` 为待补齐，空字符串且版本 1 也可表示已确认的空正文。
+  非空 `body_error_code` 表示已确认的单封读取限制，自动待办不重复读取，但仍保留旧正文和摘要；
+  单封重取成功清除，远端大小变化清除并将旧正文设为待重验。
 - `mail_attachment`：邮件附件元数据、大小及 SHA-256 内容引用；实际内容在数据目录的哈希分桶，
   从不把远端文件名拼进缓存路径。
 - 单次 FETCH/事务至多 100 个 UID，头与进度一并提交；只有 FETCH 成功才删除该区间已消失 UID。
 - 首次优先末端窗口，历史通过可恢复的扫描补齐；压缩 UID 搜索集合与本地索引共同跳过空洞，
   不展开百万 UID 区间。不完整批次约 5 秒继续，空闲约 5 分钟轮询，尚无 IDLE。
 - UIDVALIDITY 改变只清该文件夹远端缓存和游标，不动账号、凭据或其他账号数据。
+- NAVER 明确零值使用分段摘要重核对；不可变头部身份变化时替换实例，旧 ID/正文/附件引用
+  不继承给复用的 UID。正文下载前后核对摘要；零值实例已读/未读按 ADR-0010
+  的同连接完整摘要和回执核验后才落本地，星标和移动仍不允许。
+  零值缺少标准纪元保证，不等于对任意异常服务端的无损兼容。
 - 后台同步自动分批补齐未打开邮件的正文与历史摘要，按数据库待办断点继续；
   当前版正文不重复下载。`Cached` 仅为本地正文具备状态，不意味着临时缓存或正文文件。
-  前台仍保留读取和显式重取入口；网络 literal 上限 40 MiB，文本上限 1 MiB、单附件 25 MiB、部件数有界。
+  前台仍保留读取和显式重取入口；网络 literal 上限 100 MiB、文本与 HTML 总量 8 MiB、
+  单附件 50 MiB、最多 128 部件；连接总预算 128 MiB，头部仍 1 MiB，发送与图片预算不变。
   附件在解码时流式写临时文件并计算哈希；租约保护其他未提交下载，失败回收临时/未引用内容。
   这是按整封获取，不是逐附件远端 FETCH；导出缓存附件仍有内存读取上限。
 - 文字/HTML 事务写入 SQLite，图片/附件二进制保留文件引用。读取正文不依赖正文缓存文件，
   图片不可读则降级图片，不清除数据库文字。原始 HTML 重新清洗后展示，不执行邮件脚本或自动请求外部图片；
   发送目前只支持纯文本，DATA 不确定结果不自动重发。
+- 账号受限计数来自持久数据库，不把受限项冒充全量完成；网络/存储错误仍中止当前批次。
+  v4 迁移前自动备份、事务内替换受限列，不删除父表；故障回滚和降级/恢复边界见
+  [ADR-0009](../adr/ADR-0009-large-mail-isolation.md#迁移与恢复)。
 - 该存储是服务器镜像，不是永久归档；服务器确认删除和 UIDVALIDITY 改变仍沿用既有核对政策。
 - 详见 [TASK-0058](../../07-tasks/archive/2026/10/TASK-0058-offline-mail-persistence.md) 与
   [ADR-0008](../adr/ADR-0008-offline-mail-bodies.md)；没有宣称超预算正文或所有历史数据均已下载。

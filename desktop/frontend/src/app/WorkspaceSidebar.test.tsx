@@ -6,15 +6,23 @@ import { I18nProvider } from '../lib/i18n/I18nProvider';
 import { useTheme } from '../lib/theme/useTheme';
 import { WorkspaceSidebar, type MailFolder } from './WorkspaceSidebar';
 
-function SidebarPreview() {
-  const { theme, toggleTheme } = useTheme();
+function SidebarPreview({
+  mailReady,
+  onCompose,
+}: {
+  mailReady?: boolean;
+  onCompose?: () => void;
+} = {}) {
+  const { themePreference, selectTheme } = useTheme();
   const [folder, setFolder] = useState<MailFolder>('inbox');
   return (
     <WorkspaceSidebar
-      theme={theme}
-      onToggleTheme={toggleTheme}
+      themePreference={themePreference}
+      onThemePreferenceChange={selectTheme}
       selectedFolder={folder}
       onSelectFolder={setFolder}
+      mailReady={mailReady}
+      onCompose={onCompose}
     />
   );
 }
@@ -71,26 +79,50 @@ describe('侧栏底部设置入口', () => {
   });
 
   it.each([
-    ['zh-CN', '写邮件', '待开发'],
-    ['en', 'Compose', 'Planned'],
-  ] as const)('%s 在应用名称下方、导航上方提供撰写入口', (locale, compose, pending) => {
+    ['zh-CN', '写邮件', '未添加邮箱'],
+    ['en', 'Compose', 'No mailbox added yet'],
+  ] as const)('%s 在应用名称下方、导航上方提供撰写入口', (locale, compose, blocked) => {
     render(
       <I18nProvider initialLocale={locale}>
-        <SidebarPreview />
+        <SidebarPreview mailReady />
       </I18nProvider>,
     );
     const brand = screen.getByText('OmniMail');
     const button = screen.getByRole('button', { name: compose });
     const navigation = screen.getByRole('navigation');
     expect(button).toBeVisible();
+    // 撰写能力已接入：没有可用邮箱时只是不可用，不标注“待开发”。
     expect(button).toBeDisabled();
-    expect(button).toHaveAccessibleDescription(pending);
+    expect(button).toHaveAccessibleDescription(blocked);
+    expect(button).toHaveAttribute('data-tooltip', blocked);
+    expect(button).not.toHaveTextContent(/待开发|Planned/);
     expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(brand.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(
       button.compareDocumentPosition(navigation) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
+
+  it.each([
+    ['zh-CN', '写邮件', '添加邮箱', '加载中'],
+    ['en', 'Compose', 'Add mailbox', 'Loading'],
+  ] as const)(
+    '%s 邮箱尚未就绪时，撰写与添加邮箱入口只显示加载中',
+    (locale, compose, addMailbox, loading) => {
+      render(
+        <I18nProvider initialLocale={locale}>
+          <SidebarPreview />
+        </I18nProvider>,
+      );
+      const composeButton = screen.getByRole('button', { name: compose });
+      expect(composeButton).toBeDisabled();
+      expect(composeButton).toHaveAccessibleDescription(loading);
+      expect(composeButton).toHaveAttribute('data-tooltip', loading);
+      const addButton = screen.getByRole('button', { name: addMailbox });
+      expect(addButton).toBeDisabled();
+      expect(addButton).toHaveAttribute('data-tooltip', loading);
+    },
+  );
 
   it.each([
     ['zh-CN', '设置', '全部收件箱', '已删除邮件', '桌面端'],
@@ -147,25 +179,11 @@ describe('侧栏底部设置入口', () => {
   });
 
   it.each([
-    [
-      'zh-CN',
-      '我的邮箱',
-      '尚未添加邮箱',
-      '添加邮箱',
-      '待开发',
-      '邮箱账号接入尚未实现，当前仅展示界面。',
-    ],
-    [
-      'en',
-      'My mailboxes',
-      'No mailbox added yet',
-      'Add mailbox',
-      'Planned',
-      'Mailbox connection is not available yet; UI preview only.',
-    ],
+    ['zh-CN', '我的邮箱', '尚未添加邮箱', '添加邮箱', '加载中'],
+    ['en', 'My mailboxes', 'No mailbox added yet', 'Add mailbox', 'Loading'],
   ] as const)(
     '%s 在邮件分类下方展示我的邮箱分组，入口保持禁用',
-    (locale, label, empty, addMailbox, pending, unavailable) => {
+    (locale, label, empty, addMailbox, loading) => {
       render(
         <I18nProvider initialLocale={locale}>
           <SidebarPreview />
@@ -179,8 +197,8 @@ describe('侧栏底部设置入口', () => {
       const button = within(region).getByRole('button', { name: addMailbox });
       expect(button).toBeVisible();
       expect(button).toBeDisabled();
-      expect(button).toHaveAccessibleDescription(pending);
-      expect(button).toHaveAttribute('data-tooltip', unavailable);
+      expect(button).toHaveAccessibleDescription(loading);
+      expect(button).toHaveAttribute('data-tooltip', loading);
       expect(button).not.toHaveAttribute('title');
       expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
       expect(
@@ -218,6 +236,30 @@ describe('侧栏底部设置入口', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(button).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(button);
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+  });
+
+  it('邮箱设置复用真实管理窗口，关闭设置后只保留一个模态层', async () => {
+    render(
+      <I18nProvider initialLocale="zh-CN">
+        <WorkspaceSidebar
+          themePreference="light"
+          onThemePreferenceChange={vi.fn(() => true)}
+          selectedFolder="inbox"
+          onSelectFolder={vi.fn()}
+          mailReady
+          accounts={[]}
+        />
+      </I18nProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '设置' }));
+    fireEvent.click(screen.getByRole('tab', { name: '邮箱设置' }));
+    expect(screen.getByText('0 个邮箱')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: '管理邮箱' }));
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: '邮箱账号管理' })).toHaveAttribute('open');
+    });
+    expect(screen.queryByRole('dialog', { name: '设置' })).not.toBeInTheDocument();
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
   });
 

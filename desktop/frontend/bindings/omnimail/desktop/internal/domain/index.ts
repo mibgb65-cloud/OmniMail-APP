@@ -9,9 +9,31 @@ export {
 } from "./models.js";
 
 export type {
+    AIConfig,
+    AIConfigInput,
+    AIFact,
+    AIRequest,
+    AIResult,
+    AITask,
     AttachmentInfo,
     EndpointPreset,
     MailDetail,
     MailSummary,
-    ProviderPreset
+    ProviderPreset,
+    ProviderServer,
+    TaskBatchInput,
+    TaskPreferences,
+    TaskPreferencesInput,
+    TaskRun,
+    TaskRunDetails,
+    TaskRunMail,
+    Todo,
+    TodoCounts,
+    TodoDetails,
+    TodoEdit,
+    TodoProposal,
+    TodoSource,
+    TodoSourceView,
+    TranslationPreferences,
+    TranslationResult
 } from "./models.js";

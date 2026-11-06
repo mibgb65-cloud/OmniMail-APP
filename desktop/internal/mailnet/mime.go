@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	maxRawBytes  = 40 << 20
-	maxPartBytes = 25 << 20
-	maxTextBytes = 1 << 20
+	maxRawBytes  = domain.MaxRawMessageBytes
+	maxPartBytes = domain.MaxAttachmentBytes
+	maxTextBytes = domain.MaxMessageTextBytes
 )
 
 // 这里保留一个有界解码循环，统一累计纯文本与 HTML 回退预算并立即调用流式 sink；
@@ -25,7 +25,7 @@ const (
 func decodeReader(source io.Reader, size int64, sink domain.AttachmentSink) (domain.DecodedMail, error) {
 	result := domain.DecodedMail{Attachments: []domain.DecodedAttachment{}}
 	if size > maxRawBytes {
-		return result, domain.ErrTooLarge
+		return result, domain.ErrRawMessageTooLarge
 	}
 	input := &mimeBoundaryReader{source: io.LimitReader(source, maxRawBytes+1)}
 	reader, err := mail.CreateReader(input)
@@ -40,10 +40,7 @@ func decodeReader(source io.Reader, size int64, sink domain.AttachmentSink) (dom
 	}
 	textBytes := 0
 	parts := 0
-	for count := 0; ; count++ {
-		if count >= 128 {
-			return result, domain.ErrTooLarge
-		}
+	for {
 		part, err := reader.NextPart()
 		if err == io.EOF {
 			break
@@ -52,6 +49,9 @@ func decodeReader(source io.Reader, size int64, sink domain.AttachmentSink) (dom
 			return result, mimeDecodeFailure("mime_part_invalid", err)
 		}
 		parts++
+		if parts > domain.MaxMessageParts {
+			return result, domain.ErrTooManyMailParts
+		}
 		switch header := part.Header.(type) {
 		case *mail.InlineHeader:
 			contentType, _, err := header.ContentType()
@@ -71,11 +71,11 @@ func decodeReader(source io.Reader, size int64, sink domain.AttachmentSink) (dom
 					}
 					return result, mimeDecodeFailure("mime_text_read_failed", err)
 				}
-				textBytes += len(data)
-				if textBytes > maxTextBytes {
-					return result, domain.ErrTooLarge
-				}
 				text := strings.ToValidUTF8(string(data), "\uFFFD")
+				textBytes += len(text)
+				if textBytes > maxTextBytes {
+					return result, domain.ErrMessageTextTooLarge
+				}
 				if contentType == "text/plain" {
 					result.Text += text
 				} else {
@@ -127,14 +127,26 @@ func decodeReader(source io.Reader, size int64, sink domain.AttachmentSink) (dom
 		return result, &protocolFailure{reason: "mime_part_invalid"}
 	}
 	if result.Text == "" {
-		result.Text = htmlText(result.HTML)
+		fallback := htmlText(result.HTML)
+		// 原始 HTML 不截断；空间不足时不额外持久化派生纯文本副本，避免同一内容被重复计入 8 MiB。
+		if len(fallback)+len(result.HTML) <= maxTextBytes {
+			result.Text = fallback
+		}
 	}
 	return result, nil
 }
 
 func decodeAttachment(name, kind string, reader io.Reader, sink domain.AttachmentSink) (domain.DecodedAttachment, error) {
 	if sink != nil {
-		return sink(name, kind, io.LimitReader(reader, maxPartBytes+1))
+		limited := &io.LimitedReader{R: reader, N: maxPartBytes + 1}
+		attachment, err := sink(name, kind, limited)
+		if err != nil {
+			return attachment, err
+		}
+		if limited.N == 0 || attachment.Size > maxPartBytes || len(attachment.Data) > maxPartBytes {
+			return attachment, domain.ErrAttachmentTooLarge
+		}
+		return attachment, nil
 	}
 	return domain.DecodedAttachment{}, domain.ErrProtocol
 }

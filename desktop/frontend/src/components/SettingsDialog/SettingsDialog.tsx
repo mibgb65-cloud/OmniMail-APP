@@ -5,7 +5,6 @@ import type { VersionInfo } from '../../lib/bridge/app';
 import { useTranslation } from '../../lib/i18n/useTranslation';
 import { DialogFrame } from '../DialogFrame/DialogFrame';
 import { useDialogExit } from '../DialogFrame/useDialogExit';
-import type { Theme } from '../../lib/theme/theme';
 import { LanguageSwitcher } from '../LanguageSwitcher/LanguageSwitcher';
 import { ScrollArea } from '../ScrollArea/ScrollArea';
 import { UiIcon } from '../UiIcon/UiIcon';
@@ -13,27 +12,29 @@ import { SettingsAbout } from './SettingsAbout';
 import {
   SettingsNavigation,
   settingsSectionTitles,
+  settingsSections,
   type SettingsSection,
 } from './SettingsNavigation';
 import { SettingsStorage } from './SettingsStorage';
 import { SettingsMailImages } from './SettingsMailImages';
 import { SettingsMailAppearance } from './SettingsMailAppearance';
+import { SettingsAccounts, SettingsCapability, SettingsUpdates } from './SettingsSections';
+import { SettingsAppearance, type SettingsAppearanceProps } from './SettingsAppearance';
+import { SettingsCloseBehavior } from './SettingsCloseBehavior';
 import styles from './SettingsDialog.module.css';
+import { AISettings } from '../MailAI/AISettings';
 
-interface AppearanceProps {
-  theme: Theme;
-  onToggleTheme: () => void;
-}
-
-interface SettingsDialogProps extends AppearanceProps {
+interface SettingsDialogProps extends SettingsAppearanceProps {
   onClose: () => void;
   versionInfo?: VersionInfo;
   connectionState?: ConnectionState;
   onRetryConnection?: () => void;
   onReplayStartup?: () => void;
+  accountCount?: number;
+  onManageAccounts?: () => void;
 }
 
-function SettingsPreferences({ theme, onToggleTheme }: AppearanceProps) {
+function SettingsPreferences(appearance: SettingsAppearanceProps) {
   const { t } = useTranslation('settings');
   const { t: common } = useTranslation('common');
   return (
@@ -47,30 +48,9 @@ function SettingsPreferences({ theme, onToggleTheme }: AppearanceProps) {
           </div>
           <LanguageSwitcher compact />
         </div>
-        <div className={styles.row}>
-          <div className={styles.copy}>
-            <strong>{t('appearance')}</strong>
-            <p>{t('appearanceDescription')}</p>
-          </div>
-          <div className={styles.appearance}>
-            <span>{theme === 'dark' ? t('dark') : t('light')}</span>
-            <button
-              type="button"
-              role="switch"
-              className={styles.switch}
-              aria-label={common('themeToggle')}
-              aria-checked={theme === 'dark'}
-              onClick={onToggleTheme}
-            >
-              <span aria-hidden="true">
-                <UiIcon name={theme === 'dark' ? 'moon' : 'sun'} size={16} />
-              </span>
-            </button>
-          </div>
-        </div>
-        <SettingsMailAppearance />
+        <SettingsAppearance {...appearance} />
+        <SettingsCloseBehavior />
       </section>
-      <SettingsMailImages />
     </>
   );
 }
@@ -91,22 +71,28 @@ function isBackdropPointer(event: {
   );
 }
 
+// 分类面板、焦点边界与退出后跳转共享模态生命周期，保留在同一装配组件，
+// 避免拆散后出现隐藏面板可聚焦、退出未结束就叠加账号窗口的时序问题。
 export function SettingsDialog({
   onClose,
   versionInfo,
   connectionState,
   onRetryConnection,
   onReplayStartup,
+  accountCount,
+  onManageAccounts,
   ...appearance
 }: SettingsDialogProps) {
   const { t } = useTranslation('settings');
   const id = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const firstControlRef = useRef<HTMLButtonElement>(null);
-  const lastControlRef = useRef<HTMLButtonElement>(null);
+  const manageAfterClose = useRef(false);
   const pressedBackdrop = useRef(false);
   const [section, setSection] = useState<SettingsSection>('general');
-  const { closing, close } = useDialogExit(dialogRef, onClose);
+  const { closing, close } = useDialogExit(dialogRef, () => {
+    onClose();
+    if (manageAfterClose.current) onManageAccounts?.();
+  });
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -130,11 +116,23 @@ export function SettingsDialog({
       }}
       onKeyDown={(event) => {
         if (event.key !== 'Tab' || event.ctrlKey || event.altKey || event.metaKey) return;
-        const boundary = event.shiftKey ? firstControlRef.current : lastControlRef.current;
-        if (document.activeElement !== boundary) return;
-        event.preventDefault();
-        const target = event.shiftKey ? lastControlRef.current : firstControlRef.current;
-        target?.focus();
+        // 分类改变后，最后一个可聚焦项也会改变；不能再依赖已移除的底栏按钮。
+        const controls = [...(dialogRef.current?.querySelectorAll<HTMLElement>('*') ?? [])].filter(
+          (element) =>
+            element.matches('button, input, select, a[href], [tabindex]') &&
+            element.tabIndex >= 0 &&
+            !element.matches(':disabled') &&
+            !element.closest('[hidden]'),
+        );
+        const first = controls[0],
+          last = controls.at(-1);
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
       }}
       onPointerDown={(event) => {
         pressedBackdrop.current = isBackdropPointer(event);
@@ -149,12 +147,7 @@ export function SettingsDialog({
         {t('description')}
       </p>
       <div className={styles.layout}>
-        <SettingsNavigation
-          id={id}
-          section={section}
-          onChange={setSection}
-          firstControlRef={firstControlRef}
-        />
+        <SettingsNavigation id={id} section={section} onChange={setSection} />
         <div className={styles.panel}>
           <header className={styles.header}>
             <h2>{t(settingsSectionTitles[section])}</h2>
@@ -168,50 +161,57 @@ export function SettingsDialog({
               <UiIcon name="close" />
             </button>
           </header>
-          <ScrollArea
-            className={styles['body-frame']}
-            viewportClassName={styles.body}
-            role="tabpanel"
-            id={`${id}-panel-general`}
-            aria-labelledby={`${id}-tab-general`}
-            hidden={section !== 'general'}
-            tabIndex={0}
-          >
-            <SettingsPreferences {...appearance} />
-          </ScrollArea>
-          <ScrollArea
-            className={styles['body-frame']}
-            viewportClassName={styles.body}
-            role="tabpanel"
-            id={`${id}-panel-storage`}
-            aria-labelledby={`${id}-tab-storage`}
-            hidden={section !== 'storage'}
-            tabIndex={0}
-          >
-            <SettingsStorage />
-          </ScrollArea>
-          <ScrollArea
-            className={styles['body-frame']}
-            viewportClassName={styles.body}
-            role="tabpanel"
-            id={`${id}-panel-about`}
-            aria-labelledby={`${id}-tab-about`}
-            hidden={section !== 'about'}
-            tabIndex={0}
-          >
-            <SettingsAbout
-              versionInfo={versionInfo}
-              connectionState={connectionState}
-              onRetryConnection={onRetryConnection}
-              onReplayStartup={onReplayStartup}
-            />
-          </ScrollArea>
-          <footer className={styles.footer}>
-            <span>{t('instant')}</span>
-            <button ref={lastControlRef} type="button" onClick={close}>
-              {t('done')}
-            </button>
-          </footer>
+          {settingsSections.map((name) => (
+            <ScrollArea
+              key={name}
+              className={styles['body-frame']}
+              viewportClassName={styles.body}
+              role="tabpanel"
+              id={`${id}-panel-${name}`}
+              aria-labelledby={`${id}-tab-${name}`}
+              hidden={section !== name}
+              tabIndex={0}
+            >
+              {name === 'general' && <SettingsPreferences {...appearance} />}
+              {name === 'accounts' && (
+                <SettingsAccounts
+                  accountCount={accountCount}
+                  onManage={
+                    onManageAccounts
+                      ? () => {
+                          manageAfterClose.current = true;
+                          close();
+                        }
+                      : undefined
+                  }
+                />
+              )}
+              {name === 'notifications' && <SettingsCapability kind={name} />}
+              {name === 'ai' && section === 'ai' && <AISettings />}
+              {name === 'reading' && (
+                <>
+                  <section
+                    className={`${styles.card} ${styles.preferences}`}
+                    aria-label={t('readingTitle')}
+                  >
+                    <h3>{t('mailAppearance')}</h3>
+                    <SettingsMailAppearance />
+                  </section>
+                  <SettingsMailImages />
+                </>
+              )}
+              {name === 'storage' && section === 'storage' && <SettingsStorage />}
+              {name === 'about' && (
+                <SettingsAbout
+                  versionInfo={versionInfo}
+                  connectionState={connectionState}
+                  onRetryConnection={onRetryConnection}
+                  onReplayStartup={onReplayStartup}
+                />
+              )}
+              {name === 'updates' && <SettingsUpdates versionInfo={versionInfo} />}
+            </ScrollArea>
+          ))}
         </div>
       </div>
     </DialogFrame>

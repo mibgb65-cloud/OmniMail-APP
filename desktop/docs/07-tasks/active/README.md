@@ -1,6 +1,6 @@
 # 进行中的任务（active）
 
-> 状态：已生效 | 最后更新：2026-10-31
+> 状态：已生效 | 最后更新：2026-11-06
 
 本目录存放**当前迭代进行中**的任务，一个任务一个文件：`TASK-<4位序号>-<slug>.md`。
 模板与规则见 [任务管理](../README.md#4-任务记录模板)，项目入口见 [AGENTS.md](../../../../AGENTS.md)。
@@ -9,6 +9,52 @@
 
 | 任务 | 标题 | 负责人 | 状态 | 优先级 |
 | --- | --- | --- | --- | --- |
+| [TASK-0106](TASK-0106-workspace-git-dev-delivery.md) | 工作区提交整理与 dev PR 交付 | @Codex | 进行中 | P1 |
+| [TASK-0105](TASK-0105-release-0.0.6.md) | 跳过测试直接构建 0.0.6 生产安装包 | @Codex | 待评审 | P1 |
+| [TASK-0104](TASK-0104-task-editor-polish.md) | 编辑与来源建议布局、安全交互及视觉验收 | @Codex | 待评审 | P1 |
+| [TASK-0103](TASK-0103-task-action-flow.md) | 分析外发确认与每日设置操作保护 | @Codex | 待评审 | P1 |
+| [TASK-0102](TASK-0102-task-ui-shell.md) | 待办工作台信息层级与列表体验 | @Codex | 待评审 | P1 |
+| [TASK-0101](../archive/2026/11/TASK-0101-release-0.0.5.md) | 待办与每日需求收尾提交及 0.0.5 生产交付（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0100](../archive/2026/11/TASK-0100-todos-workspace.md) | 待办与每日分析界面、桥接及交付验证（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0099](../archive/2026/11/TASK-0099-daily-requirements.md) | 每日增量分析、托盘执行与启动补跑（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0098](../archive/2026/11/TASK-0098-cross-mail-requirements.md) | 跨邮件需求提取与关联（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0097](../archive/2026/11/TASK-0097-local-todos.md) | 本地待办、来源与需求变更（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0096](../archive/2026/11/TASK-0096-release-0.0.4.md) | AI 功能收尾提交与 0.0.4 生产版本（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0095](../archive/2026/11/TASK-0095-deepseek-flash-default.md) | DeepSeek V4.1 Flash 默认配置与官方 API 适配（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0094](../archive/2026/11/TASK-0094-ai-reply-draft.md) | AI 回复草稿与人工采用（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0093](../archive/2026/11/TASK-0093-ai-cache-progress.md) | AI 本地缓存、进度与清理（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0092](../archive/2026/11/TASK-0092-mail-ai-analysis.md) | 单封邮件摘要、要点与待办（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0091](../archive/2026/11/TASK-0091-ai-configuration.md) | AI 配置、凭据与连接测试（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0090](../archive/2026/11/TASK-0090-translation-reliability.md) | 翻译错误分类与生命周期回归（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0089](TASK-0089-release-0.0.3.md) | 本地 0.0.3 生产版本交付 | @Codex | 已完成 | P1 |
+| [TASK-0088](TASK-0088-installer-close-running-app.md) | 安装与卸载自动关闭运行中的 OmniMail | @Codex | 已完成 | P1 |
+| [TASK-0087](TASK-0087-compose-entry-availability-copy.md) | 写邮件入口不再标注“待开发” | @Codex | 已完成 | P2 |
+| [TASK-0086](../archive/2026/11/TASK-0086-about-page-flat-layout.md) | 关于页去掉重复圆角卡片、改为简洁排版（已归档） | @Codex | 已完成 | P2 |
+| [TASK-0085](TASK-0085-mail-translation-design.md) | 工具栏邮件标题/正文翻译与目标语言 | @Codex | 待评审 | P1 |
+| [TASK-0084](TASK-0084-account-management-provider-icons.md) | 账号管理列表显示服务商品牌图标 | @Codex | 待评审 | P2 |
+| [TASK-0083](TASK-0083-release-update-design.md) | Windows 安装发布实现与后续更新链路 | @Codex | 进行中 | P1 |
+| [TASK-0082](TASK-0082-mailbox-status-hover-background.md) | 邮箱状态点去除悬停底色 | @Codex | 待评审 | P2 |
+| [TASK-0081](TASK-0081-mail-image-options-ui.md) | 邮件图片策略选择项视觉统一（与 0080 联合） | @Codex | 待评审 | P2 |
+| [TASK-0080](TASK-0080-custom-provider-templates.md) | 自定义服务商模板保存与复用 | @Codex | 待评审 | P1 |
+| [TASK-0079](TASK-0079-window-close-behavior.md) | 关闭偏好、后台托盘与选择器视觉统一 | @Codex | 待评审 | P1 |
+| [TASK-0078](TASK-0078-settings-sections-storage.md) | 设置分类、真实存储与三态外观滑块 | @Codex | 待评审 | P1 |
+| [TASK-0077](TASK-0077-linuxdo-icon-transparency.md) | LINUX DO 邮箱图标透明背景 | @Codex | 待评审 | P2 |
+| [TASK-0076](TASK-0076-sidebar-width.md) | 适度加宽左侧邮箱栏 | @Codex | 待评审 | P2 |
+| [TASK-0075](TASK-0075-window-minimum-width.md) | 主窗口最小宽度保护 | @Codex | 待评审 | P1 |
+| [TASK-0074](TASK-0074-mailbox-provider-browser.md) | 我的邮箱服务商分组浏览 | @Codex | 待评审 | P2 |
+| [TASK-0073](TASK-0073-workspace-compose.md) | 工作区内撰写邮件 | @Codex | 待评审 | P1 |
+| [TASK-0072](../archive/2026/11/TASK-0072-mail-baseline-delivery.md) | TASK-0061～0071 联合本地交付（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0071](../archive/2026/11/TASK-0071-mail-list-clock.md) | 邮件列表显示具体时分（已归档） | @Codex | 已完成 | P2 |
+| [TASK-0070](../archive/2026/11/TASK-0070-yahoo-mail-preset.md) | Yahoo Mail 服务商接入（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0069](../archive/2026/11/TASK-0069-mail-list-switch-transition.md) | 邮箱切换列表骨架与顺序入场（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0068](../archive/2026/11/TASK-0068-naver-verified-read.md) | NAVER 自动已读与安全标记修复（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0067](../archive/2026/11/TASK-0067-mail-list-edge-fade.md) | 邮件列表上下滚动边缘羽化（已归档） | @Codex | 已完成 | P2 |
+| [TASK-0066](../archive/2026/11/TASK-0066-naver-sync-sidebar-layout.md) | NAVER 同步兼容与邮箱侧栏布局（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0065](../archive/2026/11/TASK-0065-scrollbar-activity-visibility.md) | 滚动条按活动显示与淡入淡出（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0064](../archive/2026/11/TASK-0064-mailbox-account-management.md) | 我的邮箱设置入口与账号管理浮窗（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0063](../archive/2026/11/TASK-0063-large-mail-sync-isolation.md) | 大邮件 100／50／8 MiB 与单封超限隔离（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0062](../archive/2026/11/TASK-0062-naver-yandex-icloud-presets.md) | NAVER、Yandex 与 iCloud 邮箱预设（已归档） | @Codex | 已完成 | P1 |
+| [TASK-0061](../archive/2026/11/TASK-0061-mailbox-status-polish.md) | 邮箱单行状态、流光边框与断开确认弹窗（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0060](../archive/2026/10/TASK-0060-sync-stability-dev-delivery.md) | QQ/Gmail 同步稳定性与 dev 交付（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0059](../archive/2026/10/TASK-0059-mail-provider-integration.md) | LinuxDo 接入、网易统一入口与同步兼容（已归档） | @Codex | 已完成 | P1 |
 | [TASK-0058](../archive/2026/10/TASK-0058-offline-mail-persistence.md) | 后台同步完整正文并持久保存数据库（已归档） | @Codex | 已完成 | P1 |
@@ -71,6 +117,26 @@
 | [TASK-0040](../archive/2026/10/TASK-0040-mail-infinite-scroll.md) | 邮件列表无限滚动（已归档） | @Codex | 已完成 | P1 |
 
 ## 说明
+
+- TASK-0089 于 2026-11-02 交付本地 0.0.3 生产包，版本说明提交 `2c70ec3`
+  （父提交 `2650092`）；交付副本 `desktop/bin/releases/v0.0.3/`，安装包 SHA-256
+  `08cf29f9…20b4`，未推送。
+
+- TASK-0088 于 2026-11-02 修复覆盖安装/卸载被运行实例锁住的问题，实现提交 `05a669e`
+  （父提交 `2395fbb`）；重打 0.0.2 交付副本 `desktop/bin/releases/v0.0.2-close-app/`，未推送。
+
+- TASK-0087 于 2026-11-02 修复撰写入口文案并重打 0.0.2 本地包，实现提交 `43ac80fd`
+  （父提交 `0723677`）；交付副本 `desktop/bin/releases/v0.0.2-compose-hint/`，未推送。
+
+- TASK-0073～0086 的实现已于 2026-11-02 按用户授权作为本地 0.0.2 基线提交：
+  `072367750f3f99ff03a655f9aa63b7c59ffe1cc2`（父提交
+  `5c97c37cc40621a90e5b9b0ef7d4b5f7d5ab8674`）；0.0.2 签名生产包由该提交构建，
+  未推送、未创建 GitHub Release。TASK-0073～0085 记录中的“未提交、待评审”保留当轮历史含义，
+  最终处置以各记录与 TASK-0083 的交付段落为准；TASK-0086 已完成并归档。
+
+- TASK-0061～0071 已于 2026-11-01 按用户授权联合本地提交并归档，
+  实现提交 `be3b7596d6b299a6a210c4257181bb1e71867deb`；未推送。
+  原任务中的“未授权/未提交”保留当轮历史含义，最终处置以归档头部和 TASK-0072 为准。
 
 - TASK-0056～0060 已于 2026-10-31 按用户授权联合交付；源实现 `67b2bc33a6f1341e497ad2c1e2cb3d5f26236176`，
   已通过受保护分支 [PR #1](https://github.com/mibgb65-cloud/OmniMail-APP/pull/1) Squash 合入 dev，

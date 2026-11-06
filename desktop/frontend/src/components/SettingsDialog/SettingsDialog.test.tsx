@@ -8,6 +8,9 @@ import { THEME_STORAGE_KEY } from '../../lib/theme/theme';
 import { useTheme } from '../../lib/theme/useTheme';
 import { VERSION_INFO } from '../../test/fixtures';
 import { SettingsDialog } from './SettingsDialog';
+import { getStorageUsage } from '../../lib/bridge/storage';
+
+vi.mock('../../lib/bridge/storage', () => ({ getStorageUsage: vi.fn() }));
 
 function DialogPreview({
   onClose,
@@ -16,11 +19,11 @@ function DialogPreview({
   onClose: () => void;
   versionInfo?: VersionInfo;
 }) {
-  const { theme, toggleTheme } = useTheme();
+  const { themePreference, selectTheme } = useTheme();
   return (
     <SettingsDialog
-      theme={theme}
-      onToggleTheme={toggleTheme}
+      themePreference={themePreference}
+      onThemePreferenceChange={selectTheme}
       onClose={onClose}
       versionInfo={versionInfo}
     />
@@ -38,23 +41,31 @@ function renderDialog(versionInfo?: VersionInfo) {
 }
 
 beforeEach(() => {
+  vi.mocked(getStorageUsage).mockResolvedValue({
+    totalBytes: 1024,
+    mailDataBytes: 512,
+    attachmentsBytes: 256,
+    logsBytes: 128,
+    backupsBytes: 128,
+    otherBytes: 0,
+  });
   window.localStorage.clear();
   delete document.documentElement.dataset.theme;
 });
 
 describe('设置模态悬浮窗', () => {
-  it('通用设置提供正文跟随暗色开关，保存后重开仍保持选择', () => {
+  it('邮件查看提供正文跟随暗色开关，保存后重开仍保持选择', () => {
     const view = renderDialog();
+    fireEvent.click(screen.getByRole('tab', { name: '邮件查看' }));
     const toggle = screen.getByRole('switch', { name: '邮件正文跟随暗色模式' });
     expect(toggle).toHaveAttribute('aria-checked', 'true');
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-checked', 'false');
-    expect(screen.getByRole('switch', { name: '深色模式' })).toHaveAttribute(
-      'aria-checked',
-      'false',
-    );
+    fireEvent.click(screen.getByRole('tab', { name: '通用设置' }));
+    expect(screen.getByRole('radio', { name: '跟随系统' })).toBeChecked();
     view.unmount();
     renderDialog();
+    fireEvent.click(screen.getByRole('tab', { name: '邮件查看' }));
     expect(screen.getByRole('switch', { name: '邮件正文跟随暗色模式' })).toHaveAttribute(
       'aria-checked',
       'false',
@@ -63,6 +74,7 @@ describe('设置模态悬浮窗', () => {
 
   it('邮件配色保存失败时本会话生效、提示未保存且不泄露底层错误', () => {
     renderDialog();
+    fireEvent.click(screen.getByRole('tab', { name: '邮件查看' }));
     const blocked = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('private-marker');
     });
@@ -84,6 +96,7 @@ describe('设置模态悬浮窗', () => {
         <DialogPreview onClose={vi.fn()} />
       </I18nProvider>,
     );
+    fireEvent.click(screen.getByRole('tab', { name: 'Mail viewing' }));
     expect(
       screen.getByRole('switch', { name: 'Email body follows dark mode' }),
     ).toHaveAccessibleDescription(/HTML email bodies adapt/);
@@ -93,20 +106,15 @@ describe('设置模态悬浮窗', () => {
     expect(dialog).toHaveAttribute('open');
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(dialog).toHaveAccessibleDescription('选择左侧分类，查看和调整对应设置。');
-    expect(screen.getByRole('switch', { name: '深色模式' })).toHaveAttribute(
-      'aria-checked',
-      'false',
-    );
+    expect(screen.getByRole('radio', { name: '跟随系统' })).toBeChecked();
   });
 
-  it.each(['close', 'done', 'escape'])('通过 %s 关闭', async (method) => {
+  it.each(['close', 'escape'])('通过 %s 关闭', async (method) => {
     const { dialog, onClose } = renderDialog();
     if (method === 'escape') {
       fireEvent(dialog, new Event('cancel', { cancelable: true }));
     } else {
-      fireEvent.click(
-        screen.getByRole('button', { name: method === 'done' ? '完成' : '关闭设置' }),
-      );
+      fireEvent.click(screen.getByRole('button', { name: '关闭设置' }));
     }
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
     expect(dialog).not.toHaveAttribute('open');
@@ -128,19 +136,14 @@ describe('设置模态悬浮窗', () => {
 
   it('主题与语言更改立即生效，且不重建或关闭模态窗', () => {
     const { dialog, onClose } = renderDialog();
-    const themeSwitch = screen.getByRole('switch', { name: '深色模式' });
-    const themeIcon = themeSwitch.querySelector('svg');
-    expect(themeIcon).toBeInTheDocument();
-    fireEvent.click(themeSwitch);
-    expect(themeSwitch.querySelector('svg')).toBe(themeIcon);
+    const themeChoice = screen.getByRole('radio', { name: '暗色模式' });
+    fireEvent.click(themeChoice);
+    expect(screen.getByRole('radio', { name: '暗色模式' })).toBe(themeChoice);
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
     fireEvent.click(within(dialog).getByRole('button', { name: 'English' }));
     expect(screen.getByRole('dialog', { name: 'Settings' })).toBe(dialog);
-    expect(screen.getByRole('switch', { name: 'Dark mode' })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    );
+    expect(screen.getByRole('radio', { name: 'Dark mode' })).toBeChecked();
     expect(screen.getByRole('button', { name: 'Close settings' })).toBeVisible();
     expect(onClose).not.toHaveBeenCalled();
   });
@@ -161,8 +164,10 @@ describe('设置模态悬浮窗', () => {
 
   it('Tab 与 Shift+Tab 在首尾控件之间循环，不丢失焦点', () => {
     renderDialog();
+    expect(screen.queryByRole('button', { name: '完成' })).not.toBeInTheDocument();
+    expect(screen.queryByText('更改即时生效')).not.toBeInTheDocument();
     const first = screen.getByRole('tab', { name: '通用设置' });
-    const last = screen.getByRole('button', { name: '完成' });
+    const last = screen.getByRole('radio', { name: '跟随系统' });
     first.focus();
     fireEvent.keyDown(first, { key: 'Tab', shiftKey: true });
     expect(last).toHaveFocus();
@@ -205,28 +210,36 @@ describe('设置模态悬浮窗', () => {
   it('分类列支持上下箭头和 Home/End 键，Tab 循环跟随当前分类', () => {
     renderDialog();
     const general = screen.getByRole('tab', { name: '通用设置' });
-    const storage = screen.getByRole('tab', { name: '存储情况' });
-    const about = screen.getByRole('tab', { name: '关于' });
+    const accounts = screen.getByRole('tab', { name: '邮箱设置' });
+    const updates = screen.getByRole('tab', { name: '软件更新' });
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      '通用设置',
+      '邮箱设置',
+      '通知设置',
+      '邮件查看',
+      'AI 设置',
+      '存储情况',
+      '关于',
+      '软件更新',
+    ]);
     general.focus();
     fireEvent.keyDown(general, { key: 'ArrowDown' });
-    expect(storage).toHaveFocus();
-    fireEvent.keyDown(storage, { key: 'ArrowDown' });
-    expect(about).toHaveFocus();
-    fireEvent.keyDown(about, { key: 'ArrowDown' });
+    expect(accounts).toHaveFocus();
+    fireEvent.keyDown(accounts, { key: 'End' });
+    expect(updates).toHaveFocus();
+    fireEvent.keyDown(updates, { key: 'ArrowDown' });
     expect(general).toHaveFocus();
     fireEvent.keyDown(general, { key: 'ArrowUp' });
-    expect(about).toHaveFocus();
-    fireEvent.keyDown(about, { key: 'End' });
-    expect(about).toHaveFocus();
-    const done = screen.getByRole('button', { name: '完成' });
-    done.focus();
-    fireEvent.keyDown(done, { key: 'Tab' });
-    expect(about).toHaveFocus();
-    fireEvent.keyDown(about, { key: 'Home' });
+    expect(updates).toHaveFocus();
+    const panel = screen.getByRole('tabpanel', { name: '软件更新' });
+    panel.focus();
+    fireEvent.keyDown(panel, { key: 'Tab' });
+    expect(updates).toHaveFocus();
+    fireEvent.keyDown(updates, { key: 'Home' });
     expect(general).toHaveFocus();
   });
 
-  it('存储情况按存储类型展示占用，并标明示例数据', () => {
+  it('存储情况按后端实际字节数展示，不再显示示例数据', async () => {
     const { dialog, onClose } = renderDialog();
     const general = screen.getByRole('tabpanel', { name: '通用设置' });
     fireEvent.click(screen.getByRole('tab', { name: '存储情况' }));
@@ -237,36 +250,33 @@ describe('设置模态悬浮窗', () => {
     expect(screen.getByRole('tab', { name: '存储情况' })).toHaveAttribute('aria-selected', 'true');
 
     const card = within(panel).getByRole('region', { name: '存储情况' });
-    expect(within(card).getByText('界面预览 · 示例数据')).toBeVisible();
-    expect(within(card).getByText('1.20 GB')).toBeVisible();
+    expect(await within(card).findByText('1.00 KB')).toBeVisible();
+    expect(within(card).queryByText('界面预览 · 示例数据')).not.toBeInTheDocument();
     expect(within(card).getByText('已用空间')).toBeVisible();
     expect(
       within(card).getByRole('img', {
-        name: '存储占用：邮件数据 52.6%，附件缓存 27.3%，全文索引 12.3%，运行日志 7.8%',
+        name: '存储占用：邮件数据 50.0%，附件缓存 25.0%，运行日志 12.5%，数据库备份 12.5%，其他文件 0.0%',
       }),
     ).toBeVisible();
 
     const rows = within(card).getAllByRole('listitem');
-    expect(rows).toHaveLength(4);
-    expect(rows.map((row) => row.textContent)).toEqual([
-      '邮件数据邮件正文、头信息与本地目录648 MB52.6%',
-      '附件缓存已下载的附件与内嵌图片336 MB27.3%',
-      '全文索引用于本地搜索的检索索引152 MB12.3%',
-      '运行日志诊断日志与崩溃报告96 MB7.8%',
-    ]);
-    expect(within(card).getByText('存储统计尚未接入，以上为界面演示数据。')).toBeVisible();
+    expect(rows).toHaveLength(5);
+    expect(rows[0]).toHaveTextContent('512 B50.0%');
+    expect(within(card).getByText(/全文索引已包含在邮件数据中/)).toBeVisible();
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('切换分类时面板互斥显示，存储面板在再次切回后仍保留', () => {
+  it('切换分类时面板互斥显示，存储面板在再次切回后仍保留', async () => {
     renderDialog();
     const storageTab = screen.getByRole('tab', { name: '存储情况' });
     fireEvent.click(storageTab);
     const storage = screen.getByRole('tabpanel', { name: '存储情况' });
+    await within(storage).findByText('1.00 KB');
     fireEvent.click(screen.getByRole('tab', { name: '关于' }));
     expect(storage).not.toBeVisible();
     expect(screen.getByRole('tabpanel', { name: '关于' })).toBeVisible();
     fireEvent.click(storageTab);
+    await within(storage).findByText('1.00 KB');
     expect(storage).toBeVisible();
     expect(screen.getByRole('heading', { level: 2, name: '存储情况' })).toBeVisible();
   });

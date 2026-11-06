@@ -2,7 +2,17 @@ package service
 
 import (
 	"context"
+	"strings"
+
 	"omnimail/desktop/internal/domain"
+)
+
+type messageWriteKind uint8
+
+const (
+	writeStarred messageWriteKind = iota
+	writeRead
+	writeMove
 )
 
 func (s *Mail) SetStarred(ctx context.Context, id string, starred bool) error {
@@ -12,11 +22,12 @@ func (s *Mail) SetStarred(ctx context.Context, id string, starred bool) error {
 			return domain.ErrProtocol
 		}
 		return writer.SetStarred(location.Mailbox, location.UIDValidity, location.UID, starred)
-	}, func(ctx context.Context) error { return s.store.UpdateMailStarred(ctx, id, starred) }, false)
+	}, func(ctx context.Context) error { return s.store.UpdateMailStarred(ctx, id, starred) }, writeStarred)
 }
 
 func (s *Mail) writeMessage(ctx context.Context, id string,
-	remote func(domain.MailSession, domain.MailLocation) error, persist func(context.Context) error, guardMove bool) error {
+	remote func(domain.MailSession, domain.MailLocation) error, persist func(context.Context) error, kind messageWriteKind) error {
+	guardMove := kind == writeMove
 	ctx, done, err := s.request(ctx)
 	if err != nil {
 		return err
@@ -25,6 +36,9 @@ func (s *Mail) writeMessage(ctx context.Context, id string,
 	location, _, err := s.store.MailLocation(ctx, id)
 	if err != nil {
 		return err
+	}
+	if location.UIDValidity == 0 && kind != writeRead {
+		return domain.ErrActionUnsupported
 	}
 	release, err := s.acquireForeground(ctx, location.AccountID, true)
 	if err != nil {
@@ -36,6 +50,9 @@ func (s *Mail) writeMessage(ctx context.Context, id string,
 	if err != nil {
 		return err
 	}
+	if location.UIDValidity == 0 && kind != writeRead {
+		return domain.ErrActionUnsupported
+	}
 	account, err := s.store.GetAccount(ctx, location.AccountID)
 	if err != nil {
 		return err
@@ -46,6 +63,11 @@ func (s *Mail) writeMessage(ctx context.Context, id string,
 	connection, err := endpoint(account, domain.ProtocolIMAP)
 	if err != nil {
 		return err
+	}
+	if location.UIDValidity == 0 && (account.ProviderCode != "naver" || connection.Port != 993 ||
+		connection.TLSMode != domain.TLSImplicit ||
+		!strings.EqualFold(strings.TrimSuffix(connection.Host, "."), "imap.naver.com")) {
+		return domain.ErrActionUnsupported
 	}
 	secret, err := s.secrets.Get(ctx, connection.CredentialRef)
 	if err != nil {
@@ -79,9 +101,16 @@ func (s *Mail) writeMessage(ctx context.Context, id string,
 	if remoteErr != nil {
 		return remoteErr
 	}
+	if location.UIDValidity == 0 {
+		current, _, err := s.store.MailLocation(ctx, id)
+		if err != nil || current.Mailbox != location.Mailbox || current.UIDValidity != 0 ||
+			!current.Identity.SameIdentity(location.Identity) {
+			return domain.ErrActionUncertain
+		}
+	}
 	err = persist(ctx)
-	if guardMove && err != nil {
-		// 远端已移动而落库失败，不把它描述成安全可重试的普通存储错误。
+	if (guardMove || location.UIDValidity == 0) && err != nil {
+		// 远端可能已写入而本地实例失效/落库失败，不能冒充尚未执行的普通错误。
 		return domain.ErrActionUncertain
 	}
 	return err

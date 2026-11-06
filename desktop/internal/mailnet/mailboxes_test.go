@@ -23,6 +23,10 @@ type mailboxFixtureOptions struct {
 	statusNext, statusValidity uint32
 	rejectStatus               bool
 	searchUIDs                 string
+	selectValidity, selectNext uint32
+	allowSelectFallback        bool
+	rejectSelect               bool
+	explicitZeroValidity       bool
 }
 
 // 集中处理 LIST/EXAMINE、真实 TLS 与有界清理，确保测试覆盖完整线路而非只测属性辅助函数。
@@ -108,6 +112,8 @@ func mailboxFixture(t *testing.T, options mailboxFixtureOptions) domain.MailSess
 					metadata := "* 0 EXISTS\r\n"
 					if !options.omitValidity {
 						metadata += "* OK [UIDVALIDITY 7] valid\r\n"
+					} else if options.explicitZeroValidity {
+						metadata += "* OK [UIDVALIDITY 0] valid\r\n"
 					}
 					if !options.omitNext {
 						metadata += "* OK [UIDNEXT 1] next\r\n"
@@ -131,6 +137,27 @@ func mailboxFixture(t *testing.T, options mailboxFixtureOptions) domain.MailSess
 					items = append(items, fmt.Sprintf("UIDNEXT %d", options.statusNext))
 				}
 				if !write("* STATUS \"INBOX\" (" + strings.Join(items, " ") + ")\r\n" + tag + " OK status") {
+					return
+				}
+			case "SELECT":
+				if !options.allowSelectFallback {
+					t.Error("非授权服务器触发读写 SELECT 兼容")
+					return
+				}
+				if options.rejectSelect {
+					if !write(tag + " NO [NOPERM] denied") {
+						return
+					}
+					continue
+				}
+				metadata := "* 0 EXISTS\r\n"
+				if options.selectValidity > 0 {
+					metadata += fmt.Sprintf("* OK [UIDVALIDITY %d] valid\r\n", options.selectValidity)
+				}
+				if options.selectNext > 0 {
+					metadata += fmt.Sprintf("* OK [UIDNEXT %d] next\r\n", options.selectNext)
+				}
+				if !write(metadata + tag + " OK [READ-WRITE] selected") {
 					return
 				}
 			case "UID":
@@ -166,6 +193,9 @@ func mailboxFixture(t *testing.T, options mailboxFixtureOptions) domain.MailSess
 	})
 	if err != nil {
 		t.Fatal("无法连接合成文件夹服务器")
+	}
+	if options.allowSelectFallback {
+		value.(*session).selectMetadataFallback = true
 	}
 	return value
 }

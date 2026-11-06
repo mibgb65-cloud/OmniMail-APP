@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -45,15 +46,15 @@ func (s *Mail) readMessage(ctx context.Context, id string, refresh bool) (domain
 	}
 	defer done()
 	detail, err := s.store.ReadMail(ctx, id)
-	if err != nil || (detail.Cached && !refresh) {
+	if err != nil || (!refresh && (detail.Cached || detail.BodyErrorCode != "")) {
 		return detail, err
 	}
 	location, size, err := s.store.MailLocation(ctx, id)
 	if err != nil {
 		return detail, err
 	}
-	if size > 40<<20 {
-		return detail, domain.ErrTooLarge
+	if size > domain.MaxRawMessageBytes {
+		return s.limitedMessage(ctx, id, domain.ErrRawMessageTooLarge)
 	}
 	release, err := s.acquireForeground(ctx, location.AccountID, false)
 	if err != nil {
@@ -63,7 +64,7 @@ func (s *Mail) readMessage(ctx context.Context, id string, refresh bool) (domain
 	if !refresh {
 		// 同类请求排队期间另一窗口可能已保存正文，避免再次建立连接重复下载。
 		detail, err = s.store.ReadMail(ctx, id)
-		if err != nil || detail.Cached {
+		if err != nil || detail.Cached || detail.BodyErrorCode != "" {
 			return detail, err
 		}
 	}
@@ -92,7 +93,11 @@ func (s *Mail) readMessage(ctx context.Context, id string, refresh bool) (domain
 			s.log.Warn("关闭正文连接失败", "code", "NETWORK_FAILED")
 		}
 	}()
-	return s.cacheMessage(ctx, id, location, session)
+	detail, err = s.cacheMessage(ctx, id, location, session)
+	if domain.MessageLimitCode(err) != "" {
+		return s.limitedMessage(ctx, id, err)
+	}
+	return detail, err
 }
 
 func (s *Mail) cacheMessage(ctx context.Context, id string, location domain.MailLocation, session domain.MailSession) (domain.MailDetail, error) {
@@ -111,13 +116,26 @@ func (s *Mail) cacheMessage(ctx context.Context, id string, location domain.Mail
 }
 
 // 前台按需读取和后台补齐共用同一套正文/附件事务，正文始终写 SQLite，不写临时正文文件。
-func (s *Mail) storeMessageBody(ctx context.Context, id string, uid uint32, session domain.MailSession) error {
+func (s *Mail) storeMessageBody(ctx context.Context, id string, uid uint32, session domain.MailSession) (result error) {
+	location, _, err := s.store.MailLocation(ctx, id)
+	if err != nil {
+		return err
+	}
+	if location.UID != uid {
+		return domain.ErrProtocol
+	}
+	if location.UIDValidity == 0 {
+		if err := verifyZeroIdentity(ctx, session, location); err != nil {
+			return err
+		}
+	}
 	hashes := []string{}
 	defer func() {
 		cleanup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := s.store.ReleaseCachedAttachments(cleanup, hashes); err != nil {
 			s.log.Warn("附件暂存回收失败", "code", "STORAGE_FAILED")
+			result = errors.Join(result, errBodyCleanup, err)
 		}
 	}()
 	body, err := session.Body(uid, func(name, kind string, reader io.Reader) (domain.DecodedAttachment, error) {
@@ -132,6 +150,11 @@ func (s *Mail) storeMessageBody(ctx context.Context, id string, uid uint32, sess
 			return ctx.Err()
 		}
 		return err
+	}
+	if location.UIDValidity == 0 {
+		if err := verifyZeroIdentity(ctx, session, location); err != nil {
+			return err
+		}
 	}
 	return s.store.SaveMailBody(ctx, id, body)
 }

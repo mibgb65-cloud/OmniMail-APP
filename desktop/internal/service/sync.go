@@ -110,8 +110,7 @@ func (s *Mail) queueSync(id string, continuation bool) error {
 			s.log.Info("邮件同步分批完成", "code", "SYNC_PROGRESS", "provider", safeSyncProvider(account.ProviderCode))
 			s.continueSync(id)
 		} else if err == nil {
-			// 只记录周期结束，不包含账号或邮件数据；分批完成不宣称全量同步结束。
-			s.log.Info("邮件同步周期完成", "code", "SYNC_COMPLETE", "provider", safeSyncProvider(account.ProviderCode))
+			s.logSyncCompletion(ctx, id, account.ProviderCode)
 		}
 	}()
 	return nil
@@ -201,7 +200,7 @@ func (s *Mail) syncMailbox(ctx context.Context, accountID string, box domain.Rem
 	if err != nil {
 		return false, syncStepError("select", box.Kind, err)
 	}
-	if validity == 0 || next == 0 {
+	if (validity == 0 && !confirmedZeroValidity(session)) || next == 0 {
 		reason := "missing_uidnext"
 		if validity == 0 {
 			reason = "missing_uidvalidity"
@@ -211,6 +210,13 @@ func (s *Mail) syncMailbox(ctx context.Context, accountID string, box domain.Rem
 	cursor, err := s.store.PrepareMailbox(ctx, accountID, box, validity)
 	if err != nil {
 		return false, syncStepError("cache_mailbox", box.Kind, err)
+	}
+	if err := s.store.ObserveMailboxHead(ctx, accountID, cursor.ID, validity, next-1); err != nil {
+		return false, syncStepError("cache_mailbox", box.Kind, err)
+	}
+	if validity == 0 {
+		more, err := s.syncZeroMailbox(ctx, accountID, cursor, next, session)
+		return more, syncMailboxError(box.Kind, err)
 	}
 	pending, downloaded, err := s.syncStoredBodies(ctx, accountID, cursor.ID, validity, session)
 	if err != nil || pending || downloaded {
@@ -346,9 +352,21 @@ func ErrorCode(err error) string {
 	if errors.Is(err, context.DeadlineExceeded) {
 		return "TIMEOUT"
 	}
+	if errors.Is(err, errBodyCleanup) {
+		return "STORAGE_FAILED"
+	}
+	if code := domain.MessageLimitCode(err); code != "" {
+		return code
+	}
 	for _, known := range []error{domain.ErrAuthentication, domain.ErrTLS, domain.ErrNetwork, domain.ErrProtocol,
 		domain.ErrTooLarge, domain.ErrOAuthConfig, domain.ErrCredentialMissing, domain.ErrCredentialUnavailable, domain.ErrCredentialInvalid, domain.ErrSendUncertain, domain.ErrActionUnsupported, domain.ErrActionUncertain} {
 		if errors.Is(err, known) {
+			if known == domain.ErrTooLarge && (errors.Is(err, domain.ErrRawMessageTooLarge) ||
+				errors.Is(err, domain.ErrAttachmentTooLarge) || errors.Is(err, domain.ErrMessageTextTooLarge) ||
+				errors.Is(err, domain.ErrTooManyMailParts)) {
+				// 单封原因未能独立分类，说明还混有未知/持久化故障，不能伪装成普通读取预算。
+				return "STORAGE_FAILED"
+			}
 			return known.Error()
 		}
 	}

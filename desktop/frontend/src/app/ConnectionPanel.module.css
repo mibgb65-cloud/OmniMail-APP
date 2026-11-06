@@ -1,0 +1,85 @@
+/* 连接区不再自成卡片，仅用文字层级和一条状态行区分，避免与“关于”页其他区块叠框。 */
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+.heading h3 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+}
+.action {
+  flex-shrink: 0;
+  min-height: var(--space-8);
+  padding: 0 var(--space-3);
+  /* 文字与上方小标题视觉对齐，不额外占出方块轮廓 */
+  margin-inline-end: calc(-1 * var(--space-3));
+  font-size: var(--text-sm);
+}
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+.status[data-tone='success'] {
+  color: var(--color-success);
+}
+.status[data-tone='success']::before {
+  content: '';
+  width: var(--space-3);
+  height: var(--space-3);
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+.error {
+  margin-top: var(--space-3);
+  padding-inline-start: var(--space-4);
+  border-inline-start: 2px solid var(--color-danger);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+.error strong {
+  font-weight: var(--font-medium);
+}
+.error p {
+  margin-top: var(--space-1);
+}
+.metadata {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: var(--space-4) var(--space-5);
+  margin: var(--space-5) 0 0;
+}
+.metadata dt {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+.metadata dd {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.wide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+  grid-column: 1 / -1;
+}
+.wide dd {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+.skeleton {
+  margin-top: var(--space-4);
+  height: var(--space-2);
+  border-radius: var(--radius-xs);
+  background: var(--color-bg-sunken);
+}

@@ -8,12 +8,19 @@ import (
 
 func (s *Mail) SetRead(ctx context.Context, id string, read bool) error {
 	return s.writeMessage(ctx, id, func(session domain.MailSession, location domain.MailLocation) error {
+		if location.UIDValidity == 0 {
+			writer, ok := session.(domain.MailVerifiedReadSession)
+			if !ok {
+				return domain.ErrActionUnsupported
+			}
+			return writer.SetReadVerified(location.Mailbox, location.Identity, read)
+		}
 		writer, ok := session.(domain.MailActionSession)
 		if !ok {
 			return domain.ErrActionUnsupported
 		}
 		return writer.SetRead(location.Mailbox, location.UIDValidity, location.UID, read)
-	}, func(ctx context.Context) error { return s.store.UpdateMailRead(ctx, id, read) }, false)
+	}, func(ctx context.Context) error { return s.store.UpdateMailRead(ctx, id, read) }, writeRead)
 }
 
 func (s *Mail) MoveMessage(ctx context.Context, id, folder string) error {
@@ -44,5 +51,5 @@ func (s *Mail) MoveMessage(ctx context.Context, id, folder string) error {
 		}
 		validity, uid, err = writer.MoveMail(location.Mailbox, location.UIDValidity, location.UID, destination.Name)
 		return err
-	}, func(ctx context.Context) error { return s.store.MoveMail(ctx, id, destination, validity, uid) }, true)
+	}, func(ctx context.Context) error { return s.store.MoveMail(ctx, id, destination, validity, uid) }, writeMove)
 }

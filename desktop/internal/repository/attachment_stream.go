@@ -43,7 +43,7 @@ func (s *Store) CacheAttachment(ctx context.Context, name, kind string, reader i
 		return domain.DecodedAttachment{}, storageError("创建下载文件", err)
 	}
 	digest := sha256.New()
-	size, copyError := io.Copy(io.MultiWriter(file, digest), io.LimitReader(contextReader{ctx, reader}, (25<<20)+1))
+	size, copyError := io.Copy(io.MultiWriter(file, digest), io.LimitReader(contextReader{ctx, reader}, domain.MaxAttachmentBytes+1))
 	closeError := file.Close()
 	cleanup := func(cause error) error {
 		return errors.Join(cause, storageError("清理下载临时文件", os.Remove(file.Name())))
@@ -51,8 +51,8 @@ func (s *Store) CacheAttachment(ctx context.Context, name, kind string, reader i
 	if copyError != nil || closeError != nil {
 		return domain.DecodedAttachment{}, cleanup(storageError("下载附件", errors.Join(copyError, closeError)))
 	}
-	if size > 25<<20 {
-		return domain.DecodedAttachment{}, cleanup(domain.ErrTooLarge)
+	if size > domain.MaxAttachmentBytes {
+		return domain.DecodedAttachment{}, cleanup(domain.ErrAttachmentTooLarge)
 	}
 	if ctx.Err() != nil {
 		return domain.DecodedAttachment{}, cleanup(ctx.Err())

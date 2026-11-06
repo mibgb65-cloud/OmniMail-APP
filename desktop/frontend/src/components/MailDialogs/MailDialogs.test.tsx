@@ -4,7 +4,6 @@ import { I18nProvider } from '../../lib/i18n/I18nProvider';
 import * as api from '../../lib/bridge/mail';
 import { AccountStatus, Protocol } from '../../../bindings/omnimail/desktop/internal/domain/models';
 import { AccountDialog } from './AccountDialog';
-import { ComposeDialog } from './ComposeDialog';
 
 vi.mock('../../lib/bridge/mail', async (original) => ({
   ...(await original<typeof import('../../lib/bridge/mail')>()),
@@ -41,7 +40,7 @@ const presets: api.ProviderPreset[] = ['custom', 'qq'].map((code) => ({
   ],
 }));
 
-describe('邮件账号和撰写弹窗', () => {
+describe('邮件账号弹窗', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
@@ -126,27 +125,5 @@ describe('邮件账号和撰写弹窗', () => {
     const outgoing = within(screen.getByRole('group', { name: 'SMTP' }));
     expect(outgoing.getByLabelText('登录用户名')).toBeVisible();
     expect(screen.getAllByLabelText('密码 / 应用授权码')).toHaveLength(2);
-  });
-
-  it('SMTP 结果不确定时保留文案并禁止原弹窗直接重发', async () => {
-    vi.mocked(api.send).mockRejectedValue(new Error('SEND_UNCERTAIN'));
-    render(
-      <I18nProvider initialLocale="zh-CN">
-        <ComposeDialog
-          accounts={[account]}
-          selectedAccount={account.id}
-          onClose={vi.fn()}
-          onSent={vi.fn()}
-        />
-      </I18nProvider>,
-    );
-    fireEvent.change(screen.getByLabelText('收件人'), {
-      target: { value: 'recipient@example.invalid' },
-    });
-    fireEvent.change(screen.getByLabelText('正文'), { target: { value: 'Hello' } });
-    fireEvent.click(screen.getByRole('button', { name: '发送' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('勿直接重复发送');
-    expect(screen.getByRole('button', { name: '发送' })).toBeDisabled();
-    expect(api.send).toHaveBeenCalledOnce();
   });
 });

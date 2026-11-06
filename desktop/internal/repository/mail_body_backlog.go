@@ -8,14 +8,20 @@ import (
 
 func (s *Store) PendingMailBodies(ctx context.Context, accountID, mailboxID string, validity uint32, limit int) (result []domain.MailBodyTarget, err error) {
 	if !domain.ValidAccountID(accountID) || !domain.ValidAccountID(mailboxID) ||
-		validity == 0 || limit < 1 || limit > 100 {
+		limit < 1 || limit > 100 {
 		return nil, domain.ErrProtocol
+	}
+	if validity == 0 {
+		if err := allowZeroValidity(ctx, s.db, accountID); err != nil {
+			return nil, err
+		}
 	}
 	// 正文是否完整以数据库提交结果为准，不依赖进程内队列；旧版纯文本也需要补齐到当前版本。
 	rows, err := s.db.QueryContext(ctx, `SELECT m.id,m.uid,m.size_bytes
 		FROM mail_message m JOIN mailbox b ON b.id=m.mailbox_id
 		WHERE m.account_id=? AND m.mailbox_id=? AND m.uid_validity=? AND b.uid_validity=?
 		AND (m.body_text IS NULL OR m.body_version<1)
+		AND m.body_error_code=''
 		ORDER BY m.uid DESC LIMIT ?`, accountID, mailboxID, validity, validity, limit)
 	if err != nil {
 		return nil, storageError("读取待补正文", err)

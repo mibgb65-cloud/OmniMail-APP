@@ -53,6 +53,21 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
+it('仅展示受限摘要而非完整正文时，不向服务商自动标记已读', async () => {
+  vi.mocked(api.message).mockResolvedValue({
+    ...detail,
+    cached: false,
+    body: '',
+    bodyErrorCode: 'MESSAGE_RAW_TOO_LARGE',
+  });
+  const { result } = renderHook(() => useMail('inbox'));
+  await flush();
+  act(() => result.current.setSelected(summary.id));
+  await flush();
+  act(() => result.current.markViewed(summary.id));
+  expect(api.setRead).not.toHaveBeenCalled();
+});
+
 it('仅实际展示通知才写服务商已读，成功更新未读数与筛选而不移除阅读正文', async () => {
   vi.mocked(api.message).mockResolvedValue(detail);
   let serverRead = false;
@@ -91,6 +106,33 @@ it('断开账号的缓存邮件仍能阅读，但不尝试回写服务商', asyn
   await flush();
   await act(async () => result.current.markViewed(summary.id));
   expect(api.setRead).not.toHaveBeenCalled();
+  expect(result.current.detail?.body).toBe(detail.body);
+});
+
+it('NAVER 自动已读失败保留正文，工具栏重试成功后清除错误并更新未读状态', async () => {
+  vi.mocked(api.accounts).mockResolvedValue([{ ...account, providerCode: 'naver' }]);
+  vi.mocked(api.message).mockResolvedValue(detail);
+  let serverRead = false;
+  vi.mocked(api.messages).mockImplementation(async () => [{ ...summary, read: serverRead }]);
+  vi.mocked(api.setRead)
+    .mockRejectedValueOnce(new Error('ACTION_UNCERTAIN private-marker'))
+    .mockImplementation(async (_id, read) => {
+      serverRead = read;
+    });
+  const { result } = renderHook(() => useMail('inbox'));
+  await flush();
+  act(() => result.current.setSelected(summary.id));
+  await flush();
+  await act(async () => result.current.markViewed(summary.id));
+  await flush();
+  expect(result.current.detail?.body).toBe(detail.body);
+  expect(api.errorCode(result.current.autoReadError)).toBe('ACTION_UNCERTAIN');
+  expect(result.current.messages[0]?.read).toBe(false);
+  await act(async () => result.current.runAction('read', result.current.visibleMessages));
+  await flush();
+  expect(api.setRead).toHaveBeenNthCalledWith(2, summary.id, true);
+  expect(result.current.autoReadError).toBeUndefined();
+  expect(result.current.messages[0]?.read).toBe(true);
   expect(result.current.detail?.body).toBe(detail.body);
 });
 

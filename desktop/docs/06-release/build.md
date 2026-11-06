@@ -7,7 +7,7 @@
 
 ## 0. 当前可执行构建
 
-当前工程为 Wails v3 骨架，只实现当前平台独立可执行文件构建。在仓库根目录执行：
+当前工程为 Wails v3。日常构建生成当前平台独立可执行文件，Windows 安装发布使用独立链路。在仓库根目录执行：
 
 ```powershell
 cd desktop
@@ -22,7 +22,14 @@ go tool wails3 task run
 `verify` 先执行统一检查，再构建到 `desktop/.task/verify-bin/`，不覆盖正在运行的常规产物。
 后续 `build` 才生成上文 `bin/` 程序供 `run` 使用；`check` 是不含构建的子集，不能替代完整门禁。
 
-Windows 原生构建在本次环境验证，macOS 构建尚待验证。Windows 图标与静态版本资源已接入；安装包、签名、公证、Git tag 版本注入和多平台发布流水线仍未实现。
+Windows 图标与日常静态版本资源已接入，macOS 构建尚待验证。
+新增的 [Windows x64 当前用户安装与签名发布](windows-installer.md) 使用锁定 Inno Setup 6.7.0，
+提供显式开发包、正式签名门禁和 GitHub tag workflow；真实签名/远端发布仍需材料及实际运行验收。
+公证、多平台发布及应用内自动更新未实现，不因存在 workflow 文件而宣称 CI 已通过。
+
+GitHub tag 发布、语言/完整数据目录安装向导、签名更新清单、应用内更新通知和静默重启安装的
+完整目标见 [发布与更新链路设计](update-system-design.md)（TASK-0083，安装发布部分进入实现），
+以新操作手册区分已实现链路与未启用的自动更新目标。
 
 ### Windows 图标与资源
 

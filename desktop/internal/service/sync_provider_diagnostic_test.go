@@ -21,6 +21,10 @@ func TestSyncSelectDiagnosticDoesNotExposePrivateLabels(t *testing.T) {
 		provider, response, class, wantProvider, wantResponse, wantClass string
 	}{
 		{"gmail", "NONEXISTENT", "gmail_container", "gmail", "NONEXISTENT", "gmail_container"},
+		{"naver", "none", "inbox", "naver", "none", "inbox"},
+		{"yandex", "none", "inbox", "yandex", "none", "inbox"},
+		{"icloud", "none", "inbox", "icloud", "none", "inbox"},
+		{"yahoo", "none", "inbox", "yahoo", "none", "inbox"},
 		{"custom", "none", "other", "custom", "none", "other"},
 		{"PRIVATE_PROVIDER", "PRIVATE_RESPONSE", "PRIVATE_CLASS", "unknown", "unknown", "unknown"},
 	} {

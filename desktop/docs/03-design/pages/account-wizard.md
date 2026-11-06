@@ -1,34 +1,45 @@
 # 添加账号向导
 
-> 状态：草稿（含当前实现说明） | 负责人：@design-lead | 最后更新：2026-10-31
+> 状态：草稿（含当前实现说明） | 负责人：@design-lead | 最后更新：2026-11-01
 > 相关：[FEAT-0001 账号接入](../../01-product/features/FEAT-0001-account-onboarding.md)
 
-## 当前实现（2026-10-31）
+## 当前实现（2026-11-01）
 
 侧栏“添加邮箱”打开同一模态窗内的左右分栏四步向导，不先展示完整服务器表单。
 左侧显示添加进度，右侧显示当前步骤的选项与配置：
 
 1. **选择服务商**：右侧上方可输入邮箱，本地按完整域名识别 `gmail.com`、`qq.com`、
-   `163.com`、`126.com`、`linux.do`，域名匹配不区分大小写；未知域名使用自定义 IMAP/SMTP。
+   `163.com`、`126.com`、`linux.do` 及下方国际预设表所列域名，域名匹配不区分大小写；
+   未知域名使用自定义 IMAP/SMTP。
    输入时展示结果，点击“继续”或按 Enter 再进入配置，不在输入中途自动跳转。
    匹配仅使用真实 `Providers` 返回的服务商，不进行 DNS、Autodiscover 或网络探测；
    快捷入口限制有效邮箱格式、地址长度与域名边界，不接受显示名形式。
    下方仍按真实结果展示卡片，分为“预设服务商”和
-   “自定义服务商”。当前展示入口为 Gmail、QQ 邮箱、网易邮箱、LINUX DO Mail；
+   “自定义服务商”。当前展示入口为 Gmail、QQ 邮箱、网易邮箱、LINUX DO Mail、
+   NAVER Mail、Yandex Mail、iCloud Mail、Yahoo Mail；
    网易 163/126 合并为一个品牌卡片，底层子预设仍各自保留以兼容旧账号和正确路由，
    不把未确认的 `162.com` 当作 126 的别名。
    自定义入口为 IMAP/SMTP。卡片使用本地服务商品牌图标，自定义使用通用配置图标。
+   桌面端可通过“添加自定义服务商”保存自己的服务器模板，已保存模板显示在同一自定义分组。
+   手动配置页也可用“保存为服务商”投影当前服务器参数，保存后立即用于当前账号并出现在选择页。
    只选择卡片或通过邮箱继续不会发起认证或保存账号。
 2. **配置账号**：右侧显示已选服务商。预设仅显示邮箱地址、可选账号名称和一套登录密码，
    隐藏 IMAP/SMTP、端口、TLS、独立登录用户名及发信凭据选项；端点仍取自 Providers，
-   提交时固定以邮箱作为收发信用户名，并使用同一密码，不受之前自定义配置影响。
+   提交时通常以完整邮箱作为收发信用户名，并使用同一密码，不受之前自定义配置影响；
+   Yandex 个人域按下方官方规则使用 @ 前的账户名。
    Gmail 使用邮箱地址和应用专用密码，不是 Google 登录密码。自定义主机留空供手动填写，
    保留完整服务器、端口、安全及共享/独立凭据能力；需要修改预设端点时选择自定义入口。
+   选择已保存的自定义模板时，服务器、端口和 TLS 以摘要展示，不要求再次填写；
+   邮箱地址、可选账号名称、登录用户名及密码仍独立输入，用户名默认随当前邮箱填写，
+   保留收发信共用凭据或单独配置能力。新窗口不会沿用上次账号密码。
    Gmail 不显示重复填写说明，应用专用密码安全提示保留在编辑卡片上方。
    网易逐邮箱依据 `@163.com` / `@126.com` 选择真实子预设，不需要用户分开选卡；
    主机、端口与 TLS 均取自桥接返回的对应预设，非法域名或缺失预设在发送凭据前拒绝。
    LINUX DO Mail 使用 `mail.linux.do` 的 IMAP 993 / SMTP 465 隐式 TLS，
    完整邮箱地址作为用户名，提示优先使用邮箱后台专用认证令牌，不使用论坛密码或论坛 OAuth。
+   NAVER、Yandex、iCloud 均明确要求应用专用密码，不使用网站/Apple 账户登录密码。
+   NAVER 需先启用 IMAP/SMTP；Yandex 需启用 IMAP 和应用密码访问，并创建“邮件”应用密码；
+   iCloud 需启用邮件与 Apple 账户双重认证，使用可登录的主邮箱，而非普通别名或“隐藏邮件地址”。
 3. **验证连接**：点击“验证并添加”后等待现有 `AddAccount`，该调用验证 IMAP/SMTP、
    保存系统凭据与账号，并尝试安排首次同步；不新建 Probe 或拆分后端接口。
    等待期间禁用配置和重复提交，失败后回到配置并聚焦安全错误提示。
@@ -37,6 +48,61 @@
    此步骤不展示虚构百分比，不表示历史邮件已全部同步，实际结果在邮箱中查看。
    若首次安排失败，明确账号已添加、稍后可在邮箱中重试，不回到创建流程重复添加。
    排队返回 BUSY 表示已有同步任务，不作为启动失败处理。
+
+### NAVER / Yandex / iCloud / Yahoo 的当前预设
+
+| 服务商 | 收信（IMAP） | 发信（SMTP） | 自动识别域名 |
+| --- | --- | --- | --- |
+| NAVER Mail | `imap.naver.com:993`，隐式 TLS | `smtp.naver.com:587`，STARTTLS | `naver.com` |
+| Yandex Mail | `imap.yandex.com:993`，隐式 TLS | `smtp.yandex.com:465`，隐式 TLS | `yandex.com`、`yandex.ru`、`ya.ru` |
+| iCloud Mail | `imap.mail.me.com:993`，隐式 TLS | `smtp.mail.me.com:587`，STARTTLS | `icloud.com`、`me.com`、`mac.com` |
+| Yahoo Mail | `imap.mail.yahoo.com:993`，隐式 TLS | `smtp.mail.yahoo.com:465`，隐式 TLS | `yahoo.com` |
+
+- 仅按完整域名精确识别，不把子域名或 `naver.com.evil.invalid` 等地址误路由。
+  未收录地区别名/自定义域可手选预设或自定义，不猜测服务器。
+- Yandex 上述个人域使用 @ 前账户名；企业及其他手选域保留完整邮箱，单个/批量使用相同解析规则。
+  iCloud 默认使用官方允许的完整邮箱作为 IMAP 用户名，SMTP 也固定完整邮箱，不执行静默认证重试。
+- Yandex 官网另提供境外 IMAP `imap.ya.ru`；遇到网络限制时可在现有自定义入口按官方参数填写，
+  不按用户 IP 推测地区、不自动切换主机或降低 TLS。
+- Yahoo 单个/批量均使用完整邮箱地址及应用专用密码，不修改应用密码、不添加 OAuth。
+  自动识别仅限 `yahoo.com`，不将 `yahoo.co.jp`（Yahoo Japan）或任意后缀/子域
+  误导到全球 Yahoo 服务器；其他地址需按所属服务官方参数手选或自定义。
+  账户无法生成应用密码时，先使用官方网页/应用，不反复尝试网页登录密码。
+  参数于 2026-11-01 核对
+  [Yahoo 官方 IMAP/SMTP 说明](https://help.yahoo.com/kb/new-mail-for-desktop/imap-smtp-settings-article-sln4075.html)；
+  本次接入通过合成测试，未持有真实 Yahoo 凭据，不宣称该账号收发/同步已验收。
+- 新预设只影响添加向导，不迁移或覆写已保存账号端点；官方图标本地分发，来源及哈希见
+  [品牌资源说明](../../../frontend/public/providers/README.md)。
+- NAVER 文件夹选择若 EXAMINE 与 STATUS 都缺少 UIDVALIDITY，仅在官方 `imap.naver.com`
+  主机补一次普通 SELECT，采用服务器真实的新快照，后续正文仍 BODY.PEEK；
+  不发送 STORE/CLOSE/EXPUNGE。权限失败、冲突或补取仍缺身份必须保持错误，
+  后者安全诊断为 `missing_uidvalidity_after_select`，不编造值、不用旧数据库身份顶替。
+- NAVER 明确返回零 UIDVALIDITY 与字段缺失分开处理；仅官方隐式 TLS 端点允许原样
+  保存零值并保守同步，schema v5 迁移前自动备份。此类邮箱已读/未读须逐封核验完整摘要、
+  显式零值及服务器写入回执，失败不虚构成功；星标和移动仍暂不支持。
+  UID 重用与缓存保护、协议局限见 [ADR-0010](../../02-architecture/adr/ADR-0010-naver-zero-uidvalidity.md)。
+- 官方参数核验于 2026-10-31：[NAVER](https://help.naver.com/service/30029/contents/21351?osType=COMMONOS)、
+  [NAVER 应用密码](https://help.naver.com/service/30029/contents/21349?osType=PC)、
+  [Yandex](https://yandex.com/support/yandex-360/customers/mail/en/mail-clients/others)、
+  [iCloud](https://support.apple.com/en-us/102525)。
+  预设/测试通过不等于已使用真实用户账号验证认证、首次同步或发送。
+
+### 自定义服务商模板
+
+- 使用 `CustomProvidersBridge.List/Create`，模板保存于当前应用数据目录的 `custom-providers.json`，
+  不是浏览器 localStorage；重开向导或重启应用后仍可选择。
+- 仅保存名称、IMAP/SMTP 主机、端口、TLS 模式及随机模板标识。
+  不接受/保存邮箱、登录用户名、密码、令牌或凭据引用；模板编辑器不会提供这些字段。
+- 保存当前配置时只投影连接参数，保留本次账号输入；重新打开账号向导时凭据从空值开始。
+- 模板仅是连接配置，不触发网络认证；点击“验证并添加”仍走原有 IMAP/SMTP 验证及系统凭据存储。
+- 账号仍按原有 `custom` 类型保存，服务器端点独立落在该账号中；不改既有账号、数据库结构和侧栏服务商分组语义。
+- 名称不能为空、不能与已保存模板或内置名称冲突，最多 128 UTF-8 字节，最多 32 个模板；
+  主机/端口校验与既有账号边界保持一致，只允许 TLS/STARTTLS。
+- 配置文件限 64 KiB、显式版本 1、拒绝未知字段与坏文件，受数据目录根约束并原子替换；
+  读取失败明确提示，内置服务商仍可用；不会静默清空已有配置。
+- 本轮提供创建/复用，不含改名、覆盖或删除模板；未知邮箱域不按保存模板猜测服务器，仍由用户显式选择。
+- 浏览器纯预览不提供真实模板创建；创建与跨次复用已通过 Windows 原生验证（TASK-0080），
+  使用合成主机和隔离目录，未宣称真实邮箱认证成功。
 
 ### 同一服务商批量添加
 

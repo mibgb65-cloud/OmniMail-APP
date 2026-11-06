@@ -29,12 +29,14 @@ type AddAccountInput struct {
 	SMTP         ServerInput `json:"smtp"`
 }
 type AccountSummary struct {
-	ID           string               `json:"id"`
-	Email        string               `json:"email"`
-	DisplayName  string               `json:"displayName"`
-	ProviderCode string               `json:"providerCode"`
-	Status       domain.AccountStatus `json:"status"`
-	Sync         SyncState            `json:"sync"`
+	ID                  string               `json:"id"`
+	Email               string               `json:"email"`
+	DisplayName         string               `json:"displayName"`
+	ProviderCode        string               `json:"providerCode"`
+	Status              domain.AccountStatus `json:"status"`
+	Sync                SyncState            `json:"sync"`
+	MessageCount        *int                 `json:"messageCount,omitempty"`
+	LimitedMessageCount *int                 `json:"limitedMessageCount,omitempty"`
 }
 type SyncState struct {
 	Running    bool   `json:"running"`
@@ -81,11 +83,26 @@ func (s *Mail) Accounts(ctx context.Context) ([]AccountSummary, error) {
 	if err != nil {
 		return nil, err
 	}
+	counts, err := s.store.MailCounts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	limited, err := s.store.MailLimitCounts(ctx)
+	if err != nil {
+		return nil, err
+	}
 	result := []AccountSummary{}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, account := range accounts {
-		result = append(result, AccountSummary{account.ID, account.Email, account.DisplayName, account.ProviderCode, account.Status, s.states[account.ID]})
+		count := counts[account.ID]
+		incomplete := limited[account.ID]
+		result = append(result, AccountSummary{
+			ID: account.ID, Email: account.Email, DisplayName: account.DisplayName,
+			ProviderCode: account.ProviderCode, Status: account.Status, Sync: s.states[account.ID],
+			MessageCount:        &count,
+			LimitedMessageCount: &incomplete,
+		})
 	}
 	return result, nil
 }

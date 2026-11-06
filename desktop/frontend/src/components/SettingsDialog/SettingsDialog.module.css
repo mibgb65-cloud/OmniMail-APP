@@ -197,7 +197,7 @@
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
 }
-.storage-preview {
+.capability-label {
   flex-shrink: 0;
   padding: var(--space-1) var(--space-3);
   border: 1px solid var(--color-border-subtle);
@@ -254,6 +254,10 @@
 .storage-dot[data-tone='4'] {
   background: var(--storage-tone-4);
 }
+.storage-bar span[data-tone='5'],
+.storage-dot[data-tone='5'] {
+  background: var(--storage-tone-5);
+}
 .storage-items {
   margin: var(--space-4) 0 0;
   padding: 0;
@@ -301,6 +305,7 @@
   color: var(--color-text-secondary);
   font-size: var(--text-sm);
 }
+/* “关于”页用细分隔线分区，不再嵌套圆角卡片。 */
 .about-identity {
   display: flex;
   align-items: center;
@@ -310,22 +315,81 @@
   width: var(--brand-size-large);
   height: var(--brand-size-large);
 }
-.about-identity strong {
+.about-name strong {
   font-size: var(--text-lg);
 }
-.about-identity p,
-.about-description,
+.about-name p,
+.about-tagline,
+.about-lead p,
+.about-block > p,
+.about-steps p,
 .version-unavailable,
 .metadata dt {
   color: var(--color-text-secondary);
 }
-.about-identity p,
+.about-name p,
+.about-steps span,
+.about-steps p,
+.version-unavailable,
 .metadata dt {
   font-size: var(--text-sm);
 }
-.about-description,
-.version-unavailable {
+.about-tagline {
+  margin-top: var(--space-5);
+}
+.about-lead {
   margin-top: var(--space-6);
+}
+.about-lead h3,
+.about-block > h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+}
+.about-block {
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border-subtle);
+}
+.about-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.about-steps li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  align-content: start;
+  align-items: baseline;
+  min-width: 0;
+}
+.about-steps span {
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+}
+.about-steps p {
+  grid-column: 2;
+  grid-row: 2;
+}
+.about-steps strong {
+  font-weight: var(--font-medium);
+}
+.about-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
 }
 .metadata {
   display: grid;
@@ -343,44 +407,13 @@
 .metadata-wide {
   grid-column: 1 / -1;
 }
-.development-intro,
-.development-next {
-  margin-top: var(--space-7);
+/* “关于”页只有极少数无法读取连接状态的场景走这条回退路径，分区线由 .about-block 承担。 */
+.about-block .metadata {
+  margin-top: var(--space-4);
+  padding-top: 0;
+  border-top: 0;
 }
-.development-intro h3,
-.development-next h3 {
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-base);
-}
-.development-intro p,
-.development-next p {
-  color: var(--color-text-secondary);
-}
-.development-steps {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-3);
-  margin: var(--space-5) 0 0;
-  padding: 0;
-  list-style: none;
-}
-.development-steps li {
-  padding: var(--space-4);
-  background: var(--color-bg-surface);
-  border-radius: var(--radius-sm);
-}
-.development-steps p {
-  margin-top: var(--space-2);
-  font-size: var(--text-sm);
-}
-.development-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  margin-top: var(--space-6);
-  color: var(--color-text-secondary);
+.about-block .metadata dd {
   font-size: var(--text-sm);
 }
 @media (max-width: 680px) {
@@ -431,16 +464,10 @@
   .storage-size {
     margin-inline-start: calc(var(--space-3) + var(--space-4));
   }
-  .development-steps {
+  .about-steps {
     grid-template-columns: 1fr;
+    gap: var(--space-4);
   }
-}
-.image-options {
-  display: grid;
-  gap: var(--space-3);
-  margin: var(--space-4) 0;
-  padding: 0;
-  border: 0;
 }
 .mail-images {
   margin-top: var(--space-4);
@@ -449,17 +476,41 @@
   margin: 0 0 var(--space-3);
   font-size: var(--text-base);
 }
-.image-option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: var(--control-height);
-  cursor: pointer;
-}
-.image-option input {
-  accent-color: var(--color-accent);
-}
 .image-hint {
   color: var(--color-text-secondary);
   font-size: var(--text-sm);
+}
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.section-heading h3 {
+  margin: 0;
+  font-size: var(--text-base);
+}
+.section-heading > svg {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+.section-description {
+  margin-top: var(--space-4);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height);
+}
+.section-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-sunken);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+.section-notice svg {
+  flex-shrink: 0;
 }

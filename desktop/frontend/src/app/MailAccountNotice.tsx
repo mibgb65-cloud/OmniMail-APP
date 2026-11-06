@@ -1,7 +1,7 @@
 import * as api from '../lib/bridge/mail';
 import { useTranslation } from '../lib/i18n/useTranslation';
 import type { MailController } from './useMail';
-import { mailboxState } from './mailboxState';
+import { limitedMessageCount, mailboxState } from './mailboxState';
 import styles from './MailAccountNotice.module.css';
 
 interface Notice {
@@ -13,7 +13,9 @@ interface Notice {
     | 'syncCachedHint'
     | 'reauthHint'
     | 'disconnectedHint'
-    | 'noAccountsHint';
+    | 'noAccountsHint'
+    | 'mailboxLimitedHint';
+  count?: number;
   error?: unknown;
   action?: 'reload' | 'sync';
 }
@@ -30,6 +32,8 @@ export function mailAccountNotice(mail: MailController): Notice | undefined {
   const failed = active.find((account) => mailboxState(account) === 'error');
   if (failed)
     return { kind: 'error', text: 'syncFailedHint', error: failed.sync.errorCode, action: 'sync' };
+  const limited = active.reduce((sum, account) => sum + limitedMessageCount(account), 0);
+  if (limited) return { kind: 'info', text: 'mailboxLimitedHint', count: limited };
   if (selected.length && !active.length) return { kind: 'info', text: 'disconnectedHint' };
   if (!selected.length && !mail.messages.length) return { kind: 'info', text: 'noAccountsHint' };
 }
@@ -42,19 +46,23 @@ export function mailSyncState(mail: MailController) {
     return 'running';
   if (accounts.some((account) => mailboxState(account) === 'error')) return 'error';
   if (accounts.some((account) => mailboxState(account) === 'partial')) return 'partial';
+  if (accounts.some((account) => mailboxState(account) === 'limited')) return 'limited';
   return 'idle';
 }
 
 export function MailAccountNotice({ mail, notice }: { mail: MailController; notice?: Notice }) {
   const { t } = useTranslation('mail');
   if (!notice) return null;
+  // 账号同步状态只在侧栏红点/管理窗呈现；保留内部状态用于抑制误导的“暂无邮件”空态。
+  // 列表这里仅显示基础账号读取失败或尚未配置，不重复显示同步、重授权及受限告警。
+  if (notice.text !== 'accountReadFailed' && notice.text !== 'noAccountsHint') return null;
   return (
     <div
       className={styles.notice}
       data-kind={notice.kind}
       role={notice.kind === 'error' ? 'alert' : 'status'}
     >
-      <p>{t(notice.text)}</p>
+      <p>{t(notice.text, { count: notice.count })}</p>
       {notice.error != null && <p>{t(api.errorKey(notice.error))}</p>}
       {notice.action && (
         <button

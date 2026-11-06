@@ -1,7 +1,8 @@
 import { StrictMode } from 'react';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { TOOLTIP_DELAY, TOOLTIP_HIDE_DELAY } from '../components/Tooltip/useTooltip';
 import { getVersion } from '../lib/bridge/app';
 import { I18nProvider } from '../lib/i18n/I18nProvider';
 import type { Locale } from '../lib/i18n/resources';
@@ -38,13 +39,22 @@ function openAbout(locale: Locale = 'zh-CN') {
 
 it('全局提示使用统一浮层，不再显示原生 title，悬停侧栏可看到说明', async () => {
   vi.mocked(getVersion).mockResolvedValue(VERSION_INFO);
-  await renderApp();
-  expect(document.querySelector('[title]')).toBeNull();
-  const trigger = screen.getByRole('button', { name: '草稿箱' });
-  fireEvent.pointerOver(trigger, { pointerType: 'mouse' });
-  expect(await screen.findByRole('tooltip')).toHaveTextContent('仅切换界面预览');
-  fireEvent.pointerOut(trigger, { relatedTarget: document.body });
-  await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
+  const view = await renderApp();
+  // 全量并行测试下使用确定性时钟，避免把机器负载造成的延迟误判为提示失效。
+  vi.useFakeTimers();
+  try {
+    expect(document.querySelector('[title]')).toBeNull();
+    const trigger = screen.getByRole('button', { name: '草稿箱' });
+    fireEvent.pointerOver(trigger, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(TOOLTIP_DELAY));
+    expect(screen.getByRole('tooltip')).toHaveTextContent('仅切换界面预览');
+    fireEvent.pointerOut(trigger, { relatedTarget: document.body });
+    act(() => vi.advanceTimersByTime(TOOLTIP_HIDE_DELAY));
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+  } finally {
+    view.unmount();
+    vi.useRealTimers();
+  }
 });
 
 function switchToolbarLanguage(locale: Locale) {
@@ -72,7 +82,9 @@ describe('初始化工作台', () => {
     await renderApp();
     openAbout();
     expect(await screen.findByText('桌面服务已连接 · React ↔ Go')).toBeVisible();
-    expect(screen.getByText(VERSION_INFO.version)).toBeVisible();
+    expect(
+      within(screen.getByRole('tabpanel', { name: '关于' })).getByText(VERSION_INFO.version),
+    ).toBeVisible();
     expect(screen.getByText(VERSION_INFO.commit)).toBeVisible();
     expect(screen.getByText(VERSION_INFO.platform)).toBeVisible();
   });
@@ -201,7 +213,7 @@ describe('工作台与开屏的衔接', () => {
     expect(within(about).getByText(VERSION_INFO.version)).toBeVisible();
     expect(within(about).getByText(VERSION_INFO.commit)).toBeVisible();
     fireEvent.click(within(dialog).getByRole('tab', { name: '通用设置' }));
-    fireEvent.click(within(dialog).getByRole('switch', { name: '深色模式' }));
+    fireEvent.click(within(dialog).getByRole('radio', { name: '暗色模式' }));
     const toolbar = screen.getByRole('banner', { name: '窗口操作栏' });
     expect(within(toolbar).getByRole('button', { name: '深色模式' })).toHaveAttribute(
       'aria-pressed',
@@ -210,7 +222,7 @@ describe('工作台与开屏的衔接', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'English' }));
     expect(screen.getByRole('dialog', { name: 'Settings' })).toBe(dialog);
     expect(within(toolbar).getByRole('group', { name: 'Change language' })).toBeVisible();
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close settings' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(within(toolbar).getByRole('button', { name: 'English' })).toHaveAttribute(
       'aria-pressed',

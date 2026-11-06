@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { revealMailPage } from './mailReveal';
+import { revealMailList, revealMailPage } from './mailReveal';
 
 function fixture() {
   const page = document.createElement('div');
@@ -103,4 +103,42 @@ it('穿透单列表格外壳为正文分段，首屏动画数量有界且不修�
   expect(cancelled).toHaveBeenCalledTimes(18);
   close();
   page.remove();
+});
+
+it('列表只为视口内邮件行从上到下入场，滚动立即取消，清理后不再响应旧事件', () => {
+  const viewport = document.createElement('div');
+  viewport.dataset.customScrollbar = '';
+  const list = document.createElement('ul');
+  viewport.append(list);
+  document.body.append(viewport);
+  vi.spyOn(viewport, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 100, 320, 300));
+  const calls: { text: string | null; delay: number }[] = [];
+  const cancelled = vi.fn();
+  [350, 120, 250, 500, 50].forEach((top, index) => {
+    const row = document.createElement('li');
+    row.dataset.mailReveal = '';
+    row.textContent = `邮件 ${index}`;
+    vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, top, 320, 40));
+    Object.defineProperty(row, 'animate', {
+      value: vi.fn((_frames, options: KeyframeAnimationOptions) => {
+        calls.push({ text: row.textContent, delay: Number(options.delay) });
+        return { cancel: cancelled };
+      }),
+    });
+    list.append(row);
+  });
+  const close = revealMailList(list);
+  expect(calls).toEqual([
+    { text: '邮件 1', delay: 0 },
+    { text: '邮件 2', delay: 75 },
+    { text: '邮件 0', delay: 150 },
+  ]);
+  viewport.dispatchEvent(new Event('scroll'));
+  expect(cancelled).toHaveBeenCalledTimes(3);
+  close();
+  expect(cancelled).toHaveBeenCalledTimes(6);
+  viewport.dispatchEvent(new Event('scroll'));
+  viewport.dispatchEvent(new Event('pointerdown'));
+  expect(cancelled).toHaveBeenCalledTimes(6);
+  viewport.remove();
 });

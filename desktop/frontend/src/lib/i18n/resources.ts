@@ -5,6 +5,9 @@ import zhWorkspace from '../../locales/zh-CN/workspace.json';
 import zhSettings from '../../locales/zh-CN/settings.json';
 import zhMessages from '../../locales/zh-CN/messages.json';
 import zhMail from '../../locales/zh-CN/mail.json';
+import zhTranslation from '../../locales/zh-CN/translation.json';
+import zhAI from '../../locales/zh-CN/ai.json';
+import zhTasks from '../../locales/zh-CN/tasks.json';
 import enCommon from '../../locales/en/common.json';
 import enConnection from '../../locales/en/connection.json';
 import enNavigation from '../../locales/en/navigation.json';
@@ -12,6 +15,9 @@ import enWorkspace from '../../locales/en/workspace.json';
 import enSettings from '../../locales/en/settings.json';
 import enMessages from '../../locales/en/messages.json';
 import enMail from '../../locales/en/mail.json';
+import enTranslation from '../../locales/en/translation.json';
+import enAI from '../../locales/en/ai.json';
+import enTasks from '../../locales/en/tasks.json';
 
 const chinese = {
   common: zhCommon,
@@ -21,6 +27,9 @@ const chinese = {
   settings: zhSettings,
   messages: zhMessages,
   mail: zhMail,
+  translation: zhTranslation,
+  ai: zhAI,
+  tasks: zhTasks,
 };
 
 export type Translations = typeof chinese;
@@ -37,6 +46,9 @@ export const resources = {
     settings: enSettings,
     messages: enMessages,
     mail: enMail,
+    translation: enTranslation,
+    ai: enAI,
+    tasks: enTasks,
   } satisfies Translations,
 };
 
