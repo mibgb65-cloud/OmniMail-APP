@@ -1,0 +1,104 @@
+version: '3'
+
+vars:
+  APP_BINARY: 'bin/omnimail{{exeExt}}'
+
+tasks:
+  setup:
+    desc: 安装锁定的前端依赖和 Go 模块
+    dir: desktop
+    cmds:
+      - go mod download
+      - pnpm --dir frontend install --frozen-lockfile
+
+  bindings:
+    desc: 生成 Wails TypeScript 绑定
+    dir: desktop
+    cmds:
+      - wails3 generate bindings -ts -i -f "-tags=bindings" .
+
+  dev:
+    desc: 启动 Wails 桌面开发环境和 Vite 热更新
+    cmds:
+      - wails3 dev -config ./desktop/build/config.yml
+
+  build:
+    desc: 构建内嵌前端的开发版程序（不打包）
+    cmds:
+      - task: bindings
+      - task: frontend:build
+      - task: go:build
+
+  run:
+    desc: 运行已经构建的开发版程序
+    dir: desktop
+    cmds:
+      - './{{.APP_BINARY}}'
+
+  test:
+    desc: 构建前端资源并运行 Go 测试
+    cmds:
+      - task: bindings
+      - task: frontend:build
+      - task: go:test
+
+  verify:
+    desc: 安装依赖并执行格式、Lint、类型检查、测试和开发构建
+    cmds:
+      - task: setup
+      - task: bindings
+      - task: format:check
+      - task: frontend:lint
+      - task: frontend:build
+      - task: go:vet
+      - task: go:test
+      - task: go:build
+
+  format:
+    desc: 格式化 Go 和前端源码
+    dir: desktop
+    cmds:
+      - gofmt -w *.go
+      - pnpm --dir frontend format
+
+  format:check:
+    desc: 检查 Go 和前端源码格式
+    dir: desktop
+    cmds:
+      - |
+        unformatted=$(gofmt -l *.go) || exit 1
+        if [ -n "$unformatted" ]; then
+          printf '%s\n' "$unformatted"
+          exit 1
+        fi
+      - pnpm --dir frontend format:check
+
+  frontend:lint:
+    dir: desktop/frontend
+    cmds:
+      - pnpm lint
+
+  frontend:build:
+    dir: desktop/frontend
+    cmds:
+      - pnpm build:dev
+
+  common:dev:frontend:
+    dir: desktop/frontend
+    cmds:
+      - pnpm dev
+
+  go:vet:
+    dir: desktop
+    cmds:
+      - go vet ./...
+
+  go:test:
+    dir: desktop
+    cmds:
+      - go test ./...
+
+  go:build:
+    dir: desktop
+    cmds:
+      - 'go build -gcflags=all=-l -o "{{.APP_BINARY}}" .'

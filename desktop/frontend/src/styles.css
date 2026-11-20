@@ -1,0 +1,92 @@
+:root {
+  font-family: system-ui, "Microsoft YaHei", sans-serif;
+  color: #172824;
+  background: #f6f8f7;
+  line-height: 1.6;
+  --muted: #4c6159;
+  --accent: #146552;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.shell {
+  width: min(100%, 46rem);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 7vw, 4rem);
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  letter-spacing: -0.05em;
+  line-height: 1.1;
+}
+
+.eyebrow {
+  margin-bottom: 0.75rem;
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.intro {
+  margin-top: 0.75rem;
+  color: var(--muted);
+}
+
+.card {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #d5e0da;
+  border-radius: 0.9rem;
+  background: #fff;
+}
+
+.card h2 {
+  margin-bottom: 0.35rem;
+  font-size: 1.2rem;
+}
+
+.card p {
+  color: var(--muted);
+}
+
+button {
+  min-height: 44px;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #0b4e3f;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+button:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+.status {
+  margin-top: 0.75rem;
+}

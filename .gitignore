@@ -1,0 +1,10 @@
+/.task/
+/desktop/.wails/
+/desktop/bin/
+/desktop/frontend/bindings/
+/desktop/frontend/dist/
+/desktop/frontend/node_modules/
+.env
+.env.*
+!.env.example
+*.log

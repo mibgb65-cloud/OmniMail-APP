@@ -1,0 +1,30 @@
+name: CI
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: desktop/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: 安装 pnpm
+        run: npm install -g pnpm@12.6.0
+      - name: 安装 Task 和 Wails
+        run: |
+          go install github.com/go-task/task/v3/cmd/task@v3.53.1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
+      - name: 验证
+        run: task verify
