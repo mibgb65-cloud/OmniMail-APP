@@ -1,0 +1,163 @@
+/* 模块化浮层卡片工作台与浮层抽屉架构（外边距恒定 10px，顶栏垂直间距恒定 8px，工作区顶部基准线恒定 70px） */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  padding: 10px;
+  gap: 8px;
+  background: var(--bg-canvas);
+  overflow: hidden;
+}
+
+.app-shell[data-density="compact"] {
+  --list-card-pad: 8px 10px;
+}
+
+.app-shell[data-density="comfortable"] {
+  --list-card-pad: 9px 11px;
+}
+
+/* 严格 Flex 子项尺寸收缩契约，防止任何子元素撑破父容器横向溢出 */
+.app-shell > *,
+.workspace-stage > *,
+.workspace-grid > *,
+.panel-card > * {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 顶部状态横幅（离线 / 授权失效 / 休假自动回复 / 局部同步失败） */
+.runtime-banner {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.runtime-banner.warning {
+  background: var(--status-warning-bg);
+  border-color: color-mix(in srgb, var(--status-warning) 35%, transparent);
+  color: var(--status-warning);
+}
+
+.runtime-banner.danger {
+  background: var(--status-danger-bg);
+  border-color: color-mix(in srgb, var(--status-danger) 35%, transparent);
+  color: var(--status-danger);
+}
+
+.runtime-banner.info {
+  background: var(--bg-selected);
+  border-color: var(--border-selected);
+  color: var(--brand-accent);
+}
+
+/* 工作区舞台：承载底层三栏与位于顶栏下方的浮层抽屉 */
+.workspace-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.workspace-grid {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.panel-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.sidebar-pane {
+  width: 224px;
+  min-width: 224px;
+  flex-shrink: 0;
+  padding: 12px;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.mail-list-pane {
+  width: 328px;
+  min-width: 328px;
+  flex-shrink: 0;
+}
+
+.mail-reader-pane {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-pane {
+  width: 320px;
+  min-width: 320px;
+  flex-shrink: 0;
+  background: var(--bg-card);
+}
+
+/* 工作区内浮层抽屉与遮罩（不挤压底层三栏，仅覆盖在顶栏下方） */
+.workspace-drawer-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 32;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.drawer-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--drawer-scrim);
+  border-radius: 14px;
+}
+
+.left-nav-drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 228px;
+  min-width: 228px;
+  padding: 10px;
+  gap: 8px;
+  justify-content: space-between;
+  border-radius: 14px;
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-drawer);
+}
+
+.ai-drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 320px;
+  min-width: 320px;
+  border-radius: 14px;
+  background: var(--bg-ai-surface);
+  border-color: var(--border-ai);
+  box-shadow: var(--shadow-drawer);
+}

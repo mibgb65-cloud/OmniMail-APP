@@ -1,0 +1,140 @@
+/* 设置双栏弹窗、设置卡片、开关、存储条与代码块 */
+.settings-shell {
+  display: grid;
+  grid-template-columns: 224px minmax(0, 1fr);
+  height: min(820px, calc(100vh - 48px));
+  max-width: min(1040px, calc(100vw - 48px));
+}
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 12px;
+  gap: 8px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-default);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.settings-nav-top {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.settings-nav-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-ink);
+  padding: 0 4px;
+}
+
+.settings-nav-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.settings-modal-footer {
+  height: 44px;
+  min-height: 44px;
+  padding: 0 20px;
+}
+
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  min-width: 0;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+}
+
+.settings-row > div:first-child {
+  min-width: 0;
+}
+
+.settings-row + .settings-row {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-default);
+}
+
+.switch-btn {
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.16s ease;
+}
+
+.switch-btn.on {
+  background: var(--brand-accent);
+}
+
+.switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.16s ease;
+}
+
+.switch-btn.on .switch-knob {
+  transform: translateX(18px);
+}
+
+.storage-bar {
+  display: flex;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  gap: 2px;
+  background: var(--bg-subtle);
+}
+
+.code-block {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-body);
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}

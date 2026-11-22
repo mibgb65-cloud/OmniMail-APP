@@ -1,0 +1,127 @@
+/* 写信弹窗固定顶栈、独立正文滚动区（保底 >= 240px）与最小化停靠卡 */
+.compose-modal-card {
+  max-width: min(920px, calc(100vw - 48px));
+  height: min(680px, calc(100vh - 48px));
+}
+
+.compose-top-fixed {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.compose-modal-header {
+  height: 48px;
+  min-height: 48px;
+  padding: 0 16px;
+}
+
+.compose-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 5px 16px;
+  border-bottom: 1px solid var(--border-default);
+  font-size: 13px;
+  min-width: 0;
+}
+
+.compose-row-label {
+  width: 48px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.recipient-chips {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.recipient-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 25px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--bg-selected);
+  border: 1px solid var(--border-selected);
+  color: var(--brand-accent);
+  font-size: 12px;
+  font-weight: 500;
+  max-width: 100%;
+}
+
+.recipient-chip.invalid {
+  background: var(--status-danger-bg);
+  border-color: var(--status-danger);
+  color: var(--status-danger);
+}
+
+.compose-toolbar {
+  height: 42px;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 16px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.compose-body-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.compose-editor {
+  flex: 1;
+  min-height: 240px;
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  color: var(--text-ink);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.compose-footer-fixed {
+  height: 52px;
+  min-height: 52px;
+  padding: 0 16px;
+}
+
+.compose-dock {
+  position: fixed;
+  right: 20px;
+  bottom: 16px;
+  z-index: 48;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--brand-primary);
+  color: var(--brand-primary-ink);
+  box-shadow: var(--shadow-modal);
+}

@@ -1,0 +1,82 @@
+import type { ProviderId } from "./account";
+import type { AttachmentItem } from "./mail";
+import type { SettingsTabId } from "./settings";
+
+export type WorkspaceScreen = "mail" | "contacts" | "onboarding";
+
+export type RuntimeBannerMode =
+  "none" | "offline" | "auth-expired" | "auto-reply" | "partial-sync";
+
+export type DangerConfirmKind =
+  | "remove-account"
+  | "empty-trash"
+  | "permanent-delete"
+  | "discard-draft"
+  | "delete-label"
+  | "wipe-local-data"
+  | "no-subject-send";
+
+export type UpdateStage =
+  "checking" | "available" | "downloading" | "failed" | "ready";
+
+export type OverlayModal =
+  | { type: "none" }
+  | { type: "settings"; tab: SettingsTabId; accountId?: string }
+  | { type: "command-palette" }
+  | { type: "advanced-search" }
+  | { type: "add-account" }
+  | { type: "provider-guide"; provider: ProviderId }
+  | {
+      type: "oauth-flow";
+      provider: ProviderId;
+      stage: "waiting" | "incomplete";
+    }
+  | { type: "manual-imap" }
+  | {
+      type: "sync-progress";
+      accountName: string;
+      stage:
+        "testing" | "connected" | "failed" | "syncing" | "partial" | "done";
+    }
+  | { type: "legal-doc"; doc: "terms" | "privacy" }
+  | { type: "ai-consent"; actionLabel: string; onConfirmPrompt?: string }
+  | { type: "snooze"; mailIds: string[] }
+  | {
+      type: "label-manage";
+      mailIds?: string[];
+      mode?: "assign" | "create" | "rename";
+      labelId?: string;
+    }
+  | { type: "move-folder"; mailIds: string[] }
+  | { type: "schedule-send"; draftId: string }
+  | {
+      type: "attachment-preview";
+      attachment: AttachmentItem;
+      mailSubject: string;
+    }
+  | { type: "attachment-transfer"; mode: "transfer" | "oversized" }
+  | { type: "mail-source"; mailId: string }
+  | { type: "print-export"; mailId: string }
+  | { type: "rule-editor"; ruleId?: string }
+  | { type: "account-server"; accountId: string }
+  | { type: "diagnostics"; accountId: string }
+  | { type: "backup-migration" }
+  | { type: "contact-edit"; contactId?: string }
+  | {
+      type: "danger-confirm";
+      kind: DangerConfirmKind;
+      targetId?: string;
+      targetLabel?: string;
+    }
+  | { type: "update-flow"; stage: UpdateStage }
+  | { type: "desktop-extras"; tab: "tray" | "notifications" };
+
+export interface ToastNotice {
+  id: string;
+  tone: "info" | "success" | "warning" | "danger";
+  title: string;
+  detail?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+  countdownSec?: number;
+}

@@ -1,0 +1,119 @@
+/* OmniMail 设计令牌：严格对应 OmniMail-redesign.fig 的 Theme 与 Metrics 变量 */
+:root,
+[data-theme="light"] {
+  --bg-canvas: #eff2f6;
+  --bg-card: #ffffff;
+  --bg-surface: #f7f9fc;
+  --bg-subtle: #eaeff5;
+  --bg-selected: #edf3ff;
+  --bg-nav-active: #ffffff;
+  --bg-ai-surface: #f5f6ff;
+  --bg-ai-subtle: #eaedff;
+
+  --border-default: #e2e7f0;
+  --border-strong: #cbd5e1;
+  --border-selected: #93c5fd;
+  --border-ai: #d6dafc;
+
+  --text-ink: #0f172a;
+  --text-body: #334155;
+  --text-secondary: #526075;
+  --text-muted: #5e6b7e;
+
+  --brand-primary: #141e2e;
+  --brand-primary-ink: #ffffff;
+  --brand-accent: #2563eb;
+  --brand-ai: #4f46e5;
+
+  --status-success: #15803d;
+  --status-success-bg: #ecfdf3;
+  --status-warning: #b45309;
+  --status-warning-bg: #fef3c7;
+  --status-danger: #be123c;
+  --status-danger-bg: #fff1f2;
+
+  /* 来源色标（与设计图芯片配色一致） */
+  --tag-gmail-bg: #fee2e2;
+  --tag-gmail-fg: #b91c1c;
+  --tag-outlook-bg: #dbeafe;
+  --tag-outlook-fg: #1d4ed8;
+  --tag-qq-bg: #e0f2fe;
+  --tag-qq-fg: #0369a1;
+  --tag-imap-bg: #e2e8f0;
+  --tag-imap-fg: #334155;
+
+  --shadow-card: 0 2px 10px rgba(15, 23, 42, 0.04);
+  --shadow-drawer: 0 12px 32px rgba(15, 23, 42, 0.16);
+  --shadow-modal: 0 24px 60px rgba(15, 23, 42, 0.22);
+  --shadow-toast: 0 12px 32px rgba(15, 23, 42, 0.16);
+  --backdrop-scrim: rgba(15, 23, 42, 0.42);
+  --drawer-scrim: rgba(15, 23, 42, 0.18);
+
+  /* Metrics 变量 */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --font-sans:
+    "Noto Sans SC", "Inter", "Microsoft YaHei UI", "PingFang SC", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono:
+    "JetBrains Mono", "Cascadia Code", ui-monospace, SFMono-Regular, Consolas,
+    monospace;
+}
+
+[data-theme="dark"] {
+  --bg-canvas: #0b0e14;
+  --bg-card: #131822;
+  --bg-surface: #181f2c;
+  --bg-subtle: #1f2737;
+  --bg-selected: #1b2842;
+  --bg-nav-active: #1b2332;
+  --bg-ai-surface: #1a1b32;
+  --bg-ai-subtle: #26284a;
+
+  --border-default: #232b3a;
+  --border-strong: #333e52;
+  --border-selected: #3b82f6;
+  --border-ai: #343766;
+
+  --text-ink: #f1f5f9;
+  --text-body: #cbd5e1;
+  --text-secondary: #94a3b8;
+  --text-muted: #8292a8;
+
+  --brand-primary: #f1f5f9;
+  --brand-primary-ink: #0f172a;
+  --brand-accent: #60a5fa;
+  --brand-ai: #818cf8;
+
+  --status-success: #4ade80;
+  --status-success-bg: #0f291e;
+  --status-warning: #fbbf24;
+  --status-warning-bg: #2b2110;
+  --status-danger: #fb7185;
+  --status-danger-bg: #2d1620;
+
+  --tag-gmail-bg: rgba(248, 113, 113, 0.16);
+  --tag-gmail-fg: #fca5a5;
+  --tag-outlook-bg: rgba(96, 165, 250, 0.16);
+  --tag-outlook-fg: #93c5fd;
+  --tag-qq-bg: rgba(56, 189, 248, 0.16);
+  --tag-qq-fg: #7dd3fc;
+  --tag-imap-bg: rgba(148, 163, 184, 0.16);
+  --tag-imap-fg: #cbd5e1;
+
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --shadow-drawer: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.58);
+  --shadow-toast: 0 12px 32px rgba(0, 0, 0, 0.48);
+  --backdrop-scrim: rgba(4, 7, 13, 0.65);
+  --drawer-scrim: rgba(2, 6, 23, 0.45);
+}

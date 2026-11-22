@@ -1,0 +1,109 @@
+import { useApp } from "../../state/AppContext";
+import { AiConsentModal } from "../ai/AiConsentModal";
+import { ScheduleSendModal } from "../compose/ScheduleSendModal";
+import { ContactEditModal } from "../contacts/ContactEditModal";
+import { AddAccountModal } from "../onboarding/AddAccountModal";
+import { LegalDocModal } from "../onboarding/LegalDocModal";
+import { ManualImapModal } from "../onboarding/ManualImapModal";
+import { OAuthFlowModal } from "../onboarding/OAuthFlowModal";
+import { ProviderGuideModal } from "../onboarding/ProviderGuideModal";
+import { SyncProgressModal } from "../onboarding/SyncProgressModal";
+import { SettingsModal } from "../settings/SettingsModal";
+import { AdvancedSearchModal } from "./AdvancedSearchModal";
+import {
+  AttachmentPreviewModal,
+  AttachmentTransferModal,
+} from "./AttachmentModals";
+import { BackupMigrationModal } from "./BackupMigrationModal";
+import { CommandPaletteModal } from "./CommandPaletteModal";
+import { DangerConfirmModal } from "./DangerConfirmModal";
+import { LabelManageModal } from "./LabelManageModal";
+import { MailSourceModal, PrintExportModal } from "./MailMetaModals";
+import { MoveFolderModal } from "./MoveFolderModal";
+import { AccountServerModal, DiagnosticsModal } from "./OpsModals";
+import { RuleEditorModal } from "./RuleEditorModal";
+import { SnoozeModal } from "./SnoozeModal";
+import { DesktopExtrasModal } from "./DesktopExtrasModal";
+import { UpdateFlowModal } from "./UpdateFlowModal";
+
+export function OverlayRouter() {
+  const { workspace } = useApp();
+  const ov = workspace.overlay;
+
+  switch (ov.type) {
+    case "none":
+      return null;
+    case "settings":
+      return (
+        <SettingsModal initialTab={ov.tab} initialAccountId={ov.accountId} />
+      );
+    case "command-palette":
+      return <CommandPaletteModal />;
+    case "advanced-search":
+      return <AdvancedSearchModal />;
+    case "add-account":
+      return <AddAccountModal />;
+    case "provider-guide":
+      return <ProviderGuideModal provider={ov.provider} />;
+    case "oauth-flow":
+      return <OAuthFlowModal provider={ov.provider} stage={ov.stage} />;
+    case "manual-imap":
+      return <ManualImapModal />;
+    case "sync-progress":
+      return (
+        <SyncProgressModal accountName={ov.accountName} stage={ov.stage} />
+      );
+    case "legal-doc":
+      return <LegalDocModal doc={ov.doc} />;
+    case "ai-consent":
+      return (
+        <AiConsentModal
+          actionLabel={ov.actionLabel}
+          onConfirmPrompt={ov.onConfirmPrompt}
+        />
+      );
+    case "snooze":
+      return <SnoozeModal mailIds={ov.mailIds} />;
+    case "label-manage":
+      return <LabelManageModal mailIds={ov.mailIds} />;
+    case "move-folder":
+      return <MoveFolderModal mailIds={ov.mailIds} />;
+    case "schedule-send":
+      return <ScheduleSendModal />;
+    case "attachment-preview":
+      return (
+        <AttachmentPreviewModal
+          attachment={ov.attachment}
+          mailSubject={ov.mailSubject}
+        />
+      );
+    case "attachment-transfer":
+      return <AttachmentTransferModal mode={ov.mode} />;
+    case "mail-source":
+      return <MailSourceModal mailId={ov.mailId} />;
+    case "print-export":
+      return <PrintExportModal mailId={ov.mailId} />;
+    case "rule-editor":
+      return <RuleEditorModal ruleId={ov.ruleId} />;
+    case "account-server":
+      return <AccountServerModal accountId={ov.accountId} />;
+    case "diagnostics":
+      return <DiagnosticsModal accountId={ov.accountId} />;
+    case "backup-migration":
+      return <BackupMigrationModal />;
+    case "contact-edit":
+      return <ContactEditModal contactId={ov.contactId} />;
+    case "danger-confirm":
+      return (
+        <DangerConfirmModal
+          kind={ov.kind}
+          targetId={ov.targetId}
+          targetLabel={ov.targetLabel}
+        />
+      );
+    case "update-flow":
+      return <UpdateFlowModal stage={ov.stage} />;
+    case "desktop-extras":
+      return <DesktopExtrasModal tab={ov.tab} />;
+  }
+}

@@ -1,0 +1,72 @@
+/* 中屏笔记本断点响应式规则（1025px ~ 1439px · 基准 1280×720） */
+@media (max-width: 1439px) {
+  .workspace-grid {
+    gap: 8px;
+  }
+
+  .panel-card {
+    border-radius: 14px;
+  }
+
+  .sidebar-pane {
+    width: 196px;
+    min-width: 196px;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .compose-cta {
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .nav-item {
+    height: 30px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .mail-list-pane {
+    width: 292px;
+    min-width: 292px;
+  }
+
+  .list-header {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .mail-list-scroll {
+    padding: 8px 6px 8px 8px;
+    gap: 6px;
+  }
+
+  .reader-toolbar {
+    height: 48px;
+    min-height: 48px;
+    padding: 0 14px;
+  }
+
+  .reader-act-btn {
+    height: 30px;
+    padding: 0 9px;
+    font-size: 12px;
+  }
+
+  .reader-scroll {
+    padding: 14px 18px;
+    gap: 12px;
+  }
+
+  .reader-subject {
+    font-size: 18px;
+  }
+
+  .quick-reply-wrap {
+    padding: 6px 16px 12px;
+  }
+
+  .settings-shell {
+    grid-template-columns: 208px minmax(0, 1fr);
+  }
+}

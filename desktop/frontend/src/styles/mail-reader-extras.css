@@ -1,0 +1,140 @@
+/* 正文扩展卡片：会议邀请 (.ics)、附件网格与固定底部回复栏 */
+.ics-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-selected);
+  flex-shrink: 0;
+}
+
+.ics-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.ics-cal-box {
+  width: 46px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-selected);
+  background: var(--bg-card);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ics-cal-month {
+  background: var(--brand-accent);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 0;
+}
+
+.ics-cal-day {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-ink);
+  padding: 4px 0;
+}
+
+.attachment-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.attachment-card {
+  flex: 1 1 210px;
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+}
+
+.attachment-card:hover {
+  border-color: var(--border-strong);
+}
+
+.quick-reply-wrap {
+  padding: 8px 18px 14px;
+  background: var(--bg-card);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.quick-reply-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 11px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  cursor: text;
+}
+
+.quick-reply-compact:hover {
+  border-color: var(--brand-accent);
+}
+
+.quick-reply-compact-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-ink);
+  font-size: 12px;
+  outline: none;
+  cursor: text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-reply-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px 13px;
+  border-radius: 13px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+}
+
+.quick-reply-box:focus-within {
+  border-color: var(--brand-accent);
+  background: var(--bg-card);
+}
+
+.quick-reply-lock-pill {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  color: var(--text-ink);
+  max-width: 240px;
+}
+
+.quick-reply-textarea {
+  width: 100%;
+  min-height: 50px;
+  max-height: 130px;
+  resize: vertical;
+  border: none;
+  background: transparent;
+  color: var(--text-ink);
+  font-size: 13px;
+  line-height: 1.55;
+  outline: none;
+}

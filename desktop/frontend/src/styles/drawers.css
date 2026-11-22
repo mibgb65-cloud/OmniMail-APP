@@ -1,0 +1,144 @@
+/* 小屏 60px Icon-Only Rail 与左右浮层抽屉专属组件样式 */
+.icon-rail-pane {
+  width: 60px;
+  min-width: 60px;
+  flex-shrink: 0;
+  padding: 9px 8px;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 14px;
+}
+
+.icon-rail-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-rail-btn {
+  width: 38px;
+  height: 34px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-body);
+  border: 1px solid transparent;
+}
+
+.icon-rail-btn:hover {
+  background: var(--bg-surface);
+  color: var(--text-ink);
+}
+
+.icon-rail-btn.active {
+  background: var(--bg-selected);
+  border-color: var(--border-selected);
+  color: var(--brand-accent);
+}
+
+.icon-rail-trigger {
+  background: var(--bg-surface);
+  border-color: var(--border-default);
+}
+
+.icon-rail-compose {
+  width: 38px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--brand-primary);
+  color: var(--brand-primary-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-rail-divider {
+  width: 32px;
+  height: 1px;
+  background: var(--border-default);
+}
+
+.icon-rail-accounts-badge {
+  width: 38px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.icon-rail-avatar {
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.drawer-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 2px;
+  min-width: 0;
+}
+
+.drawer-head-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-ink);
+}
+
+.drawer-mode-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 5px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.drawer-close-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.profile-card-drawer {
+  padding: 6px 8px;
+  border-radius: 9px;
+}
+
+.drawer-esc-hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.ai-drawer-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 5px;
+  background: var(--bg-ai-subtle);
+  color: var(--brand-ai);
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ai-privacy-wrap {
+  padding: 8px 12px 0;
+  flex-shrink: 0;
+}

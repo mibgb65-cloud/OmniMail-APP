@@ -1,0 +1,167 @@
+/* 首次引导页、添加服务商网格与联系人工作台表格（严格零横向溢出） */
+.onboarding-page {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 32px;
+  background: var(--bg-canvas);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.onboarding-grid {
+  width: 100%;
+  max-width: 1200px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 36px;
+  align-items: center;
+}
+
+.onboarding-hero-title {
+  margin: 12px 0 10px;
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.22;
+  letter-spacing: -0.025em;
+  color: var(--text-ink);
+}
+
+.onboarding-feature-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+}
+
+.onboarding-card {
+  padding: 22px;
+  border-radius: 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-modal);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.provider-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.provider-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  text-align: left;
+  min-width: 0;
+  transition:
+    border-color 0.14s ease,
+    background 0.14s ease;
+}
+
+.provider-card:hover {
+  border-color: var(--brand-accent);
+  background: var(--bg-selected);
+}
+
+/* 联系人与通讯录工作区卡片：固定头、固定表头、中间独立纵滚、固定底栏 */
+.contacts-directory-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.contacts-dir-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.contacts-table-head,
+.contacts-table-row {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.45fr) minmax(0, 1.1fr) 114px minmax(0, 0.9fr)
+    92px 118px;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.contacts-table-head {
+  height: 32px;
+  padding: 0 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.contacts-rows-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contacts-table-row {
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-card);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.contacts-table-row:hover {
+  background: var(--bg-surface);
+}
+
+.contacts-table-row.selected {
+  background: var(--bg-selected);
+  border-color: var(--border-selected);
+}
+
+.contacts-dir-footer {
+  height: 40px;
+  min-height: 40px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-default);
+  flex-shrink: 0;
+  overflow: hidden;
+}

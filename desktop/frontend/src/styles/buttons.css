@@ -1,0 +1,99 @@
+/* 通用按钮与图标按钮基类 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 13px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    opacity 0.14s ease;
+}
+
+.btn-sm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.btn-primary {
+  background: var(--brand-primary);
+  color: var(--brand-primary-ink);
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-ink);
+  border: 1px solid var(--border-default);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-surface);
+  border-color: var(--border-strong);
+}
+
+.btn-ghost {
+  color: var(--text-secondary);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  color: var(--text-ink);
+}
+
+.btn-ai {
+  background: var(--bg-ai-subtle);
+  color: var(--brand-ai);
+  border: 1px solid var(--border-ai);
+}
+
+.btn-ai:hover:not(:disabled) {
+  background: var(--bg-ai-surface);
+}
+
+.btn-danger {
+  background: var(--status-danger);
+  color: #ffffff;
+}
+
+.btn-danger-soft {
+  background: var(--status-danger-bg);
+  color: var(--status-danger);
+  border: 1px solid color-mix(in srgb, var(--status-danger) 28%, transparent);
+}
+
+.icon-btn,
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+.icon-btn:hover,
+.btn-icon:hover {
+  background: var(--bg-subtle);
+  color: var(--text-ink);
+}
+
+.icon-btn-bordered {
+  border-color: var(--border-default);
+  background: var(--bg-card);
+}

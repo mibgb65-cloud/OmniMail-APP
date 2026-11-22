@@ -1,0 +1,136 @@
+/* 左侧栏：已连接邮箱、固定底栏、60px 图标轨与左抽屉标题栏 */
+.account-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  text-align: left;
+  min-width: 0;
+}
+
+.account-row:hover {
+  background: var(--bg-surface);
+}
+
+.account-row.active {
+  background: var(--bg-selected);
+  border-color: var(--border-selected);
+}
+
+.account-row-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.account-row-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.25;
+}
+
+.account-row-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-ink);
+}
+
+.account-row-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-default);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.sidebar-footer-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 5px;
+}
+
+.sidebar-mini-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 29px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 0;
+}
+
+.sidebar-mini-btn:hover,
+.sidebar-mini-btn.active {
+  background: var(--bg-selected);
+  border-color: var(--border-selected);
+  color: var(--brand-accent);
+}
+
+.profile-card,
+.sidebar-footer-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 11px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  min-width: 0;
+}
+
+.sidebar-footer-card {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.profile-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-ink);
+}
+
+.profile-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.profile-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  color: var(--brand-primary-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}

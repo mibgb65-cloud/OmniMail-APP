@@ -1,0 +1,187 @@
+/* 右侧独立 Omni AI 侧栏与小屏浮层抽屉卡片 */
+.ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 12px 9px;
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.ai-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-ink);
+}
+
+.ai-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.ai-privacy-pill {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 9px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-ai);
+  color: var(--brand-ai);
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+  min-width: 0;
+}
+
+.ai-privacy-pill:hover {
+  background: var(--bg-ai-subtle);
+}
+
+.ai-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 11px;
+  border-radius: 11px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  flex-shrink: 0;
+}
+
+.ai-card-tinted {
+  background: var(--bg-card);
+  border-color: var(--border-ai);
+}
+
+.ai-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-ink);
+  min-width: 0;
+}
+
+.ai-card-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-body);
+  overflow-wrap: anywhere;
+}
+
+.ai-deadline-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  font-size: 11px;
+  min-width: 0;
+}
+
+.ai-quick-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ai-chat-bubble {
+  padding: 9px 11px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.ai-chat-bubble.user {
+  align-self: flex-end;
+  max-width: 90%;
+  background: var(--brand-primary);
+  color: var(--brand-primary-ink);
+}
+.ai-chat-bubble.assistant {
+  background: var(--bg-card);
+  border: 1px solid var(--border-ai);
+  color: var(--text-body);
+}
+.ai-status-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px;
+  border-radius: 11px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-card);
+  font-size: 12px;
+}
+.ai-status-box.warning {
+  background: var(--status-warning-bg);
+  border-color: color-mix(in srgb, var(--status-warning) 35%, transparent);
+  color: var(--status-warning);
+}
+.ai-status-box.danger {
+  background: var(--status-danger-bg);
+  border-color: color-mix(in srgb, var(--status-danger) 35%, transparent);
+  color: var(--status-danger);
+}
+
+.ai-input-footer {
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.ai-composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 10px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+}
+
+.ai-composer:focus-within {
+  border-color: var(--brand-ai);
+}
+
+.ai-composer input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-ink);
+  font-size: 12px;
+  outline: none;
+}
+
+.ai-footnote {
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-muted);
+}

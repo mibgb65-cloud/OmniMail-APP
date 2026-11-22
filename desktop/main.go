@@ -23,11 +23,12 @@ func main() {
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:            "OmniMail",
-		Width:            960,
-		Height:           640,
-		MinWidth:         440,
-		MinHeight:        400,
-		BackgroundColour: application.NewRGB(246, 248, 247),
+		Width:            1440,
+		Height:           900,
+		MinWidth:         960,
+		MinHeight:        640,
+		Frameless:        true,
+		BackgroundColour: application.NewRGB(239, 242, 246),
 		URL:              "/",
 	})
 

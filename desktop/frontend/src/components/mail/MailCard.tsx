@@ -1,0 +1,105 @@
+import type { MouseEvent } from "react";
+import type { MailItem } from "../../types/mail";
+import { Icon } from "../common/Icon";
+
+interface MailCardProps {
+  mail: MailItem;
+  compact: boolean;
+  selected: boolean;
+  checked: boolean;
+  selectionMode: boolean;
+  onSelect: () => void;
+  onToggleCheck: () => void;
+  onContextMenu: (e: MouseEvent<HTMLDivElement>) => void;
+}
+
+export function MailCard({
+  mail,
+  compact,
+  selected,
+  checked,
+  selectionMode,
+  onSelect,
+  onToggleCheck,
+  onContextMenu,
+}: MailCardProps) {
+  const rightMeta = mail.statusBadge
+    ? {
+        text: mail.statusBadge,
+        cls: mail.folder === "outbox" ? "pill-danger" : "pill-blue",
+      }
+    : mail.aiSummarized
+      ? { text: compact ? "AI" : "AI 已摘要", cls: "pill-ai" }
+      : mail.attachments.length > 0
+        ? {
+            text:
+              mail.attachments.length > 1
+                ? `${mail.attachments.length} 附件`
+                : mail.attachments[0].ext,
+            cls: "pill-neutral",
+          }
+        : mail.starred
+          ? { text: "星标", cls: "pill-neutral" }
+          : null;
+
+  const showCheckbox = selectionMode || checked;
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      className={`mail-card ${selected ? "selected" : ""} ${mail.unread ? "" : "read"}`}
+      onClick={onSelect}
+      onContextMenu={onContextMenu}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+    >
+      <div className="mail-card-top">
+        <div className="mail-card-sender">
+          {showCheckbox && (
+            <input
+              type="checkbox"
+              checked={checked}
+              aria-label={`选择邮件 ${mail.subject}`}
+              onClick={(e) => e.stopPropagation()}
+              onChange={onToggleCheck}
+              style={{
+                width: 14,
+                height: 14,
+                accentColor: "var(--brand-accent)",
+                flexShrink: 0,
+                cursor: "pointer",
+              }}
+            />
+          )}
+          {mail.unread && <span className="unread-dot" aria-label="未读" />}
+          <span className="truncate">{mail.senderName}</span>
+        </div>
+        <span className="mail-card-time">{mail.timeText}</span>
+      </div>
+
+      <div className="mail-card-subject">{mail.subject}</div>
+      {!compact && <div className="mail-card-snippet">{mail.snippet}</div>}
+
+      <div className="mail-card-bottom">
+        <span className="source-tag truncate" data-provider={mail.provider}>
+          {mail.accountTag}
+        </span>
+        <div className="mail-card-meta-right">
+          {!compact && mail.attachments.length > 0 && (
+            <Icon name="paperclip" size={12} />
+          )}
+          {rightMeta && (
+            <span className={`pill mail-meta-pill ${rightMeta.cls}`}>
+              {rightMeta.text}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

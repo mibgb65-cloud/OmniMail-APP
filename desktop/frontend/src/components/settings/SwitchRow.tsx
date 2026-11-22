@@ -1,0 +1,40 @@
+export function SwitchRow({
+  title,
+  desc,
+  checked,
+  onChange,
+}: {
+  title: string;
+  desc?: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <div className="settings-row">
+      <div>
+        <div
+          style={{ fontSize: 13, fontWeight: 600, color: "var(--text-ink)" }}
+        >
+          {title}
+        </div>
+        {desc && (
+          <div
+            className="text-xs text-muted"
+            style={{ marginTop: 2, lineHeight: 1.5 }}
+          >
+            {desc}
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        className={`switch-btn${checked ? " on" : ""}`}
+        onClick={() => onChange(!checked)}
+      >
+        <span className="switch-knob" />
+      </button>
+    </div>
+  );
+}

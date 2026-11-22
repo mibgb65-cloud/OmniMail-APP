@@ -1,0 +1,196 @@
+/* 顶栏恒定 52px 浮层卡与中央连续自适应搜索框（垂直恒定、水平平滑） */
+.topbar {
+  height: 52px;
+  min-height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  --wails-draggable: drag;
+  -webkit-app-region: drag;
+}
+
+.window-drag-region {
+  --wails-draggable: drag;
+  -webkit-app-region: drag;
+}
+
+.topbar :is(button, input),
+.topbar-search-wrap,
+.theme-segmented,
+.win-controls,
+.window-drag-region :is(button, input, a, label) {
+  --wails-draggable: no-drag;
+  -webkit-app-region: no-drag;
+}
+
+.topbar-left,
+.topbar-brand-btn,
+.topbar-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.topbar-left {
+  gap: 10px;
+}
+
+.topbar-right {
+  gap: 8px;
+}
+
+.brand-wordmark {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--text-ink);
+}
+
+.sync-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  max-width: 160px;
+}
+
+.sync-status-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--text-ink);
+}
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-success);
+  flex-shrink: 0;
+}
+.status-dot.warning {
+  background: var(--status-warning);
+}
+.status-dot.danger {
+  background: var(--status-danger);
+}
+
+.topbar-search-wrap {
+  width: clamp(220px, 34vw, 460px);
+  flex: 0 1 auto;
+  min-width: 220px;
+  max-width: 460px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px 0 12px;
+  border-radius: 9px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+  overflow: hidden;
+  transition:
+    border-color 0.14s ease,
+    background 0.14s ease;
+}
+
+.topbar-search-wrap:focus-within {
+  background: var(--bg-card);
+  border-color: var(--brand-accent);
+}
+
+.topbar-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-ink);
+  font-size: 13px;
+  outline: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-mini-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.topbar-kbd {
+  flex-shrink: 0;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+}
+.topbar-lang-btn {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+}
+.topbar-settings-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+}
+.theme-segmented {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  gap: 2px;
+}
+.theme-seg-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.theme-seg-btn.active {
+  background: var(--bg-card);
+  color: var(--text-ink);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+.win-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding-left: 8px;
+  margin-left: 2px;
+  border-left: 1px solid var(--border-default);
+  flex-shrink: 0;
+}
+.win-controls .icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+.win-close-btn:hover {
+  background: var(--status-danger-bg);
+  color: var(--status-danger);
+}
