@@ -32,4 +32,8 @@
 ## Beta 本地更新
 
 - 本地已有 `v0.0.1.beta.2`，本次递增为 `v0.0.1.beta.3`。
+- 实现提交：`0e97b38555c8e17285a0a9860da3040f38972980`。
 - 构建命令：`task package:windows:beta VERSION=v0.0.1.beta.3`。
+- Wails 绑定、前端生产构建、Go `production` 编译和 NSIS 封包均完成。打包子进程在生成校验文件时找不到 `Get-FileHash`；已在当前 PowerShell 为已生成的安装包补齐 `SHA256SUMS.txt`，并核对产品版本 `v0.0.1.beta.3`、PE 版本 `0.0.1.3`。
+- 安装包：`dist/release/v0.0.1.beta.3/OmniMail-Setup-v0.0.1.beta.3-windows-amd64.exe`。SHA-256：`41c27c6e78443e335d552b38431f1fe3b2016f72345bc55e1cb409c337cdeeaf`。
+- 未执行安装和应用实测，未创建远程发布。
