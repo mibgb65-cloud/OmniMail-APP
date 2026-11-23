@@ -6,22 +6,27 @@ import { AiInsightContent } from "./AiInsightContent";
 import { AiStatusPanel } from "./AiStatusPanel";
 
 export function AiPane({
-  isDrawer = false,
-  closing = false,
+  isDrawer,
+  open,
+  onClose,
 }: {
-  isDrawer?: boolean;
-  closing?: boolean;
+  isDrawer: boolean;
+  open: boolean;
+  onClose: () => void;
 }) {
   const { workspace, mailStore, aiStore, requestAiAction } = useApp();
-  const [promptInput, setPromptInput] = useState("");
   const mail = mailStore.selectedMail;
+  const mailId = mail?.id;
+  const [prompt, setPrompt] = useState({ mailId, text: "" });
+  const promptInput = prompt.mailId === mailId ? prompt.text : "";
+  const setPromptInput = (text: string) => setPrompt({ mailId, text });
   const insight = aiStore.getInsight(mail);
   const chats = mail ? (aiStore.chatsByMail[mail.id] ?? []) : [];
   const { loadCachedForMail } = aiStore;
 
   useEffect(() => {
-    if (mail?.id) loadCachedForMail(mail.id);
-  }, [mail?.id, loadCachedForMail]);
+    if (open && mailId) loadCachedForMail(mailId);
+  }, [open, mailId, loadCachedForMail]);
 
   const isDisabledForMail =
     !workspace.settings.aiEnabled ||
@@ -37,12 +42,10 @@ export function AiPane({
     setPromptInput("");
   };
 
-  const closeAi = () => aiStore.setAiOpen(false);
-
-  const paneNode = (
+  return (
     <aside
-      className={`panel-card ai-pane ${isDrawer ? "ai-drawer" : "ai-pane-inline"}`}
-      data-closing={!isDrawer && closing ? "true" : "false"}
+      id="mail-ai-pane"
+      className="panel-card ai-pane ai-slide-panel"
       aria-label="Omni AI 助手面板"
     >
       <div className="ai-header">
@@ -85,7 +88,7 @@ export function AiPane({
               className="btn-icon"
               style={{ width: 26, height: 26 }}
               aria-label="收起 AI 侧栏"
-              onClick={closeAi}
+              onClick={onClose}
             >
               <Icon name="x" size={13} />
             </button>
@@ -166,23 +169,5 @@ export function AiPane({
         </div>
       </div>
     </aside>
-  );
-
-  if (!isDrawer) return paneNode;
-
-  return (
-    <div
-      className="workspace-drawer-layer"
-      data-closing={closing ? "true" : "false"}
-      role="dialog"
-      aria-label="Omni AI 浮层抽屉"
-    >
-      <div
-        className="drawer-scrim"
-        onClick={closeAi}
-        aria-label="点击遮罩收起 AI 抽屉"
-      />
-      {paneNode}
-    </div>
   );
 }

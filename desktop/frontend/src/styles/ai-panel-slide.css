@@ -1,0 +1,65 @@
+.workspace-stage {
+  --ai-slide-width: 320px;
+  --ai-slide-distance: calc(
+    var(--ai-slide-width) + var(--workspace-column-gap)
+  );
+  --ai-slide-motion: var(--dur-emphasis) var(--ease-standard);
+}
+
+/* 跟面板用同一行程与曲线，滑动过程也能保持阅读区与面板之间的间距。 */
+.route-main-stage[data-ai-docked] {
+  padding-inline-end: 0;
+  transition: padding-inline-end var(--ai-slide-motion);
+}
+
+.route-main-stage[data-ai-docked="true"] {
+  padding-inline-end: var(--ai-slide-distance);
+}
+
+.workspace-drawer-layer.ai-slide-layer {
+  pointer-events: none;
+}
+
+.ai-slide-panel {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: var(--ai-slide-width);
+  min-width: var(--ai-slide-width);
+  visibility: hidden;
+  transform: translateX(var(--ai-slide-distance));
+  transition:
+    transform var(--ai-slide-motion),
+    visibility var(--dur-emphasis) step-end;
+}
+
+.ai-slide-layer[data-placement="drawer"] .ai-slide-panel {
+  border-radius: 14px;
+  border-color: var(--border-ai);
+  background: var(--bg-ai-surface);
+  box-shadow: var(--shadow-drawer);
+}
+
+.ai-slide-layer[data-open="true"] .ai-slide-panel {
+  pointer-events: auto;
+  visibility: visible;
+  transform: translateX(0);
+  transition-timing-function: var(--ease-standard), step-start;
+}
+
+.ai-slide-scrim {
+  opacity: 0;
+  transition: opacity var(--ai-slide-motion);
+}
+
+.ai-slide-layer[data-open="true"] .ai-slide-scrim {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-main-stage[data-ai-docked],
+  .ai-slide-layer .ai-slide-panel,
+  .ai-slide-layer .ai-slide-scrim {
+    transition: none;
+  }
+}

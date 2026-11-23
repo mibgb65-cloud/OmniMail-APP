@@ -1,7 +1,7 @@
 /* 中屏笔记本断点响应式规则（1025px ~ 1439px · 基准 1280×720） */
 @media (max-width: 1439px) {
-  .workspace-grid {
-    gap: 8px;
+  .workspace-stage {
+    --workspace-column-gap: 8px;
   }
 
   .panel-card {

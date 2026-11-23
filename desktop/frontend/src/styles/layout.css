@@ -62,6 +62,7 @@
 
 /* 工作区舞台：承载底层三栏与位于顶栏下方的浮层抽屉 */
 .workspace-stage {
+  --workspace-column-gap: 10px;
   position: relative;
   flex: 1;
   min-width: 0;
@@ -75,7 +76,7 @@
   min-width: 0;
   min-height: 0;
   display: flex;
-  gap: 10px;
+  gap: var(--workspace-column-gap);
   overflow: hidden;
 }
 
@@ -127,7 +128,8 @@
   overflow: hidden;
 }
 
-.drawer-scrim {
+.drawer-scrim,
+.ai-slide-scrim {
   position: absolute;
   inset: 0;
   background: var(--drawer-scrim);

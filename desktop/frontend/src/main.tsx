@@ -17,6 +17,7 @@ import "./styles/mail-reader.css";
 import "./styles/mail-reader-extras.css";
 import "./styles/zero-account-guide.css";
 import "./styles/ai-pane.css";
+import "./styles/ai-panel-slide.css";
 import "./styles/modals.css";
 import "./styles/handshake.css";
 import "./styles/compose.css";

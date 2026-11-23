@@ -1,5 +1,5 @@
 import { useEffect, useState, type MouseEvent } from "react";
-import { AiPane } from "./components/ai/AiPane";
+import { MailAiSidebar } from "./components/ai/MailAiSidebar";
 import { ToastStack } from "./components/common/ToastStack";
 import { ComposeDock } from "./components/compose/ComposeDock";
 import { ComposeModal } from "./components/compose/ComposeModal";
@@ -55,14 +55,11 @@ function OmniMailShell() {
   }, [exitingRoute]);
 
   const isMailScreen = workspace.screen === "mail";
-  const showInlineAi = isMailScreen && aiStore.aiOpen && viewport === "wide";
-  const showDrawerAi = isMailScreen && aiStore.aiOpen && viewport !== "wide";
+  const dockAi = isMailScreen && viewport === "wide";
   const showLeftDrawer =
     isMailScreen && viewport === "compact" && workspace.leftNavOpen;
 
-  const inlineAi = usePresence(showInlineAi, 150);
   const leftDrawer = usePresence(showLeftDrawer, 180);
-  const aiDrawer = usePresence(showDrawerAi, 180);
 
   const isOnboarding = workspace.screen === "onboarding";
   const shellContent = isOnboarding ? (
@@ -102,6 +99,7 @@ function OmniMailShell() {
               key={activeRoute}
               className="route-main-stage"
               data-dir={routeDir}
+              data-ai-docked={dockAi ? aiStore.aiOpen : undefined}
             >
               {activeRoute === "contacts" ? (
                 <ContactsWorkspace nav={contactsNav} />
@@ -109,7 +107,6 @@ function OmniMailShell() {
                 <>
                   <MailListPane />
                   <MailReaderPane />
-                  {inlineAi.mounted && <AiPane closing={inlineAi.closing} />}
                 </>
               )}
             </div>
@@ -117,7 +114,9 @@ function OmniMailShell() {
         </main>
 
         {leftDrawer.mounted && <LeftNavDrawer closing={leftDrawer.closing} />}
-        {aiDrawer.mounted && <AiPane isDrawer closing={aiDrawer.closing} />}
+        {isMailScreen && (
+          <MailAiSidebar open={aiStore.aiOpen} isDrawer={!dockAi} />
+        )}
       </div>
     </div>
   );

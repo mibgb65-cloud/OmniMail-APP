@@ -151,7 +151,10 @@ export function ReaderToolbar({
         </Tooltip>
         <button
           type="button"
+          id="mail-ai-toggle"
           className="btn btn-sm btn-ai reader-ai-toggle"
+          aria-controls="mail-ai-pane"
+          aria-expanded={aiStore.aiOpen}
           onClick={() => {
             workspace.setLeftNavOpen(false);
             aiStore.setAiOpen((v) => !v);
