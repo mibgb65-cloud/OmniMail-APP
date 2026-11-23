@@ -17,6 +17,16 @@ export function AiInsightContent({ insight, chats }: AiInsightContentProps) {
           <span className="pill pill-ai">{insight.draftTag}</span>
         </div>
         <p className="ai-card-text">{insight.summary}</p>
+        {insight.draftTag === "待生成" && (
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            style={{ marginTop: 8, width: "100%" }}
+            onClick={() => requestAiAction("总结当前邮件", "__ANALYZE__")}
+          >
+            总结当前邮件并起草建议回复
+          </button>
+        )}
       </div>
 
       {insight.deadlines.length > 0 && (

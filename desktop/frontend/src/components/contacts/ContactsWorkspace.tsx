@@ -1,19 +1,37 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../../state/AppContext";
+import { useValuePresence } from "../../state/usePresence";
 import { BlacklistManagerView } from "./BlacklistManagerView";
 import { ContactDetailPanel } from "./ContactDetailPanel";
-import {
-  CONTACT_GROUPS,
-  ContactsSidebar,
-  type ContactNavFilter,
-} from "./ContactsSidebar";
+import { CONTACT_GROUPS, type ContactNavFilter } from "./ContactsSidebar";
 import { ContactsTableRows } from "./ContactsTableRows";
+import { ContactsToolbarActions } from "./ContactsToolbarActions";
 
-export function ContactsWorkspace() {
-  const { viewport, workspace } = useApp();
+export function useContactsNavState() {
   const [navFilter, setNavFilter] = useState<ContactNavFilter>("all");
   const [groupFilter, setGroupFilter] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState<string | null>(null);
+  return {
+    navFilter,
+    groupFilter,
+    accountFilter,
+    onSelectNav: setNavFilter,
+    onSelectGroup: setGroupFilter,
+    onSelectAccount: setAccountFilter,
+  };
+}
+
+export type ContactsNavState = ReturnType<typeof useContactsNavState>;
+
+export function ContactsWorkspace({
+  nav,
+  readOnlyExit = false,
+}: {
+  nav: ContactsNavState;
+  readOnlyExit?: boolean;
+}) {
+  const { viewport, workspace } = useApp();
+  const { navFilter, groupFilter, accountFilter, onSelectGroup } = nav;
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(() =>
     typeof window !== "undefined" && window.innerWidth >= 1440
@@ -25,7 +43,7 @@ export function ContactsWorkspace() {
   const isCompact = viewport === "compact";
 
   useEffect(() => {
-    if (!selectedId) return;
+    if (!selectedId || readOnlyExit) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && workspace.overlay.type === "none") {
         setSelectedId(null);
@@ -33,7 +51,7 @@ export function ContactsWorkspace() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedId, workspace.overlay.type]);
+  }, [selectedId, readOnlyExit, workspace.overlay.type]);
 
   const filteredContacts = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -57,21 +75,18 @@ export function ContactsWorkspace() {
   }, [workspace.contacts, navFilter, groupFilter, accountFilter, query]);
 
   const selectedContact =
-    selectedId !== null
+    selectedId !== null && navFilter !== "blacklist"
       ? (filteredContacts.find((c) => c.id === selectedId) ?? null)
       : null;
 
-  return (
-    <div className="workspace-grid">
-      <ContactsSidebar
-        navFilter={navFilter}
-        groupFilter={groupFilter}
-        accountFilter={accountFilter}
-        onSelectNav={setNavFilter}
-        onSelectGroup={setGroupFilter}
-        onSelectAccount={setAccountFilter}
-      />
+  const wideDetail = useValuePresence(isWide ? selectedContact : null, 150);
+  const drawerDetail = useValuePresence(
+    !isWide && !readOnlyExit ? selectedContact : null,
+    180,
+  );
 
+  return (
+    <>
       <section
         className="panel-card contacts-directory-card"
         aria-label="联系人目录"
@@ -91,18 +106,21 @@ export function ContactsWorkspace() {
               </div>
             </div>
             {navFilter !== "blacklist" && (
-              <input
-                type="search"
-                className="input"
-                style={{
-                  width: isCompact ? 188 : 228,
-                  height: 32,
-                  flexShrink: 0,
-                }}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="搜索姓名、邮箱或公司…"
-              />
+              <>
+                <ContactsToolbarActions />
+                <input
+                  type="search"
+                  className="input"
+                  style={{
+                    width: isCompact ? 172 : 216,
+                    height: 32,
+                    flexShrink: 0,
+                  }}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="搜索姓名、邮箱或公司…"
+                />
+              </>
             )}
           </div>
 
@@ -112,7 +130,7 @@ export function ContactsWorkspace() {
                 type="button"
                 className={`btn btn-sm ${!groupFilter ? "btn-primary" : "btn-secondary"}`}
                 style={{ height: 26, padding: "0 9px" }}
-                onClick={() => setGroupFilter(null)}
+                onClick={() => onSelectGroup(null)}
               >
                 全部分组
               </button>
@@ -122,7 +140,7 @@ export function ContactsWorkspace() {
                   type="button"
                   className={`btn btn-sm ${groupFilter === g ? "btn-primary" : "btn-secondary"}`}
                   style={{ height: 26, padding: "0 9px" }}
-                  onClick={() => setGroupFilter(groupFilter === g ? null : g)}
+                  onClick={() => onSelectGroup(groupFilter === g ? null : g)}
                 >
                   {g}
                 </button>
@@ -139,7 +157,7 @@ export function ContactsWorkspace() {
           <ContactsTableRows
             contacts={filteredContacts}
             selectedId={selectedContact?.id ?? null}
-            onSelect={(id) => setSelectedId(id)}
+            onSelect={setSelectedId}
           />
         )}
 
@@ -159,20 +177,22 @@ export function ContactsWorkspace() {
         </div>
       </section>
 
-      {navFilter !== "blacklist" && selectedContact && isWide && (
+      {wideDetail.rendered && isWide && (
         <ContactDetailPanel
-          contact={selectedContact}
+          contact={wideDetail.rendered}
+          closing={wideDetail.closing}
           onClose={() => setSelectedId(null)}
         />
       )}
 
-      {navFilter !== "blacklist" && selectedContact && !isWide && (
+      {drawerDetail.rendered && !isWide && (
         <ContactDetailPanel
-          contact={selectedContact}
+          contact={drawerDetail.rendered}
           isDrawer
+          closing={drawerDetail.closing}
           onClose={() => setSelectedId(null)}
         />
       )}
-    </div>
+    </>
   );
 }

@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useApp } from "../../state/AppContext";
+import { Checkbox } from "../common/Checkbox";
+import { CustomSelect } from "../common/CustomSelect";
 import { ModalShell } from "../common/ModalShell";
+import { ProviderIcon } from "../common/ProviderIcon";
 
 export function AdvancedSearchModal() {
   const { workspace, mailStore, toastStore } = useApp();
@@ -41,7 +44,7 @@ export function AdvancedSearchModal() {
 
   return (
     <ModalShell
-      title="高级搜索"
+      heading="高级搜索"
       subtitle="跨多邮箱本地全文检索，组合条件实时生效"
       maxWidth={520}
       onClose={() => workspace.setOverlay({ type: "none" })}
@@ -90,46 +93,51 @@ export function AdvancedSearchModal() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
           <label className="text-xs text-muted">邮箱范围</label>
-          <select
-            className="select"
-            style={{ marginTop: 4, width: "100%" }}
+          <CustomSelect
+            fullWidth
+            minMenuWidth={220}
+            style={{ marginTop: 4 }}
             value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-          >
-            <option value="all">全部已连接邮箱</option>
-            {workspace.accounts.map((acc) => (
-              <option key={acc.id} value={acc.id}>
-                {acc.name}
-              </option>
-            ))}
-          </select>
+            ariaLabel="搜索邮箱范围"
+            options={[
+              { value: "all", label: "全部已连接邮箱" },
+              ...workspace.accounts.map((acc) => ({
+                value: acc.id,
+                label: acc.name,
+                sublabel: acc.email,
+                icon: <ProviderIcon provider={acc.provider} size={18} />,
+              })),
+            ]}
+            onChange={setAccountId}
+          />
         </div>
         <div>
           <label className="text-xs text-muted">时间范围</label>
-          <select
-            className="select"
-            style={{ marginTop: 4, width: "100%" }}
+          <CustomSelect
+            fullWidth
+            style={{ marginTop: 4 }}
             value={dateRange}
-            onChange={(e) =>
-              setDateRange(e.target.value as "all" | "7d" | "30d" | "90d")
+            ariaLabel="搜索时间范围"
+            options={[
+              { value: "all", label: "不限时间" },
+              { value: "7d", label: "最近 7 天" },
+              { value: "30d", label: "最近 30 天" },
+              { value: "90d", label: "最近 90 天" },
+            ]}
+            onChange={(val) =>
+              setDateRange(val as "all" | "7d" | "30d" | "90d")
             }
-          >
-            <option value="all">不限时间</option>
-            <option value="7d">最近 7 天</option>
-            <option value="30d">最近 30 天</option>
-            <option value="90d">最近 90 天</option>
-          </select>
+          />
         </div>
       </div>
 
-      <label className="row" style={{ fontSize: 13, cursor: "pointer" }}>
-        <input
-          type="checkbox"
-          checked={hasAttachment}
-          onChange={(e) => setHasAttachment(e.target.checked)}
-        />
-        <span>仅显示包含附件的邮件</span>
-      </label>
+      <Checkbox
+        checked={hasAttachment}
+        onChange={setHasAttachment}
+        ariaLabel="仅显示包含附件的邮件"
+      >
+        仅显示包含附件的邮件
+      </Checkbox>
     </ModalShell>
   );
 }

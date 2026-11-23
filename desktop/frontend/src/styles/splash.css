@@ -1,0 +1,200 @@
+/* 05 · Launch Splash Animation 视觉样式与双主题首帧令牌 */
+:root,
+[data-theme="light"] {
+  --splash-bg: #f8fafc;
+  --splash-emblem-bg: #ffffff;
+  --splash-emblem-border: #e2e7f0;
+  --splash-emblem-shadow: 0 16px 36px rgba(37, 99, 235, 0.12);
+  --splash-sheen: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.82) 50%,
+    transparent 70%
+  );
+  --splash-title: #0f172a;
+  --splash-subtitle: #5e6b7e;
+  --splash-track: #e2e7f0;
+  --splash-bar: #2563eb;
+  --splash-dot: #2563eb;
+  --splash-status: #64748b;
+  --splash-meta: #94a3b8;
+}
+
+[data-theme="dark"] {
+  --splash-bg: #0b0e14;
+  --splash-emblem-bg: #131822;
+  --splash-emblem-border: #334155;
+  --splash-emblem-shadow: 0 0 42px rgba(59, 130, 246, 0.22);
+  --splash-sheen: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 70%
+  );
+  --splash-title: #f1f5f9;
+  --splash-subtitle: #8292a8;
+  --splash-track: #1e293b;
+  --splash-bar: #3b82f6;
+  --splash-dot: #60a5fa;
+  --splash-status: #94a3b8;
+  --splash-meta: #64748b;
+}
+
+html[data-splash-active="true"],
+html[data-splash-active="true"] body,
+html[data-splash-active="true"] #root {
+  background-color: var(--splash-bg);
+}
+
+.app-boot-stage {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  transform-origin: center center;
+}
+
+.launch-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--splash-bg);
+  overflow: hidden;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+.splash-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.splash-emblem {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  border-radius: 26px;
+  background: var(--splash-emblem-bg);
+  border: 1px solid var(--splash-emblem-border);
+  box-shadow: var(--splash-emblem-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  will-change: transform, opacity;
+}
+
+.splash-prism-tile {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.splash-prism-svg {
+  display: block;
+  overflow: visible;
+}
+
+.splash-emblem-sheen {
+  position: absolute;
+  inset: -24%;
+  pointer-events: none;
+  background: var(--splash-sheen);
+  will-change: transform, opacity;
+}
+
+.splash-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.splash-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  line-height: 1.2;
+  color: var(--splash-title);
+}
+
+.splash-subtitle {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--splash-subtitle);
+}
+
+.splash-progress-group {
+  width: 240px;
+  padding-top: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.splash-progress-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--splash-track);
+  overflow: hidden;
+}
+
+.splash-progress-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--splash-bar);
+  transform-origin: left center;
+  will-change: transform, opacity;
+}
+
+.splash-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.splash-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--splash-dot);
+  flex-shrink: 0;
+}
+
+.splash-status-text {
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--splash-status);
+  white-space: nowrap;
+}
+
+.splash-footer {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--splash-meta);
+  pointer-events: none;
+}

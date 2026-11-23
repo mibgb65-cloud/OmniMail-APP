@@ -1,5 +1,6 @@
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
+import { ProfileSwitcherCard } from "./ProfileSwitcherCard";
 import { SidebarAccountsAndLabels } from "./SidebarAccountsAndLabels";
 import {
   MAIN_FOLDERS,
@@ -8,15 +9,15 @@ import {
 } from "./SidebarIconRail";
 
 export function Sidebar() {
-  const { viewport, workspace, mailStore, composeStore } = useApp();
-  const { mails, activeFolder, activeLabelId } = mailStore;
+  const { viewport, mailStore, composeStore } = useApp();
+  const { mails, folderCounts, activeFolder, activeLabelId } = mailStore;
 
   if (viewport === "compact") {
     return <SidebarIconRail />;
   }
 
-  const outboxCount = countForFolder(mails, "outbox");
-  const scheduledCount = countForFolder(mails, "scheduled");
+  const outboxCount = countForFolder(mails, "outbox", folderCounts);
+  const scheduledCount = countForFolder(mails, "scheduled", folderCounts);
 
   return (
     <aside className="panel-card sidebar-pane" aria-label="邮箱与文件夹导航">
@@ -36,7 +37,7 @@ export function Sidebar() {
               !activeLabelId &&
               !mailStore.searchQuery &&
               activeFolder === item.id;
-            const count = countForFolder(mails, item.id);
+            const count = countForFolder(mails, item.id, folderCounts);
             return (
               <button
                 key={item.id}
@@ -113,28 +114,7 @@ export function Sidebar() {
           </button>
         </div>
 
-        <div className="profile-card">
-          <div className="row" style={{ gap: 8, minWidth: 0 }}>
-            <div className="profile-avatar">陆</div>
-            <div className="account-row-meta">
-              <span className="profile-name truncate">陆星河</span>
-              {viewport !== "laptop" && (
-                <span className="profile-sub truncate">个人工作空间</span>
-              )}
-            </div>
-          </div>
-          <button
-            type="button"
-            className="icon-btn"
-            style={{ width: 28, height: 28, flexShrink: 0 }}
-            onClick={() =>
-              workspace.setOverlay({ type: "settings", tab: "accounts" })
-            }
-            aria-label="管理工作空间与账户"
-          >
-            <Icon name="settings" size={14} />
-          </button>
-        </div>
+        <ProfileSwitcherCard />
       </div>
     </aside>
   );

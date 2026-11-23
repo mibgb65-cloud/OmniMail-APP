@@ -7,9 +7,10 @@ import { AiSettingsTab } from "./AiSettingsTab";
 import { AutoReplyTab } from "./AutoReplyTab";
 import { ComposeTab } from "./ComposeTab";
 import { GeneralTab } from "./GeneralTab";
-import { PrivacyTab, StorageTab } from "./PrivacyAndStorageTabs";
+import { PrivacyTab } from "./PrivacyTab";
 import { RulesTab } from "./RulesTab";
 import { AboutTab, ShortcutsTab } from "./ShortcutsAndAboutTabs";
+import { StorageTab } from "./StorageTab";
 import { SyncTab } from "./SyncTab";
 
 const NAV_ITEMS: Array<{ id: SettingsTabId; label: string; icon: string }> = [
@@ -173,7 +174,11 @@ export function SettingsModal({
               <Icon name="x" size={14} />
             </button>
           </div>
-          <div className="modal-body">{renderTabBody()}</div>
+          <div className="modal-body">
+            <div key={tab} className="settings-tab-stage">
+              {renderTabBody()}
+            </div>
+          </div>
           <div className="modal-footer settings-modal-footer">
             <span className="row" style={{ gap: 6, fontSize: 12 }}>
               <span className="status-dot" />

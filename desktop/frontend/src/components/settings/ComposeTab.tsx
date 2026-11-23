@@ -1,4 +1,7 @@
 import { useApp } from "../../state/AppContext";
+import { CustomSelect } from "../common/CustomSelect";
+import { ToggleSwitch } from "../common/ModalShell";
+import { ProviderIcon } from "../common/ProviderIcon";
 import { SwitchRow } from "./SwitchRow";
 
 export function ComposeTab() {
@@ -21,23 +24,24 @@ export function ComposeTab() {
               点击左侧「写邮件」时默认选中的身份
             </div>
           </div>
-          <select
-            className="select"
+          <CustomSelect
             value={s.defaultSendAccountId}
-            onChange={(e) =>
-              workspace.updateSettings({ defaultSendAccountId: e.target.value })
+            ariaLabel="新建邮件默认发件账户"
+            minMenuWidth={240}
+            options={workspace.accounts.map((acc) => ({
+              value: acc.id,
+              label: acc.name,
+              sublabel: acc.email,
+              icon: <ProviderIcon provider={acc.provider} size={18} />,
+            }))}
+            onChange={(val) =>
+              workspace.updateSettings({ defaultSendAccountId: val })
             }
-          >
-            {workspace.accounts.map((acc) => (
-              <option key={acc.id} value={acc.id}>
-                {acc.name}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <SwitchRow
-          title="回复邮件时锁定原收件账户"
+          heading="回复邮件时锁定原收件账户"
           desc="工作邮件与个人邮件隔离回复，防止跨邮箱身份误发"
           checked={s.lockReplyToOriginalAccount}
           onChange={(v) =>
@@ -54,19 +58,20 @@ export function ComposeTab() {
               发送后在底部弹出撤销提示条，可在倒计时内撤回
             </div>
           </div>
-          <select
-            className="select"
+          <CustomSelect
             value={s.undoSendSeconds}
-            onChange={(e) =>
+            ariaLabel="发送后撤销缓冲时长"
+            options={[
+              { value: 5, label: "5 秒" },
+              { value: 10, label: "10 秒", hint: "默认" },
+              { value: 20, label: "20 秒" },
+            ]}
+            onChange={(val) =>
               workspace.updateSettings({
-                undoSendSeconds: Number(e.target.value) as 5 | 10 | 20,
+                undoSendSeconds: Number(val) as 5 | 10 | 20,
               })
             }
-          >
-            <option value={5}>5 秒</option>
-            <option value={10}>10 秒（默认）</option>
-            <option value={20}>20 秒</option>
-          </select>
+          />
         </div>
       </div>
 
@@ -76,9 +81,9 @@ export function ComposeTab() {
             <strong style={{ fontSize: 14 }}>
               默认账户邮件签名（{activeAcc.shortTag}）
             </strong>
-            <SwitchRow
-              title=""
+            <ToggleSwitch
               checked={s.autoAppendSignature}
+              ariaLabel="自动附加邮件签名"
               onChange={(v) =>
                 workspace.updateSettings({ autoAppendSignature: v })
               }

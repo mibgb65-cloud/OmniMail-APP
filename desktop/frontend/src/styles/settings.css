@@ -92,7 +92,7 @@
   background: var(--border-strong);
   position: relative;
   flex-shrink: 0;
-  transition: background 0.16s ease;
+  transition: background var(--dur-fast) var(--ease-standard);
 }
 
 .switch-btn.on {
@@ -107,7 +107,7 @@
   height: 18px;
   border-radius: 50%;
   background: #ffffff;
-  transition: transform 0.16s ease;
+  transition: transform var(--dur-fast) var(--ease-standard);
 }
 
 .switch-btn.on .switch-knob {
@@ -137,4 +137,37 @@
   overflow-x: hidden;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+.storage-path-box {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-body);
+}
+
+.migrate-status-box {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.migrate-status-box[data-tone="ok"] {
+  border-color: var(--status-success);
+  background: var(--status-success-bg);
+  color: var(--status-success);
+}
+
+.migrate-status-box[data-tone="warn"] {
+  border-color: var(--status-danger);
+  background: var(--status-danger-bg);
+  color: var(--status-danger);
 }

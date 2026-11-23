@@ -1,46 +1,41 @@
+import { createPortal } from "react-dom";
 import { useApp } from "../../state/AppContext";
 import type { ContactItem } from "../../types/workspace";
 import { Icon } from "../common/Icon";
+import { Tooltip } from "../common/Tooltip";
+import { ContactMailHistoryCard } from "./ContactMailHistoryCard";
 
 export function ContactDetailPanel({
   contact,
   isDrawer = false,
+  closing = false,
   onClose,
 }: {
   contact: ContactItem;
   isDrawer?: boolean;
+  closing?: boolean;
   onClose: () => void;
 }) {
-  const { workspace, mailStore, composeStore, toastStore } = useApp();
-  const relatedMails = mailStore.mails
-    .filter(
-      (m) =>
-        m.senderEmail.toLowerCase() === contact.email.toLowerCase() ||
-        m.recipients.toLowerCase().includes(contact.email.toLowerCase()),
-    )
-    .slice(0, 5);
+  const { workspace, composeStore, toastStore } = useApp();
 
   const pane = (
     <aside
-      className={`panel-card ${isDrawer ? "ai-drawer" : ""}`}
-      style={{
-        width: 320,
-        flexShrink: 0,
-        display: "flex",
-        flexDirection: "column",
-      }}
+      className={`panel-card ai-pane ${isDrawer ? "ai-drawer" : "ai-pane-inline"}`}
+      data-closing={!isDrawer && closing ? "true" : "false"}
       aria-label="联系人详情"
     >
       <div className="ai-header">
         <strong style={{ fontSize: 14 }}>联系人详情</strong>
-        <button
-          type="button"
-          className="btn-icon"
-          onClick={onClose}
-          title="收起详情"
-        >
-          <Icon name="x" size={14} />
-        </button>
+        <Tooltip label="收起详情" shortcut="Esc">
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={onClose}
+            aria-label="收起详情"
+          >
+            <Icon name="x" size={14} />
+          </button>
+        </Tooltip>
       </div>
 
       <div className="ai-scroll">
@@ -59,9 +54,11 @@ export function ContactDetailPanel({
               {contact.vip && <span className="pill pill-warning">VIP</span>}
             </div>
             <div className="text-xs text-muted truncate">{contact.email}</div>
-            <div className="text-xs text-muted">
-              {contact.company} · {contact.title}
-            </div>
+            {(contact.company || contact.title) && (
+              <div className="text-xs text-muted">
+                {[contact.company, contact.title].filter(Boolean).join(" · ")}
+              </div>
+            )}
           </div>
         </div>
 
@@ -70,11 +67,12 @@ export function ContactDetailPanel({
             type="button"
             className="btn btn-primary btn-sm"
             style={{ flex: 1 }}
-            onClick={() =>
+            onClick={() => {
+              workspace.setScreen("mail");
               composeStore.openNewCompose([
                 `${contact.name} <${contact.email}>`,
-              ])
-            }
+              ]);
+            }}
           >
             <Icon name="pen" size={13} /> 写邮件
           </button>
@@ -114,79 +112,57 @@ export function ContactDetailPanel({
             <div className="text-xs text-muted">电话：{contact.phone}</div>
           )}
           {contact.note && (
-            <div
-              style={{
-                fontSize: 12,
-                lineHeight: 1.55,
-                color: "var(--text-body)",
-              }}
-            >
+            <div style={{ fontSize: 12, lineHeight: 1.55 }}>
               备注：{contact.note}
             </div>
           )}
         </div>
 
-        <div className="settings-card">
-          <div className="row-between">
-            <strong style={{ fontSize: 13 }}>往来邮件记录</strong>
-            <span className="text-xs text-muted">
-              共 {contact.mailCount} 封
-            </span>
-          </div>
-          {relatedMails.length === 0 ? (
-            <div className="text-xs text-muted">
-              最近 90 天本地缓存中暂无匹配邮件。
-            </div>
-          ) : (
-            relatedMails.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                className="ai-deadline-row"
-                style={{ width: "100%", textAlign: "left" }}
-                onClick={() => {
-                  workspace.setScreen("mail");
-                  mailStore.openMail(m.id);
-                }}
-              >
-                <span className="truncate">{m.subject}</span>
-                <span className="text-xs text-muted" style={{ flexShrink: 0 }}>
-                  {m.timeText}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
+        <ContactMailHistoryCard contact={contact} />
 
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          style={{ color: "var(--status-danger)", alignSelf: "flex-start" }}
-          onClick={() => {
-            workspace.addBlacklist({
-              target: contact.email,
-              kind: "address",
-              reason: `用户从联系人详情加入黑名单（${contact.name}）`,
-              blockedCount: 0,
-              addedAt: "2026-11-20",
-            });
-            toastStore.pushToast({
-              tone: "warning",
-              title: `已将 ${contact.email} 加入拦截黑名单`,
-            });
-          }}
-        >
-          <Icon name="ban" size={14} /> 屏蔽此发件人
-        </button>
+        <div className="row" style={{ gap: 8 }}>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            style={{ color: "var(--status-danger)" }}
+            onClick={() => {
+              workspace.addBlacklist({
+                target: contact.email,
+                kind: "address",
+                reason: `用户从联系人详情加入黑名单（${contact.name}）`,
+                blockedCount: 0,
+                addedAt: "今天",
+              });
+              toastStore.pushToast({
+                tone: "warning",
+                title: `已将 ${contact.email} 加入拦截黑名单`,
+              });
+            }}
+          >
+            <Icon name="ban" size={14} /> 屏蔽发件人
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            style={{ color: "var(--status-danger)" }}
+            onClick={() => {
+              workspace.deleteContact(contact.id);
+              onClose();
+              toastStore.pushToast({ tone: "info", title: "已删除联系人" });
+            }}
+          >
+            <Icon name="trash" size={14} /> 删除联系人
+          </button>
+        </div>
       </div>
     </aside>
   );
 
   if (!isDrawer) return pane;
-
-  return (
+  const layer = (
     <div
       className="workspace-drawer-layer"
+      data-closing={closing ? "true" : "false"}
       role="dialog"
       aria-label="联系人详情抽屉"
     >
@@ -194,4 +170,6 @@ export function ContactDetailPanel({
       {pane}
     </div>
   );
+  const stageEl = document.getElementById("workspace-stage");
+  return stageEl ? createPortal(layer, stageEl) : layer;
 }

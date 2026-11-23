@@ -1,8 +1,9 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Icon } from "./Icon";
+import { Tooltip } from "./Tooltip";
 
 interface ModalShellProps {
-  title?: string;
+  heading?: string;
   subtitle?: string;
   badge?: ReactNode;
   maxWidth?: number;
@@ -14,7 +15,7 @@ interface ModalShellProps {
 }
 
 export function ModalShell({
-  title,
+  heading,
   subtitle,
   badge,
   maxWidth = 640,
@@ -37,7 +38,7 @@ export function ModalShell({
         className="modal-card"
         style={{ "--modal-max-w": `${maxWidth}px` } as CSSProperties}
       >
-        {title && (
+        {heading && (
           <div className="modal-header">
             <div style={{ minWidth: 0 }}>
               <div
@@ -48,21 +49,23 @@ export function ModalShell({
                   flexWrap: "wrap",
                 }}
               >
-                <h2 className="modal-title">{title}</h2>
+                <h2 className="modal-title">{heading}</h2>
                 {badge}
               </div>
               {subtitle && <p className="modal-sub">{subtitle}</p>}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {headerRight}
-              <button
-                type="button"
-                className="icon-btn icon-btn-bordered"
-                onClick={onClose}
-                aria-label="关闭弹窗"
-              >
-                <Icon name="x" size={15} />
-              </button>
+              <Tooltip label="关闭弹窗" shortcut="Esc">
+                <button
+                  type="button"
+                  className="icon-btn icon-btn-bordered"
+                  onClick={onClose}
+                  aria-label="关闭弹窗"
+                >
+                  <Icon name="x" size={15} />
+                </button>
+              </Tooltip>
             </div>
           </div>
         )}

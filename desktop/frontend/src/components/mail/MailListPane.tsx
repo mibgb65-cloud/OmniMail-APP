@@ -1,7 +1,8 @@
-import { useState, type MouseEvent } from "react";
+import { useState, type CSSProperties, type MouseEvent } from "react";
 import { useApp } from "../../state/AppContext";
 import type { FolderId, MailFilterTab, MailItem } from "../../types/mail";
 import { Icon } from "../common/Icon";
+import { Tooltip } from "../common/Tooltip";
 import { MailCard } from "./MailCard";
 import { MailContextMenu } from "./MailContextMenu";
 import { MailListBatchBar, MailListEmptyState } from "./MailListExtras";
@@ -26,7 +27,6 @@ export function MailListPane() {
     x: number;
     y: number;
   } | null>(null);
-
   const {
     filteredMails,
     selectedMail,
@@ -38,37 +38,36 @@ export function MailListPane() {
     searchQuery,
     checkedIds,
   } = mailStore;
-
   const isCompact = viewport === "compact";
+  const noAccounts = workspace.accounts.length === 0;
   const activeAccount = workspace.accounts.find(
     (a) => a.id === activeAccountId,
   );
   const activeLabel = labels.find((l) => l.id === activeLabelId);
-
   const title = searchQuery.trim()
     ? `搜索：“${searchQuery.trim()}”`
     : activeLabel
       ? `标签 · ${activeLabel.name}`
       : FOLDER_TITLES[activeFolder];
-
   const unreadCount = filteredMails.filter((m) => m.unread).length;
-  const badgeCount = activeFolder === "inbox" ? 28 : unreadCount;
+  const badgeCount = mailStore.folderCounts[activeFolder] ?? unreadCount;
+  const displayTotal = mailStore.totalCount || filteredMails.length;
   const subtitle = activeAccount
-    ? `${activeAccount.shortTag} · ${filteredMails.length} 封邮件`
+    ? `${activeAccount.shortTag} · ${displayTotal} 封邮件`
     : `${workspace.accounts.length} 个邮箱 · ${badgeCount} 封未读`;
-
   const tabs: Array<{ id: MailFilterTab; label: string }> = [
     { id: "all", label: "全部" },
-    {
-      id: "unread",
-      label: isCompact ? "未读" : `未读 ${badgeCount}`,
-    },
+    { id: "unread", label: isCompact ? "未读" : `未读 ${badgeCount}` },
     { id: "starred", label: "星标" },
     { id: "attachments", label: "附件" },
   ];
-
+  const activeTabIdx = Math.max(
+    0,
+    tabs.findIndex((t) => t.id === filterTab),
+  );
   const handleContext = (mail: MailItem, e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     setMenuState({ mail, x: e.clientX, y: e.clientY });
   };
 
@@ -103,29 +102,38 @@ export function MailListPane() {
               </button>
             )}
             {!isCompact && (
+              <Tooltip label="刷新同步" shortcut="Ctrl+R">
+                <button
+                  type="button"
+                  className="icon-btn icon-btn-bordered list-head-icon-btn"
+                  onClick={triggerSyncAll}
+                  aria-label="刷新同步"
+                >
+                  <Icon name="refresh" size={13} />
+                </button>
+              </Tooltip>
+            )}
+            <Tooltip label="高级筛选">
               <button
                 type="button"
                 className="icon-btn icon-btn-bordered list-head-icon-btn"
-                onClick={triggerSyncAll}
-                title="刷新同步"
-                aria-label="刷新同步"
+                onClick={() =>
+                  workspace.setOverlay({ type: "advanced-search" })
+                }
+                aria-label="高级筛选"
               >
-                <Icon name="refresh" size={13} />
+                <Icon name="filter" size={13} />
               </button>
-            )}
-            <button
-              type="button"
-              className="icon-btn icon-btn-bordered list-head-icon-btn"
-              onClick={() => workspace.setOverlay({ type: "advanced-search" })}
-              title="高级筛选"
-              aria-label="高级筛选"
-            >
-              <Icon name="filter" size={13} />
-            </button>
+            </Tooltip>
           </div>
         </div>
 
-        <div className="filter-tabs" role="tablist">
+        <div
+          className="filter-tabs"
+          role="tablist"
+          style={{ "--active-tab-idx": activeTabIdx } as CSSProperties}
+        >
+          <span className="filter-tabs-indicator" aria-hidden="true" />
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -144,14 +152,25 @@ export function MailListPane() {
       <MailListBatchBar />
 
       {filteredMails.length === 0 ? (
-        <MailListEmptyState />
+        <MailListEmptyState noAccounts={noAccounts} />
       ) : (
-        <div className="mail-list-scroll">
+        <div
+          className="mail-list-scroll"
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            if (
+              mailStore.hasMore &&
+              el.scrollHeight - el.scrollTop - el.clientHeight < 120
+            ) {
+              void mailStore.loadMore();
+            }
+          }}
+        >
           {!isCompact && (
             <div className="list-group-head">
-              <span className="truncate">今天 · 最新优先</span>
+              <span className="truncate">最新优先</span>
               <span className="list-group-range">
-                1–{filteredMails.length} / 128
+                1–{filteredMails.length} / {displayTotal}
               </span>
             </div>
           )}
@@ -171,14 +190,7 @@ export function MailListPane() {
         </div>
       )}
 
-      {menuState && (
-        <MailContextMenu
-          mail={menuState.mail}
-          x={menuState.x}
-          y={menuState.y}
-          onClose={() => setMenuState(null)}
-        />
-      )}
+      <MailContextMenu state={menuState} onClose={() => setMenuState(null)} />
     </section>
   );
 }

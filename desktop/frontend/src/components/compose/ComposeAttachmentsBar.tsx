@@ -1,6 +1,7 @@
 import { useApp } from "../../state/AppContext";
 import type { ComposeDraftState } from "../../types/settings";
 import { Icon } from "../common/Icon";
+import { Tooltip } from "../common/Tooltip";
 
 export function buildDemoDraftAttachment(
   simulateFailure = false,
@@ -38,52 +39,52 @@ export function ComposeAttachmentsBar() {
       }}
     >
       {draft.attachments.map((att) => (
-        <div
-          key={att.id}
-          className={`pill ${att.status === "failed" ? "pill-danger" : "pill-neutral"}`}
-          style={{ padding: "4px 10px", height: "auto", maxWidth: "100%" }}
-          title={att.error}
-        >
-          <Icon name="paperclip" size={12} />
-          <span className="truncate">
-            {att.name}（{att.sizeText}）
-          </span>
-          {att.status === "failed" && (
+        <Tooltip key={att.id} label={att.error} placement="top">
+          <div
+            className={`pill ${att.status === "failed" ? "pill-danger" : "pill-neutral"}`}
+            style={{ padding: "4px 10px", height: "auto", maxWidth: "100%" }}
+          >
+            <Icon name="paperclip" size={12} />
+            <span className="truncate">
+              {att.name}（{att.sizeText}）
+            </span>
+            {att.status === "failed" && (
+              <button
+                type="button"
+                style={{ textDecoration: "underline", fontWeight: 600 }}
+                onClick={() =>
+                  composeStore.updateDraft({
+                    attachments: draft.attachments.map((item) =>
+                      item.id === att.id
+                        ? {
+                            ...item,
+                            status: "ready",
+                            sizeText: "11.2 MB",
+                            error: undefined,
+                          }
+                        : item,
+                    ),
+                  })
+                }
+              >
+                压缩重试
+              </button>
+            )}
             <button
               type="button"
-              style={{ textDecoration: "underline", fontWeight: 600 }}
+              aria-label={`移除附件 ${att.name}`}
               onClick={() =>
                 composeStore.updateDraft({
-                  attachments: draft.attachments.map((item) =>
-                    item.id === att.id
-                      ? {
-                          ...item,
-                          status: "ready",
-                          sizeText: "11.2 MB",
-                          error: undefined,
-                        }
-                      : item,
+                  attachments: draft.attachments.filter(
+                    (item) => item.id !== att.id,
                   ),
                 })
               }
             >
-              压缩重试
+              <Icon name="x" size={12} />
             </button>
-          )}
-          <button
-            type="button"
-            aria-label={`移除附件 ${att.name}`}
-            onClick={() =>
-              composeStore.updateDraft({
-                attachments: draft.attachments.filter(
-                  (item) => item.id !== att.id,
-                ),
-              })
-            }
-          >
-            <Icon name="x" size={12} />
-          </button>
-        </div>
+          </div>
+        </Tooltip>
       ))}
     </div>
   );

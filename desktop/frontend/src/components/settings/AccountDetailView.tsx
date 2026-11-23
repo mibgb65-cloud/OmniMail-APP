@@ -1,4 +1,10 @@
+import { useState } from "react";
+import { accountApi, parseBackendError } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
+import {
+  AsyncActionButton,
+  type AsyncActionStatus,
+} from "../common/AsyncActionButton";
 import { Icon } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
 
@@ -11,18 +17,74 @@ export function AccountDetailView({
 }) {
   const { workspace, toastStore } = useApp();
   const detail = workspace.accounts.find((a) => a.id === accountId);
+  const [senderName, setSenderName] = useState(detail?.senderName ?? "");
+  const [replyTo, setReplyTo] = useState(detail?.replyTo ?? "");
+  const [signature, setSignature] = useState(detail?.signature ?? "");
+  const [saveStatus, setSaveStatus] = useState<AsyncActionStatus>("idle");
+
   if (!detail) return null;
+
+  const saveMeta = async () => {
+    setSaveStatus("loading");
+    try {
+      const updated = await accountApi.updateAccount({
+        id: detail.id,
+        senderName,
+        replyTo,
+        signature,
+      });
+      workspace.updateAccount(detail.id, updated);
+      setSaveStatus("success");
+      toastStore.pushToast({
+        tone: "success",
+        title: "已保存发件身份与签名配置",
+      });
+    } catch (err) {
+      setSaveStatus("error");
+      toastStore.pushToast({
+        tone: "danger",
+        title: parseBackendError(err).message,
+      });
+    }
+  };
+  const makeDefault = async () => {
+    try {
+      await accountApi.setDefaultAccount(detail.id);
+      workspace.updateSettings({ defaultSendAccountId: detail.id });
+      await workspace.refreshProfilesAndAccounts();
+      toastStore.pushToast({ tone: "success", title: "已设为默认发件邮箱" });
+    } catch (err) {
+      toastStore.pushToast({
+        tone: "danger",
+        title: parseBackendError(err).message,
+      });
+    }
+  };
+  const statusMeta =
+    detail.status === "connected"
+      ? { tone: "pill-success", text: "连接正常" }
+      : detail.status === "auth-expired"
+        ? { tone: "pill-danger", text: "授权已失效" }
+        : { tone: "pill-warning", text: "同步中" };
+  const openOverlay = workspace.setOverlay;
+  const isDefault = workspace.settings.defaultSendAccountId === detail.id;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <button
-        type="button"
-        className="btn btn-ghost btn-sm"
-        style={{ alignSelf: "flex-start" }}
-        onClick={onBack}
-      >
-        <Icon name="arrowLeft" size={14} /> 返回邮箱账户列表
-      </button>
+      <div className="row-between">
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onBack}>
+          <Icon name="arrowLeft" size={14} /> 返回邮箱账户列表
+        </button>
+        {!isDefault && (
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => void makeDefault()}
+          >
+            设为默认发件邮箱
+          </button>
+        )}
+      </div>
 
       <div className="settings-card">
         <div className="row-between">
@@ -33,96 +95,77 @@ export function AccountDetailView({
               <div className="text-xs text-muted">{detail.email}</div>
             </div>
           </div>
-          <span
-            className={`pill ${
-              detail.status === "connected"
-                ? "pill-success"
-                : detail.status === "auth-expired"
-                  ? "pill-danger"
-                  : "pill-warning"
-            }`}
-          >
-            {detail.status === "connected"
-              ? "连接正常"
-              : detail.status === "auth-expired"
-                ? "授权已失效"
-                : "正在同步"}
-          </span>
+          <span className={`pill ${statusMeta.tone}`}>{statusMeta.text}</span>
+        </div>
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
+        >
+          <div>
+            <label className="text-xs text-muted">发件显示名称</label>
+            <input
+              className="input"
+              style={{ marginTop: 4 }}
+              value={senderName}
+              onChange={(e) => setSenderName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted">默认回复地址</label>
+            <input
+              className="input"
+              style={{ marginTop: 4 }}
+              value={replyTo}
+              onChange={(e) => setReplyTo(e.target.value)}
+              placeholder={detail.email}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-muted">邮箱签名模板</label>
+          <textarea
+            className="textarea"
+            rows={3}
+            style={{ marginTop: 4 }}
+            value={signature}
+            onChange={(e) => setSignature(e.target.value)}
+          />
         </div>
 
-        <div className="settings-row">
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>发件显示名称</div>
-            <div className="text-xs text-muted">{detail.senderName}</div>
+        <div className="row-between">
+          <div className="text-xs text-muted">
+            IMAP: {detail.imap.host}:{detail.imap.port} · SMTP:{" "}
+            {detail.smtp.host}:{detail.smtp.port}
           </div>
-          <span className="pill pill-neutral">
-            {detail.authMode === "oauth"
-              ? "浏览器 OAuth 令牌"
-              : "客户端授权码 / IMAP"}
-          </span>
-        </div>
-
-        <div className="settings-row">
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>
-              IMAP / SMTP 服务器参数
-            </div>
-            <div className="text-xs text-muted">
-              IMAP: {detail.imap.host}:{detail.imap.port} · SMTP:{" "}
-              {detail.smtp.host}:{detail.smtp.port}（{detail.imap.security}）
-            </div>
-          </div>
-          <div className="row">
+          <div className="row" style={{ gap: 8 }}>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
               onClick={() =>
-                workspace.setOverlay({
-                  type: "account-server",
-                  accountId: detail.id,
-                })
+                openOverlay({ type: "account-server", accountId: detail.id })
               }
             >
-              编辑参数
+              编辑服务器参数
             </button>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
               onClick={() =>
-                workspace.setOverlay({
-                  type: "diagnostics",
-                  accountId: detail.id,
-                })
+                openOverlay({ type: "diagnostics", accountId: detail.id })
               }
             >
-              连接诊断与日志
+              连接诊断
             </button>
+            <AsyncActionButton
+              size="sm"
+              status={saveStatus}
+              idleLabel="保存身份与签名"
+              loadingLabel="正在保存…"
+              successLabel="身份与签名已保存"
+              errorLabel="保存失败 · 重试"
+              onSuccessHoldEnd={() => setSaveStatus("idle")}
+              onClick={() => void saveMeta()}
+            />
           </div>
-        </div>
-
-        <div className="settings-row">
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>邮箱签名</div>
-            <div
-              className="text-xs text-muted"
-              style={{ whiteSpace: "pre-line", marginTop: 3 }}
-            >
-              {detail.signature}
-            </div>
-          </div>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() =>
-              toastStore.pushToast({
-                tone: "success",
-                title: "账户凭据校验正常",
-                detail: `最近同步：${detail.lastSyncedAt} · 缓存占用 ${detail.storageMb} MB`,
-              })
-            }
-          >
-            测试连接
-          </button>
         </div>
       </div>
 
@@ -133,14 +176,14 @@ export function AccountDetailView({
               移除此邮箱账户
             </strong>
             <div className="text-xs text-muted">
-              仅移除本地缓存、搜索索引与系统凭据库中的令牌，不影响云端原始邮件
+              仅清理本地缓存、索引与 DPAPI 凭据盒令牌，不删除远程邮局邮件
             </div>
           </div>
           <button
             type="button"
             className="btn btn-danger btn-sm"
             onClick={() =>
-              workspace.setOverlay({
+              openOverlay({
                 type: "danger-confirm",
                 kind: "remove-account",
                 targetId: detail.id,

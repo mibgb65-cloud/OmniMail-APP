@@ -3,11 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/src/assets/brand/logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="./src/assets/brand/logo.svg" />
     <title>OmniMail</title>
+    <script>
+      (function () {
+        var theme = "light";
+        try {
+          var pref = window.localStorage.getItem("omnimail:theme-pref");
+          var saved = window.localStorage.getItem("omnimail:theme");
+          var sysDark =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches;
+          if (pref === "dark" || pref === "light") {
+            theme = pref;
+          } else if (pref === "system") {
+            theme = sysDark ? "dark" : "light";
+          } else if (saved === "dark" || saved === "light") {
+            theme = saved;
+          } else if (sysDark) {
+            theme = "dark";
+          }
+        } catch (e) {}
+        var root = document.documentElement;
+        root.setAttribute("data-theme", theme);
+        root.style.colorScheme = theme;
+        window.__OMNIMAIL_BOOT_TS__ =
+          typeof performance !== "undefined" ? performance.now() : Date.now();
+      })();
+    </script>
+    <style>
+      html {
+        background-color: #f8fafc;
+      }
+      html[data-theme="dark"] {
+        background-color: #0b0e14;
+      }
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: transparent;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>

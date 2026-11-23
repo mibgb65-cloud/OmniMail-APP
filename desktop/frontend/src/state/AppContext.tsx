@@ -3,13 +3,14 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   type ReactNode,
 } from "react";
-import { createSentMailItem, type SendMailPayload } from "./mailFactory";
+import { accountApi, parseBackendError } from "../services/backendClient";
 import { useAiStore } from "./useAiStore";
 import { useComposeStore } from "./useComposeStore";
+import { useDesktopBridge } from "./useDesktopBridge";
 import { useMailStore } from "./useMailStore";
+import { useSendMailAction } from "./useSendMailAction";
 import { useGlobalShortcuts } from "./useShortcuts";
 import { useToasts } from "./useToasts";
 import { useViewportMode } from "./useViewportMode";
@@ -32,73 +33,85 @@ function useAppController() {
 
   const { leftNavOpen, setLeftNavOpen } = workspace;
   useEffect(() => {
-    if (viewport !== "compact" && leftNavOpen) {
-      setLeftNavOpen(false);
-    }
+    if (viewport !== "compact" && leftNavOpen) setLeftNavOpen(false);
   }, [viewport, leftNavOpen, setLeftNavOpen]);
 
   const triggerSyncAll = useCallback(() => {
-    workspace.setSyncLabel("正在同步全部邮箱…");
-    window.setTimeout(() => {
-      workspace.setSyncLabel("所有邮箱已同步");
-      toastStore.pushToast({
-        tone: "success",
-        title: "全部 4 个邮箱已完成同步",
-        detail: "未发现新错误 · 本地搜索索引已刷新",
+    if (workspace.accounts.length === 0) return;
+    if (workspace.syncLabel.startsWith("正在同步")) return;
+    workspace.setSyncLabel(`正在同步 ${workspace.accounts.length} 个邮箱…`);
+    const minSpin = new Promise((r) => window.setTimeout(r, 420));
+    void Promise.all([
+      accountApi
+        .triggerSync("")
+        .then(() => workspace.refreshProfilesAndAccounts()),
+      minSpin,
+    ])
+      .then(() => {
+        workspace.setSyncLabel("所有邮箱已同步");
+        toastStore.pushToast({
+          tone: "success",
+          title: `已完成 ${workspace.accounts.length} 个邮箱同步`,
+        });
+      })
+      .catch((err) => {
+        workspace.setSyncLabel("同步部分受阻");
+        toastStore.pushToast({
+          tone: "warning",
+          title: "同步邮箱时遇到问题",
+          detail: parseBackendError(err).message,
+        });
       });
-    }, 600);
   }, [workspace, toastStore]);
 
-  const sendMailWithUndo = useCallback(
-    (payload: SendMailPayload) => {
-      const account =
-        workspace.accounts.find((a) => a.id === payload.accountId) ??
-        workspace.accounts[0];
-      const created = createSentMailItem(account, payload);
+  const onResetStoresForSwitch = useCallback(() => {
+    workspace.clearCollections();
+    mailStore.resetMailState();
+    composeStore.closeDraft();
+    aiStore.setAiOpen(false);
+  }, [aiStore, composeStore, mailStore, workspace]);
 
-      mailStore.addMail(created);
-      toastStore.pushToast(
-        {
-          tone: "success",
-          title: payload.scheduledAt
-            ? `已加入定时发送队列（${payload.scheduledAt}）`
-            : `正在通过 ${account?.shortTag ?? "工作 · Gmail"} 发送…`,
-          detail: `${workspace.settings.undoSendSeconds} 秒内可撤销发送并返回草稿继续编辑`,
-          actionLabel: "撤销发送",
-          onAction: () => {
-            mailStore.permanentDelete([created.id]);
-            composeStore.openNewCompose(payload.to);
-            composeStore.updateDraft({
-              subject: payload.subject,
-              body: payload.body,
-            });
-          },
-        },
-        workspace.settings.undoSendSeconds * 1000,
-      );
+  const desktopBridge = useDesktopBridge({
+    settings: workspace.settings,
+    applySettingsFromBackend: workspace.applySettingsFromBackend,
+    setScreen: workspace.setScreen,
+    setOverlay: workspace.setOverlay,
+    setBannerMode: workspace.setBannerMode,
+    setSyncLabel: workspace.setSyncLabel,
+    updateAccount: workspace.updateAccount,
+    refreshProfilesAndAccounts: workspace.refreshProfilesAndAccounts,
+    onResetStoresForSwitch,
+    onMailDelta: (counts) => {
+      if (counts) mailStore.setFolderCounts(counts);
+      void mailStore.reloadMessages();
+      void workspace.refreshProfilesAndAccounts();
     },
-    [
-      workspace.accounts,
-      workspace.settings.undoSendSeconds,
-      mailStore,
-      toastStore,
-      composeStore,
-    ],
+    openNewCompose: composeStore.openNewCompose,
+    updateComposeDraft: composeStore.updateDraft,
+    pushToast: toastStore.pushToast,
+    onTraySyncAll: triggerSyncAll,
+  });
+
+  const sendMailWithUndo = useSendMailAction(
+    workspace.accounts,
+    workspace.settings.undoSendSeconds,
+    mailStore,
+    composeStore,
+    toastStore,
   );
 
   const requestAiAction = useCallback(
     (actionLabel: string, prompt: string) => {
-      const current = mailStore.selectedMail;
-      if (!current) return;
+      const cur = mailStore.selectedMail;
+      if (!cur) return;
       if (
-        current.folder === "spam" ||
-        current.folder === "trash" ||
-        current.securityWarning
+        cur.folder === "spam" ||
+        cur.folder === "trash" ||
+        cur.securityWarning?.level === "danger"
       ) {
         toastStore.pushToast({
           tone: "warning",
-          title: "当前邮件已禁用 Omni AI 读取",
-          detail: "垃圾邮件、回收站与疑似钓鱼邮件不会发送至 AI 模型。",
+          title: "已按隐私规则拦截敏感邮件 AI 读取",
         });
         return;
       }
@@ -110,9 +123,7 @@ function useAppController() {
           actionLabel,
           onConfirmPrompt: prompt,
         });
-      } else {
-        aiStore.runPrompt(current, prompt);
-      }
+      } else aiStore.runPrompt(cur, prompt);
     },
     [mailStore.selectedMail, workspace, aiStore, toastStore],
   );
@@ -128,49 +139,47 @@ function useAppController() {
       aiStore.setAiOpen((v) => !v);
     },
     onSyncAll: triggerSyncAll,
+    onStepMail: (delta) => {
+      if (workspace.screen !== "mail" || mailStore.filteredMails.length === 0)
+        return;
+      const list = mailStore.filteredMails;
+      const idx = list.findIndex((m) => m.id === mailStore.selectedMail?.id);
+      const next = list[Math.max(0, Math.min(list.length - 1, idx + delta))];
+      if (next && next.id !== mailStore.selectedMail?.id)
+        mailStore.openMail(next.id);
+    },
     onEscape: () => {
-      if (workspace.overlay.type !== "none") {
+      if (workspace.overlay.type !== "none")
         workspace.setOverlay({ type: "none" });
-      } else if (composeStore.draft && !composeStore.draft.minimized) {
+      else if (composeStore.draft && !composeStore.draft.minimized)
         composeStore.updateDraft({ minimized: true });
-      } else if (workspace.leftNavOpen) {
-        workspace.setLeftNavOpen(false);
-      } else if (aiStore.aiOpen) {
-        aiStore.setAiOpen(false);
-      }
+      else if (workspace.leftNavOpen) workspace.setLeftNavOpen(false);
+      else if (aiStore.aiOpen) aiStore.setAiOpen(false);
     },
     overlay: workspace.overlay,
+    composeOpen: Boolean(composeStore.draft && !composeStore.draft.minimized),
   });
 
-  return useMemo(
-    () => ({
-      viewport,
-      workspace,
-      mailStore,
-      composeStore,
-      aiStore,
-      toastStore,
-      triggerSyncAll,
-      sendMailWithUndo,
-      requestAiAction,
-    }),
-    [
-      viewport,
-      workspace,
-      mailStore,
-      composeStore,
-      aiStore,
-      toastStore,
-      triggerSyncAll,
-      sendMailWithUndo,
-      requestAiAction,
-    ],
-  );
+  return {
+    viewport,
+    workspace,
+    desktopBridge,
+    mailStore,
+    composeStore,
+    aiStore,
+    toastStore,
+    triggerSyncAll,
+    sendMailWithUndo,
+    requestAiAction,
+  };
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const value = useAppController();
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider value={useAppController()}>
+      {children}
+    </AppContext.Provider>
+  );
 }
 
 export function useApp() {

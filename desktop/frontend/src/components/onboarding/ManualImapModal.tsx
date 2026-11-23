@@ -1,22 +1,114 @@
 import { useState } from "react";
+import {
+  accountApi,
+  parseBackendError,
+  type ConnectionTestReport,
+} from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
+import {
+  AsyncActionButton,
+  waitSuccessHold,
+  type AsyncActionStatus,
+} from "../common/AsyncActionButton";
+import { Checkbox } from "../common/Checkbox";
+import { HandshakeSteps } from "../common/HandshakeSteps";
 import { ModalShell } from "../common/ModalShell";
+import { ManualImapFields, type ManualImapFormState } from "./ManualImapFields";
 
 export function ManualImapModal() {
-  const { workspace } = useApp();
-  const [displayName, setDisplayName] = useState("企业邮箱 · IMAP");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [imapHost, setImapHost] = useState("imap.company.example");
-  const [imapPort, setImapPort] = useState("993");
-  const [smtpHost, setSmtpHost] = useState("smtp.company.example");
-  const [smtpPort, setSmtpPort] = useState("465");
-  const [security, setSecurity] = useState("SSL/TLS");
+  const { workspace, toastStore } = useApp();
+  const [form, setForm] = useState<ManualImapFormState>({
+    displayName: "企业邮箱 · IMAP",
+    email: "",
+    password: "",
+    imapHost: "",
+    imapPort: "993",
+    smtpHost: "",
+    smtpPort: "465",
+    security: "SSL/TLS",
+  });
+  const [pinCert, setPinCert] = useState(false);
+  const [detectedCert, setDetectedCert] = useState("");
+  const [status, setStatus] = useState<AsyncActionStatus>("idle");
+  const [stepLabel, setStepLabel] = useState("正在执行四步握手…");
+  const [report, setReport] = useState<ConnectionTestReport | null>(null);
+
+  const autoPrefill = async (val: string) => {
+    if (!val.includes("@") || form.imapHost.trim()) return;
+    const preset = await accountApi
+      .resolveProviderByEmail(val)
+      .catch(() => null);
+    if (preset) {
+      setForm((prev) => ({
+        ...prev,
+        imapHost: preset.defaultImapHost || prev.imapHost,
+        smtpHost: preset.defaultSmtpHost || prev.smtpHost,
+        imapPort: String(preset.defaultImapPort || 993),
+        smtpPort: String(preset.defaultSmtpPort || 465),
+      }));
+    }
+  };
+
+  const handleSave = async () => {
+    setStatus("loading");
+    setReport(null);
+    const req = {
+      name: form.displayName.trim() || form.email.trim(),
+      shortTag: form.displayName.trim().slice(0, 10) || "IMAP",
+      email: form.email.trim(),
+      provider: "imap",
+      authMode: "imap",
+      secret: form.password,
+      senderName: form.displayName.trim(),
+      imapHost: form.imapHost.trim(),
+      imapPort: Number(form.imapPort) || 993,
+      imapSecurity: form.security,
+      smtpHost: form.smtpHost.trim(),
+      smtpPort: Number(form.smtpPort) || 465,
+      smtpSecurity: Number(form.smtpPort) === 587 ? "STARTTLS" : form.security,
+      certFingerprint: pinCert && detectedCert ? detectedCert : undefined,
+    };
+    try {
+      const probe = await accountApi.testConnection(req);
+      setReport(probe);
+      if (!probe.ok) {
+        if (probe.untrustedCertSha256) {
+          setDetectedCert(probe.untrustedCertSha256);
+        }
+        setStatus("error");
+        return;
+      }
+      const created = await accountApi.addAccount({ ...req, skipProbe: true });
+      setForm((p) => ({ ...p, password: "" }));
+      workspace.addAccount(created);
+      await workspace.refreshProfilesAndAccounts();
+      setStatus("success");
+      await waitSuccessHold(900);
+      workspace.setOverlay({
+        type: "sync-progress",
+        accountId: created.id,
+        accountName: `${created.name}（${created.email}）`,
+        stage: "syncing",
+      });
+    } catch (err) {
+      setStatus("error");
+      toastStore.pushToast({
+        tone: "danger",
+        title: "保存手动邮箱失败",
+        detail: parseBackendError(err).message,
+      });
+    }
+  };
+
+  const formReady =
+    form.email.includes("@") &&
+    Boolean(form.imapHost.trim()) &&
+    Boolean(form.smtpHost.trim());
 
   return (
     <ModalShell
-      title="手动配置 IMAP / SMTP 邮箱"
-      subtitle="适用于自建邮局、企业邮箱或尚未预设的通用邮箱服务"
+      heading="手动配置 IMAP / SMTP 邮箱"
+      subtitle="适用于自建邮局、企业邮箱或通用标准协议邮箱"
       maxWidth={560}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
@@ -24,119 +116,55 @@ export function ManualImapModal() {
           <button
             type="button"
             className="btn btn-ghost"
+            disabled={status === "loading" || status === "success"}
             onClick={() => workspace.setOverlay({ type: "add-account" })}
           >
             返回常用服务商
           </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={
-              !email.includes("@") || !imapHost.trim() || !smtpHost.trim()
-            }
-            onClick={() =>
-              workspace.setOverlay({
-                type: "sync-progress",
-                accountName: `${displayName}（${email}）`,
-                stage: "testing",
-              })
-            }
-          >
-            测试连接并保存
-          </button>
+          <AsyncActionButton
+            status={status}
+            disabled={!formReady}
+            idleLabel="测试连接并保存"
+            loadingLabel={stepLabel}
+            successLabel="握手成功 · 已连接"
+            errorLabel="连接未通过 · 点击重试"
+            onClick={() => void handleSave()}
+          />
         </>
       }
     >
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <div>
-          <label className="text-xs text-muted">账户显示名称</label>
-          <input
-            className="input"
-            style={{ marginTop: 4 }}
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted">邮箱地址</label>
-          <input
-            type="email"
-            className="input"
-            style={{ marginTop: 4 }}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@company.example"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="text-xs text-muted">应用密码 / 授权码</label>
-        <input
-          type="password"
-          className="input"
-          style={{ marginTop: 4 }}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="密码将加密写入系统凭据库"
-        />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10 }}>
-        <div>
-          <label className="text-xs text-muted">收件服务器（IMAP）</label>
-          <input
-            className="input"
-            style={{ marginTop: 4 }}
-            value={imapHost}
-            onChange={(e) => setImapHost(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted">IMAP 端口</label>
-          <input
-            className="input"
-            style={{ marginTop: 4 }}
-            value={imapPort}
-            onChange={(e) => setImapPort(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div
-        style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 10 }}
-      >
-        <div>
-          <label className="text-xs text-muted">发件服务器（SMTP）</label>
-          <input
-            className="input"
-            style={{ marginTop: 4 }}
-            value={smtpHost}
-            onChange={(e) => setSmtpHost(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted">SMTP 端口</label>
-          <input
-            className="input"
-            style={{ marginTop: 4 }}
-            value={smtpPort}
-            onChange={(e) => setSmtpPort(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted">加密方式</label>
-          <select
-            className="select"
-            style={{ marginTop: 4, width: "100%" }}
-            value={security}
-            onChange={(e) => setSecurity(e.target.value)}
+      <HandshakeSteps
+        running={status === "loading"}
+        report={report}
+        endpointHint={
+          form.imapHost.trim()
+            ? `${form.imapHost.trim()}:${form.imapPort || "993"}`
+            : undefined
+        }
+        onStepLabelChange={setStepLabel}
+      />
+      {detectedCert && (
+        <div className="settings-card" style={{ padding: "10px 12px" }}>
+          <Checkbox
+            checked={pinCert}
+            onChange={(v) => {
+              setPinCert(v);
+              if (status === "error") setStatus("idle");
+            }}
+            ariaLabel="信任并固定此服务器自签名证书指纹"
           >
-            <option value="SSL/TLS">SSL/TLS</option>
-            <option value="STARTTLS">STARTTLS</option>
-          </select>
+            信任并固定此服务器证书指纹（SHA-256: {detectedCert.slice(0, 20)}…）
+          </Checkbox>
         </div>
-      </div>
+      )}
+      <ManualImapFields
+        val={form}
+        onChange={(patch) => {
+          setForm((p) => ({ ...p, ...patch }));
+          if (status === "error") setStatus("idle");
+        }}
+        onEmailBlur={(val) => void autoPrefill(val)}
+      />
     </ModalShell>
   );
 }

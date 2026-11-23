@@ -1,37 +1,84 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useApp } from "../../state/AppContext";
+import { DateTimePicker } from "../common/DateTimePicker";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
 
-const PRESETS = [
-  { label: "明天上午", value: "2026-11-21 09:00", hint: "周六 09:00" },
-  { label: "明天下午", value: "2026-11-21 14:00", hint: "周六 14:00" },
-  { label: "下周一上午", value: "2026-11-23 09:00", hint: "周一 09:00" },
-];
+function formatLocalMinute(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function buildSchedulePresets() {
+  const now = new Date();
+  const tmrMorning = new Date(now);
+  tmrMorning.setDate(now.getDate() + 1);
+  tmrMorning.setHours(9, 0, 0, 0);
+
+  const tmrAfternoon = new Date(now);
+  tmrAfternoon.setDate(now.getDate() + 1);
+  tmrAfternoon.setHours(14, 0, 0, 0);
+
+  const nextMon = new Date(now);
+  const daysUntilMon = (8 - now.getDay()) % 7 || 7;
+  nextMon.setDate(now.getDate() + daysUntilMon);
+  nextMon.setHours(9, 0, 0, 0);
+
+  const weekNames = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  return [
+    {
+      label: "明天上午",
+      value: formatLocalMinute(tmrMorning),
+      hint: `${weekNames[tmrMorning.getDay()]} 09:00`,
+    },
+    {
+      label: "明天下午",
+      value: formatLocalMinute(tmrAfternoon),
+      hint: `${weekNames[tmrAfternoon.getDay()]} 14:00`,
+    },
+    {
+      label: "下周一上午",
+      value: formatLocalMinute(nextMon),
+      hint: "周一 09:00",
+    },
+  ];
+}
 
 export function ScheduleSendModal() {
   const { workspace, composeStore, toastStore } = useApp();
-  const [customTime, setCustomTime] = useState("2026-11-21 09:00");
+  const presets = useMemo(() => buildSchedulePresets(), []);
+  const [customTime, setCustomTime] = useState(presets[0].value);
 
   const applyTime = (timeText: string) => {
-    composeStore.updateDraft({ scheduledAt: timeText });
+    const parsedMs = new Date(timeText.replace(" ", "T")).getTime();
+    if (!Number.isFinite(parsedMs) || parsedMs <= Date.now()) {
+      toastStore.pushToast({
+        tone: "warning",
+        title: "请选择未来的发送时间",
+      });
+      return;
+    }
+    composeStore.updateDraft({
+      scheduledAt: timeText,
+      scheduledAtUnixMs: parsedMs,
+    });
     workspace.setOverlay({ type: "none" });
     toastStore.pushToast({
       tone: "info",
       title: `已设定定时发送：${timeText}`,
-      detail: "点击写信窗口底部「确认定时发送」即可加入定时队列",
+      detail: "点击写信窗口底部「确认定时发送」即可加入持久化定时队列",
     });
   };
 
   return (
     <ModalShell
-      title="选择定时发送时间"
-      subtitle="到达计划时间后将由本地或服务端队列按锁定发件账户发出"
+      heading="选择定时发送时间"
+      subtitle="到达计划时间后将由本地持久化队列按锁定发件账户发出"
       maxWidth={460}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
         <>
-          <span className="text-xs text-muted">时区：中国标准时间 (UTC+8)</span>
+          <span className="text-xs text-muted">关闭应用重启后仍可自动补发</span>
           <div className="row">
             <button
               type="button"
@@ -52,9 +99,9 @@ export function ScheduleSendModal() {
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {PRESETS.map((p) => (
+        {presets.map((p) => (
           <button
-            key={p.value}
+            key={p.label}
             type="button"
             className="provider-card"
             onClick={() => applyTime(p.value)}
@@ -63,21 +110,21 @@ export function ScheduleSendModal() {
               <Icon name="clock" size={15} />
               <strong>{p.label}</strong>
             </span>
-            <span className="text-xs text-muted">{p.hint}</span>
+            <span className="text-xs text-muted">
+              {p.value}（{p.hint}）
+            </span>
           </button>
         ))}
       </div>
 
       <div className="settings-card">
         <label style={{ fontSize: 13, fontWeight: 600 }}>
-          自定义日期与时间
+          自定义日期与发送时间
         </label>
-        <input
-          type="text"
-          className="input"
+        <DateTimePicker
           value={customTime}
-          onChange={(e) => setCustomTime(e.target.value)}
-          placeholder="例如 2026-11-24 10:30"
+          onChange={setCustomTime}
+          ariaLabel="选择定时发送日期与时间"
         />
       </div>
     </ModalShell>

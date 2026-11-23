@@ -15,7 +15,7 @@ export function MoveFolderModal({ mailIds }: { mailIds: string[] }) {
 
   return (
     <ModalShell
-      title="移动邮件至文件夹"
+      heading="移动邮件至文件夹"
       subtitle={`将已选 ${mailIds.length} 封邮件移动至目标文件夹`}
       maxWidth={420}
       onClose={() => workspace.setOverlay({ type: "none" })}

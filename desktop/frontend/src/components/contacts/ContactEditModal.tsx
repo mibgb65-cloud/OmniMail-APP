@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { useApp } from "../../state/AppContext";
+import { Checkbox } from "../common/Checkbox";
+import { CustomSelect } from "../common/CustomSelect";
 import { ModalShell } from "../common/ModalShell";
+
+const GROUP_OPTIONS = [
+  { value: "核心项目组", label: "核心项目组" },
+  { value: "设计评审", label: "设计评审" },
+  { value: "财务与法务", label: "财务与法务" },
+  { value: "外部供应商", label: "外部供应商" },
+];
 
 export function ContactEditModal({ contactId }: { contactId?: string }) {
   const { workspace, toastStore } = useApp();
@@ -9,7 +18,7 @@ export function ContactEditModal({ contactId }: { contactId?: string }) {
   const [name, setName] = useState(existing?.name ?? "");
   const [email, setEmail] = useState(existing?.email ?? "");
   const [company, setCompany] = useState(existing?.company ?? "");
-  const [title, setTitle] = useState(existing?.title ?? "");
+  const [roleTitle, setRoleTitle] = useState(existing?.title ?? "");
   const [group, setGroup] = useState(existing?.groups[0] ?? "核心项目组");
   const [vip, setVip] = useState(existing?.vip ?? false);
   const [note, setNote] = useState(existing?.note ?? "");
@@ -23,7 +32,7 @@ export function ContactEditModal({ contactId }: { contactId?: string }) {
       avatarText: name.trim().slice(0, 1),
       avatarTone: existing?.avatarTone ?? "blue",
       company: company.trim() || "未填写公司",
-      title: title.trim() || "联系人",
+      title: roleTitle.trim() || "联系人",
       sourceAccountId:
         existing?.sourceAccountId ?? workspace.accounts[0]?.id ?? "acc-gmail",
       sourceTag:
@@ -46,7 +55,7 @@ export function ContactEditModal({ contactId }: { contactId?: string }) {
 
   return (
     <ModalShell
-      title={existing ? "编辑联系人" : "新建联系人"}
+      heading={existing ? "编辑联系人" : "新建联系人"}
       subtitle="联系人信息默认保存在本地工作空间，支持在写信收件人自动补全"
       maxWidth={500}
       onClose={() => workspace.setOverlay({ type: "none" })}
@@ -112,8 +121,8 @@ export function ContactEditModal({ contactId }: { contactId?: string }) {
           <input
             className="input"
             style={{ marginTop: 4 }}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={roleTitle}
+            onChange={(e) => setRoleTitle(e.target.value)}
           />
         </div>
       </div>
@@ -128,29 +137,23 @@ export function ContactEditModal({ contactId }: { contactId?: string }) {
       >
         <div>
           <label className="text-xs text-muted">所属分组</label>
-          <select
-            className="select"
-            style={{ marginTop: 4, width: "100%" }}
+          <CustomSelect
+            fullWidth
+            style={{ marginTop: 4 }}
             value={group}
-            onChange={(e) => setGroup(e.target.value)}
-          >
-            <option value="核心项目组">核心项目组</option>
-            <option value="设计评审">设计评审</option>
-            <option value="财务与法务">财务与法务</option>
-            <option value="外部供应商">外部供应商</option>
-          </select>
-        </div>
-        <label
-          className="row"
-          style={{ height: 34, fontSize: 13, cursor: "pointer" }}
-        >
-          <input
-            type="checkbox"
-            checked={vip}
-            onChange={(e) => setVip(e.target.checked)}
+            options={GROUP_OPTIONS}
+            ariaLabel="所属分组"
+            onChange={setGroup}
           />
-          <span>标记为 VIP 重要发件人</span>
-        </label>
+        </div>
+        <Checkbox
+          checked={vip}
+          onChange={setVip}
+          style={{ height: 36 }}
+          ariaLabel="标记为 VIP 重要发件人"
+        >
+          标记为 VIP 重要发件人
+        </Checkbox>
       </div>
 
       <div>

@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { useApp } from "../../state/AppContext";
+import { Checkbox } from "../common/Checkbox";
 import { ModalShell } from "../common/ModalShell";
+
+const PRESET_SWATCHES = [
+  "#2563EB",
+  "#4F46E5",
+  "#16A34A",
+  "#D97706",
+  "#DC2626",
+  "#0891B2",
+];
 
 export function LabelManageModal({ mailIds }: { mailIds?: string[] }) {
   const { workspace, mailStore, toastStore } = useApp();
@@ -21,7 +31,7 @@ export function LabelManageModal({ mailIds }: { mailIds?: string[] }) {
 
   return (
     <ModalShell
-      title="管理邮件标签"
+      heading="管理邮件标签"
       subtitle={
         mailIds && mailIds.length > 0
           ? `为已选 ${mailIds.length} 封邮件勾选或新建标签`
@@ -53,17 +63,30 @@ export function LabelManageModal({ mailIds }: { mailIds?: string[] }) {
               className="provider-card"
               style={{ padding: "9px 12px" }}
             >
-              <label className="row" style={{ flex: 1, cursor: "pointer" }}>
-                {mailIds && mailIds.length > 0 && (
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => mailStore.toggleMailLabel(mailIds, lb.id)}
+              {mailIds && mailIds.length > 0 ? (
+                <Checkbox
+                  checked={checked}
+                  onChange={() => mailStore.toggleMailLabel(mailIds, lb.id)}
+                  style={{ flex: 1 }}
+                  ariaLabel={`切换标签 ${lb.name}`}
+                >
+                  <span className="row" style={{ gap: 8 }}>
+                    <span
+                      className="label-dot"
+                      style={{ background: lb.color }}
+                    />
+                    <strong style={{ fontSize: 13 }}>{lb.name}</strong>
+                  </span>
+                </Checkbox>
+              ) : (
+                <div className="row" style={{ flex: 1, gap: 8 }}>
+                  <span
+                    className="label-dot"
+                    style={{ background: lb.color }}
                   />
-                )}
-                <span className="label-dot" style={{ background: lb.color }} />
-                <strong style={{ fontSize: 13 }}>{lb.name}</strong>
-              </label>
+                  <strong style={{ fontSize: 13 }}>{lb.name}</strong>
+                </div>
+              )}
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
@@ -85,25 +108,33 @@ export function LabelManageModal({ mailIds }: { mailIds?: string[] }) {
       </div>
 
       <div className="settings-card">
-        <div className="text-xs text-muted">新建自定义标签</div>
+        <div className="row-between">
+          <span className="text-xs text-muted">新建自定义标签</span>
+          <div className="swatch-row" role="radiogroup" aria-label="标签颜色">
+            {PRESET_SWATCHES.map((hex) => (
+              <button
+                key={hex}
+                type="button"
+                role="radio"
+                aria-checked={newColor === hex}
+                aria-label={`颜色 ${hex}`}
+                className={`swatch-btn${newColor === hex ? " active" : ""}`}
+                style={{ background: hex }}
+                onClick={() => setNewColor(hex)}
+              />
+            ))}
+          </div>
+        </div>
         <div className="row">
           <input
             className="input"
             style={{ flex: 1 }}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="例如 客户跟进、发版审核"
-          />
-          <input
-            type="color"
-            value={newColor}
-            onChange={(e) => setNewColor(e.target.value)}
-            style={{
-              width: 34,
-              height: 34,
-              border: "none",
-              background: "transparent",
+            onKeyDown={(e) => {
+              if (e.key === "Enter") createLabel();
             }}
+            placeholder="例如 客户跟进、发版审核"
           />
           <button
             type="button"

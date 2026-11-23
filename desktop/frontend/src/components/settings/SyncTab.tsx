@@ -1,4 +1,5 @@
 import { useApp } from "../../state/AppContext";
+import { CustomSelect } from "../common/CustomSelect";
 import { Icon } from "../common/Icon";
 
 export function SyncTab() {
@@ -26,20 +27,19 @@ export function SyncTab() {
               对不支持 IMAP IDLE 的服务商定时增量拉取
             </div>
           </div>
-          <select
-            className="select"
+          <CustomSelect
             value={s.syncIntervalMinutes}
-            onChange={(e) =>
-              workspace.updateSettings({
-                syncIntervalMinutes: Number(e.target.value),
-              })
+            ariaLabel="自动拉取周期"
+            options={[
+              { value: 1, label: "每 1 分钟" },
+              { value: 5, label: "每 5 分钟", hint: "推荐" },
+              { value: 15, label: "每 15 分钟" },
+              { value: 30, label: "每 30 分钟" },
+            ]}
+            onChange={(val) =>
+              workspace.updateSettings({ syncIntervalMinutes: Number(val) })
             }
-          >
-            <option value={1}>每 1 分钟</option>
-            <option value={5}>每 5 分钟（推荐）</option>
-            <option value={15}>每 15 分钟</option>
-            <option value={30}>每 30 分钟</option>
-          </select>
+          />
         </div>
 
         <div className="settings-row">
@@ -51,19 +51,20 @@ export function SyncTab() {
               超出窗口的旧邮件在联网检索时按需拉取正文
             </div>
           </div>
-          <select
-            className="select"
+          <CustomSelect
             value={s.offlineRetentionDays}
-            onChange={(e) =>
+            ariaLabel="本地离线缓存窗口"
+            options={[
+              { value: 30, label: "最近 30 天" },
+              { value: 90, label: "最近 90 天", hint: "推荐" },
+              { value: 180, label: "最近 180 天" },
+            ]}
+            onChange={(val) =>
               workspace.updateSettings({
-                offlineRetentionDays: Number(e.target.value) as 30 | 90 | 180,
+                offlineRetentionDays: Number(val) as 30 | 90 | 180,
               })
             }
-          >
-            <option value={30}>最近 30 天</option>
-            <option value={90}>最近 90 天（推荐）</option>
-            <option value={180}>最近 180 天</option>
-          </select>
+          />
         </div>
       </div>
     </div>

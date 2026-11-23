@@ -161,3 +161,31 @@
   border-color: var(--border-ai);
   box-shadow: var(--shadow-drawer);
 }
+.route-slot-wrap,
+.route-main-stage {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  gap: inherit;
+  overflow: hidden;
+}
+.route-slot-wrap {
+  position: relative;
+}
+.route-main-stage[data-dir="fwd"] {
+  animation: omni-route-fwd 180ms var(--ease-standard) both;
+}
+.route-main-stage[data-dir="back"] {
+  animation: omni-route-back 180ms var(--ease-standard) both;
+}
+.route-exit-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  gap: inherit;
+  pointer-events: none;
+  overflow: hidden;
+  animation: omni-fade-out 80ms var(--ease-exit) both;
+}

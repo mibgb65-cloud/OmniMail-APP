@@ -1,0 +1,193 @@
+/* 05 · Launch Splash Animation 四阶段动画编排与无障碍降级（仅用 transform / opacity） */
+@keyframes splash-emblem-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.84);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes splash-wing-converge {
+  from {
+    opacity: 0;
+    transform: translate(var(--wing-x, 0), var(--wing-y, 0));
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes splash-sheen-sweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-115%);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(115%);
+  }
+}
+
+@keyframes splash-copy-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splash-status-swap {
+  from {
+    opacity: 0.35;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splash-bar-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.56;
+  }
+}
+
+@keyframes splash-curtain-exit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes splash-workspace-settle {
+  from {
+    transform: scale(0.985);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Stage 1 (0~280ms)：四翼偏移 8px (hypot(5.66, 5.66)=8) + 45ms stagger 聚合 */
+.splash-emblem {
+  animation: splash-emblem-pop 280ms var(--ease-spring) both;
+}
+
+.splash-wing {
+  animation: splash-wing-converge 145ms var(--ease-spring) both;
+}
+
+.splash-wing-1 {
+  --wing-x: -5.66px;
+  --wing-y: -5.66px;
+  animation-delay: 0ms;
+}
+
+.splash-wing-2 {
+  --wing-x: 5.66px;
+  --wing-y: -5.66px;
+  animation-delay: 45ms;
+}
+
+.splash-wing-3 {
+  --wing-x: 5.66px;
+  --wing-y: 5.66px;
+  animation-delay: 90ms;
+}
+
+.splash-wing-4 {
+  --wing-x: -5.66px;
+  --wing-y: 5.66px;
+  animation-delay: 135ms;
+}
+
+/* Stage 2 (220~480ms)：徽章边缘微光扫过 + 标题与副标题上浮浮现 */
+.splash-emblem-sheen {
+  animation: splash-sheen-sweep 260ms 220ms var(--ease-standard) both;
+}
+
+.splash-title {
+  animation: splash-copy-rise var(--dur-emphasis) 220ms var(--ease-enter) both;
+}
+
+.splash-subtitle {
+  animation: splash-copy-rise var(--dur-emphasis) 240ms var(--ease-enter) both;
+}
+
+/* Stage 3 (480ms~Ready)：240px 细进度条 + 超过 2s 呼吸态与阶段文案切换 */
+.splash-progress-group {
+  animation: splash-copy-rise 180ms 300ms var(--ease-enter) both;
+}
+
+.splash-progress-fill {
+  transition:
+    transform var(--dur-emphasis) var(--ease-standard),
+    opacity var(--dur-fast) var(--ease-standard);
+}
+
+.splash-progress-fill[data-slow="true"] {
+  animation: splash-bar-breathe 1400ms var(--ease-standard) infinite;
+}
+
+.splash-status-text {
+  animation: splash-status-swap var(--dur-fast) var(--ease-enter) both;
+}
+
+/* Stage 4 (Exit 260ms)：开屏退幕 + 下方工作台同步稳重落位 */
+.launch-splash[data-exiting="true"] {
+  pointer-events: none;
+  animation: splash-curtain-exit 260ms var(--ease-exit) forwards;
+}
+
+.app-boot-stage[data-splash-state="holding"] {
+  transform: scale(0.985);
+  pointer-events: none;
+}
+
+.app-boot-stage[data-splash-state="revealing"] {
+  pointer-events: auto;
+  animation: splash-workspace-settle 260ms var(--ease-spring) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-emblem,
+  .splash-wing,
+  .splash-title,
+  .splash-subtitle,
+  .splash-progress-group,
+  .splash-status-text,
+  .splash-progress-fill[data-slow="true"],
+  .app-boot-stage[data-splash-state="holding"],
+  .app-boot-stage[data-splash-state="revealing"] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .splash-emblem-sheen {
+    display: none;
+  }
+
+  .launch-splash[data-exiting="true"] {
+    animation: omni-fade-out 120ms linear forwards !important;
+  }
+}

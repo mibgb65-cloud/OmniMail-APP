@@ -9,7 +9,7 @@ export function LegalDocModal({ doc }: { doc: "terms" | "privacy" }) {
 
   return (
     <ModalShell
-      title={`OmniMail ${data.title}`}
+      heading={`OmniMail ${data.title}`}
       subtitle={`${data.badge} · ${data.updatedAt}`}
       maxWidth={600}
       onClose={() => workspace.setOverlay({ type: "none" })}

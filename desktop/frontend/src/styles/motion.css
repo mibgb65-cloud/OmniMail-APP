@@ -1,0 +1,200 @@
+/* Motion & Transitions 核心视图、弹窗、自定义浮层与异步画勾闭环动效 */
+.custom-select-menu,
+.dt-picker-popover,
+.context-menu {
+  transform-origin: top center;
+  animation: omni-popover-down-in 140ms var(--ease-enter) both;
+}
+.custom-select-menu[data-side="top"],
+.dt-picker-popover[data-side="top"],
+.context-menu[data-side="top"] {
+  transform-origin: bottom center;
+  animation: omni-popover-up-in 140ms var(--ease-enter) both;
+}
+.custom-select-menu[data-closing="true"],
+.dt-picker-popover[data-closing="true"],
+.context-menu[data-closing="true"] {
+  pointer-events: none;
+  animation: omni-popover-down-out var(--dur-instant) var(--ease-exit) both;
+}
+.custom-select-menu[data-side="top"][data-closing="true"],
+.dt-picker-popover[data-side="top"][data-closing="true"],
+.context-menu[data-side="top"][data-closing="true"] {
+  animation: omni-popover-up-out var(--dur-instant) var(--ease-exit) both;
+}
+.custom-tooltip[data-side="bottom"] {
+  animation: omni-tip-bottom 120ms var(--ease-enter) both;
+}
+.custom-tooltip[data-side="top"] {
+  animation: omni-tip-top 120ms var(--ease-enter) both;
+}
+.custom-tooltip[data-side="right"] {
+  animation: omni-tip-right 120ms var(--ease-enter) both;
+}
+.custom-tooltip[data-side="left"] {
+  animation: omni-tip-left 120ms var(--ease-enter) both;
+}
+.reader-motion-stage,
+.settings-tab-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: omni-reader-enter 140ms var(--ease-enter) both;
+}
+.modal-backdrop {
+  animation: omni-fade-in 160ms var(--ease-enter) both;
+}
+.modal-card {
+  animation: omni-modal-in var(--dur-base) var(--ease-enter) both;
+}
+.overlay-motion-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+.overlay-motion-root[data-layer="overlay"] {
+  z-index: 70;
+}
+.overlay-motion-root[data-closing="true"] {
+  pointer-events: none;
+}
+.overlay-motion-root[data-closing="true"] .modal-backdrop {
+  animation: omni-fade-out 120ms var(--ease-exit) both;
+}
+.overlay-motion-root[data-closing="true"] .modal-card {
+  animation: omni-modal-out 140ms var(--ease-exit) both;
+}
+
+/* 06 · Async Loading & Checkmark Morph（仅动画 transform / opacity / stroke-dashoffset） */
+@keyframes omni-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes omni-btn-shimmer {
+  0% {
+    transform: translateX(-125%);
+  }
+  58%,
+  100% {
+    transform: translateX(125%);
+  }
+}
+@keyframes omni-ring-close {
+  from {
+    stroke-dasharray: 44 44;
+    stroke-dashoffset: 15;
+  }
+  to {
+    stroke-dasharray: 44 44;
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes omni-halo-pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.72;
+  }
+  100% {
+    transform: scale(1.42);
+    opacity: 0;
+  }
+}
+@keyframes omni-check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes omni-check-pop {
+  0% {
+    transform: scale(0.96);
+  }
+  55% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes omni-error-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  16%,
+  50%,
+  84% {
+    transform: translateX(-4px);
+  }
+  33%,
+  67% {
+    transform: translateX(4px);
+  }
+}
+@keyframes omni-label-rise {
+  from {
+    opacity: 0.6;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.async-state-svg {
+  flex-shrink: 0;
+  overflow: visible;
+}
+.async-ring-spin {
+  transform-origin: 10px 10px;
+  animation: omni-ring-spin 850ms linear infinite;
+}
+.async-ring-progress {
+  transform-origin: 10px 10px;
+  transform: rotate(-90deg);
+  transition: stroke-dashoffset 180ms linear;
+}
+.async-halo-ring {
+  transform-origin: 10px 10px;
+  animation: omni-halo-pulse 460ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.async-close-ring {
+  animation: omni-ring-close 140ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.async-check-path {
+  stroke-dasharray: 14;
+  stroke-dashoffset: 14;
+  animation: omni-check-draw 260ms cubic-bezier(0.22, 1, 0.36, 1) 90ms forwards;
+}
+.async-cross-path {
+  stroke-dasharray: 18;
+  stroke-dashoffset: 18;
+  animation: omni-check-draw 210ms var(--ease-standard) forwards;
+}
+.async-action-btn[data-status="success"] {
+  animation: omni-check-pop 300ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both;
+}
+.async-action-btn[data-status="error"] {
+  animation: omni-error-shake 320ms ease-in-out;
+}
+.async-btn-label {
+  display: inline-block;
+  animation: omni-label-rise 150ms var(--ease-enter) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .async-action-btn[data-status="loading"]::after,
+  .async-action-btn[data-status="success"],
+  .async-action-btn[data-status="error"],
+  .async-btn-label {
+    animation: none !important;
+  }
+  .async-halo-ring {
+    display: none;
+  }
+  .async-close-ring,
+  .async-check-path,
+  .async-cross-path {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}

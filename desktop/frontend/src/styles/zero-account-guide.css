@@ -1,0 +1,159 @@
+/* 右侧阅读区 0 邮箱冷启动快速接入引导卡（双主题与小屏自适应） */
+.zero-guide-stage {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 24px;
+  overflow-y: auto;
+}
+
+.zero-guide-card {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 32px;
+  border-radius: 18px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  text-align: center;
+}
+
+.zero-guide-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--bg-selected);
+  border: 1px solid var(--border-selected);
+  color: var(--brand-accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.zero-guide-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-accent);
+  flex-shrink: 0;
+}
+
+.zero-guide-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.zero-guide-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-ink);
+}
+
+.zero-guide-desc {
+  margin: 0;
+  max-width: 470px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.zero-guide-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.zero-guide-chip {
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-ink);
+  min-width: 0;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.zero-guide-chip:hover {
+  background: var(--bg-selected);
+  border-color: var(--brand-accent);
+  color: var(--brand-accent);
+}
+
+.zero-guide-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.zero-guide-primary-btn,
+.zero-guide-secondary-btn {
+  height: 40px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.zero-guide-primary-btn {
+  padding: 0 20px;
+}
+
+.zero-guide-secondary-btn {
+  padding: 0 16px;
+}
+
+.zero-guide-footnote {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.zero-guide-inline-link {
+  margin-left: 2px;
+  padding: 0;
+  color: var(--brand-accent);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 1024px) {
+  .zero-guide-stage {
+    padding: 16px;
+  }
+  .zero-guide-card {
+    padding: 22px 20px;
+    gap: 15px;
+  }
+  .zero-guide-title {
+    font-size: 17px;
+  }
+  .zero-guide-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -11,57 +11,57 @@
   font-weight: 500;
   white-space: nowrap;
   transition:
-    background 0.14s ease,
-    border-color 0.14s ease,
-    opacity 0.14s ease;
+    background var(--dur-instant) var(--ease-standard),
+    border-color var(--dur-instant) var(--ease-standard),
+    opacity var(--dur-instant) var(--ease-standard),
+    transform var(--dur-instant) var(--ease-standard);
 }
 
+.btn:active:not(:disabled) {
+  transform: scale(0.985);
+}
 .btn-sm {
   height: 28px;
   padding: 0 10px;
   font-size: 12px;
 }
-
-.btn-primary {
+.btn-primary,
+.async-action-btn[data-variant="primary"][data-status="idle"] {
   background: var(--brand-primary);
   color: var(--brand-primary-ink);
 }
-
 .btn-primary:hover:not(:disabled) {
   opacity: 0.9;
 }
-
 .btn-secondary {
   background: var(--bg-card);
   color: var(--text-ink);
   border: 1px solid var(--border-default);
 }
-
-.btn-secondary:hover:not(:disabled) {
+.btn-secondary:hover:not(:disabled),
+.async-action-btn[data-variant="secondary"][data-status="idle"]:hover:not(
+    :disabled
+  ) {
   background: var(--bg-surface);
   border-color: var(--border-strong);
 }
-
 .btn-ghost {
   color: var(--text-secondary);
 }
-
 .btn-ghost:hover:not(:disabled) {
   background: var(--bg-subtle);
   color: var(--text-ink);
 }
-
 .btn-ai {
   background: var(--bg-ai-subtle);
   color: var(--brand-ai);
   border: 1px solid var(--border-ai);
 }
-
 .btn-ai:hover:not(:disabled) {
   background: var(--bg-ai-surface);
 }
-
-.btn-danger {
+.btn-danger,
+.async-action-btn[data-variant="danger"][data-status="idle"] {
   background: var(--status-danger);
   color: #ffffff;
 }
@@ -83,8 +83,14 @@
   color: var(--text-secondary);
   border: 1px solid transparent;
   transition:
-    background 0.14s ease,
-    color 0.14s ease;
+    background var(--dur-instant) var(--ease-standard),
+    color var(--dur-instant) var(--ease-standard),
+    transform var(--dur-instant) var(--ease-standard);
+}
+
+.icon-btn:active:not(:disabled),
+.btn-icon:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .icon-btn:hover,
@@ -96,4 +102,93 @@
 .icon-btn-bordered {
   border-color: var(--border-default);
   background: var(--bg-card);
+}
+
+/* AsyncActionButton：开始加载 → 矢量旋环 + 表面流光 → 翠绿画勾 / 失败轻抖 */
+.async-action-btn {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid transparent;
+  font-weight: 600;
+  transition:
+    background-color 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 180ms var(--ease-standard),
+    transform 90ms var(--ease-standard);
+}
+.async-action-btn[data-variant="secondary"][data-status="idle"] {
+  background: var(--bg-card);
+  color: var(--text-ink);
+  border-color: var(--border-strong);
+}
+.async-action-btn[data-status="idle"]:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+.async-action-btn[data-status="loading"] {
+  cursor: progress;
+  opacity: 1;
+}
+.async-action-btn[data-variant="primary"][data-status="loading"] {
+  background: #1d4ed8;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+[data-theme="dark"]
+  .async-action-btn[data-variant="primary"][data-status="loading"] {
+  background: #1e3a8a;
+  border-color: #3b82f6;
+  color: #eff6ff;
+}
+.async-action-btn[data-variant="secondary"][data-status="loading"] {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+[data-theme="dark"]
+  .async-action-btn[data-variant="secondary"][data-status="loading"] {
+  background: #172554;
+  border-color: #2563eb;
+  color: #93c5fd;
+}
+.async-action-btn[data-variant="danger"][data-status="loading"] {
+  background: #b91c1c;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+.async-action-btn[data-status="loading"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.16) 50%,
+    transparent 80%
+  );
+  transform: translateX(-120%);
+  animation: omni-btn-shimmer 2.2s ease-in-out infinite;
+  pointer-events: none;
+}
+.async-action-btn[data-status="success"] {
+  background: #16a34a;
+  border-color: #15803d;
+  color: #ffffff;
+  cursor: default;
+}
+[data-theme="dark"] .async-action-btn[data-status="success"] {
+  background: #15803d;
+  border-color: #22c55e;
+  color: #ffffff;
+}
+.async-action-btn[data-status="error"] {
+  background: #dc2626;
+  border-color: #b91c1c;
+  color: #ffffff;
+  cursor: pointer;
+}
+[data-theme="dark"] .async-action-btn[data-status="error"] {
+  background: #b91c1c;
+  border-color: #ef4444;
+  color: #ffffff;
 }

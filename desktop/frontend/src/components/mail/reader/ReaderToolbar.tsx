@@ -1,6 +1,7 @@
 import { useApp } from "../../../state/AppContext";
 import type { MailItem } from "../../../types/mail";
 import { Icon, type IconName } from "../../common/Icon";
+import { Tooltip } from "../../common/Tooltip";
 import { ReaderMoreMenu } from "./ReaderMoreMenu";
 
 interface ReaderToolbarProps {
@@ -103,15 +104,19 @@ export function ReaderToolbar({
             </button>
           ))}
 
-        <button
-          type="button"
-          className="icon-btn icon-btn-bordered reader-icon-btn"
-          onClick={handleDelete}
-          title={mail.folder === "trash" ? "永久删除" : "移入回收站"}
-          aria-label="删除邮件"
+        <Tooltip
+          label={mail.folder === "trash" ? "永久删除" : "移入回收站"}
+          shortcut="Del"
         >
-          <Icon name="trash" size={13} />
-        </button>
+          <button
+            type="button"
+            className="icon-btn icon-btn-bordered reader-icon-btn"
+            onClick={handleDelete}
+            aria-label="删除邮件"
+          >
+            <Icon name="trash" size={13} />
+          </button>
+        </Tooltip>
 
         <ReaderMoreMenu mail={mail} />
       </div>
@@ -122,24 +127,28 @@ export function ReaderToolbar({
             {currentIndex + 1} / {Math.max(totalCount, 128)}
           </span>
         )}
-        <button
-          type="button"
-          className="icon-btn icon-btn-bordered reader-icon-btn"
-          disabled={currentIndex <= 0}
-          onClick={() => onNavigate(-1)}
-          aria-label="上一封邮件"
-        >
-          <Icon name="chevronLeft" size={13} />
-        </button>
-        <button
-          type="button"
-          className="icon-btn icon-btn-bordered reader-icon-btn"
-          disabled={currentIndex >= totalCount - 1}
-          onClick={() => onNavigate(1)}
-          aria-label="下一封邮件"
-        >
-          <Icon name="chevronRight" size={13} />
-        </button>
+        <Tooltip label="上一封邮件" shortcut="K">
+          <button
+            type="button"
+            className="icon-btn icon-btn-bordered reader-icon-btn"
+            disabled={currentIndex <= 0}
+            onClick={() => onNavigate(-1)}
+            aria-label="上一封邮件"
+          >
+            <Icon name="chevronLeft" size={13} />
+          </button>
+        </Tooltip>
+        <Tooltip label="下一封邮件" shortcut="J">
+          <button
+            type="button"
+            className="icon-btn icon-btn-bordered reader-icon-btn"
+            disabled={currentIndex >= totalCount - 1}
+            onClick={() => onNavigate(1)}
+            aria-label="下一封邮件"
+          >
+            <Icon name="chevronRight" size={13} />
+          </button>
+        </Tooltip>
         <button
           type="button"
           className="btn btn-sm btn-ai reader-ai-toggle"

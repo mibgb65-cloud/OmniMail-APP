@@ -1,5 +1,6 @@
-import type { MouseEvent } from "react";
+import { useEffect, useRef, type MouseEvent } from "react";
 import type { MailItem } from "../../types/mail";
+import { Checkbox } from "../common/Checkbox";
 import { Icon } from "../common/Icon";
 
 interface MailCardProps {
@@ -43,9 +44,17 @@ export function MailCard({
           : null;
 
   const showCheckbox = selectionMode || checked;
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (selected) {
+      cardRef.current?.scrollIntoView({ block: "nearest" });
+    }
+  }, [selected]);
 
   return (
     <div
+      ref={cardRef}
       role="button"
       tabIndex={0}
       className={`mail-card ${selected ? "selected" : ""} ${mail.unread ? "" : "read"}`}
@@ -61,19 +70,11 @@ export function MailCard({
       <div className="mail-card-top">
         <div className="mail-card-sender">
           {showCheckbox && (
-            <input
-              type="checkbox"
+            <Checkbox
+              size="sm"
               checked={checked}
-              aria-label={`选择邮件 ${mail.subject}`}
-              onClick={(e) => e.stopPropagation()}
+              ariaLabel={`选择邮件 ${mail.subject}`}
               onChange={onToggleCheck}
-              style={{
-                width: 14,
-                height: 14,
-                accentColor: "var(--brand-accent)",
-                flexShrink: 0,
-                cursor: "pointer",
-              }}
             />
           )}
           {mail.unread && <span className="unread-dot" aria-label="未读" />}

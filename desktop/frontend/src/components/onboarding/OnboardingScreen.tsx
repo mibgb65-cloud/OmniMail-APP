@@ -1,18 +1,36 @@
 import { useState } from "react";
 import { useApp } from "../../state/AppContext";
 import { BrandLogo } from "../common/BrandLogo";
+import { Checkbox } from "../common/Checkbox";
 import { Icon } from "../common/Icon";
 import {
   WindowControls,
   handleDragRegionDoubleClick,
 } from "../shell/WindowControls";
 import { OnboardingHero } from "./OnboardingHero";
+import { OnboardingInitCard } from "./OnboardingInitCard";
 
 export function OnboardingScreen() {
-  const { workspace } = useApp();
+  const { workspace, desktopBridge, toastStore } = useApp();
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [customDir, setCustomDir] = useState<string | null>(null);
+
+  const effectiveDataDir = customDir ?? desktopBridge.storage.dataDir;
   const canStart = agreeTerms && agreePrivacy;
+
+  const commitAndRun = async (nextAction: () => void) => {
+    try {
+      await desktopBridge.completeInitialSetup(effectiveDataDir);
+      nextAction();
+    } catch (err) {
+      toastStore.pushToast({
+        tone: "danger",
+        title: "保存初始化数据目录失败",
+        detail: err instanceof Error ? err.message : "请检查数据目录权限",
+      });
+    }
+  };
 
   return (
     <div className="onboarding-page">
@@ -21,7 +39,7 @@ export function OnboardingScreen() {
         onDoubleClick={handleDragRegionDoubleClick}
       >
         <div className="row" style={{ gap: 10 }}>
-          <BrandLogo size={32} />
+          <BrandLogo size={32} showWordmark={false} />
           <div>
             <div
               style={{
@@ -52,9 +70,9 @@ export function OnboardingScreen() {
           <button
             type="button"
             className="btn btn-ghost btn-sm"
-            onClick={() => workspace.setScreen("mail")}
+            onClick={() => void commitAndRun(() => workspace.setScreen("mail"))}
           >
-            先进入演示工作台
+            保存偏好并进入工作台
           </button>
           <WindowControls />
         </div>
@@ -68,91 +86,95 @@ export function OnboardingScreen() {
             <h2
               style={{
                 margin: 0,
-                fontSize: 22,
+                fontSize: 21,
                 fontWeight: 800,
                 color: "var(--text-ink)",
               }}
             >
-              开始配置你的首个邮箱
+              初始化偏好与首个邮箱接入
             </h2>
             <p
               className="text-muted"
-              style={{ margin: "6px 0 0", fontSize: 13, lineHeight: 1.6 }}
+              style={{ margin: "4px 0 0", fontSize: 12.5, lineHeight: 1.55 }}
             >
-              添加邮箱前请阅读并同意以下基础条款。同意基础条款不会自动开启 Omni
-              AI， AI 能力可在工作台内单独开关并按次确认。
+              确认本地数据存储位置与常用偏好。同意基础条款不会自动开启 Omni AI，
+              AI 能力可在工作台内单独开关并按次确认。
             </p>
           </div>
 
-          <div className="settings-card">
-            <label className="row" style={{ cursor: "pointer", fontSize: 13 }}>
-              <input
-                type="checkbox"
-                checked={agreeTerms}
-                onChange={(e) => setAgreeTerms(e.target.checked)}
-              />
-              <span>
-                我已阅读并同意{" "}
-                <button
-                  type="button"
-                  style={{ color: "var(--brand-accent)", fontWeight: 600 }}
-                  onClick={() =>
-                    workspace.setOverlay({ type: "legal-doc", doc: "terms" })
-                  }
-                >
-                  《用户协议》
-                </button>
-              </span>
-            </label>
-            <label className="row" style={{ cursor: "pointer", fontSize: 13 }}>
-              <input
-                type="checkbox"
-                checked={agreePrivacy}
-                onChange={(e) => setAgreePrivacy(e.target.checked)}
-              />
-              <span>
-                我已阅读并同意{" "}
-                <button
-                  type="button"
-                  style={{ color: "var(--brand-accent)", fontWeight: 600 }}
-                  onClick={() =>
-                    workspace.setOverlay({ type: "legal-doc", doc: "privacy" })
-                  }
-                >
-                  《隐私政策》
-                </button>
-              </span>
-            </label>
+          <OnboardingInitCard
+            dataDir={effectiveDataDir}
+            onChangeDataDir={setCustomDir}
+          />
+
+          <div
+            className="settings-card"
+            style={{ gap: 8, padding: "10px 14px" }}
+          >
+            <Checkbox
+              checked={agreeTerms}
+              onChange={setAgreeTerms}
+              ariaLabel="同意用户协议"
+            >
+              我已阅读并同意{" "}
+              <button
+                type="button"
+                style={{ color: "var(--brand-accent)", fontWeight: 600 }}
+                onClick={() =>
+                  workspace.setOverlay({ type: "legal-doc", doc: "terms" })
+                }
+              >
+                《用户协议》
+              </button>
+            </Checkbox>
+            <Checkbox
+              checked={agreePrivacy}
+              onChange={setAgreePrivacy}
+              ariaLabel="同意隐私政策"
+            >
+              我已阅读并同意{" "}
+              <button
+                type="button"
+                style={{ color: "var(--brand-accent)", fontWeight: 600 }}
+                onClick={() =>
+                  workspace.setOverlay({ type: "legal-doc", doc: "privacy" })
+                }
+              >
+                《隐私政策》
+              </button>
+            </Checkbox>
           </div>
 
           <button
             type="button"
             className="btn btn-primary"
-            style={{ height: 42, fontSize: 14 }}
+            style={{ height: 40, fontSize: 14 }}
             disabled={!canStart}
-            onClick={() => workspace.setOverlay({ type: "add-account" })}
+            onClick={() =>
+              void commitAndRun(() =>
+                workspace.setOverlay({ type: "add-account" }),
+              )
+            }
           >
             <Icon name="plus" size={16} />
             添加首个邮箱
           </button>
 
-          {!canStart && (
-            <div className="text-xs text-muted" style={{ textAlign: "center" }}>
-              请先勾选同意《用户协议》和《隐私政策》以启用邮箱接入入口
-            </div>
-          )}
-
           <div
             className="row-between"
             style={{
-              paddingTop: 8,
+              paddingTop: 6,
               borderTop: "1px solid var(--border-default)",
             }}
           >
             <button
               type="button"
               className="btn btn-ghost btn-sm"
-              onClick={() => workspace.setOverlay({ type: "manual-imap" })}
+              onClick={() =>
+                void commitAndRun(() =>
+                  workspace.setOverlay({ type: "manual-imap" }),
+                )
+              }
               disabled={!canStart}
             >
               直接使用手动 IMAP / SMTP
@@ -166,7 +188,7 @@ export function OnboardingScreen() {
 
       <div className="text-xs text-muted" style={{ textAlign: "center" }}>
         支持浏览器 OAuth、客户端授权码与标准 IMAP/SMTP ·
-        可随时在设置中移除账户或清理本地缓存
+        可随时在设置中迁移数据目录或清理缓存
       </div>
     </div>
   );

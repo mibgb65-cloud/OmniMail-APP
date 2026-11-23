@@ -27,7 +27,13 @@
   justify-content: center;
   gap: 7px;
   flex-shrink: 0;
-  transition: opacity 0.14s ease;
+  transition:
+    opacity var(--dur-instant) var(--ease-standard),
+    transform var(--dur-instant) var(--ease-standard);
+}
+
+.compose-cta:active {
+  transform: scale(0.985);
 }
 
 .compose-cta:hover {
@@ -97,9 +103,9 @@
   color: var(--text-body);
   text-align: left;
   transition:
-    background 0.14s ease,
-    border-color 0.14s ease,
-    color 0.14s ease;
+    background var(--dur-instant) var(--ease-standard),
+    border-color var(--dur-instant) var(--ease-standard),
+    color var(--dur-instant) var(--ease-standard);
 }
 
 .nav-item-drawer {

@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { contactApi } from "../../services/backendClient";
+import { isWailsDesktop } from "../../state/storageHelpers";
 import type { ContactItem } from "../../types/workspace";
 import { Icon } from "../common/Icon";
+import { Tooltip } from "../common/Tooltip";
 
 function isValidEmailToken(raw: string): boolean {
   const match = raw.match(/<([^>]+)>/);
@@ -22,24 +25,44 @@ export function RecipientInputRow({
   trailing?: React.ReactNode;
 }) {
   const [text, setText] = useState("");
+  const [remoteSuggestions, setRemoteSuggestions] = useState<ContactItem[]>([]);
   const query = text.trim().toLowerCase();
-  const suggestions = query
-    ? contacts
-        .filter(
-          (c) =>
-            c.name.toLowerCase().includes(query) ||
-            c.email.toLowerCase().includes(query),
-        )
-        .slice(0, 4)
-    : [];
+
+  useEffect(() => {
+    if (!query || !isWailsDesktop()) return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void contactApi
+        .suggestRecipients(query)
+        .then((rows) => {
+          if (active) setRemoteSuggestions(rows.slice(0, 6));
+        })
+        .catch(() => undefined);
+    }, 120);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [query]);
+
+  const suggestions = !query
+    ? []
+    : isWailsDesktop() && remoteSuggestions.length > 0
+      ? remoteSuggestions
+      : contacts
+          .filter(
+            (c) =>
+              c.name.toLowerCase().includes(query) ||
+              c.email.toLowerCase().includes(query),
+          )
+          .slice(0, 6);
 
   const commitValue = (val: string) => {
     const clean = val.trim();
     if (!clean) return;
-    if (!values.includes(clean)) {
-      onChange([...values, clean]);
-    }
+    if (!values.includes(clean)) onChange([...values, clean]);
     setText("");
+    setRemoteSuggestions([]);
   };
 
   return (
@@ -49,20 +72,22 @@ export function RecipientInputRow({
         {values.map((token) => {
           const invalid = !isValidEmailToken(token);
           return (
-            <span
+            <Tooltip
               key={token}
-              className={`recipient-chip${invalid ? " invalid" : ""}`}
-              title={invalid ? "邮箱格式可能不正确，发送前请检查" : token}
+              label={invalid ? "邮箱格式可能不正确，发送前请检查" : token}
+              placement="top"
             >
-              <span>{token}</span>
-              <button
-                type="button"
-                aria-label={`移除 ${token}`}
-                onClick={() => onChange(values.filter((v) => v !== token))}
-              >
-                <Icon name="x" size={12} />
-              </button>
-            </span>
+              <span className={`recipient-chip${invalid ? " invalid" : ""}`}>
+                <span>{token}</span>
+                <button
+                  type="button"
+                  aria-label={`移除 ${token}`}
+                  onClick={() => onChange(values.filter((v) => v !== token))}
+                >
+                  <Icon name="x" size={12} />
+                </button>
+              </span>
+            </Tooltip>
           );
         })}
         <input

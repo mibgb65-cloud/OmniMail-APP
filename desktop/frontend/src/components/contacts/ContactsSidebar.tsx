@@ -1,6 +1,7 @@
 import { useApp } from "../../state/AppContext";
-import { Icon } from "../common/Icon";
+import { Icon, type IconName } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
+import { ContactsCompactRail } from "./ContactsCompactRail";
 
 export type ContactNavFilter =
   "all" | "vip" | "frequent" | "recent" | "blacklist";
@@ -29,84 +30,34 @@ export function ContactsSidebar({
 }) {
   const { viewport, workspace } = useApp();
 
-  const navItems: Array<readonly [ContactNavFilter, string, number, string]> = [
-    ["all", "全部联系人", workspace.contacts.length, "users"],
+  const navItems: Array<readonly [ContactNavFilter, string, number, IconName]> =
     [
-      "vip",
-      "VIP 重要发件人",
-      workspace.contacts.filter((c) => c.vip).length,
-      "star",
-    ],
-    [
-      "frequent",
-      "高频往来",
-      workspace.contacts.filter((c) => c.mailCount >= 20).length,
-      "zap",
-    ],
-    ["recent", "最近联系", workspace.contacts.length, "clock"],
-    ["blacklist", "黑名单与拦截", workspace.blacklist.length, "ban"],
-  ];
+      ["all", "全部联系人", workspace.contacts.length, "users"],
+      [
+        "vip",
+        "VIP 重要发件人",
+        workspace.contacts.filter((c) => c.vip).length,
+        "star",
+      ],
+      [
+        "frequent",
+        "高频往来",
+        workspace.contacts.filter((c) => c.mailCount >= 20).length,
+        "zap",
+      ],
+      ["recent", "最近联系", workspace.contacts.length, "clock"],
+      ["blacklist", "黑名单与拦截", workspace.blacklist.length, "ban"],
+    ];
 
   if (viewport === "compact") {
     return (
-      <aside
-        className="panel-card icon-rail-pane"
-        aria-label="联系人紧凑图标导航"
-      >
-        <div className="icon-rail-stack">
-          <button
-            type="button"
-            className="icon-rail-btn icon-rail-trigger"
-            onClick={() => workspace.setScreen("mail")}
-            title="返回统一收件箱"
-            aria-label="返回统一收件箱"
-          >
-            <Icon name="arrowLeft" size={15} />
-          </button>
-
-          <button
-            type="button"
-            className="icon-rail-compose"
-            onClick={() => workspace.setOverlay({ type: "contact-edit" })}
-            title="新建联系人"
-            aria-label="新建联系人"
-          >
-            <Icon name="plus" size={15} />
-          </button>
-
-          <div className="icon-rail-divider" />
-
-          {navItems.map(([id, label, , icon]) => (
-            <button
-              key={id}
-              type="button"
-              className={`icon-rail-btn ${navFilter === id && !groupFilter ? "active" : ""}`}
-              onClick={() => {
-                onSelectNav(id);
-                onSelectGroup(null);
-              }}
-              title={label}
-              aria-label={label}
-            >
-              <Icon name={icon} size={15} />
-            </button>
-          ))}
-        </div>
-
-        <div className="icon-rail-stack">
-          <button
-            type="button"
-            className="profile-avatar icon-rail-avatar"
-            onClick={() =>
-              workspace.setOverlay({ type: "settings", tab: "accounts" })
-            }
-            title="陆星河"
-            aria-label="陆星河"
-          >
-            陆
-          </button>
-        </div>
-      </aside>
+      <ContactsCompactRail
+        navItems={navItems}
+        navFilter={navFilter}
+        groupFilter={groupFilter}
+        onSelectNav={onSelectNav}
+        onSelectGroup={onSelectGroup}
+      />
     );
   }
 

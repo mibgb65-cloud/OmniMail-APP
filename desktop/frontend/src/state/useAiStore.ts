@@ -1,71 +1,154 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { AI_INSIGHTS_BY_MAIL, DEFAULT_AI_INSIGHT } from "../data/mails";
+import { aiApi, parseBackendError } from "../services/backendClient";
 import type { MailItem } from "../types/mail";
-import type { AiChatTurn, AiRunStatus } from "../types/workspace";
+import type {
+  AiChatTurn,
+  AiMailInsight,
+  AiRunStatus,
+} from "../types/workspace";
+import { isWailsDesktop } from "./storageHelpers";
+import { useAiStreamEvents } from "./useAiStreamEvents";
+
+const EMPTY_DESKTOP_INSIGHT: AiMailInsight = {
+  summaryTitle: "尚未生成本封邮件摘要",
+  summary:
+    "遵循「零静默扫信」隐私原则，点击下方「总结当前邮件」或右上角刷新按钮后才调用所选模型。",
+  deadlines: [],
+  draftTag: "待生成",
+  draftReply: "",
+};
+
+function mapErrorToAiStatus(rawErr: unknown): AiRunStatus {
+  const parsed = parseBackendError(rawErr);
+  const low = `${parsed.code} ${parsed.message}`.toLowerCase();
+  if (parsed.code === "ERR_AI_SENSITIVE_BLOCKED" || low.includes("sensitive"))
+    return "disabled-sensitive";
+  if (
+    low.includes("invalid-key") ||
+    low.includes("401") ||
+    low.includes("403") ||
+    low.includes("api key")
+  )
+    return "invalid-key";
+  if (low.includes("quota") || low.includes("429")) return "quota-exceeded";
+  if (low.includes("unavailable") || low.includes("无法连接"))
+    return "unavailable";
+  return "error";
+}
 
 export function useAiStore() {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiStatus, setAiStatus] = useState<AiRunStatus>("idle");
+  const [insightsByMail, setInsightsByMail] = useState<
+    Record<string, AiMailInsight>
+  >({});
   const [chatsByMail, setChatsByMail] = useState<Record<string, AiChatTurn[]>>(
     {},
   );
-  const [customDraftByMail, setCustomDraftByMail] = useState<
-    Record<string, string>
-  >({});
+  const activeReqRef = useRef<{ reqId: string; mailId: string } | null>(null);
+
+  useAiStreamEvents(activeReqRef, setChatsByMail, setAiStatus);
+
+  const loadCachedForMail = useCallback((mailId: string) => {
+    if (!isWailsDesktop() || !mailId) return;
+    void aiApi
+      .getCachedInsight(mailId)
+      .then(({ insight, turns }) => {
+        if (insight)
+          setInsightsByMail((prev) => ({ ...prev, [mailId]: insight }));
+        if (turns.length > 0)
+          setChatsByMail((prev) => ({ ...prev, [mailId]: turns }));
+      })
+      .catch(() => undefined);
+  }, []);
 
   const getInsight = useCallback(
-    (mail: MailItem | null) => {
-      if (!mail) return DEFAULT_AI_INSIGHT;
-      const base = AI_INSIGHTS_BY_MAIL[mail.id] ?? DEFAULT_AI_INSIGHT;
-      const customDraft = customDraftByMail[mail.id];
-      return customDraft ? { ...base, draftReply: customDraft } : base;
+    (mail: MailItem | null): AiMailInsight => {
+      if (!mail)
+        return isWailsDesktop() ? EMPTY_DESKTOP_INSIGHT : DEFAULT_AI_INSIGHT;
+      if (insightsByMail[mail.id]) return insightsByMail[mail.id];
+      if (!isWailsDesktop())
+        return AI_INSIGHTS_BY_MAIL[mail.id] ?? DEFAULT_AI_INSIGHT;
+      return EMPTY_DESKTOP_INSIGHT;
     },
-    [customDraftByMail],
+    [insightsByMail],
   );
 
-  const runPrompt = useCallback((mail: MailItem, prompt: string) => {
-    setAiStatus("processing");
-    const userTurn: AiChatTurn = {
-      id: `u-${Date.now()}`,
-      role: "user",
-      content: prompt,
-      timestamp: "刚刚",
-    };
-    setChatsByMail((prev) => ({
-      ...prev,
-      [mail.id]: [...(prev[mail.id] ?? []), userTurn],
-    }));
-
-    window.setTimeout(() => {
-      let reply = `已基于《${mail.subject}》正文分析：核心需在截止时间前反馈确认；如涉及附件或发件人列表，当前遵循隐私边界未外传。`;
-      if (prompt.includes("翻译")) {
-        reply = `英文译文参考：\nHi Xinghe, the OmniMail 0.1 modular floating three-column workspace and multi-account onboarding boundaries are ready for review. Please share your feedback before tomorrow noon and join the 14:00 review session.`;
-      } else if (prompt.includes("更正式") || prompt.includes("重写")) {
-        const formal = `知夏你好：\n感谢整理 OmniMail 0.1 版本的核心方案与接入规范。我已审阅三栏浮层工作台及多邮箱来源区分方案，将于明日 12:00 前补充详细书面意见，并准时出席明日 14:00 评审会议。\n此致，\n陆星河`;
-        setCustomDraftByMail((prev) => ({ ...prev, [mail.id]: formal }));
-        reply =
-          "已将建议回复调整为更正式的商务语气，并同步更新到上方草稿卡片，你可以点击「插入回复框」进行人工核对。";
-      } else if (prompt.includes("重新生成")) {
-        const alt = `知夏，方案看完了，三栏浮层卡片和原收件账户锁定逻辑很顺手。明天 14:00 评审会我准时参加，中午前把补充细节发你。`;
-        setCustomDraftByMail((prev) => ({ ...prev, [mail.id]: alt }));
-        reply = "已重新生成一版更简明直接的回复建议。";
+  const runPrompt = useCallback(
+    (mail: MailItem, prompt: string) => {
+      setAiStatus("processing");
+      if (!isWailsDesktop()) {
+        const userTurn: AiChatTurn = {
+          id: `u-${Date.now()}`,
+          role: "user",
+          content: prompt,
+          timestamp: "刚刚",
+        };
+        setChatsByMail((prev) => ({
+          ...prev,
+          [mail.id]: [...(prev[mail.id] ?? []), userTurn],
+        }));
+        window.setTimeout(() => {
+          setChatsByMail((prev) => ({
+            ...prev,
+            [mail.id]: [
+              ...(prev[mail.id] ?? []),
+              {
+                id: `a-${Date.now()}`,
+                role: "assistant",
+                content: `已基于《${mail.subject}》正文分析完成。`,
+                timestamp: "刚刚",
+              },
+            ],
+          }));
+          setAiStatus("idle");
+        }, 450);
+        return;
       }
 
-      const aiTurn: AiChatTurn = {
-        id: `a-${Date.now()}`,
-        role: "assistant",
-        content: reply,
+      if (prompt.includes("重新生成摘要") || prompt === "__ANALYZE__") {
+        void aiApi
+          .analyzeMail(mail.id, true, prompt !== "__ANALYZE__")
+          .then((ins) => {
+            setInsightsByMail((prev) => ({ ...prev, [mail.id]: ins }));
+            setAiStatus("idle");
+          })
+          .catch((err) => setAiStatus(mapErrorToAiStatus(err)));
+        return;
+      }
+
+      const history = chatsByMail[mail.id] ?? [];
+      const userTurn: AiChatTurn = {
+        id: `u-${Date.now()}`,
+        role: "user",
+        content: prompt,
         timestamp: "刚刚",
       };
       setChatsByMail((prev) => ({
         ...prev,
-        [mail.id]: [...(prev[mail.id] ?? []), aiTurn],
+        [mail.id]: [...history, userTurn],
       }));
-      setAiStatus("idle");
-    }, 650);
-  }, []);
+      void aiApi
+        .askMailStream({
+          mailId: mail.id,
+          question: prompt,
+          history,
+          consentConfirmed: true,
+        })
+        .then((reqId) => {
+          activeReqRef.current = { reqId, mailId: mail.id };
+        })
+        .catch((err) => setAiStatus(mapErrorToAiStatus(err)));
+    },
+    [chatsByMail],
+  );
 
   const stopGeneration = useCallback(() => {
+    if (activeReqRef.current?.reqId) {
+      void aiApi.cancelRequest(activeReqRef.current.reqId);
+      activeReqRef.current = null;
+    }
     setAiStatus("idle");
   }, []);
 
@@ -75,6 +158,7 @@ export function useAiStore() {
     aiStatus,
     setAiStatus,
     chatsByMail,
+    loadCachedForMail,
     getInsight,
     runPrompt,
     stopGeneration,

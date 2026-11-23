@@ -9,6 +9,7 @@ export type RuntimeBannerMode =
 
 export type DangerConfirmKind =
   | "remove-account"
+  | "delete-profile"
   | "empty-trash"
   | "permanent-delete"
   | "discard-draft"
@@ -34,9 +35,15 @@ export type OverlayModal =
   | { type: "manual-imap" }
   | {
       type: "sync-progress";
+      accountId?: string;
       accountName: string;
       stage:
         "testing" | "connected" | "failed" | "syncing" | "partial" | "done";
+    }
+  | {
+      type: "profile-manage";
+      mode?: "switch" | "create" | "unlock";
+      targetProfileId?: string;
     }
   | { type: "legal-doc"; doc: "terms" | "privacy" }
   | { type: "ai-consent"; actionLabel: string; onConfirmPrompt?: string }
@@ -61,6 +68,7 @@ export type OverlayModal =
   | { type: "account-server"; accountId: string }
   | { type: "diagnostics"; accountId: string }
   | { type: "backup-migration" }
+  | { type: "data-dir-migrate" }
   | { type: "contact-edit"; contactId?: string }
   | {
       type: "danger-confirm";
@@ -78,5 +86,6 @@ export interface ToastNotice {
   detail?: string;
   actionLabel?: string;
   onAction?: () => void;
-  countdownSec?: number;
+  durationMs?: number;
+  exiting?: boolean;
 }

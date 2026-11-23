@@ -1,3 +1,4 @@
+import type { MailSearchQuery } from "../services/backendClient";
 import type { FolderId, MailFilterTab, MailItem } from "../types/mail";
 
 export interface AdvancedSearchCriteria {
@@ -80,4 +81,42 @@ export function filterMailList({
     if (filterTab === "attachments" && m.attachments.length === 0) return false;
     return true;
   });
+}
+
+export function buildBackendSearchQuery(
+  params: Omit<FilterMailParams, "mails">,
+  cursor = "",
+): MailSearchQuery {
+  const accIds: string[] = [];
+  if (params.activeAccountId) accIds.push(params.activeAccountId);
+  else if (params.advSearch.accountId !== "all") {
+    accIds.push(params.advSearch.accountId);
+  }
+  const kwParts = [
+    params.searchQuery.trim(),
+    params.advSearch.subject.trim(),
+  ].filter(Boolean);
+  let dateFrom = 0;
+  if (params.advSearch.dateRange !== "all") {
+    const days =
+      params.advSearch.dateRange === "7d"
+        ? 7
+        : params.advSearch.dateRange === "30d"
+          ? 30
+          : 90;
+    dateFrom = Date.now() - days * 86400 * 1000;
+  }
+  return {
+    keyword: kwParts.join(" "),
+    accountIds: accIds.length > 0 ? accIds : undefined,
+    folder: params.activeLabelId ? "all" : params.activeFolder,
+    tab: params.filterTab,
+    from: params.advSearch.from.trim() || undefined,
+    to: params.advSearch.to.trim() || undefined,
+    hasAttachment: params.advSearch.hasAttachment ? true : undefined,
+    labelIds: params.activeLabelId ? [params.activeLabelId] : undefined,
+    dateFrom: dateFrom > 0 ? dateFrom : undefined,
+    cursor: cursor || undefined,
+    limit: 50,
+  };
 }

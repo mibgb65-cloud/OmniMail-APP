@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { parseMailtoUrl } from "../../../state/storageHelpers";
 import { useApp } from "../../../state/AppContext";
 import type { MailItem, ThreadMessage } from "../../../types/mail";
 import { Icon } from "../../common/Icon";
+import { SafeMailHtmlView } from "./SafeMailHtmlView";
 
 export function ReaderThreadCard({
   mail,
@@ -16,7 +18,7 @@ export function ReaderThreadCard({
   isExpanded: boolean;
   onExpand: () => void;
 }) {
-  const { mailStore } = useApp();
+  const { mailStore, composeStore } = useApp();
   const [showDetailHeaders, setShowDetailHeaders] = useState(false);
 
   return (
@@ -142,9 +144,23 @@ export function ReaderThreadCard({
 
       {isExpanded && (
         <div className="thread-body">
-          {msg.bodyParagraphs.map((para, pIdx) => (
-            <p key={pIdx}>{para}</p>
-          ))}
+          {msg.bodyHtml ? (
+            <SafeMailHtmlView
+              html={msg.bodyHtml}
+              onMailto={(url) => {
+                const p = parseMailtoUrl(url);
+                composeStore.openNewCompose(p.to);
+                if (p.subject || p.body) {
+                  composeStore.updateDraft({
+                    ...(p.subject ? { subject: p.subject } : {}),
+                    ...(p.body ? { body: p.body } : {}),
+                  });
+                }
+              }}
+            />
+          ) : (
+            msg.bodyParagraphs.map((para, pIdx) => <p key={pIdx}>{para}</p>)
+          )}
         </div>
       )}
     </article>

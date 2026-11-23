@@ -1,4 +1,4 @@
-/* 左侧栏：已连接邮箱、固定底栏、60px 图标轨与左抽屉标题栏 */
+/* 左侧栏：已连接邮箱、0 邮箱空态占位卡与固定底栏 */
 .account-row {
   width: 100%;
   display: flex;
@@ -11,16 +11,13 @@
   text-align: left;
   min-width: 0;
 }
-
 .account-row:hover {
   background: var(--bg-surface);
 }
-
 .account-row.active {
   background: var(--bg-selected);
   border-color: var(--border-selected);
 }
-
 .account-row-left {
   display: flex;
   align-items: center;
@@ -28,15 +25,19 @@
   min-width: 0;
   flex: 1;
 }
-
-.account-row-meta {
+.account-row-meta,
+.account-empty-meta {
   display: flex;
   flex-direction: column;
   min-width: 0;
   flex: 1;
+}
+.account-row-meta {
   line-height: 1.25;
 }
-
+.account-empty-meta {
+  gap: 2px;
+}
 .account-row-name {
   display: flex;
   align-items: center;
@@ -46,12 +47,90 @@
   font-weight: 600;
   color: var(--text-ink);
 }
-
-.account-row-sub {
+.account-row-sub,
+.profile-sub {
   font-size: 11px;
   color: var(--text-muted);
 }
-
+.account-empty-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px dashed var(--border-strong);
+  text-align: left;
+  min-width: 0;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+}
+.account-empty-card:hover,
+.account-empty-card:focus-visible {
+  background: var(--bg-selected);
+  border-color: var(--brand-accent);
+}
+.account-empty-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.account-empty-plus,
+.account-empty-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand-accent);
+  font-weight: 700;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+.account-empty-plus {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--bg-selected);
+  border: 1px solid var(--border-selected);
+  font-size: 15px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.account-empty-title,
+.profile-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-ink);
+}
+.account-empty-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.account-empty-cta {
+  width: 100%;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  font-size: 11px;
+  font-weight: 600;
+}
+.account-empty-card:hover .account-empty-plus,
+.account-empty-card:focus-visible .account-empty-plus,
+.account-empty-card:hover .account-empty-cta,
+.account-empty-card:focus-visible .account-empty-cta {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+.account-empty-card:hover .account-empty-sub,
+.account-empty-card:focus-visible .account-empty-sub {
+  color: var(--brand-accent);
+}
 .sidebar-footer {
   display: flex;
   flex-direction: column;
@@ -61,13 +140,11 @@
   flex-shrink: 0;
   overflow: hidden;
 }
-
 .sidebar-footer-pair {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 5px;
 }
-
 .sidebar-mini-btn {
   display: flex;
   align-items: center;
@@ -83,14 +160,12 @@
   color: var(--text-secondary);
   min-width: 0;
 }
-
 .sidebar-mini-btn:hover,
 .sidebar-mini-btn.active {
   background: var(--bg-selected);
   border-color: var(--border-selected);
   color: var(--brand-accent);
 }
-
 .profile-card,
 .sidebar-footer-card {
   display: flex;
@@ -103,24 +178,11 @@
   border: 1px solid var(--border-default);
   min-width: 0;
 }
-
 .sidebar-footer-card {
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
 }
-
-.profile-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-ink);
-}
-
-.profile-sub {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
 .profile-avatar {
   width: 28px;
   height: 28px;

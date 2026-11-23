@@ -1,5 +1,9 @@
+import { useEffect, useState } from "react";
+import { GetAppBuildInfo } from "../../../bindings/omnimail/desktopservice";
+import type { AppBuildInfo } from "../../../bindings/omnimail/models";
 import { SHORTCUT_GROUPS } from "../../data/settingsDefaults";
 import { useApp } from "../../state/AppContext";
+import { isWailsDesktop } from "../../state/storageHelpers";
 import type { RuntimeBannerMode } from "../../types/ui";
 import { BrandLogo } from "../common/BrandLogo";
 import { Icon } from "../common/Icon";
@@ -38,6 +42,25 @@ const BANNER_OPTIONS: Array<{ id: RuntimeBannerMode; label: string }> = [
 
 export function AboutTab() {
   const { workspace, toastStore } = useApp();
+  const [buildInfo, setBuildInfo] = useState<AppBuildInfo>({
+    version: "v0.0.1",
+    channel: "stable",
+    buildTime: "dev",
+    isBeta: false,
+  });
+
+  useEffect(() => {
+    if (!isWailsDesktop()) return;
+    let active = true;
+    void GetAppBuildInfo()
+      .then((info) => {
+        if (active && info?.version) setBuildInfo(info);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -46,11 +69,22 @@ export function AboutTab() {
           <div className="row" style={{ gap: 12 }}>
             <BrandLogo size={40} />
             <div>
-              <div style={{ fontSize: 17, fontWeight: 800 }}>
-                OmniMail Desktop
+              <div className="row" style={{ gap: 8 }}>
+                <span style={{ fontSize: 17, fontWeight: 800 }}>
+                  OmniMail Desktop
+                </span>
+                <span
+                  className={`pill ${buildInfo.isBeta ? "pill-warning" : "pill-accent"}`}
+                >
+                  {buildInfo.isBeta ? "Beta 测试版" : "Stable 正式版"}
+                </span>
               </div>
               <div className="text-xs text-muted">
-                版本 0.1.0-preview · Wails v3 + React + TypeScript
+                版本 {buildInfo.version}
+                {buildInfo.buildTime && buildInfo.buildTime !== "dev"
+                  ? ` · 构建于 ${buildInfo.buildTime}`
+                  : ""}{" "}
+                · Wails v3 + Go + React + TypeScript
               </div>
             </div>
           </div>

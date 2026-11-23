@@ -8,6 +8,8 @@ export const ICON_PATHS_EXTRA: Record<string, string> = {
   upload: "M12 15V4 M7 9l5-5 5 5 M5 19h14",
   copy: "M8 8h11v11H8z M5 15H4V4h11v1",
   eye: "M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
+  eyeOff:
+    "M3 3l18 18 M10.6 10.6a2 2 0 0 0 2.8 2.8 M9.9 5.2A10.7 10.7 0 0 1 12 5c6 0 10 7 10 7a17.2 17.2 0 0 1-3.2 4.2 M6.2 6.2A17.4 17.4 0 0 0 2 12s4 7 10 7a10.6 10.6 0 0 0 4.8-1.1",
   sliders: "M4 7h16 M4 12h16 M4 17h16 M9 5v4 M15 10v4 M11 15v4",
   database:
     "M12 4c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3z M4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3",
@@ -23,15 +25,15 @@ export const ICON_PATHS_EXTRA: Record<string, string> = {
   zap: "M13 2L4 14h7l-1 8 9-12h-7z",
   ban: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M6 6l12 12",
   wifiOff:
-    "M3 3l18 18 M8.5 16.5a5 5 0 0 1 7 0 M5 13a10 10 0 0 1 5.2-2.6 M15.5 10.7A10 10 0 0 1 19 13 M12 20h.01",
+    "M3 3l18 18 M8.5 16.5a5 5 0 0 1 7 0 M5 13a10 10 0 0 1 5.2-2.6 M15.5 10.7A10 10 0 0 1 19 13 M12 19.6v.5",
   external: "M14 4h6v6 M10 14L20 4 M18 13v6H5V6h6",
   video: "M3 7h12v10H3z M15 10l6-3v10l-6-3z",
   edit: "M15 4l5 5L9 20H4v-5z M12 7l5 5",
   rule: "M4 6h7 M4 12h11 M4 18h7 M16 6l4 4-4 4",
   autoReply: "M3 10h11a5 5 0 0 1 0 10h-2 M7 6L3 10l4 4",
-  image: "M4 5h16v14H4z M8 10a1.5 1.5 0 1 0 0-.01 M5 17l5-5 3 3 3-3 3 4",
+  image: "M4 5h16v14H4z M8 9.2v1.2 M5 17l5-5 3 3 3-3 3 4",
   checkCircle: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M8.5 12.5l2.5 2.5 4.5-5",
-  alertCircle: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 8v5 M12 16h.01",
+  alertCircle: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 8v5 M12 15.8v.5",
   arrowRight: "M5 12h14 M13 6l6 6-6 6",
   arrowLeft: "M19 12H5 M11 6l-6 6 6 6",
 };

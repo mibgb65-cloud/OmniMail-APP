@@ -1,0 +1,169 @@
+/* Toast 动效、顶栏主题滑块、亮暗主题扩散切换与无障碍减弱动态降级 */
+@keyframes omni-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes omni-toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes omni-toast-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.toast-item {
+  animation: omni-toast-in 220ms var(--ease-spring) both;
+}
+
+.toast-item[data-exiting="true"] {
+  pointer-events: none;
+  animation: omni-toast-out var(--dur-fast) var(--ease-exit) both;
+}
+
+.toast-progress-bar {
+  animation: omni-toast-countdown var(--toast-dur, 5000ms) linear forwards;
+}
+
+.toast-item:hover .toast-progress-bar {
+  animation-play-state: paused;
+}
+
+/* 顶栏主题分段滑块指示器（260ms 柔和缓动跟随） */
+.theme-seg-indicator {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--bg-card);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  transform: translateX(0);
+  transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+html[data-theme="dark"] .theme-seg-indicator {
+  transform: translateX(28px);
+}
+
+/* View Transitions API 可反向 GPU 扩散切色（关闭离屏混合与默认 UA 动画，由 Web Animations 接管） */
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
+
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+  will-change: clip-path, opacity;
+}
+
+html[data-vt-switching="true"] *,
+html[data-vt-switching="true"] *::before,
+html[data-vt-switching="true"] *::after {
+  transition: none !important;
+}
+
+/* 不支持 startViewTransition 时的 380ms 全局同步柔和切色回退 */
+html[data-theme-sync="true"],
+html[data-theme-sync="true"] .app-shell,
+html[data-theme-sync="true"] .topbar,
+html[data-theme-sync="true"] .left-sidebar,
+html[data-theme-sync="true"] .panel-card,
+html[data-theme-sync="true"] .modal-card,
+html[data-theme-sync="true"] .settings-card,
+html[data-theme-sync="true"] .mail-card,
+html[data-theme-sync="true"] .contacts-table-row,
+html[data-theme-sync="true"] .btn {
+  transition:
+    background-color 380ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 380ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 380ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* 无障碍降级：移除所有 translate / scale / rotate 位移缩放，统一 100ms 纯 opacity */
+@media (prefers-reduced-motion: reduce) {
+  .custom-select-menu,
+  .dt-picker-popover,
+  .context-menu,
+  .custom-tooltip,
+  .reader-motion-stage,
+  .settings-tab-stage,
+  .route-main-stage[data-dir="fwd"],
+  .route-main-stage[data-dir="back"],
+  .modal-backdrop,
+  .modal-card,
+  .drawer-scrim,
+  .ai-drawer,
+  .ai-pane-inline,
+  .ai-drawer .ai-scroll > *,
+  .left-nav-drawer,
+  .toast-item {
+    animation: omni-fade-in var(--dur-instant) linear both !important;
+    animation-delay: 0ms !important;
+  }
+
+  .custom-tooltip[data-side="right"],
+  .custom-tooltip[data-side="left"] {
+    transform: translateY(-50%) !important;
+  }
+
+  .custom-select-menu[data-closing="true"],
+  .dt-picker-popover[data-closing="true"],
+  .context-menu[data-closing="true"],
+  .route-exit-layer,
+  .overlay-motion-root[data-closing="true"] .modal-backdrop,
+  .overlay-motion-root[data-closing="true"] .modal-card,
+  .workspace-drawer-layer[data-closing="true"] .drawer-scrim,
+  .workspace-drawer-layer[data-closing="true"] .ai-drawer,
+  .workspace-drawer-layer[data-closing="true"] .left-nav-drawer,
+  .ai-pane-inline[data-closing="true"],
+  .toast-item[data-exiting="true"] {
+    animation: omni-fade-out var(--dur-instant) linear both !important;
+  }
+
+  .btn:active:not(:disabled),
+  .icon-btn:active:not(:disabled),
+  .btn-icon:active:not(:disabled),
+  .compose-cta:active,
+  .custom-select-trigger[data-open="true"] .select-chevron,
+  .swatch-btn.active {
+    transform: none !important;
+  }
+
+  .filter-tabs-indicator,
+  .theme-seg-indicator,
+  .switch-knob,
+  .quick-reply-expand-grid {
+    transition-duration: var(--dur-instant) !important;
+  }
+}

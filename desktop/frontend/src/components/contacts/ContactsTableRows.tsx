@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useApp } from "../../state/AppContext";
+import { useValuePresence } from "../../state/usePresence";
 import type { ContactItem } from "../../types/workspace";
+import { ActionMenu } from "../common/ActionMenu";
 import { Icon } from "../common/Icon";
+import { Tooltip } from "../common/Tooltip";
 
 export function ContactsTableRows({
   contacts,
@@ -12,25 +15,14 @@ export function ContactsTableRows({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const { viewport, workspace, composeStore } = useApp();
+  const { viewport, workspace, composeStore, toastStore } = useApp();
   const [menuState, setMenuState] = useState<{
     contact: ContactItem;
     left: number;
     top: number;
   } | null>(null);
-
+  const { rendered: activeMenu, closing } = useValuePresence(menuState, 100);
   const isCompact = viewport === "compact";
-
-  useEffect(() => {
-    if (!menuState) return;
-    const close = () => setMenuState(null);
-    window.addEventListener("click", close);
-    window.addEventListener("resize", close);
-    return () => {
-      window.removeEventListener("click", close);
-      window.removeEventListener("resize", close);
-    };
-  }, [menuState]);
 
   return (
     <>
@@ -49,6 +41,11 @@ export function ContactsTableRows({
             key={c.id}
             className={`contacts-table-row${selectedId === c.id ? " selected" : ""}`}
             onClick={() => onSelect(c.id)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setMenuState({ contact: c, left: e.clientX, top: e.clientY });
+            }}
           >
             <div className="row" style={{ gap: 9, minWidth: 0 }}>
               <div
@@ -69,11 +66,7 @@ export function ContactsTableRows({
             <div style={{ minWidth: 0 }}>
               <div
                 className="truncate"
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "var(--text-ink)",
-                }}
+                style={{ fontSize: 12, fontWeight: 600 }}
               >
                 {c.company}
               </div>
@@ -94,10 +87,7 @@ export function ContactsTableRows({
             </div>
 
             {!isCompact && (
-              <div
-                className="row"
-                style={{ gap: 4, minWidth: 0, overflow: "hidden" }}
-              >
+              <div className="row" style={{ gap: 4, overflow: "hidden" }}>
                 {c.groups.slice(0, 2).map((g) => (
                   <span key={g} className="pill pill-accent truncate">
                     {g}
@@ -127,74 +117,80 @@ export function ContactsTableRows({
               >
                 {isCompact ? "写信" : "写邮件"}
               </button>
-              <button
-                type="button"
-                className="icon-btn icon-btn-bordered"
-                style={{ width: 26, height: 26 }}
-                title="更多联系人操作"
-                aria-label="更多联系人操作"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setMenuState({
-                    contact: c,
-                    left: Math.max(
-                      12,
-                      Math.min(rect.right - 180, window.innerWidth - 196),
-                    ),
-                    top: Math.min(rect.bottom + 6, window.innerHeight - 180),
-                  });
-                }}
-              >
-                <Icon name="more" size={13} />
-              </button>
+              <Tooltip label="更多联系人操作">
+                <button
+                  type="button"
+                  className="icon-btn icon-btn-bordered"
+                  style={{ width: 26, height: 26 }}
+                  aria-label="更多联系人操作"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setMenuState({
+                      contact: c,
+                      left: rect.right - 196,
+                      top: rect.bottom + 6,
+                    });
+                  }}
+                >
+                  <Icon name="more" size={13} />
+                </button>
+              </Tooltip>
             </div>
           </div>
         ))}
       </div>
 
-      {menuState && (
-        <div
-          className="context-menu"
-          style={{ left: menuState.left, top: menuState.top, minWidth: 180 }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className="context-menu-item"
-            onClick={() => {
-              onSelect(menuState.contact.id);
-              setMenuState(null);
-            }}
-          >
-            <span>查看往来详情</span>
-          </button>
-          <button
-            type="button"
-            className="context-menu-item"
-            onClick={() => {
-              workspace.toggleContactVip(menuState.contact.id);
-              setMenuState(null);
-            }}
-          >
-            <span>
-              {menuState.contact.vip ? "取消 VIP 标记" : "设为 VIP 联系人"}
-            </span>
-          </button>
-          <button
-            type="button"
-            className="context-menu-item"
-            onClick={() => {
-              workspace.setOverlay({
-                type: "contact-edit",
-                contactId: menuState.contact.id,
-              });
-              setMenuState(null);
-            }}
-          >
-            <span>编辑联系人资料…</span>
-          </button>
-        </div>
+      {activeMenu && (
+        <ActionMenu
+          x={activeMenu.left}
+          y={activeMenu.top}
+          closing={closing}
+          minWidth={198}
+          onClose={() => setMenuState(null)}
+          items={[
+            {
+              label: "查看往来详情",
+              icon: "users",
+              onSelect: () => onSelect(activeMenu.contact.id),
+            },
+            {
+              label: activeMenu.contact.vip
+                ? "取消 VIP 标记"
+                : "设为 VIP 联系人",
+              icon: "star",
+              onSelect: () => workspace.toggleContactVip(activeMenu.contact.id),
+            },
+            {
+              label: "编辑联系人资料…",
+              icon: "edit",
+              onSelect: () =>
+                workspace.setOverlay({
+                  type: "contact-edit",
+                  contactId: activeMenu.contact.id,
+                }),
+            },
+            { type: "divider" },
+            {
+              label: "加入拦截黑名单",
+              icon: "ban",
+              danger: true,
+              onSelect: () => {
+                workspace.addBlacklist({
+                  target: activeMenu.contact.email,
+                  kind: "address",
+                  reason: `从通讯录快捷拦截（${activeMenu.contact.name}）`,
+                  blockedCount: 0,
+                  addedAt: "2026-11-22",
+                });
+                toastStore.pushToast({
+                  tone: "warning",
+                  title: `已拦截 ${activeMenu.contact.email}`,
+                });
+              },
+            },
+          ]}
+        />
       )}
     </>
   );

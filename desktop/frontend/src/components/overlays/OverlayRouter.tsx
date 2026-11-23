@@ -1,4 +1,6 @@
 import { useApp } from "../../state/AppContext";
+import { useValuePresence } from "../../state/usePresence";
+import type { OverlayModal } from "../../types/ui";
 import { AiConsentModal } from "../ai/AiConsentModal";
 import { ScheduleSendModal } from "../compose/ScheduleSendModal";
 import { ContactEditModal } from "../contacts/ContactEditModal";
@@ -17,22 +19,19 @@ import {
 import { BackupMigrationModal } from "./BackupMigrationModal";
 import { CommandPaletteModal } from "./CommandPaletteModal";
 import { DangerConfirmModal } from "./DangerConfirmModal";
+import { DataDirMigrateModal } from "./DataDirMigrateModal";
+import { DesktopExtrasModal } from "./DesktopExtrasModal";
 import { LabelManageModal } from "./LabelManageModal";
 import { MailSourceModal, PrintExportModal } from "./MailMetaModals";
 import { MoveFolderModal } from "./MoveFolderModal";
 import { AccountServerModal, DiagnosticsModal } from "./OpsModals";
+import { ProfileManageModal } from "./ProfileManageModal";
 import { RuleEditorModal } from "./RuleEditorModal";
 import { SnoozeModal } from "./SnoozeModal";
-import { DesktopExtrasModal } from "./DesktopExtrasModal";
 import { UpdateFlowModal } from "./UpdateFlowModal";
 
-export function OverlayRouter() {
-  const { workspace } = useApp();
-  const ov = workspace.overlay;
-
+function renderModal(ov: Exclude<OverlayModal, { type: "none" }>) {
   switch (ov.type) {
-    case "none":
-      return null;
     case "settings":
       return (
         <SettingsModal initialTab={ov.tab} initialAccountId={ov.accountId} />
@@ -51,7 +50,18 @@ export function OverlayRouter() {
       return <ManualImapModal />;
     case "sync-progress":
       return (
-        <SyncProgressModal accountName={ov.accountName} stage={ov.stage} />
+        <SyncProgressModal
+          accountId={ov.accountId}
+          accountName={ov.accountName}
+          stage={ov.stage}
+        />
+      );
+    case "profile-manage":
+      return (
+        <ProfileManageModal
+          initialMode={ov.mode}
+          targetProfileId={ov.targetProfileId}
+        />
       );
     case "legal-doc":
       return <LegalDocModal doc={ov.doc} />;
@@ -91,6 +101,8 @@ export function OverlayRouter() {
       return <DiagnosticsModal accountId={ov.accountId} />;
     case "backup-migration":
       return <BackupMigrationModal />;
+    case "data-dir-migrate":
+      return <DataDirMigrateModal />;
     case "contact-edit":
       return <ContactEditModal contactId={ov.contactId} />;
     case "danger-confirm":
@@ -106,4 +118,22 @@ export function OverlayRouter() {
     case "desktop-extras":
       return <DesktopExtrasModal tab={ov.tab} />;
   }
+}
+
+export function OverlayRouter() {
+  const { workspace } = useApp();
+  const active = workspace.overlay.type === "none" ? null : workspace.overlay;
+  const { rendered, closing } = useValuePresence(active, 140);
+  if (!rendered) return null;
+
+  return (
+    <div
+      key={rendered.type}
+      className="overlay-motion-root"
+      data-layer="overlay"
+      data-closing={closing ? "true" : "false"}
+    >
+      {renderModal(rendered)}
+    </div>
+  );
 }

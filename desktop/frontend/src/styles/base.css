@@ -24,10 +24,18 @@ body,
 
 input,
 textarea,
-select,
 .selectable {
   user-select: text;
   font-family: inherit;
+}
+
+/* 屏蔽 Edge / Chromium 原生密码眼图标与搜索清除丑图标 */
+input::-ms-reveal,
+input::-ms-clear,
+input[type="search"]::-webkit-search-cancel-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 button {
@@ -44,9 +52,19 @@ button:disabled {
   cursor: not-allowed;
 }
 
+button:focus-visible,
+[role="button"]:focus-visible,
+[role="combobox"]:focus-visible,
+[role="checkbox"]:focus-visible,
+[role="switch"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* 自定义 6px 细滚动条（透明轨道 + 悬停加深，替代 Windows 17px 默认粗灰条） */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 0;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -54,8 +72,12 @@ button:disabled {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  background: var(--scrollbar-thumb);
   border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* 通用排版与布局工具类 */

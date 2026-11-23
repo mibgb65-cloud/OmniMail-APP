@@ -2,8 +2,11 @@ import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 
 export function StatusBanner() {
-  const { workspace, toastStore } = useApp();
-  const { bannerMode, settings } = workspace;
+  const { workspace, toastStore, triggerSyncAll } = useApp();
+  const { bannerMode, settings, accounts } = workspace;
+  const expiredAcc =
+    accounts.find((a) => a.status === "auth-expired") ?? accounts[0];
+  const failedAcc = accounts.find((a) => a.status === "error") ?? accounts[0];
 
   const autoReplyActive =
     settings.autoReply.enabled || bannerMode === "auto-reply";
@@ -26,10 +29,7 @@ export function StatusBanner() {
             className="btn btn-sm btn-secondary"
             onClick={() => {
               workspace.setBannerMode("none");
-              toastStore.pushToast({
-                tone: "success",
-                title: "网络已恢复并重新同步邮箱",
-              });
+              triggerSyncAll();
             }}
           >
             立即重连
@@ -44,7 +44,7 @@ export function StatusBanner() {
       <div className="runtime-banner danger" role="alert">
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="alertCircle" size={16} />
-          <strong>工作邮箱（Gmail）OAuth 授权已失效</strong>
+          <strong>{expiredAcc?.name ?? "邮箱账户"} 认证凭据已失效</strong>
           <span style={{ opacity: 0.85 }}>
             仅暂停该账户的新邮件同步，本地历史缓存仍可正常阅读与搜索
           </span>
@@ -54,14 +54,19 @@ export function StatusBanner() {
             type="button"
             className="btn btn-sm btn-danger"
             onClick={() =>
-              workspace.setOverlay({
-                type: "oauth-flow",
-                provider: "gmail",
-                stage: "waiting",
-              })
+              expiredAcc && expiredAcc.authMode !== "oauth"
+                ? workspace.setOverlay({
+                    type: "account-server",
+                    accountId: expiredAcc.id,
+                  })
+                : workspace.setOverlay({
+                    type: "oauth-flow",
+                    provider: expiredAcc?.provider ?? "gmail",
+                    stage: "waiting",
+                  })
             }
           >
-            前往浏览器重新授权
+            重新验证授权
           </button>
           <button
             type="button"
@@ -80,9 +85,9 @@ export function StatusBanner() {
       <div className="runtime-banner warning" role="status">
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="alertCircle" size={16} />
-          <strong>部分账户同步失败（团队邮箱 · IMAP）</strong>
+          <strong>部分账户同步受阻（{failedAcc?.name ?? "邮箱账户"}）</strong>
           <span style={{ opacity: 0.85 }}>
-            其余 3 个邮箱已同步完成，团队邮箱 SMTP/IMAP 响应超时
+            其余账户已正常同步，可运行连接诊断查看具体阶段错误
           </span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -92,7 +97,7 @@ export function StatusBanner() {
             onClick={() =>
               workspace.setOverlay({
                 type: "diagnostics",
-                accountId: "acc-imap",
+                accountId: failedAcc?.id ?? "",
               })
             }
           >

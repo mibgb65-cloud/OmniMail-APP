@@ -1,80 +1,110 @@
+import type { CSSProperties } from "react";
 import type { ToastNotice } from "../../types/ui";
 import { Icon } from "./Icon";
 
 interface ToastStackProps {
   toasts: ToastNotice[];
   onDismiss: (id: string) => void;
+  onPause?: (id: string) => void;
+  onResume?: (id: string) => void;
 }
 
-export function ToastStack({ toasts, onDismiss }: ToastStackProps) {
+const DOT_COLORS: Record<ToastNotice["tone"], string> = {
+  success: "#4ade80",
+  info: "#60a5fa",
+  warning: "#fbbf24",
+  danger: "#f87171",
+};
+
+export function ToastStack({
+  toasts,
+  onDismiss,
+  onPause,
+  onResume,
+}: ToastStackProps) {
   if (toasts.length === 0) return null;
 
   return (
     <div className="toast-stack" aria-live="polite">
       {toasts.map((toast) => (
-        <div key={toast.id} className="toast-item">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              minWidth: 0,
-            }}
-          >
-            <Icon
-              name={
-                toast.tone === "danger"
-                  ? "alertCircle"
-                  : toast.tone === "success"
-                    ? "checkCircle"
-                    : "info"
-              }
-              size={16}
-            />
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>{toast.title}</div>
-              {toast.detail && (
-                <div style={{ fontSize: 12, opacity: 0.78 }}>
-                  {toast.detail}
+        <div
+          key={toast.id}
+          data-exiting={toast.exiting ? "true" : "false"}
+          className="toast-item"
+          onMouseEnter={() => onPause?.(toast.id)}
+          onMouseLeave={() => onResume?.(toast.id)}
+        >
+          <div className="row-between" style={{ gap: 12 }}>
+            <div className="row" style={{ gap: 9, minWidth: 0, flex: 1 }}>
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: DOT_COLORS[toast.tone],
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ minWidth: 0 }}>
+                <div className="truncate" style={{ fontWeight: 600 }}>
+                  {toast.title}
                 </div>
-              )}
+                {toast.detail && (
+                  <div
+                    className="truncate"
+                    style={{ fontSize: 11.5, color: "#94a3b8" }}
+                  >
+                    {toast.detail}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              flexShrink: 0,
-            }}
-          >
-            {toast.actionLabel && toast.onAction && (
+
+            <div className="row" style={{ gap: 6, flexShrink: 0 }}>
+              {toast.actionLabel && toast.onAction && (
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  style={{
+                    height: 26,
+                    padding: "0 10px",
+                    borderRadius: 6,
+                    background: "#2563eb",
+                    color: "#ffffff",
+                    fontWeight: 700,
+                  }}
+                  onClick={() => {
+                    toast.onAction?.();
+                    onDismiss(toast.id);
+                  }}
+                >
+                  {toast.actionLabel}
+                </button>
+              )}
               <button
                 type="button"
-                className="btn btn-sm"
-                style={{
-                  background: "rgba(255,255,255,0.16)",
-                  color: "inherit",
-                  border: "1px solid rgba(255,255,255,0.25)",
-                }}
-                onClick={() => {
-                  toast.onAction?.();
-                  onDismiss(toast.id);
-                }}
+                className="icon-btn"
+                style={{ color: "#94a3b8", width: 24, height: 24 }}
+                onClick={() => onDismiss(toast.id)}
+                aria-label="关闭通知"
               >
-                {toast.actionLabel}
+                <Icon name="x" size={13} />
               </button>
-            )}
-            <button
-              type="button"
-              className="icon-btn"
-              style={{ color: "inherit", width: 26, height: 26 }}
-              onClick={() => onDismiss(toast.id)}
-              aria-label="关闭通知"
-            >
-              <Icon name="x" size={14} />
-            </button>
+            </div>
           </div>
+
+          {toast.actionLabel && (
+            <div className="toast-progress-track">
+              <div
+                className="toast-progress-bar"
+                style={
+                  {
+                    "--toast-dur": `${toast.durationMs ?? 5000}ms`,
+                  } as CSSProperties
+                }
+              />
+            </div>
+          )}
         </div>
       ))}
     </div>

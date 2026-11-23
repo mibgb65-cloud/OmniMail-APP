@@ -10,12 +10,14 @@ export function BlacklistManagerView() {
   const handleAdd = () => {
     const target = newRule.trim();
     if (!target) return;
+    const isDom = target.startsWith("*@") || !target.includes("@");
+    const cleanTarget = target.replace(/^\*@|^@/, "");
     workspace.addBlacklist({
-      target,
-      kind: target.startsWith("*@") ? "domain" : "address",
+      target: cleanTarget,
+      kind: isDom ? "domain" : "address",
       reason: reason.trim() || "手动添加拦截",
       blockedCount: 0,
-      addedAt: "2026-11-20",
+      addedAt: "今天",
     });
     setNewRule("");
     toastStore.pushToast({

@@ -53,16 +53,32 @@
 }
 
 .filter-tabs {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   padding: 3px;
   border-radius: var(--radius-sm);
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
-  gap: 2px;
+}
+
+.filter-tabs-indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / 4);
+  border-radius: 6px;
+  background: var(--bg-card);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  transform: translateX(calc(var(--active-tab-idx, 0) * 100%));
+  transition: transform var(--dur-fast) var(--ease-standard);
+  pointer-events: none;
 }
 
 .filter-tab {
+  position: relative;
+  z-index: 1;
   height: 27px;
   border-radius: 6px;
   font-size: 12px;
@@ -71,13 +87,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease-standard);
 }
 
 .filter-tab.active {
-  background: var(--bg-card);
   color: var(--text-ink);
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 .batch-bar {
@@ -128,8 +143,21 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 28px 16px;
+  gap: 12px;
+  padding: 28px 20px;
   text-align: center;
   color: var(--text-secondary);
+}
+
+.list-empty-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--bg-selected);
+  border: 1px solid var(--border-selected);
+  color: var(--brand-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }

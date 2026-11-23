@@ -1,4 +1,6 @@
+import { mailApi, parseBackendError } from "../../../services/backendClient";
 import { useApp } from "../../../state/AppContext";
+import { isWailsDesktop } from "../../../state/storageHelpers";
 import type { MeetingInvite } from "../../../types/mail";
 import { Icon } from "../../common/Icon";
 
@@ -16,10 +18,32 @@ export function MeetingInviteCard({
       meetingInvite: { ...invite, rsvp: next },
       statusBadge: `会议 · ${label}`,
     });
-    toastStore.pushToast({
-      tone: "success",
-      title: `已将会议状态更新为「${label}」`,
-    });
+    if (!isWailsDesktop()) {
+      toastStore.pushToast({
+        tone: "success",
+        title: `已将会议状态更新为「${label}」`,
+      });
+      return;
+    }
+    void mailApi
+      .respondMeetingInvite(mailId, next)
+      .then((updated) => {
+        mailStore.updateMail(mailId, {
+          meetingInvite: updated,
+          statusBadge: `会议 · ${label}`,
+        });
+        toastStore.pushToast({
+          tone: "success",
+          title: `已回复会议组织者「${label}」并同步本地日程`,
+        });
+      })
+      .catch((err) =>
+        toastStore.pushToast({
+          tone: "danger",
+          title: "回复日程邀请失败",
+          detail: parseBackendError(err).message,
+        }),
+      );
   };
 
   return (
@@ -40,53 +64,32 @@ export function MeetingInviteCard({
             >
               {invite.title}
             </div>
-            <div
-              style={{
-                fontSize: 12,
-                color: "var(--text-secondary)",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
+            <div className="row text-xs text-muted" style={{ gap: 6 }}>
               <Icon name="clock" size={13} /> {invite.dateTimeText}
             </div>
-            <div
-              style={{
-                fontSize: 12,
-                color: "var(--text-secondary)",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
+            <div className="row text-xs text-muted" style={{ gap: 6 }}>
               <Icon name="video" size={13} /> {invite.locationText}
             </div>
           </div>
         </div>
-        <span className="pill pill-success">
-          ● {invite.conflictStatus === "free" ? "日程无冲突" : "时间冲突"}
+        <span
+          className={`pill ${invite.conflictStatus === "free" ? "pill-success" : "pill-warning"}`}
+          title={invite.conflictHint}
+        >
+          ●{" "}
+          {invite.conflictStatus === "free"
+            ? "日程无冲突"
+            : invite.conflictHint || "时间冲突"}
         </span>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 8,
-        }}
-      >
-        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+      <div className="row-between" style={{ flexWrap: "wrap", gap: 8 }}>
+        <span className="text-xs text-muted">
           参会人员（{invite.attendees.length} 人）
         </span>
         <span
-          style={{
-            fontSize: 12,
-            color: "var(--text-muted)",
-            fontFamily: "var(--font-mono)",
-          }}
+          className="text-xs text-muted"
+          style={{ fontFamily: "var(--font-mono)" }}
         >
           附件：{invite.icsFileName}
         </span>
@@ -108,20 +111,16 @@ export function MeetingInviteCard({
       </div>
 
       <div
+        className="row-between"
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
           gap: 8,
           flexWrap: "wrap",
           paddingTop: 6,
           borderTop: "1px solid var(--border-default)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-            你的回复：
-          </span>
+        <div className="row" style={{ gap: 6 }}>
+          <span className="text-xs text-muted">你的回复：</span>
           <button
             type="button"
             className={`btn btn-sm ${invite.rsvp === "accepted" ? "btn-primary" : "btn-secondary"}`}
@@ -145,28 +144,47 @@ export function MeetingInviteCard({
           </button>
         </div>
 
-        <div style={{ display: "flex", gap: 6 }}>
+        <div className="row" style={{ gap: 6 }}>
+          {invite.meetingLink && (
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => {
+                void navigator.clipboard
+                  ?.writeText(invite.meetingLink)
+                  .catch(() => undefined);
+                toastStore.pushToast({
+                  tone: "success",
+                  title: "已复制会议链接至剪贴板",
+                });
+              }}
+            >
+              <Icon name="copy" size={13} /> 复制会议链接
+            </button>
+          )}
           <button
             type="button"
             className="btn btn-sm btn-secondary"
-            onClick={() =>
-              toastStore.pushToast({
-                tone: "success",
-                title: "已复制会议链接至剪贴板",
-              })
-            }
-          >
-            <Icon name="copy" size={13} /> 复制会议链接
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm btn-secondary"
-            onClick={() =>
-              toastStore.pushToast({
-                tone: "info",
-                title: `已导出日程文件 ${invite.icsFileName}`,
-              })
-            }
+            onClick={() => {
+              void mailApi
+                .exportMeetingICS(mailId)
+                .then((savedPath) => {
+                  if (savedPath) {
+                    toastStore.pushToast({
+                      tone: "info",
+                      title: "已导出 .ics 日程文件",
+                      detail: savedPath,
+                    });
+                  }
+                })
+                .catch((err) =>
+                  toastStore.pushToast({
+                    tone: "danger",
+                    title: "导出 .ics 失败",
+                    detail: parseBackendError(err).message,
+                  }),
+                );
+            }}
           >
             <Icon name="download" size={13} /> 导出 .ics
           </button>

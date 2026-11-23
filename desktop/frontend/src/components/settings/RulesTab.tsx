@@ -1,8 +1,31 @@
+import { parseBackendError, ruleApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 
 export function RulesTab() {
-  const { workspace, toastStore } = useApp();
+  const { workspace, mailStore, toastStore } = useApp();
+
+  const handleRunNow = (ruleId: string, ruleName: string) => {
+    void ruleApi
+      .runRuleNow(ruleId)
+      .then(async (hitCount) => {
+        const freshRules = await ruleApi.listRules();
+        workspace.setRules(freshRules);
+        void mailStore.reloadMessages();
+        toastStore.pushToast({
+          tone: "success",
+          title: `规则「${ruleName}」执行完毕`,
+          detail: `本次对现有收件箱共命中并处理 ${hitCount} 封邮件`,
+        });
+      })
+      .catch((err) =>
+        toastStore.pushToast({
+          tone: "danger",
+          title: "执行规则失败",
+          detail: parseBackendError(err).message,
+        }),
+      );
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -29,19 +52,15 @@ export function RulesTab() {
           <div className="row-between">
             <div className="row" style={{ gap: 8 }}>
               <strong style={{ fontSize: 14 }}>{rule.name}</strong>
-              <span className="pill pill-neutral">{rule.accountScope}</span>
+              <span className="pill pill-neutral">
+                {rule.accountScope === "all" ? "全部邮箱" : rule.accountScope}
+              </span>
             </div>
             <div className="row" style={{ gap: 8 }}>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
-                onClick={() =>
-                  toastStore.pushToast({
-                    tone: "success",
-                    title: `已立即执行规则「${rule.name}」`,
-                    detail: "已扫描本地收件箱并同步匹配标签",
-                  })
-                }
+                onClick={() => handleRunNow(rule.id, rule.name)}
               >
                 立即运行
               </button>

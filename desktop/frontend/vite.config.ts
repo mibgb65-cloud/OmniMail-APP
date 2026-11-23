@@ -9,6 +9,10 @@ if (!Number.isInteger(port) || port < 1 || port > 65_535) {
 }
 
 export default defineConfig({
+  base: "./",
+  build: {
+    chunkSizeWarningLimit: 800,
+  },
   server: {
     host: "127.0.0.1",
     port,

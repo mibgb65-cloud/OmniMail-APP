@@ -1,13 +1,24 @@
+import { useState } from "react";
+import { parseBackendError, ruleApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
+import {
+  AsyncActionButton,
+  type AsyncActionStatus,
+} from "../common/AsyncActionButton";
+import { CustomSelect } from "../common/CustomSelect";
+import { DateTimePicker } from "../common/DateTimePicker";
+import { ProviderIcon } from "../common/ProviderIcon";
 import { SwitchRow } from "./SwitchRow";
 
 export function AutoReplyTab() {
   const { workspace, toastStore } = useApp();
   const ar = workspace.settings.autoReply;
+  const [saveStatus, setSaveStatus] = useState<AsyncActionStatus>("idle");
 
   const updateAutoReply = (patch: Partial<typeof ar>) => {
     const next = { ...ar, ...patch };
     workspace.updateSettings({ autoReply: next });
+    void ruleApi.saveAutoReplyConfig(next).catch(() => undefined);
     if ("enabled" in patch) {
       workspace.setBannerMode(next.enabled ? "auto-reply" : "none");
     }
@@ -17,7 +28,7 @@ export function AutoReplyTab() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div className="settings-card">
         <SwitchRow
-          title="启用外出 / 休假自动回复"
+          heading="启用外出 / 休假自动回复"
           desc="开启后工作台顶部将显示自动回复提示条，并按设定时间窗口响应来信"
           checked={ar.enabled}
           onChange={(v) => updateAutoReply({ enabled: v })}
@@ -28,24 +39,30 @@ export function AutoReplyTab() {
         >
           <div>
             <label className="text-xs text-muted">生效账户</label>
-            <select
-              className="select"
-              style={{ marginTop: 4, width: "100%" }}
+            <CustomSelect
+              fullWidth
+              minMenuWidth={220}
+              style={{ marginTop: 4 }}
               value={ar.accountId}
-              onChange={(e) => updateAutoReply({ accountId: e.target.value })}
-            >
-              {workspace.accounts.map((acc) => (
-                <option key={acc.id} value={acc.id}>
-                  {acc.name}
-                </option>
-              ))}
-            </select>
+              ariaLabel="自动回复生效账户"
+              options={workspace.accounts.map((acc) => ({
+                value: acc.id,
+                label: acc.name,
+                sublabel: acc.email,
+                icon: <ProviderIcon provider={acc.provider} size={18} />,
+              }))}
+              onChange={(val) => updateAutoReply({ accountId: val })}
+            />
           </div>
           <div>
             <label className="text-xs text-muted">已自动回复计数</label>
             <div
               className="input row"
-              style={{ marginTop: 4, background: "var(--bg-surface)" }}
+              style={{
+                marginTop: 4,
+                height: 36,
+                background: "var(--bg-surface)",
+              }}
             >
               本次休假周期累计回复 {ar.repliedCount} 位发件人
             </div>
@@ -57,32 +74,32 @@ export function AutoReplyTab() {
         >
           <div>
             <label className="text-xs text-muted">开始时间</label>
-            <input
-              className="input"
+            <DateTimePicker
               style={{ marginTop: 4 }}
               value={ar.startTime}
-              onChange={(e) => updateAutoReply({ startTime: e.target.value })}
+              onChange={(val) => updateAutoReply({ startTime: val })}
+              ariaLabel="自动回复开始时间"
             />
           </div>
           <div>
             <label className="text-xs text-muted">结束时间</label>
-            <input
-              className="input"
+            <DateTimePicker
               style={{ marginTop: 4 }}
               value={ar.endTime}
-              onChange={(e) => updateAutoReply({ endTime: e.target.value })}
+              onChange={(val) => updateAutoReply({ endTime: val })}
+              ariaLabel="自动回复结束时间"
             />
           </div>
         </div>
 
         <SwitchRow
-          title="仅回复通讯录联系人与同域名同事"
+          heading="仅回复通讯录联系人与同域名同事"
           desc="避免向群发订阅、自动通知与陌生推广地址泄露行程状态"
           checked={ar.contactsAndSameDomainOnly}
           onChange={(v) => updateAutoReply({ contactsAndSameDomainOnly: v })}
         />
         <SwitchRow
-          title="同一发件人 4 天内最多回复一次（防循环）"
+          heading="同一发件人 4 天内最多回复一次（防循环）"
           desc="自动跳过 List-Unsubscribe / Auto-Submitted 邮件头，防止回复死循环"
           checked={ar.limitOncePer4Days}
           onChange={(v) => updateAutoReply({ limitOncePer4Days: v })}
@@ -103,22 +120,40 @@ export function AutoReplyTab() {
           value={ar.body}
           onChange={(e) => updateAutoReply({ body: e.target.value })}
         />
-        <button
-          type="button"
-          className="btn btn-primary btn-sm"
+        <AsyncActionButton
+          size="sm"
+          status={saveStatus}
           style={{ alignSelf: "flex-end" }}
-          onClick={() =>
-            toastStore.pushToast({
-              tone: "success",
-              title: "自动回复设置已保存",
-              detail: ar.enabled
-                ? "顶部提示条已同步激活"
-                : "当前处于未启用状态",
-            })
-          }
-        >
-          保存自动回复配置
-        </button>
+          idleLabel="保存自动回复配置"
+          loadingLabel="正在保存配置…"
+          successLabel="自动回复已保存"
+          errorLabel="保存失败 · 重试"
+          successHoldMs={900}
+          onSuccessHoldEnd={() => setSaveStatus("idle")}
+          onClick={() => {
+            setSaveStatus("loading");
+            void ruleApi
+              .saveAutoReplyConfig(ar)
+              .then(() => {
+                setSaveStatus("success");
+                toastStore.pushToast({
+                  tone: "success",
+                  title: "自动回复设置已保存",
+                  detail: ar.enabled
+                    ? "RFC3834 防循环与 4 天频控已同步激活"
+                    : "当前处于未启用状态",
+                });
+              })
+              .catch((err) => {
+                setSaveStatus("error");
+                toastStore.pushToast({
+                  tone: "danger",
+                  title: "保存失败",
+                  detail: parseBackendError(err).message,
+                });
+              });
+          }}
+        />
       </div>
     </div>
   );

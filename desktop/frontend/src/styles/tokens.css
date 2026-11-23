@@ -1,6 +1,8 @@
-/* OmniMail 设计令牌：严格对应 OmniMail-redesign.fig 的 Theme 与 Metrics 变量 */
+/* OmniMail 设计令牌：严格对应 OmniMail-redesign.fig 的 Theme、Overlay 与 Motion 变量 */
 :root,
 [data-theme="light"] {
+  color-scheme: light;
+
   --bg-canvas: #eff2f6;
   --bg-card: #ffffff;
   --bg-surface: #f7f9fc;
@@ -29,8 +31,8 @@
   --status-success-bg: #ecfdf3;
   --status-warning: #b45309;
   --status-warning-bg: #fef3c7;
-  --status-danger: #be123c;
-  --status-danger-bg: #fff1f2;
+  --status-danger: #dc2626;
+  --status-danger-bg: #fef2f2;
 
   /* 来源色标（与设计图芯片配色一致） */
   --tag-gmail-bg: #fee2e2;
@@ -42,24 +44,49 @@
   --tag-imap-bg: #e2e8f0;
   --tag-imap-fg: #334155;
 
+  /* 自定义下拉、右键菜单、Tooltip 与细滚动条令牌 */
+  --bg-popover: #ffffff;
+  --border-popover: #e2e7f0;
+  --bg-popover-hover: #f1f5f9;
+  --shadow-popover: 0 14px 32px rgba(15, 23, 42, 0.14);
+  --tooltip-bg: #141e2e;
+  --tooltip-border: rgba(255, 255, 255, 0.08);
+  --tooltip-ink: #f8fafc;
+  --tooltip-kbd-bg: #334155;
+  --tooltip-kbd-ink: #cbd5e1;
+  --tooltip-badge-bg: #1e3a5f;
+  --tooltip-badge-ink: #93c5fd;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+  --focus-ring: rgba(37, 99, 235, 0.16);
+
   --shadow-card: 0 2px 10px rgba(15, 23, 42, 0.04);
   --shadow-drawer: 0 12px 32px rgba(15, 23, 42, 0.16);
   --shadow-modal: 0 24px 60px rgba(15, 23, 42, 0.22);
-  --shadow-toast: 0 12px 32px rgba(15, 23, 42, 0.16);
+  --shadow-toast: 0 12px 32px rgba(15, 23, 42, 0.22);
   --backdrop-scrim: rgba(15, 23, 42, 0.42);
   --drawer-scrim: rgba(15, 23, 42, 0.18);
 
-  /* Metrics 变量 */
+  /* 空间与排版变量 */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 12px;
   --space-lg: 16px;
   --space-xl: 24px;
-
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-pill: 999px;
+
+  /* Motion & Transitions 动效时长与贝塞尔曲线 */
+  --dur-instant: 100ms;
+  --dur-fast: 150ms;
+  --dur-base: 200ms;
+  --dur-emphasis: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
 
   --font-sans:
     "Noto Sans SC", "Inter", "Microsoft YaHei UI", "PingFang SC", -apple-system,
@@ -70,6 +97,8 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
+
   --bg-canvas: #0b0e14;
   --bg-card: #131822;
   --bg-surface: #181f2c;
@@ -98,8 +127,8 @@
   --status-success-bg: #0f291e;
   --status-warning: #fbbf24;
   --status-warning-bg: #2b2110;
-  --status-danger: #fb7185;
-  --status-danger-bg: #2d1620;
+  --status-danger: #f87171;
+  --status-danger-bg: #2a1619;
 
   --tag-gmail-bg: rgba(248, 113, 113, 0.16);
   --tag-gmail-fg: #fca5a5;
@@ -110,10 +139,25 @@
   --tag-imap-bg: rgba(148, 163, 184, 0.16);
   --tag-imap-fg: #cbd5e1;
 
+  --bg-popover: #181f2c;
+  --border-popover: #333e52;
+  --bg-popover-hover: #222b3c;
+  --shadow-popover: 0 16px 36px rgba(0, 0, 0, 0.55);
+  --tooltip-bg: #1e293b;
+  --tooltip-border: #475569;
+  --tooltip-ink: #f1f5f9;
+  --tooltip-kbd-bg: #0f172a;
+  --tooltip-kbd-ink: #94a3b8;
+  --tooltip-badge-bg: #1b2842;
+  --tooltip-badge-ink: #60a5fa;
+  --scrollbar-thumb: #334155;
+  --scrollbar-thumb-hover: #475569;
+  --focus-ring: rgba(59, 130, 246, 0.24);
+
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
   --shadow-drawer: 0 12px 32px rgba(0, 0, 0, 0.45);
   --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.58);
-  --shadow-toast: 0 12px 32px rgba(0, 0, 0, 0.48);
+  --shadow-toast: 0 12px 32px rgba(0, 0, 0, 0.52);
   --backdrop-scrim: rgba(4, 7, 13, 0.65);
   --drawer-scrim: rgba(2, 6, 23, 0.45);
 }

@@ -1,10 +1,10 @@
 export function SwitchRow({
-  title,
+  heading,
   desc,
   checked,
   onChange,
 }: {
-  title: string;
+  heading: string;
   desc?: string;
   checked: boolean;
   onChange: (next: boolean) => void;
@@ -15,7 +15,7 @@ export function SwitchRow({
         <div
           style={{ fontSize: 13, fontWeight: 600, color: "var(--text-ink)" }}
         >
-          {title}
+          {heading}
         </div>
         {desc && (
           <div
@@ -30,6 +30,7 @@ export function SwitchRow({
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-label={heading}
         className={`switch-btn${checked ? " on" : ""}`}
         onClick={() => onChange(!checked)}
       >

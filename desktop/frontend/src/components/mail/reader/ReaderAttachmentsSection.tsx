@@ -1,6 +1,11 @@
+import { Events } from "@wailsio/runtime";
+import { useEffect, useState } from "react";
+import { mailApi, parseBackendError } from "../../../services/backendClient";
 import { useApp } from "../../../state/AppContext";
+import { isWailsDesktop } from "../../../state/storageHelpers";
 import type { AttachmentItem } from "../../../types/mail";
-import { Icon } from "../../common/Icon";
+import { waitSuccessHold } from "../../common/AsyncStateGlyph";
+import { AttachmentCardRow, type AttPhase } from "./AttachmentCardRow";
 
 export function ReaderAttachmentsSection({
   attachments,
@@ -9,9 +14,89 @@ export function ReaderAttachmentsSection({
   attachments: AttachmentItem[];
   mailSubject: string;
 }) {
-  const { workspace, toastStore } = useApp();
+  const { workspace, mailStore, toastStore } = useApp();
+  const [phases, setPhases] = useState<Record<string, AttPhase>>({});
+  const [progMap, setProgMap] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!isWailsDesktop()) return;
+    return Events.On("omnimail:attachment:progress", (ev) => {
+      const d = ev.data as
+        { attachmentId?: string; progress?: number } | undefined;
+      if (d?.attachmentId) {
+        setProgMap((prev) => ({
+          ...prev,
+          [d.attachmentId!]: d.progress ?? 0,
+        }));
+      }
+    });
+  }, []);
 
   if (attachments.length === 0) return null;
+
+  const setAttPhase = (id: string, next: AttPhase) => {
+    setPhases((prev) => ({ ...prev, [id]: next }));
+  };
+
+  const handlePreview = async (att: AttachmentItem) => {
+    if (att.status === "oversized") {
+      workspace.setOverlay({ type: "attachment-transfer", mode: "oversized" });
+      return;
+    }
+    if (phases[att.id] === "downloading") return;
+
+    let readyAtt = att;
+    if (att.status !== "ready") {
+      setAttPhase(att.id, "downloading");
+      try {
+        readyAtt = await mailApi.downloadAttachment(att.id);
+        void mailStore.reloadMessages();
+        setAttPhase(att.id, "just-ready");
+        await waitSuccessHold(650);
+        setAttPhase(att.id, "idle");
+      } catch (err) {
+        setAttPhase(att.id, "error");
+        toastStore.pushToast({
+          tone: "danger",
+          title: "拉取附件失败",
+          detail: parseBackendError(err).message,
+        });
+        return;
+      }
+    }
+    workspace.setOverlay({
+      type: "attachment-preview",
+      attachment: readyAtt,
+      mailSubject,
+    });
+  };
+
+  const handleSaveAs = async (att: AttachmentItem) => {
+    if (phases[att.id] === "downloading") return;
+    setAttPhase(att.id, "downloading");
+    try {
+      const savedPath = await mailApi.saveAttachmentAs(att.id);
+      if (!savedPath) {
+        setAttPhase(att.id, "idle");
+        return;
+      }
+      setAttPhase(att.id, "just-ready");
+      toastStore.pushToast({
+        tone: "success",
+        title: `已保存附件：${att.name}`,
+        detail: savedPath,
+      });
+      await waitSuccessHold(950);
+      setAttPhase(att.id, "idle");
+    } catch (err) {
+      setAttPhase(att.id, "error");
+      toastStore.pushToast({
+        tone: "danger",
+        title: "保存附件失败",
+        detail: parseBackendError(err).message,
+      });
+    }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -22,82 +107,14 @@ export function ReaderAttachmentsSection({
       </div>
       <div className="attachment-grid">
         {attachments.map((att) => (
-          <div key={att.id} className="attachment-card">
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                minWidth: 0,
-              }}
-            >
-              <span
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 8,
-                  background: "var(--bg-selected)",
-                  color: "var(--brand-accent)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Icon
-                  name={att.kind === "image" ? "image" : "file"}
-                  size={16}
-                />
-              </span>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div
-                  className="truncate"
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "var(--text-ink)",
-                  }}
-                >
-                  {att.name}
-                </div>
-                <div
-                  className="truncate"
-                  style={{ fontSize: 12, color: "var(--text-muted)" }}
-                >
-                  {att.ext} · {att.sizeText}
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-              <button
-                type="button"
-                className="btn btn-sm btn-secondary"
-                onClick={() =>
-                  workspace.setOverlay({
-                    type: "attachment-preview",
-                    attachment: att,
-                    mailSubject,
-                  })
-                }
-              >
-                <Icon name="eye" size={13} /> 预览
-              </button>
-              <button
-                type="button"
-                className="icon-btn icon-btn-bordered"
-                style={{ width: 28, height: 28 }}
-                title="下载附件"
-                onClick={() =>
-                  toastStore.pushToast({
-                    tone: "success",
-                    title: `已下载 ${att.name}`,
-                    detail: "已保存至本地安全下载目录",
-                  })
-                }
-              >
-                <Icon name="download" size={13} />
-              </button>
-            </div>
-          </div>
+          <AttachmentCardRow
+            key={att.id}
+            att={att}
+            phase={phases[att.id] ?? "idle"}
+            progress={progMap[att.id]}
+            onPreview={() => void handlePreview(att)}
+            onSaveAs={() => void handleSaveAs(att)}
+          />
         ))}
       </div>
     </div>

@@ -76,10 +76,8 @@
 
 .quick-reply-compact {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 7px 12px;
+  flex-direction: column;
+  padding: 6px 12px;
   border-radius: 11px;
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);
@@ -137,4 +135,24 @@
   font-size: 13px;
   line-height: 1.55;
   outline: none;
+}
+
+.quick-reply-expand-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 160ms var(--ease-standard),
+    opacity 120ms var(--ease-standard);
+}
+.quick-reply-expand-grid[data-expanded="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.quick-reply-expand-inner {
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }

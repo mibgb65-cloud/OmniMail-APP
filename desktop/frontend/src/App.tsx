@@ -1,33 +1,58 @@
+import { useEffect, useState, type MouseEvent } from "react";
 import { AiPane } from "./components/ai/AiPane";
 import { ToastStack } from "./components/common/ToastStack";
 import { ComposeDock } from "./components/compose/ComposeDock";
 import { ComposeModal } from "./components/compose/ComposeModal";
-import { ContactsWorkspace } from "./components/contacts/ContactsWorkspace";
+import { ContactsSidebar } from "./components/contacts/ContactsSidebar";
+import {
+  ContactsWorkspace,
+  useContactsNavState,
+} from "./components/contacts/ContactsWorkspace";
 import { MailListPane } from "./components/mail/MailListPane";
 import { MailReaderPane } from "./components/mail/reader/MailReaderPane";
 import { OnboardingScreen } from "./components/onboarding/OnboardingScreen";
 import { OverlayRouter } from "./components/overlays/OverlayRouter";
+import { LaunchSplash } from "./components/shell/LaunchSplash";
 import { LeftNavDrawer } from "./components/shell/LeftNavDrawer";
 import { Sidebar } from "./components/shell/Sidebar";
 import { StatusBanner } from "./components/shell/StatusBanner";
 import { TopBar } from "./components/shell/TopBar";
 import { AppProvider, useApp } from "./state/AppContext";
+import { useLaunchSplash } from "./state/useLaunchSplash";
+import { usePresence } from "./state/usePresence";
+
+function blockChromeContextMenu(e: MouseEvent<HTMLElement>) {
+  const el = e.target as HTMLElement | null;
+  if (el?.closest("input, textarea, [contenteditable='true']")) return;
+  e.preventDefault();
+}
 
 function OmniMailShell() {
   const { viewport, workspace, aiStore, toastStore } = useApp();
+  const contactsNav = useContactsNavState();
+  const splash = useLaunchSplash(workspace.accounts.length);
 
-  if (workspace.screen === "onboarding") {
-    return (
-      <>
-        <OnboardingScreen />
-        <OverlayRouter />
-        <ToastStack
-          toasts={toastStore.toasts}
-          onDismiss={toastStore.dismissToast}
-        />
-      </>
-    );
+  const activeRoute: "mail" | "contacts" =
+    workspace.screen === "contacts" ? "contacts" : "mail";
+  const [prevRoute, setPrevRoute] = useState<"mail" | "contacts">(activeRoute);
+  const [routeDir, setRouteDir] = useState<"fwd" | "back" | undefined>(
+    undefined,
+  );
+  const [exitingRoute, setExitingRoute] = useState<"mail" | "contacts" | null>(
+    null,
+  );
+
+  if (activeRoute !== prevRoute) {
+    setRouteDir(activeRoute === "contacts" ? "fwd" : "back");
+    setExitingRoute(prevRoute);
+    setPrevRoute(activeRoute);
   }
+
+  useEffect(() => {
+    if (!exitingRoute) return;
+    const timer = window.setTimeout(() => setExitingRoute(null), 80);
+    return () => window.clearTimeout(timer);
+  }, [exitingRoute]);
 
   const isMailScreen = workspace.screen === "mail";
   const showInlineAi = isMailScreen && aiStore.aiOpen && viewport === "wide";
@@ -35,7 +60,14 @@ function OmniMailShell() {
   const showLeftDrawer =
     isMailScreen && viewport === "compact" && workspace.leftNavOpen;
 
-  return (
+  const inlineAi = usePresence(showInlineAi, 150);
+  const leftDrawer = usePresence(showLeftDrawer, 180);
+  const aiDrawer = usePresence(showDrawerAi, 180);
+
+  const isOnboarding = workspace.screen === "onboarding";
+  const shellContent = isOnboarding ? (
+    <OnboardingScreen />
+  ) : (
     <div
       className="app-shell"
       data-density={workspace.settings.density}
@@ -44,29 +76,81 @@ function OmniMailShell() {
       <TopBar />
       <StatusBanner />
 
-      <div className="workspace-stage">
-        {workspace.screen === "contacts" ? (
-          <ContactsWorkspace />
-        ) : (
-          <main className="workspace-grid" aria-label="邮件工作空间">
+      <div id="workspace-stage" className="workspace-stage">
+        <main className="workspace-grid" aria-label="主工作空间">
+          {activeRoute === "contacts" ? (
+            <ContactsSidebar {...contactsNav} />
+          ) : (
             <Sidebar />
-            <MailListPane />
-            <MailReaderPane />
-            {showInlineAi && <AiPane />}
-          </main>
-        )}
+          )}
 
-        {showLeftDrawer && <LeftNavDrawer />}
-        {showDrawerAi && <AiPane isDrawer />}
+          <div className="route-slot-wrap">
+            {exitingRoute && (
+              <div className="route-exit-layer" aria-hidden="true">
+                {exitingRoute === "contacts" ? (
+                  <ContactsWorkspace nav={contactsNav} readOnlyExit />
+                ) : (
+                  <>
+                    <MailListPane />
+                    <MailReaderPane />
+                  </>
+                )}
+              </div>
+            )}
+
+            <div
+              key={activeRoute}
+              className="route-main-stage"
+              data-dir={routeDir}
+            >
+              {activeRoute === "contacts" ? (
+                <ContactsWorkspace nav={contactsNav} />
+              ) : (
+                <>
+                  <MailListPane />
+                  <MailReaderPane />
+                  {inlineAi.mounted && <AiPane closing={inlineAi.closing} />}
+                </>
+              )}
+            </div>
+          </div>
+        </main>
+
+        {leftDrawer.mounted && <LeftNavDrawer closing={leftDrawer.closing} />}
+        {aiDrawer.mounted && <AiPane isDrawer closing={aiDrawer.closing} />}
       </div>
+    </div>
+  );
 
-      <ComposeModal />
-      <ComposeDock />
-      <OverlayRouter />
-      <ToastStack
-        toasts={toastStore.toasts}
-        onDismiss={toastStore.dismissToast}
-      />
+  return (
+    <div onContextMenu={blockChromeContextMenu}>
+      <div
+        className="app-boot-stage"
+        data-splash-state={splash.workspaceSplashState}
+      >
+        {shellContent}
+        {!isOnboarding && (
+          <>
+            <ComposeModal />
+            <ComposeDock />
+          </>
+        )}
+        <OverlayRouter />
+        <ToastStack
+          toasts={toastStore.toasts}
+          onDismiss={toastStore.dismissToast}
+          onPause={toastStore.pauseToast}
+          onResume={toastStore.resumeToast}
+        />
+      </div>
+      {splash.phase !== "done" && (
+        <LaunchSplash
+          exiting={splash.phase === "exiting"}
+          progress={splash.progress}
+          isSlowLoad={splash.isSlowLoad}
+          statusText={splash.statusText}
+        />
+      )}
     </div>
   );
 }

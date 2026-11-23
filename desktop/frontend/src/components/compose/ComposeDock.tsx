@@ -1,5 +1,6 @@
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
+import { Tooltip } from "../common/Tooltip";
 
 export function ComposeDock() {
   const { workspace, composeStore } = useApp();
@@ -28,20 +29,22 @@ export function ComposeDock() {
         >
           展开
         </button>
-        <button
-          type="button"
-          className="btn-icon"
-          style={{ color: "var(--brand-primary-ink)" }}
-          title="删除草稿"
-          onClick={() =>
-            workspace.setOverlay({
-              type: "danger-confirm",
-              kind: "discard-draft",
-            })
-          }
-        >
-          <Icon name="x" size={14} />
-        </button>
+        <Tooltip label="删除草稿" placement="top">
+          <button
+            type="button"
+            className="btn-icon"
+            style={{ color: "var(--brand-primary-ink)" }}
+            aria-label="删除草稿"
+            onClick={() =>
+              workspace.setOverlay({
+                type: "danger-confirm",
+                kind: "discard-draft",
+              })
+            }
+          >
+            <Icon name="x" size={14} />
+          </button>
+        </Tooltip>
       </div>
     </div>
   );

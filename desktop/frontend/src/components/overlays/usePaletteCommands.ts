@@ -23,6 +23,7 @@ export function usePaletteCommands(
     useApp();
 
   return useMemo<PaletteCommand[]>(() => {
+    const q = query.trim();
     const list: PaletteCommand[] = [
       {
         id: "cmd-compose",
@@ -41,12 +42,21 @@ export function usePaletteCommands(
         cat: "actions",
         icon: "refresh",
         title: "立即同步全部邮箱",
-        hint: "刷新所有已接入账户与本地索引",
+        hint: "触发后台 SyncWorker 增量同步全部账户",
         shortcut: "Ctrl R",
         run: () => {
           close();
           triggerSyncAll();
         },
+      },
+      {
+        id: "cmd-profiles",
+        cat: "accounts",
+        icon: "lock",
+        title: "切换或管理本地工作空间",
+        hint: `当前活跃：${workspace.activeProfile?.name || "个人工作空间"}`,
+        run: () =>
+          workspace.setOverlay({ type: "profile-manage", mode: "switch" }),
       },
       {
         id: "cmd-theme",
@@ -56,7 +66,7 @@ export function usePaletteCommands(
           workspace.settings.theme === "light"
             ? "切换为深色模式"
             : "切换为亮色模式",
-        hint: "立即切换 Obsidian Slate / 浅色工作台",
+        hint: "立即切换深浅色工作台",
         shortcut: "Ctrl Shift T",
         run: () => {
           workspace.toggleTheme();
@@ -81,8 +91,8 @@ export function usePaletteCommands(
         id: "cmd-adv-search",
         cat: "actions",
         icon: "filter",
-        title: "打开高级搜索",
-        hint: "按发件人、主题、邮箱范围、附件与时间过滤",
+        title: "打开高级全文搜索",
+        hint: "走本地 SQLite FTS5 trigram 引擎组合过滤",
         run: () => workspace.setOverlay({ type: "advanced-search" }),
       },
       {
@@ -90,7 +100,7 @@ export function usePaletteCommands(
         cat: "folders",
         icon: "users",
         title: "打开联系人与通讯录",
-        hint: "管理 VIP 发件人、分组与黑名单",
+        hint: "管理 VIP 发件人、重复合并、vCard 与黑名单",
         run: () => {
           workspace.setScreen("contacts");
           close();
@@ -101,7 +111,7 @@ export function usePaletteCommands(
         cat: "accounts",
         icon: "plus",
         title: "添加新邮箱账户",
-        hint: "接入 Gmail、QQ、网易 163/126 或手动 IMAP",
+        hint: "接入 Gmail、QQ、网易 163/126、Naver 或手动 IMAP",
         run: () => workspace.setOverlay({ type: "add-account" }),
       },
       {
@@ -119,19 +129,6 @@ export function usePaletteCommands(
         },
       },
       {
-        id: "cmd-snoozed",
-        cat: "folders",
-        icon: "clock",
-        title: "切换至稍后处理",
-        hint: "查看已延后提醒的邮件",
-        shortcut: "G L",
-        run: () => {
-          workspace.setScreen("mail");
-          mailStore.selectFolder("snoozed");
-          close();
-        },
-      },
-      {
         id: "cmd-settings-rules",
         cat: "settings",
         icon: "rule",
@@ -140,20 +137,11 @@ export function usePaletteCommands(
         run: () => workspace.setOverlay({ type: "settings", tab: "rules" }),
       },
       {
-        id: "cmd-settings-autoreply",
-        cat: "settings",
-        icon: "autoReply",
-        title: "配置外出 / 休假自动回复",
-        hint: "打开设置 → 自动回复",
-        run: () =>
-          workspace.setOverlay({ type: "settings", tab: "auto-reply" }),
-      },
-      {
         id: "cmd-settings-storage",
         cat: "settings",
         icon: "database",
         title: "存储空间与备份迁移",
-        hint: "查看本地缓存占比、清理附件或导出备份",
+        hint: "查看磁盘占用明细、清理附件缓存或导出备份",
         run: () => workspace.setOverlay({ type: "settings", tab: "storage" }),
       },
       ...workspace.accounts.map((acc) => ({
@@ -169,14 +157,30 @@ export function usePaletteCommands(
         },
       })),
     ];
-    const q = query.trim().toLowerCase();
-    return list.filter(
+
+    const lower = q.toLowerCase();
+    const matched = list.filter(
       (c) =>
         (category === "all" || c.cat === category) &&
-        (!q ||
-          c.title.toLowerCase().includes(q) ||
-          c.hint.toLowerCase().includes(q)),
+        (!lower ||
+          c.title.toLowerCase().includes(lower) ||
+          c.hint.toLowerCase().includes(lower)),
     );
+    if (q) {
+      matched.unshift({
+        id: `fts-${q}`,
+        cat: "actions",
+        icon: "search",
+        title: `在全部邮件中全文检索：“${q}”`,
+        hint: "调用 SQLite FTS5 trigram 毫秒级本地搜索",
+        run: () => {
+          workspace.setScreen("mail");
+          mailStore.setSearchQuery(q);
+          close();
+        },
+      });
+    }
+    return matched;
   }, [
     workspace,
     mailStore,

@@ -9,7 +9,9 @@
   },
   "scripts": {
     "dev": "vite",
+    "build": "pnpm typecheck && vite build",
     "build:dev": "pnpm typecheck && vite build --minify false --mode development",
+    "build:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ../build/windows/package-windows.ps1",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",

@@ -1,22 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
+import { Tooltip } from "../common/Tooltip";
 import { AiInsightContent } from "./AiInsightContent";
 import { AiStatusPanel } from "./AiStatusPanel";
 
-export function AiPane({ isDrawer = false }: { isDrawer?: boolean }) {
+export function AiPane({
+  isDrawer = false,
+  closing = false,
+}: {
+  isDrawer?: boolean;
+  closing?: boolean;
+}) {
   const { workspace, mailStore, aiStore, requestAiAction } = useApp();
   const [promptInput, setPromptInput] = useState("");
   const mail = mailStore.selectedMail;
   const insight = aiStore.getInsight(mail);
   const chats = mail ? (aiStore.chatsByMail[mail.id] ?? []) : [];
+  const { loadCachedForMail } = aiStore;
+
+  useEffect(() => {
+    if (mail?.id) loadCachedForMail(mail.id);
+  }, [mail?.id, loadCachedForMail]);
 
   const isDisabledForMail =
     !workspace.settings.aiEnabled ||
     !mail ||
     mail.folder === "spam" ||
     mail.folder === "trash" ||
-    Boolean(mail.securityWarning);
+    mail.securityWarning?.level === "danger";
 
   const handleSendPrompt = () => {
     const trimmed = promptInput.trim();
@@ -29,7 +41,8 @@ export function AiPane({ isDrawer = false }: { isDrawer?: boolean }) {
 
   const paneNode = (
     <aside
-      className={`panel-card ai-pane ${isDrawer ? "ai-drawer" : ""}`}
+      className={`panel-card ai-pane ${isDrawer ? "ai-drawer" : "ai-pane-inline"}`}
+      data-closing={!isDrawer && closing ? "true" : "false"}
       aria-label="Omni AI 助手面板"
     >
       <div className="ai-header">
@@ -39,39 +52,44 @@ export function AiPane({ isDrawer = false }: { isDrawer?: boolean }) {
           {isDrawer && <span className="ai-drawer-badge">浮层抽屉</span>}
         </div>
         <div className="row" style={{ gap: 4, flexShrink: 0 }}>
-          <button
-            type="button"
-            className="btn-icon"
-            style={{ width: 26, height: 26 }}
-            title="重新分析当前邮件"
-            disabled={isDisabledForMail}
-            onClick={() =>
-              requestAiAction("重新分析邮件", "重新生成摘要与回复建议")
-            }
-          >
-            <Icon name="refresh" size={13} />
-          </button>
-          <button
-            type="button"
-            className="btn-icon"
-            style={{ width: 26, height: 26 }}
-            title="AI 隐私与模型设置"
-            onClick={() =>
-              workspace.setOverlay({ type: "settings", tab: "ai" })
-            }
-          >
-            <Icon name="sliders" size={13} />
-          </button>
-          <button
-            type="button"
-            className="btn-icon"
-            style={{ width: 26, height: 26 }}
-            title="收起 AI 侧栏 (Esc / Alt+A)"
-            aria-label="收起 AI 侧栏"
-            onClick={closeAi}
-          >
-            <Icon name="x" size={13} />
-          </button>
+          <Tooltip label="重新分析当前邮件">
+            <button
+              type="button"
+              className="btn-icon"
+              style={{ width: 26, height: 26 }}
+              disabled={isDisabledForMail}
+              aria-label="重新分析当前邮件"
+              onClick={() =>
+                requestAiAction("重新分析邮件", "重新生成摘要与回复建议")
+              }
+            >
+              <Icon name="refresh" size={13} />
+            </button>
+          </Tooltip>
+          <Tooltip label="AI 隐私与模型设置">
+            <button
+              type="button"
+              className="btn-icon"
+              style={{ width: 26, height: 26 }}
+              aria-label="AI 隐私与模型设置"
+              onClick={() =>
+                workspace.setOverlay({ type: "settings", tab: "ai" })
+              }
+            >
+              <Icon name="sliders" size={13} />
+            </button>
+          </Tooltip>
+          <Tooltip label="收起 AI 侧栏" shortcut="Esc">
+            <button
+              type="button"
+              className="btn-icon"
+              style={{ width: 26, height: 26 }}
+              aria-label="收起 AI 侧栏"
+              onClick={closeAi}
+            >
+              <Icon name="x" size={13} />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -155,6 +173,7 @@ export function AiPane({ isDrawer = false }: { isDrawer?: boolean }) {
   return (
     <div
       className="workspace-drawer-layer"
+      data-closing={closing ? "true" : "false"}
       role="dialog"
       aria-label="Omni AI 浮层抽屉"
     >

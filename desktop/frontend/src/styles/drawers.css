@@ -72,6 +72,22 @@
   color: var(--text-secondary);
 }
 
+.icon-rail-accounts-badge.is-empty {
+  width: 44px;
+  padding: 0 3px;
+  border: 1px dashed var(--border-strong);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--brand-accent);
+  white-space: nowrap;
+}
+
+.icon-rail-accounts-badge.is-empty:hover {
+  background: var(--bg-selected);
+  border-color: var(--brand-accent);
+}
+
 .icon-rail-avatar {
   width: 32px;
   height: 32px;
@@ -141,4 +157,36 @@
 .ai-privacy-wrap {
   padding: 8px 12px 0;
   flex-shrink: 0;
+}
+
+.drawer-scrim {
+  animation: omni-fade-in 180ms var(--ease-enter) both;
+}
+.ai-drawer {
+  animation: omni-drawer-right-in var(--dur-emphasis) var(--ease-spring) both;
+}
+.ai-pane-inline {
+  animation: omni-route-fwd var(--dur-base) var(--ease-enter) both;
+}
+.ai-pane-inline[data-closing="true"] {
+  pointer-events: none;
+  animation: omni-fade-out var(--dur-fast) var(--ease-exit) both;
+}
+.left-nav-drawer {
+  animation: omni-drawer-left-in 220ms var(--ease-enter) both;
+}
+.ai-drawer .ai-scroll > * {
+  animation: omni-reader-enter 160ms var(--ease-enter) both;
+}
+.workspace-drawer-layer[data-closing="true"] {
+  pointer-events: none;
+}
+.workspace-drawer-layer[data-closing="true"] .drawer-scrim {
+  animation: omni-fade-out 160ms var(--ease-exit) both;
+}
+.workspace-drawer-layer[data-closing="true"] .ai-drawer {
+  animation: omni-drawer-right-out 180ms var(--ease-exit) both;
+}
+.workspace-drawer-layer[data-closing="true"] .left-nav-drawer {
+  animation: omni-drawer-left-out 180ms var(--ease-exit) both;
 }

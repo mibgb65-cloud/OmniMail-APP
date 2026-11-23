@@ -1,16 +1,24 @@
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
+import { Tooltip } from "../common/Tooltip";
+import { ProfileSwitcherCard } from "./ProfileSwitcherCard";
 import { SidebarAccountsAndLabels } from "./SidebarAccountsAndLabels";
 import { MAIN_FOLDERS, countForFolder } from "./SidebarIconRail";
 
-export function LeftNavDrawer() {
+export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
   const { workspace, mailStore, composeStore } = useApp();
-  const { mails, activeFolder, activeLabelId, searchQuery } = mailStore;
+  const { mails, folderCounts, activeFolder, activeLabelId, searchQuery } =
+    mailStore;
 
   const close = () => workspace.setLeftNavOpen(false);
 
   return (
-    <div className="workspace-drawer-layer" role="dialog" aria-label="导航抽屉">
+    <div
+      className="workspace-drawer-layer"
+      data-closing={closing ? "true" : "false"}
+      role="dialog"
+      aria-label="导航抽屉"
+    >
       <div
         className="drawer-scrim"
         onClick={close}
@@ -23,15 +31,16 @@ export function LeftNavDrawer() {
               <strong className="drawer-head-title truncate">导航与邮箱</strong>
               <span className="drawer-mode-chip">抽屉模式</span>
             </div>
-            <button
-              type="button"
-              className="icon-btn icon-btn-bordered drawer-close-btn"
-              onClick={close}
-              title="收起导航抽屉 (Esc)"
-              aria-label="收起导航抽屉"
-            >
-              <Icon name="x" size={13} />
-            </button>
+            <Tooltip label="收起导航抽屉" shortcut="Esc">
+              <button
+                type="button"
+                className="icon-btn icon-btn-bordered drawer-close-btn"
+                onClick={close}
+                aria-label="收起导航抽屉"
+              >
+                <Icon name="x" size={13} />
+              </button>
+            </Tooltip>
           </div>
 
           <button
@@ -50,7 +59,7 @@ export function LeftNavDrawer() {
             {MAIN_FOLDERS.map((item) => {
               const isActive =
                 !activeLabelId && !searchQuery && activeFolder === item.id;
-              const count = countForFolder(mails, item.id);
+              const count = countForFolder(mails, item.id, folderCounts);
               return (
                 <button
                   key={item.id}
@@ -104,20 +113,7 @@ export function LeftNavDrawer() {
             </button>
           </div>
 
-          <div className="profile-card profile-card-drawer">
-            <div className="row" style={{ gap: 7, minWidth: 0 }}>
-              <div className="profile-avatar" style={{ width: 24, height: 24 }}>
-                陆
-              </div>
-              <span
-                className="truncate"
-                style={{ fontSize: 11, fontWeight: 700 }}
-              >
-                陆星河 · 个人空间
-              </span>
-            </div>
-            <span className="drawer-esc-hint">Esc</span>
-          </div>
+          <ProfileSwitcherCard compact />
         </div>
       </aside>
     </div>

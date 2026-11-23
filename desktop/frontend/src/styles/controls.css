@@ -73,8 +73,8 @@
   padding: 8px 11px;
   outline: none;
   transition:
-    border-color 0.14s ease,
-    box-shadow 0.14s ease;
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 .select,

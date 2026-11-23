@@ -1,16 +1,34 @@
+import { useEffect, useState } from "react";
 import { PROVIDER_CATALOG } from "../../data/providers";
+import { accountApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
+import type { ProviderCatalogItem } from "../../types/account";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
 import { ProviderIcon } from "../common/ProviderIcon";
 
 export function AddAccountModal() {
   const { workspace } = useApp();
+  const [presets, setPresets] =
+    useState<ProviderCatalogItem[]>(PROVIDER_CATALOG);
+
+  useEffect(() => {
+    let mounted = true;
+    void accountApi
+      .listProviderPresets()
+      .then((list) => {
+        if (mounted && list.length > 0) setPresets(list);
+      })
+      .catch(() => undefined);
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <ModalShell
-      title="添加邮箱账户"
-      subtitle="选择常用邮箱服务商；163 / 126 已合并至网易邮箱入口，按邮箱后缀自动识别"
+      heading="添加邮箱账户"
+      subtitle="内置 10 家服务商预设 · 凭据经当前 Windows 用户 DPAPI 加密写入独立空间"
       maxWidth={680}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
@@ -33,7 +51,7 @@ export function AddAccountModal() {
       }
     >
       <div className="provider-grid">
-        {PROVIDER_CATALOG.map((item) => (
+        {presets.map((item) => (
           <button
             key={item.id}
             type="button"
@@ -94,15 +112,16 @@ export function AddAccountModal() {
           style={{ fontSize: 13, fontWeight: 700, color: "var(--text-ink)" }}
         >
           <Icon name="info" size={15} />
-          <span>邮箱识别与预设边界说明</span>
+          <span>邮箱预设与协议兼容说明</span>
         </div>
         <div className="text-xs text-muted" style={{ lineHeight: 1.65 }}>
-          • <strong>网易邮箱（163 / 126）</strong>
-          共用同一接入入口，将依据输入的邮箱后缀自动填充对应 IMAP/SMTP 服务器。
-          <br />• <strong>Never Mail</strong>{" "}
-          保持中性接入形态，不预设未核实的官方域名或端口，接入时请按服务商文档填写。
-          <br />•
-          仅在接入后将授权令牌或客户端授权码写入本机加密凭据库，不保存网页登录密码。
+          • <strong>Gmail</strong> 同时支持本地 PKCE OAuth 2.0 与 16
+          位应用专用密码（自动去空格）。
+          <br />• <strong>网易邮箱（163 / 126 / yeah）</strong>{" "}
+          自动识别后缀并发送 RFC2971 安全 ID；<strong>Naver Mail</strong>{" "}
+          已预置韩国 @naver.com 官方端口。
+          <br />• 所有令牌与授权码仅加密保存在本空间 secrets.vault
+          中，永不明文落盘或上传云端。
         </div>
       </div>
     </ModalShell>

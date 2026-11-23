@@ -27,9 +27,10 @@ export interface AttachmentItem {
   sizeText: string;
   sizeBytes: number;
   kind: "pdf" | "image" | "zip" | "ics" | "other";
-  status: "ready" | "downloading" | "failed" | "oversized";
+  status: "remote" | "ready" | "downloading" | "failed" | "oversized";
   progress?: number;
   previewSummary?: string;
+  previewUrl?: string;
 }
 
 export interface ThreadMessage {
@@ -40,6 +41,7 @@ export interface ThreadMessage {
   cc?: string;
   timeText: string;
   bodyParagraphs: string[];
+  bodyHtml?: string;
   collapsed?: boolean;
 }
 
@@ -51,6 +53,7 @@ export interface MeetingInvite {
   locationText: string;
   meetingLink: string;
   conflictStatus: "free" | "conflict";
+  conflictHint?: string;
   icsFileName: string;
   attendees: Array<{
     name: string;
@@ -62,6 +65,7 @@ export interface MeetingInvite {
 
 export interface MailItem {
   id: string;
+  threadId?: string;
   accountId: string;
   accountTag: string;
   provider: ProviderId;

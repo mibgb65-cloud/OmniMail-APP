@@ -2,6 +2,7 @@ import type { AppSettings } from "../types/settings";
 
 export const INITIAL_SETTINGS: AppSettings = {
   theme: "light",
+  themePreference: "system",
   language: "zh-CN",
   density: "comfortable",
   fontSize: "standard",

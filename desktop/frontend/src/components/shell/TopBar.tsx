@@ -1,32 +1,15 @@
 import { useApp } from "../../state/AppContext";
 import { BrandLogo } from "../common/BrandLogo";
 import { Icon } from "../common/Icon";
+import { Tooltip } from "../common/Tooltip";
+import { TopBarSyncChip } from "./TopBarSyncChip";
 import { WindowControls, handleDragRegionDoubleClick } from "./WindowControls";
 
 export function TopBar() {
-  const { viewport, workspace, mailStore, triggerSyncAll } = useApp();
-  const { settings, bannerMode, syncLabel, screen } = workspace;
-
-  const isOffline = bannerMode === "offline";
-  const isAuthExpired = bannerMode === "auth-expired";
+  const { viewport, workspace, mailStore } = useApp();
+  const { settings, screen } = workspace;
   const isCompact = viewport === "compact";
   const isLaptop = viewport === "laptop";
-
-  const syncText = isOffline
-    ? isCompact
-      ? "离线"
-      : "离线 · 本地缓存"
-    : isAuthExpired
-      ? isCompact
-        ? "需重授权"
-        : "1 个邮箱需重新授权"
-      : isCompact
-        ? syncLabel === "所有邮箱已同步"
-          ? "已同步"
-          : "同步中"
-        : isLaptop && syncLabel === "所有邮箱已同步"
-          ? `${workspace.accounts.length} 邮箱已同步`
-          : syncLabel;
 
   const searchPlaceholder =
     screen === "contacts"
@@ -45,17 +28,7 @@ export function TopBar() {
           <BrandLogo size={28} showWordmark />
         </button>
 
-        <button
-          type="button"
-          className="sync-status-chip"
-          onClick={() => triggerSyncAll()}
-          title="点击立即同步全部邮箱"
-        >
-          <span
-            className={`status-dot ${isAuthExpired ? "danger" : isOffline ? "warning" : ""}`}
-          />
-          <span className="truncate">{syncText}</span>
-        </button>
+        <TopBarSyncChip />
       </div>
 
       <div className="topbar-search-wrap">
@@ -79,82 +52,92 @@ export function TopBar() {
             <Icon name="x" size={12} />
           </button>
         )}
-        <button
-          type="button"
-          className="icon-btn topbar-mini-icon"
-          onClick={() => workspace.setOverlay({ type: "advanced-search" })}
-          title="高级搜索筛选"
-          aria-label="高级搜索筛选"
-        >
-          <Icon name="filter" size={13} />
-        </button>
-        <button
-          type="button"
-          className="kbd topbar-kbd"
-          onClick={() => workspace.setOverlay({ type: "command-palette" })}
-          title="打开全局命令面板"
-        >
-          Ctrl K
-        </button>
+        <Tooltip label="高级搜索筛选">
+          <button
+            type="button"
+            className="icon-btn topbar-mini-icon"
+            onClick={() => workspace.setOverlay({ type: "advanced-search" })}
+            aria-label="高级搜索筛选"
+          >
+            <Icon name="filter" size={13} />
+          </button>
+        </Tooltip>
+        <Tooltip label="打开全局命令面板" shortcut="Ctrl+K">
+          <button
+            type="button"
+            className="kbd topbar-kbd"
+            onClick={() => workspace.setOverlay({ type: "command-palette" })}
+          >
+            Ctrl K
+          </button>
+        </Tooltip>
       </div>
 
       <div className="topbar-right">
         {!isCompact && (
-          <button
-            type="button"
-            className="btn btn-secondary topbar-lang-btn"
-            onClick={() =>
-              workspace.updateSettings({
-                language: settings.language === "zh-CN" ? "en-US" : "zh-CN",
-              })
-            }
-          >
-            <Icon name="globe" size={14} />
-            <span>
-              {settings.language === "zh-CN"
-                ? isLaptop
-                  ? "中文"
-                  : "简体中文"
-                : isLaptop
-                  ? "EN"
-                  : "English"}
-            </span>
-            {!isLaptop && <Icon name="chevronDown" size={12} />}
-          </button>
+          <Tooltip label="切换界面显示语言">
+            <button
+              type="button"
+              className="btn btn-secondary topbar-lang-btn"
+              onClick={() =>
+                workspace.updateSettings({
+                  language: settings.language === "zh-CN" ? "en-US" : "zh-CN",
+                })
+              }
+            >
+              <Icon name="globe" size={14} />
+              <span>
+                {settings.language === "zh-CN"
+                  ? isLaptop
+                    ? "中文"
+                    : "简体中文"
+                  : isLaptop
+                    ? "EN"
+                    : "English"}
+              </span>
+              {!isLaptop && <Icon name="chevronDown" size={12} />}
+            </button>
+          </Tooltip>
         )}
 
         <div className="theme-segmented" role="group" aria-label="外观模式切换">
-          <button
-            type="button"
-            className={`theme-seg-btn ${settings.theme === "light" ? "active" : ""}`}
-            onClick={() => workspace.updateSettings({ theme: "light" })}
-            title="浅色模式"
-            aria-label="浅色模式"
-          >
-            <Icon name="sun" size={14} />
-          </button>
-          <button
-            type="button"
-            className={`theme-seg-btn ${settings.theme === "dark" ? "active" : ""}`}
-            onClick={() => workspace.updateSettings({ theme: "dark" })}
-            title="暗色模式"
-            aria-label="暗色模式"
-          >
-            <Icon name="moon" size={14} />
-          </button>
+          <span className="theme-seg-indicator" aria-hidden="true" />
+          <Tooltip label="切换浅色 / 暗色外观">
+            <button
+              type="button"
+              className="theme-seg-btn"
+              data-seg-theme="light"
+              onClick={workspace.toggleTheme}
+              aria-label="浅色模式"
+            >
+              <Icon name="sun" size={14} />
+            </button>
+          </Tooltip>
+          <Tooltip label="切换浅色 / 暗色外观">
+            <button
+              type="button"
+              className="theme-seg-btn"
+              data-seg-theme="dark"
+              onClick={workspace.toggleTheme}
+              aria-label="暗色模式"
+            >
+              <Icon name="moon" size={14} />
+            </button>
+          </Tooltip>
         </div>
 
-        <button
-          type="button"
-          className="icon-btn icon-btn-bordered topbar-settings-btn"
-          onClick={() =>
-            workspace.setOverlay({ type: "settings", tab: "general" })
-          }
-          title="偏好设置 (Ctrl+,)"
-          aria-label="打开偏好设置"
-        >
-          <Icon name="settings" size={15} />
-        </button>
+        <Tooltip label="偏好设置" shortcut="Ctrl+,">
+          <button
+            type="button"
+            className="icon-btn icon-btn-bordered topbar-settings-btn"
+            onClick={() =>
+              workspace.setOverlay({ type: "settings", tab: "general" })
+            }
+            aria-label="打开偏好设置"
+          >
+            <Icon name="settings" size={15} />
+          </button>
+        </Tooltip>
 
         <WindowControls />
       </div>

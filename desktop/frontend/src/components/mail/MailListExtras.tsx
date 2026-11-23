@@ -67,8 +67,43 @@ export function MailListBatchBar() {
   );
 }
 
-export function MailListEmptyState() {
-  const { mailStore } = useApp();
+export function MailListEmptyState({
+  noAccounts = false,
+}: {
+  noAccounts?: boolean;
+}) {
+  const { workspace, mailStore } = useApp();
+  if (noAccounts || workspace.accounts.length === 0) {
+    return (
+      <div className="list-empty-state">
+        <span className="list-empty-icon-box" aria-hidden="true">
+          <Icon name="mail" size={22} />
+        </span>
+        <div
+          style={{ fontWeight: 700, fontSize: 14, color: "var(--text-ink)" }}
+        >
+          尚未接入任何邮箱
+        </div>
+        <div style={{ fontSize: 12, lineHeight: 1.55, maxWidth: 268 }}>
+          连接邮箱后，所有收件箱将在此统一汇总，并支持离线缓存与本地秒搜。
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary"
+          style={{
+            height: 36,
+            padding: "0 16px",
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+          onClick={() => workspace.setOverlay({ type: "add-account" })}
+        >
+          + 添加第一个邮箱
+        </button>
+      </div>
+    );
+  }
+
   const { searchQuery, activeAccountId, activeLabelId, filterTab } = mailStore;
   const hasFilters = Boolean(
     searchQuery || activeAccountId || activeLabelId || filterTab !== "all",

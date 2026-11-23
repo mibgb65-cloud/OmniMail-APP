@@ -2,9 +2,10 @@ import { Window } from "@wailsio/runtime";
 import { type MouseEvent, useEffect, useState } from "react";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
+import { Tooltip } from "../common/Tooltip";
 
 const INTERACTIVE_SELECTOR =
-  "button, input, textarea, select, a, label, .topbar-search-wrap, .theme-segmented, .win-controls";
+  "button, input, textarea, a, label, .topbar-search-wrap, .theme-segmented, .win-controls";
 
 export function handleDragRegionDoubleClick(e: MouseEvent<HTMLElement>) {
   const target = e.target as HTMLElement | null;
@@ -55,33 +56,36 @@ export function WindowControls() {
 
   return (
     <div className="win-controls">
-      <button
-        type="button"
-        className="icon-btn"
-        onClick={() => void handleWindowAction("min")}
-        title="最小化"
-        aria-label="最小化"
-      >
-        <Icon name="minus" size={14} />
-      </button>
-      <button
-        type="button"
-        className="icon-btn"
-        onClick={() => void handleWindowAction("max")}
-        title={isMaximised ? "向下还原" : "最大化"}
-        aria-label={isMaximised ? "向下还原" : "最大化"}
-      >
-        <Icon name="square" size={12} />
-      </button>
-      <button
-        type="button"
-        className="icon-btn win-close-btn"
-        onClick={() => void handleWindowAction("close")}
-        title="关闭窗口"
-        aria-label="关闭窗口"
-      >
-        <Icon name="x" size={14} />
-      </button>
+      <Tooltip label="最小化">
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={() => void handleWindowAction("min")}
+          aria-label="最小化"
+        >
+          <Icon name="minus" size={14} />
+        </button>
+      </Tooltip>
+      <Tooltip label={isMaximised ? "向下还原" : "最大化"}>
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={() => void handleWindowAction("max")}
+          aria-label={isMaximised ? "向下还原" : "最大化"}
+        >
+          <Icon name="square" size={12} />
+        </button>
+      </Tooltip>
+      <Tooltip label="关闭窗口">
+        <button
+          type="button"
+          className="icon-btn win-close-btn"
+          onClick={() => void handleWindowAction("close")}
+          aria-label="关闭窗口"
+        >
+          <Icon name="x" size={14} />
+        </button>
+      </Tooltip>
     </div>
   );
 }

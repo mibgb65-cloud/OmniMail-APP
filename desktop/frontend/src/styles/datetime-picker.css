@@ -1,0 +1,168 @@
+/* 自定义日期时间选择器浮层与预设色板（替代原生 date / time / color input） */
+.dt-picker-trigger {
+  width: 100%;
+  height: 36px;
+  padding: 0 11px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-card);
+  color: var(--text-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.dt-picker-trigger:hover {
+  border-color: var(--brand-accent);
+}
+
+.dt-picker-trigger[data-open="true"] {
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.dt-picker-popover {
+  position: fixed;
+  z-index: 125;
+  width: 256px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--bg-popover);
+  border: 1px solid var(--border-popover);
+  box-shadow: var(--shadow-popover);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dt-weekdays,
+.dt-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.dt-weekdays span {
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 2px 0;
+}
+
+.dt-day-btn {
+  height: 28px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dt-day-btn:hover {
+  background: var(--bg-popover-hover);
+}
+
+.dt-day-btn.muted {
+  color: var(--text-muted);
+  opacity: 0.48;
+}
+
+.dt-day-btn.today {
+  background: var(--bg-selected);
+  border: 1px solid var(--border-selected);
+  color: var(--brand-accent);
+  font-weight: 700;
+}
+
+.dt-day-btn.selected {
+  background: var(--brand-accent);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.dt-time-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-default);
+}
+
+.dt-time-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.dt-time-chip {
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-body);
+}
+
+.dt-time-chip.active {
+  background: var(--bg-selected);
+  border-color: var(--border-selected);
+  color: var(--brand-accent);
+  font-weight: 700;
+}
+
+.swatch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.swatch-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  transition: transform var(--dur-instant) var(--ease-spring);
+}
+
+.swatch-btn.active {
+  border-color: var(--text-ink);
+  transform: scale(1.12);
+}
+
+.password-field-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-field-wrap .input {
+  padding-right: 36px;
+}
+
+.password-eye-btn {
+  position: absolute;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.password-eye-btn:hover {
+  background: var(--bg-surface);
+  color: var(--text-ink);
+}

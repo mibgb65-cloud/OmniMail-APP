@@ -1,5 +1,7 @@
 import gmailPng from "../../assets/providers/gmail.png";
 import icloudPng from "../../assets/providers/icloud.png";
+import linuxdoPng from "../../assets/providers/linuxdo.png";
+import naverPng from "../../assets/providers/naver.png";
 import neteasePng from "../../assets/providers/netease.png";
 import outlookPng from "../../assets/providers/outlook.png";
 import qqPng from "../../assets/providers/qq.png";
@@ -16,6 +18,8 @@ const OFFICIAL_ICONS: Partial<Record<ProviderId, string>> = {
   icloud: icloudPng,
   yahoo: yahooPng,
   yandex: yandexPng,
+  linuxdo: linuxdoPng,
+  nevermail: naverPng,
 };
 
 interface ProviderIconProps {
@@ -23,7 +27,7 @@ interface ProviderIconProps {
   size?: number;
 }
 
-/** 严格遵守设计规范：7 家官方邮箱使用设计图嵌入的原始 PNG；其余使用中性矢量图标 */
+/** 9 家内置邮箱服务商使用官方 PNG 图标；通用 IMAP 使用中性服务器矢量图标 */
 export function ProviderIcon({ provider, size = 24 }: ProviderIconProps) {
   const src = OFFICIAL_ICONS[provider];
   if (src) {

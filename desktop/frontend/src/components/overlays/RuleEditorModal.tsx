@@ -1,102 +1,101 @@
 import { useState } from "react";
+import {
+  parseBackendError,
+  ruleApi,
+  type RulePreviewResult,
+} from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
+import { Checkbox } from "../common/Checkbox";
+import { CustomSelect } from "../common/CustomSelect";
 import { ModalShell } from "../common/ModalShell";
+import { ProviderIcon } from "../common/ProviderIcon";
+import { RuleEditorFooter, RulePreviewCard } from "./RuleEditorFooter";
+import {
+  ACTION_TYPES,
+  buildInboxRuleDraft,
+  CONDITION_FIELDS,
+} from "./ruleEditorMeta";
 
 export function RuleEditorModal({ ruleId }: { ruleId?: string }) {
-  const { workspace, toastStore } = useApp();
+  const { workspace, mailStore, toastStore } = useApp();
   const existing = workspace.rules.find((r) => r.id === ruleId);
 
   const [name, setName] = useState(existing?.name ?? "");
   const [accountScope, setAccountScope] = useState(
-    existing?.accountScope ?? `全部已连接邮箱 (${workspace.accounts.length})`,
+    existing?.accountScope ?? "all",
   );
   const [conditionField, setConditionField] = useState(
-    existing?.conditionField ?? "发件人",
+    existing?.conditionField && existing.conditionField.length < 20
+      ? existing.conditionField
+      : "sender",
   );
   const [conditionValue, setConditionValue] = useState(
     existing?.conditionValue ?? "",
   );
   const [actionType, setActionType] = useState(
-    existing?.actionType ?? "添加自定义标签",
+    existing?.actionType && existing.actionType.length < 20
+      ? existing.actionType
+      : "archive",
   );
   const [actionTarget, setActionTarget] = useState(
-    existing?.actionTarget ?? "项目协作",
+    existing?.actionTarget ?? mailStore.labels[0]?.id ?? "",
   );
   const [stopMatching, setStopMatching] = useState(
     existing?.stopMatching ?? true,
   );
+  const [preview, setPreview] = useState<RulePreviewResult | null>(null);
 
-  const handleSave = () => {
-    if (!name.trim() || !conditionValue.trim()) return;
-    workspace.upsertRule({
-      id: existing?.id ?? `rule-${Date.now()}`,
-      name: name.trim(),
-      enabled: existing?.enabled ?? true,
-      matchMode: "AND",
-      accountScope,
-      conditionSummary: `${conditionField}包含「${conditionValue.trim()}」`,
-      actionSummary: `${actionType}「${actionTarget.trim()}」`,
-      conditionField,
-      conditionOperator: "包含",
-      conditionValue: conditionValue.trim(),
-      actionType,
-      actionTarget: actionTarget.trim(),
-      stopMatching,
-      hitsLast7Days: existing?.hitsLast7Days ?? 0,
-    });
+  const closeToRules = () =>
     workspace.setOverlay({ type: "settings", tab: "rules" });
-    toastStore.pushToast({
-      tone: "success",
-      title: `已保存收件规则「${name.trim()}」`,
+
+  const currentDraft = () =>
+    buildInboxRuleDraft(existing, {
+      name,
+      accountScope,
+      conditionField,
+      conditionValue,
+      actionType,
+      actionTarget,
+      stopMatching,
     });
-  };
 
   return (
     <ModalShell
-      title={existing ? "编辑收件规则" : "新建收件规则"}
-      subtitle="按条件自动为新收邮件添加标签、归档或标记 VIP"
+      heading={existing ? "编辑收件规则" : "新建收件规则"}
+      subtitle="按条件自动为新收邮件归档、贴标签或标记已读"
       maxWidth={560}
-      onClose={() => workspace.setOverlay({ type: "settings", tab: "rules" })}
+      onClose={closeToRules}
       footer={
-        <>
-          {existing ? (
-            <button
-              type="button"
-              className="btn btn-danger btn-sm"
-              onClick={() => {
-                workspace.deleteRule(existing.id);
-                workspace.setOverlay({ type: "settings", tab: "rules" });
+        <RuleEditorFooter
+          hasExisting={Boolean(existing)}
+          canPreview={Boolean(conditionValue.trim())}
+          canSave={Boolean(name.trim() && conditionValue.trim())}
+          onDelete={() => {
+            if (existing) workspace.deleteRule(existing.id);
+            closeToRules();
+          }}
+          onPreview={() => {
+            void ruleApi
+              .previewRule(currentDraft())
+              .then(setPreview)
+              .catch((err) =>
                 toastStore.pushToast({
-                  tone: "info",
-                  title: `已删除规则「${existing.name}」`,
-                });
-              }}
-            >
-              删除规则
-            </button>
-          ) : (
-            <span className="text-xs text-muted">保存后立即对新收邮件生效</span>
-          )}
-          <div className="row">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() =>
-                workspace.setOverlay({ type: "settings", tab: "rules" })
-              }
-            >
-              取消
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={!name.trim() || !conditionValue.trim()}
-              onClick={handleSave}
-            >
-              保存规则
-            </button>
-          </div>
-        </>
+                  tone: "danger",
+                  title: "干跑预览失败",
+                  detail: parseBackendError(err).message,
+                }),
+              );
+          }}
+          onCancel={closeToRules}
+          onSave={() => {
+            workspace.upsertRule(currentDraft());
+            closeToRules();
+            toastStore.pushToast({
+              tone: "success",
+              title: `已保存收件规则「${name.trim()}」`,
+            });
+          }}
+        />
       }
     >
       <div>
@@ -106,52 +105,53 @@ export function RuleEditorModal({ ruleId }: { ruleId?: string }) {
           style={{ marginTop: 4 }}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="例如 报销单据自动打标"
+          placeholder="例如 报销单据自动归档"
         />
       </div>
 
       <div>
         <label className="text-xs text-muted">适用邮箱范围</label>
-        <select
-          className="select"
-          style={{ marginTop: 4, width: "100%" }}
+        <CustomSelect
+          fullWidth
+          style={{ marginTop: 4 }}
           value={accountScope}
-          onChange={(e) => setAccountScope(e.target.value)}
-        >
-          <option value={`全部已连接邮箱 (${workspace.accounts.length})`}>
-            全部已连接邮箱 ({workspace.accounts.length})
-          </option>
-          {workspace.accounts.map((acc) => (
-            <option key={acc.id} value={acc.name}>
-              {acc.name}
-            </option>
-          ))}
-        </select>
+          ariaLabel="适用邮箱范围"
+          options={[
+            {
+              value: "all",
+              label: `全部已连接邮箱 (${workspace.accounts.length})`,
+            },
+            ...workspace.accounts.map((acc) => ({
+              value: acc.id,
+              label: acc.name,
+              sublabel: acc.email,
+              icon: <ProviderIcon provider={acc.provider} size={18} />,
+            })),
+          ]}
+          onChange={setAccountScope}
+        />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
         <div>
           <label className="text-xs text-muted">匹配字段</label>
-          <select
-            className="select"
-            style={{ marginTop: 4, width: "100%" }}
+          <CustomSelect
+            fullWidth
+            style={{ marginTop: 4 }}
             value={conditionField}
-            onChange={(e) => setConditionField(e.target.value)}
-          >
-            <option value="发件人">发件人</option>
-            <option value="邮件主题">邮件主题</option>
-            <option value="联系人分组">联系人分组</option>
-            <option value="附件后缀">附件后缀</option>
-          </select>
+            options={CONDITION_FIELDS}
+            ariaLabel="规则匹配字段"
+            onChange={setConditionField}
+          />
         </div>
         <div>
-          <label className="text-xs text-muted">包含关键词 *</label>
+          <label className="text-xs text-muted">匹配关键词 / 后缀 *</label>
           <input
             className="input"
             style={{ marginTop: 4 }}
             value={conditionValue}
             onChange={(e) => setConditionValue(e.target.value)}
-            placeholder="例如 发票, 报销"
+            placeholder="例如 发票 或 pdf"
           />
         </div>
       </div>
@@ -159,36 +159,36 @@ export function RuleEditorModal({ ruleId }: { ruleId?: string }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
         <div>
           <label className="text-xs text-muted">执行动作</label>
-          <select
-            className="select"
-            style={{ marginTop: 4, width: "100%" }}
+          <CustomSelect
+            fullWidth
+            style={{ marginTop: 4 }}
             value={actionType}
-            onChange={(e) => setActionType(e.target.value)}
-          >
-            <option value="添加自定义标签">添加自定义标签</option>
-            <option value="移动到文件夹">移动到文件夹</option>
-            <option value="标记邮件状态">标记邮件状态</option>
-          </select>
+            options={ACTION_TYPES}
+            ariaLabel="规则执行动作"
+            onChange={setActionType}
+          />
         </div>
         <div>
-          <label className="text-xs text-muted">动作目标</label>
+          <label className="text-xs text-muted">目标标签 ID（选填）</label>
           <input
             className="input"
             style={{ marginTop: 4 }}
             value={actionTarget}
             onChange={(e) => setActionTarget(e.target.value)}
+            placeholder="当动作选添加标签时填写标签 ID"
           />
         </div>
       </div>
 
-      <label className="row" style={{ fontSize: 13, cursor: "pointer" }}>
-        <input
-          type="checkbox"
-          checked={stopMatching}
-          onChange={(e) => setStopMatching(e.target.checked)}
-        />
-        <span>命中本规则后停止匹配后续规则</span>
-      </label>
+      <Checkbox
+        checked={stopMatching}
+        onChange={setStopMatching}
+        ariaLabel="命中本规则后停止匹配后续规则"
+      >
+        命中本规则后停止匹配后续低优先级规则
+      </Checkbox>
+
+      {preview && <RulePreviewCard preview={preview} />}
     </ModalShell>
   );
 }

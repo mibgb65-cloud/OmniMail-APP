@@ -8,8 +8,10 @@ interface ShortcutHandlers {
   onToggleTheme: () => void;
   onToggleAi: () => void;
   onSyncAll: () => void;
+  onStepMail: (delta: -1 | 1) => void;
   onEscape: () => void;
   overlay: OverlayModal;
+  composeOpen: boolean;
 }
 
 export function useGlobalShortcuts(handlers: ShortcutHandlers) {
@@ -20,8 +22,9 @@ export function useGlobalShortcuts(handlers: ShortcutHandlers) {
         target?.tagName === "INPUT" ||
         target?.tagName === "TEXTAREA" ||
         target?.isContentEditable;
+      const lower = e.key.toLowerCase();
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      if ((e.ctrlKey || e.metaKey) && lower === "k") {
         e.preventDefault();
         handlers.onOpenPalette();
         return;
@@ -31,40 +34,49 @@ export function useGlobalShortcuts(handlers: ShortcutHandlers) {
         handlers.onOpenSettings();
         return;
       }
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.shiftKey &&
-        e.key.toLowerCase() === "t"
-      ) {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && lower === "t") {
         e.preventDefault();
         handlers.onToggleTheme();
         return;
       }
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.key.toLowerCase() === "n" &&
-        !isEditing
-      ) {
+      if ((e.ctrlKey || e.metaKey) && lower === "n" && !isEditing) {
         e.preventDefault();
         handlers.onNewCompose();
         return;
       }
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.key.toLowerCase() === "r" &&
-        !isEditing
-      ) {
+      if ((e.ctrlKey || e.metaKey) && lower === "r" && !isEditing) {
         e.preventDefault();
         handlers.onSyncAll();
         return;
       }
-      if (e.altKey && e.key.toLowerCase() === "a") {
+      if (e.altKey && lower === "a") {
         e.preventDefault();
         handlers.onToggleAi();
         return;
       }
       if (e.key === "Escape") {
         handlers.onEscape();
+        return;
+      }
+
+      if (
+        !isEditing &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        handlers.overlay.type === "none" &&
+        !handlers.composeOpen
+      ) {
+        if (lower === "j") {
+          e.preventDefault();
+          handlers.onStepMail(1);
+        } else if (lower === "k") {
+          e.preventDefault();
+          handlers.onStepMail(-1);
+        } else if (lower === "c") {
+          e.preventDefault();
+          handlers.onNewCompose();
+        }
       }
     };
     window.addEventListener("keydown", onKeyDown);

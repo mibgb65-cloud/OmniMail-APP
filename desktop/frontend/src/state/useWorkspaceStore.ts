@@ -1,29 +1,37 @@
-import { useCallback, useEffect, useState } from "react";
-import { INITIAL_ACCOUNTS } from "../data/accounts";
-import { INITIAL_BLACKLIST, INITIAL_CONTACTS } from "../data/contacts";
-import { INITIAL_RULES } from "../data/rulesAndDiagnostics";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import { INITIAL_SETTINGS } from "../data/settingsDefaults";
-import type { EmailAccount } from "../types/account";
-import type { AppSettings } from "../types/settings";
+import {
+  accountApi,
+  contactApi,
+  profileApi,
+  ruleApi,
+} from "../services/backendClient";
+import type {
+  AppSettings,
+  ThemeMode,
+  ThemePreference,
+} from "../types/settings";
 import type {
   OverlayModal,
   RuntimeBannerMode,
   WorkspaceScreen,
 } from "../types/ui";
-import type {
-  BlacklistEntry,
-  ContactItem,
-  InboxRule,
-} from "../types/workspace";
+import { resolveThemeFromPref } from "./storageHelpers";
+import { scheduleSettingsPersist } from "./themeStorage";
+import {
+  getEffectiveTheme,
+  readInitialThemeState,
+  runThemeTransition,
+} from "./themeTransition";
+import { useWorkspaceCollections } from "./useWorkspaceCollections";
 
 export function useWorkspaceStore() {
+  const collections = useWorkspaceCollections();
   const [screen, setScreen] = useState<WorkspaceScreen>("mail");
-  const [accounts, setAccounts] = useState<EmailAccount[]>(INITIAL_ACCOUNTS);
-  const [settings, setSettings] = useState<AppSettings>(INITIAL_SETTINGS);
-  const [contacts, setContacts] = useState<ContactItem[]>(INITIAL_CONTACTS);
-  const [blacklist, setBlacklist] =
-    useState<BlacklistEntry[]>(INITIAL_BLACKLIST);
-  const [rules, setRules] = useState<InboxRule[]>(INITIAL_RULES);
+  const [settings, setSettings] = useState<AppSettings>(() => ({
+    ...INITIAL_SETTINGS,
+    ...readInitialThemeState(),
+  }));
   const [overlay, setOverlay] = useState<OverlayModal>({ type: "none" });
   const [bannerMode, setBannerMode] = useState<RuntimeBannerMode>("none");
   const [syncLabel, setSyncLabel] = useState("所有邮箱已同步");
@@ -31,106 +39,135 @@ export function useWorkspaceStore() {
   const [leftNavOpen, setLeftNavOpen] = useState(false);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", settings.theme);
+    const root = document.documentElement;
+    if (root.getAttribute("data-theme") !== settings.theme) {
+      root.setAttribute("data-theme", settings.theme);
+      root.style.colorScheme = settings.theme;
+    }
   }, [settings.theme]);
 
-  const updateSettings = useCallback((patch: Partial<AppSettings>) => {
-    setSettings((prev) => ({ ...prev, ...patch }));
-  }, []);
+  useEffect(() => {
+    if (settings.themePreference !== "system" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => {
+      const next: ThemeMode = mq.matches ? "dark" : "light";
+      runThemeTransition(next, (finalTheme) => {
+        startTransition(() => {
+          setSettings((prev) => ({ ...prev, theme: finalTheme }));
+        });
+      });
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [settings.themePreference]);
 
-  const toggleTheme = useCallback(() => {
-    setSettings((prev) => ({
-      ...prev,
-      theme: prev.theme === "light" ? "dark" : "light",
-    }));
-  }, []);
-
-  const addAccount = useCallback((acc: EmailAccount) => {
-    setAccounts((prev) => [...prev, acc]);
-  }, []);
-
-  const updateAccount = useCallback(
-    (id: string, patch: Partial<EmailAccount>) => {
-      setAccounts((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, ...patch } : a)),
-      );
+  const applySettingsFromBackend = useCallback(
+    (patch: Partial<AppSettings>) => {
+      setSettings((prev) => ({ ...prev, ...patch }));
     },
     [],
   );
 
-  const removeAccount = useCallback((id: string) => {
-    setAccounts((prev) => prev.filter((a) => a.id !== id));
-  }, []);
+  const updateSettings = useCallback((patch: Partial<AppSettings>) => {
+    let nextPref: ThemePreference | undefined = patch.themePreference;
+    if (!nextPref && patch.theme) nextPref = patch.theme;
+    const nextResolved: ThemeMode | undefined = nextPref
+      ? resolveThemeFromPref(nextPref)
+      : patch.theme;
 
-  const upsertContact = useCallback((contact: ContactItem) => {
-    setContacts((prev) => {
-      const exists = prev.some((c) => c.id === contact.id);
-      return exists
-        ? prev.map((c) => (c.id === contact.id ? contact : c))
-        : [contact, ...prev];
+    if (nextResolved) {
+      runThemeTransition(nextResolved, (finalTheme) => {
+        const finalPref: ThemePreference =
+          nextPref === "system" ? "system" : finalTheme;
+        const finalPatch: Partial<AppSettings> = {
+          ...patch,
+          themePreference: finalPref,
+          theme: finalTheme,
+        };
+        startTransition(() => {
+          setSettings((prev) => {
+            const merged: AppSettings = { ...prev, ...finalPatch };
+            scheduleSettingsPersist(merged, finalPatch);
+            return merged;
+          });
+        });
+      });
+      return;
+    }
+
+    setSettings((prev) => {
+      const merged: AppSettings = { ...prev, ...patch };
+      scheduleSettingsPersist(merged, patch);
+      return merged;
     });
   }, []);
 
-  const toggleContactVip = useCallback((id: string) => {
-    setContacts((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, vip: !c.vip } : c)),
-    );
-  }, []);
+  const toggleTheme = useCallback(() => {
+    const nextTheme: ThemeMode =
+      getEffectiveTheme() === "light" ? "dark" : "light";
+    updateSettings({ theme: nextTheme, themePreference: nextTheme });
+  }, [updateSettings]);
 
-  const removeBlacklist = useCallback((id: string) => {
-    setBlacklist((prev) => prev.filter((b) => b.id !== id));
-  }, []);
+  const {
+    setProfiles,
+    setActiveProfileId,
+    setLaunchBehavior,
+    setAccounts,
+    setContacts,
+    setBlacklist,
+    setRules,
+    clearCollections,
+  } = collections;
 
-  const addBlacklist = useCallback((entry: Omit<BlacklistEntry, "id">) => {
-    setBlacklist((prev) => [{ ...entry, id: `bl-${Date.now()}` }, ...prev]);
-  }, []);
-
-  const upsertRule = useCallback((rule: InboxRule) => {
-    setRules((prev) => {
-      const exists = prev.some((r) => r.id === rule.id);
-      return exists
-        ? prev.map((r) => (r.id === rule.id ? rule : r))
-        : [rule, ...prev];
-    });
-  }, []);
-
-  const toggleRule = useCallback((id: string) => {
-    setRules((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r)),
-    );
-  }, []);
-
-  const deleteRule = useCallback((id: string) => {
-    setRules((prev) => prev.filter((r) => r.id !== id));
-  }, []);
+  const refreshProfilesAndAccounts = useCallback(async () => {
+    const profList = await profileApi.listProfiles();
+    setProfiles(profList.profiles);
+    setActiveProfileId(profList.activeProfileId);
+    setLaunchBehavior(profList.launchBehavior);
+    if (profList.requiresUnlock) {
+      setOverlay({
+        type: "profile-manage",
+        mode: "unlock",
+        targetProfileId: profList.activeProfileId,
+      });
+      return profList;
+    }
+    const [appCfg, accs, cnts, blks, rls] = await Promise.all([
+      profileApi.getAppSettings().catch(() => null),
+      accountApi.listAccounts().catch(() => []),
+      contactApi.listContacts().catch(() => []),
+      contactApi.listBlacklist().catch(() => []),
+      ruleApi.listRules().catch(() => []),
+    ]);
+    if (appCfg) setSettings((prev) => ({ ...prev, ...appCfg }));
+    setAccounts(accs);
+    setContacts(cnts);
+    setBlacklist(blks);
+    setRules(rls);
+    return profList;
+  }, [
+    setAccounts,
+    setActiveProfileId,
+    setBlacklist,
+    setContacts,
+    setLaunchBehavior,
+    setProfiles,
+    setRules,
+  ]);
 
   const resetLocalData = useCallback(() => {
-    setAccounts([]);
-    setContacts([]);
-    setRules([]);
+    clearCollections();
     setScreen("onboarding");
-  }, []);
+  }, [clearCollections]);
 
   return {
+    ...collections,
     screen,
     setScreen,
-    accounts,
-    addAccount,
-    updateAccount,
-    removeAccount,
     settings,
     updateSettings,
+    applySettingsFromBackend,
     toggleTheme,
-    contacts,
-    upsertContact,
-    toggleContactVip,
-    blacklist,
-    addBlacklist,
-    removeBlacklist,
-    rules,
-    upsertRule,
-    toggleRule,
-    deleteRule,
     overlay,
     setOverlay,
     bannerMode,
@@ -141,6 +178,7 @@ export function useWorkspaceStore() {
     setCompactView,
     leftNavOpen,
     setLeftNavOpen,
+    refreshProfilesAndAccounts,
     resetLocalData,
   };
 }

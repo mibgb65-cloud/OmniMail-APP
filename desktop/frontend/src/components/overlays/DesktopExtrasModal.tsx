@@ -1,14 +1,20 @@
+import { SendTestNotification } from "../../../bindings/omnimail/desktopservice";
 import { useApp } from "../../state/AppContext";
+import { isWailsDesktop } from "../../state/storageHelpers";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
 
 export function DesktopExtrasModal({ tab }: { tab: "tray" | "notifications" }) {
   const { workspace, composeStore, triggerSyncAll, toastStore } = useApp();
+  const totalUnread = workspace.accounts.reduce(
+    (sum, a) => sum + a.unreadCount,
+    0,
+  );
 
   return (
     <ModalShell
-      title="桌面端系统托盘与通知权限预览"
-      subtitle="对应 Wails v3 原生托盘菜单与 Windows / macOS 系统通知集成状态"
+      heading="桌面端系统托盘与通知权限预览"
+      subtitle="对应 Wails v3 原生托盘菜单与 Windows 隐私 Toast 通知集成状态"
       maxWidth={520}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
@@ -51,7 +57,7 @@ export function DesktopExtrasModal({ tab }: { tab: "tray" | "notifications" }) {
           <div className="row-between" style={{ marginBottom: 4 }}>
             <strong style={{ fontSize: 13 }}>OmniMail 系统托盘菜单</strong>
             <span className="pill pill-success">
-              4 个邮箱后台在线 · 28 未读
+              {workspace.accounts.length} 个邮箱在线 · {totalUnread} 未读
             </span>
           </div>
           <button
@@ -83,44 +89,50 @@ export function DesktopExtrasModal({ tab }: { tab: "tray" | "notifications" }) {
             type="button"
             className="context-menu-item"
             onClick={() =>
-              workspace.setOverlay({ type: "settings", tab: "general" })
+              workspace.setOverlay({ type: "profile-manage", mode: "switch" })
             }
           >
             <span className="row">
-              <Icon name="settings" size={14} /> 打开偏好设置
+              <Icon name="users" size={14} /> 切换本地空间
             </span>
           </button>
         </div>
       ) : (
         <div className="settings-card">
           <div className="row-between">
-            <strong style={{ fontSize: 14 }}>系统通知权限状态</strong>
+            <strong style={{ fontSize: 14 }}>系统隐私通知状态</strong>
             <span
               className={`pill ${
-                workspace.settings.notificationPermission === "granted"
+                workspace.settings.showDesktopNotifications
                   ? "pill-success"
                   : "pill-warning"
               }`}
             >
-              {workspace.settings.notificationPermission === "granted"
-                ? "已授权"
-                : "未开启"}
+              {workspace.settings.showDesktopNotifications
+                ? "已开启"
+                : "已关闭"}
             </span>
           </div>
           <div className="text-xs text-muted" style={{ lineHeight: 1.65 }}>
-            开启系统通知后，VIP
-            发件人与核心项目组新邮件将在桌面右下角展示精简摘要，默认隐藏敏感正文内容。
+            开启后，非黑名单的新收件将在 Windows 右下角展示「发件人 + 主题 +
+            账号标签」，严格不预览敏感正文。
           </div>
           <div className="row">
             <button
               type="button"
               className="btn btn-primary btn-sm"
               onClick={() => {
-                workspace.updateSettings({ notificationPermission: "granted" });
+                workspace.updateSettings({
+                  showDesktopNotifications: true,
+                  notificationPermission: "granted",
+                });
+                if (isWailsDesktop()) {
+                  void SendTestNotification();
+                }
                 toastStore.pushToast({
                   tone: "success",
-                  title: "已启用桌面通知提醒",
-                  detail: "测试通知：来自林知夏的新邮件提醒",
+                  title: "已触发原生测试通知",
+                  detail: "默认隐藏邮件正文摘要以保障阅读隐私",
                 });
               }}
             >

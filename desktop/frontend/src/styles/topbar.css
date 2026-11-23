@@ -43,11 +43,9 @@
 .topbar-left {
   gap: 10px;
 }
-
 .topbar-right {
   gap: 8px;
 }
-
 .brand-wordmark {
   font-size: 15px;
   font-weight: 700;
@@ -55,7 +53,6 @@
   line-height: 1;
   color: var(--text-ink);
 }
-
 .sync-status-chip {
   display: inline-flex;
   align-items: center;
@@ -69,8 +66,10 @@
   font-weight: 500;
   color: var(--text-secondary);
   max-width: 160px;
+  transition:
+    border-color var(--dur-instant) var(--ease-standard),
+    color var(--dur-instant) var(--ease-standard);
 }
-
 .sync-status-chip:hover {
   border-color: var(--border-strong);
   color: var(--text-ink);
@@ -88,7 +87,12 @@
 .status-dot.danger {
   background: var(--status-danger);
 }
-
+.status-dot.muted {
+  background: #94a3b8;
+}
+[data-theme="dark"] .status-dot.muted {
+  background: #64748b;
+}
 .topbar-search-wrap {
   width: clamp(220px, 34vw, 460px);
   flex: 0 1 auto;
@@ -106,15 +110,13 @@
   color: var(--text-muted);
   overflow: hidden;
   transition:
-    border-color 0.14s ease,
-    background 0.14s ease;
+    border-color var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard);
 }
-
 .topbar-search-wrap:focus-within {
   background: var(--bg-card);
   border-color: var(--brand-accent);
 }
-
 .topbar-search-input {
   flex: 1;
   min-width: 0;
@@ -127,7 +129,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .topbar-mini-icon {
   width: 24px;
   height: 24px;
@@ -139,20 +140,21 @@
   padding: 0 6px;
   font-size: 11px;
 }
-.topbar-lang-btn {
+.topbar-lang-btn,
+.topbar-settings-btn {
   height: 32px;
-  padding: 0 10px;
-  font-size: 12px;
   border-radius: 8px;
   background: var(--bg-surface);
+}
+.topbar-lang-btn {
+  padding: 0 10px;
+  font-size: 12px;
 }
 .topbar-settings-btn {
   width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--bg-surface);
 }
 .theme-segmented {
+  position: relative;
   display: inline-flex;
   align-items: center;
   padding: 2px;
@@ -163,6 +165,8 @@
   gap: 2px;
 }
 .theme-seg-btn {
+  position: relative;
+  z-index: 1;
   width: 26px;
   height: 26px;
   border-radius: 6px;
@@ -171,10 +175,9 @@
   justify-content: center;
   color: var(--text-muted);
 }
-.theme-seg-btn.active {
-  background: var(--bg-card);
+html:not([data-theme="dark"]) .theme-seg-btn[data-seg-theme="light"],
+html[data-theme="dark"] .theme-seg-btn[data-seg-theme="dark"] {
   color: var(--text-ink);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 .win-controls {
   display: inline-flex;

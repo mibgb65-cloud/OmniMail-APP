@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useApp } from "../../state/AppContext";
+import { Checkbox } from "../common/Checkbox";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
 
@@ -32,7 +33,7 @@ export function AiConsentModal({
 
   return (
     <ModalShell
-      title="发送前确认 Omni AI 数据范围"
+      heading="发送前确认 Omni AI 数据范围"
       subtitle={`即将执行：${actionLabel} · 仅本次显式触发`}
       maxWidth={520}
       onClose={() => workspace.setOverlay({ type: "none" })}
@@ -92,20 +93,13 @@ export function AiConsentModal({
         </ul>
       </div>
 
-      <label
-        className="row"
-        style={{ fontSize: 13, color: "var(--text-body)", cursor: "pointer" }}
+      <Checkbox
+        checked={rememberChoice}
+        onChange={setRememberChoice}
+        ariaLabel="记住本次选择"
       >
-        <input
-          type="checkbox"
-          checked={rememberChoice}
-          onChange={(e) => setRememberChoice(e.target.checked)}
-        />
-        <span>
-          记住本次选择，后续触发 AI
-          动作不再每次弹窗确认（可随时在设置中重新开启）
-        </span>
-      </label>
+        记住本次选择，后续触发 AI 动作不再每次弹窗确认（可随时在设置中重新开启）
+      </Checkbox>
     </ModalShell>
   );
 }
