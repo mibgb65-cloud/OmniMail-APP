@@ -1,5 +1,6 @@
 import type { MailSearchQuery } from "../services/backendClient";
 import type { FolderId, MailFilterTab, MailItem } from "../types/mail";
+import { keepUnreadListItem } from "./mailReadingPolicy";
 
 export interface AdvancedSearchCriteria {
   from: string;
@@ -27,6 +28,7 @@ interface FilterMailParams {
   activeLabelId: string | null;
   filterTab: MailFilterTab;
   advSearch: AdvancedSearchCriteria;
+  readInView?: ReadonlySet<string>;
 }
 
 export function filterMailList({
@@ -37,6 +39,7 @@ export function filterMailList({
   activeLabelId,
   filterTab,
   advSearch,
+  readInView,
 }: FilterMailParams): MailItem[] {
   const q = searchQuery.trim().toLowerCase();
   return mails.filter((m) => {
@@ -76,7 +79,8 @@ export function filterMailList({
       return false;
     }
     if (advSearch.hasAttachment && m.attachments.length === 0) return false;
-    if (filterTab === "unread" && !m.unread) return false;
+    if (filterTab === "unread" && !keepUnreadListItem(m, readInView))
+      return false;
     if (filterTab === "starred" && !m.starred) return false;
     if (filterTab === "attachments" && m.attachments.length === 0) return false;
     return true;

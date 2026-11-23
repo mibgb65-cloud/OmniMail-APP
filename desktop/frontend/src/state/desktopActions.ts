@@ -10,6 +10,7 @@ import {
 } from "../../bindings/omnimail/desktopservice";
 import type { PickedFileInfo } from "../../bindings/omnimail/models";
 import type { AppSettings } from "../types/settings";
+import { addedMailIds } from "./mailListArrivalPolicy";
 import { isWailsDesktop, parseMailtoUrl } from "./storageHelpers";
 import { isLiveSyncProgress, type LiveSyncProgress } from "./syncProgress";
 
@@ -71,7 +72,7 @@ export interface RuntimeEventHandlers {
     lastError?: string;
   }) => void;
   onSyncProgress: (p: LiveSyncProgress) => void;
-  onMailDelta?: (p: { folderCounts?: Record<string, number> }) => void;
+  onMailDelta?: (addedIds: readonly string[]) => void;
   onAttachmentProgress?: (p: {
     attachmentId: string;
     status: string;
@@ -118,9 +119,7 @@ export function useDesktopRuntimeEvents(h: RuntimeEventHandlers) {
         if (isLiveSyncProgress(ev.data)) h.onSyncProgress(ev.data);
       }),
       Events.On("omnimail:mail:delta", (ev) => {
-        h.onMailDelta?.(
-          (ev.data as { folderCounts?: Record<string, number> }) ?? {},
-        );
+        h.onMailDelta?.(addedMailIds(ev.data));
       }),
       Events.On("omnimail:attachment:progress", (ev) => {
         if (ev.data && typeof ev.data === "object") {

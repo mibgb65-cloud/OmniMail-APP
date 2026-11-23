@@ -14,6 +14,7 @@ import "./styles/sidebar.css";
 import "./styles/sidebar-accounts.css";
 import "./styles/sidebar-account-row.css";
 import "./styles/mail-list.css";
+import "./styles/mail-list-return-top.css";
 import "./styles/mail-card.css";
 import "./styles/mail-reader.css";
 import "./styles/mail-translation.css";

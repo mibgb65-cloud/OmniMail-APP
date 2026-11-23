@@ -5,7 +5,7 @@ import {
   languageCode,
 } from "../src/components/mail/translation/translationLanguages.ts";
 import {
-  applyBodyTranslation,
+  createBodyTranslationRenderer,
   translatedSegment,
 } from "../src/components/mail/translation/translatedText.ts";
 
@@ -70,14 +70,15 @@ test("双语与仅译文均可还原，模型输出中的 HTML 仅作为文字",
       segments: { "Read more": "<img src=x>" },
       target: "zh-CN",
     };
-    const restoreTranslated = applyBodyTranslation(inner, {
+    const render = createBodyTranslationRenderer(inner);
+    render({
       ...params,
       mode: "translated",
     });
     assert.equal(node.data, " <img src=x> ");
-    restoreTranslated();
+    render();
     assert.equal(node.data, " Read more ");
-    const restoreBilingual = applyBodyTranslation(inner, {
+    render({
       ...params,
       mode: "bilingual",
     });
@@ -85,7 +86,7 @@ test("双语与仅译文均可还原，模型输出中的 HTML 仅作为文字",
     const [span] = spans;
     assert.equal(span.textContent, " <img src=x>");
     assert.equal(span.innerHTML, undefined);
-    restoreBilingual();
+    render();
     assert.equal(spans.size, 0);
   } finally {
     globalThis.NodeFilter = originalNodeFilter;

@@ -48,7 +48,7 @@ func GetFolderCounts(db *sql.DB, accountID string) (FolderCounts, error) {
 	return out, nil
 }
 
-func ListMessages(db *sql.DB, q MailSearchQuery, blockRemoteImages bool) (MessageListPage, error) {
+func buildMessageWhere(q MailSearchQuery) (string, []any) {
 	parsed := ParseKeywordOperators(q.Keyword)
 	ftsExpr, shortTerms := SplitTermsForFTS(parsed.FreeTerms)
 
@@ -129,6 +129,11 @@ func ListMessages(db *sql.DB, q MailSearchQuery, blockRemoteImages bool) (Messag
 	if len(wheres) > 0 {
 		whereSQL = " WHERE " + strings.Join(wheres, " AND ")
 	}
+	return whereSQL, args
+}
+
+func ListMessages(db *sql.DB, q MailSearchQuery, blockRemoteImages bool) (MessageListPage, error) {
+	whereSQL, args := buildMessageWhere(q)
 	var total int
 	_ = db.QueryRow("SELECT COUNT(1) FROM messages m"+whereSQL, args...).Scan(&total)
 

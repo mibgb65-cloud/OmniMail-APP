@@ -161,7 +161,7 @@ export function MailReaderPane() {
               isLatest ||
               !msg.collapsed ||
               Boolean(expandedIds[msg.id]) ||
-              Boolean(translation && msg.id === selectedMail.id);
+              Boolean(t.result && msg.id === selectedMail.id);
 
             return (
               <ReaderThreadCard

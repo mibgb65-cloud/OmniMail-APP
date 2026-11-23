@@ -11,17 +11,22 @@ export function TranslationBanner() {
   const value = t.result?.content;
   const source =
     value && value.source !== "auto" ? languages[value.source] : "自动检测";
-  const note =
-    t.error ||
-    (t.pending
-      ? "正在翻译，仍可继续阅读"
-      : `${source} → ${value ? languages[value.target] : ""} · ${
+  const progress =
+    t.totalBatches > 0
+      ? `（${t.completedBatches} / ${t.totalBatches} 批）`
+      : "";
+  const note = t.pending
+    ? `正在翻译${progress}，仍可继续阅读`
+    : t.partial
+      ? `部分翻译失败${progress}，已完成的译文已保留`
+      : t.error ||
+        `${source} → ${value ? languages[value.target] : ""} · ${
           t.mode === "original"
             ? "当前显示原文"
             : t.mode === "translated"
               ? "原地保真渲染"
               : "双语保真渲染"
-        }`);
+        }`;
   return (
     <div className="translation-banner">
       <div className="translation-banner-status" role="status">
@@ -32,7 +37,7 @@ export function TranslationBanner() {
         <span>{note}</span>
       </div>
       <div className="translation-banner-actions">
-        {value && (
+        {value && (t.pending || t.hasTranslation) && (
           <div
             className="translation-display-modes"
             role="group"
@@ -49,6 +54,18 @@ export function TranslationBanner() {
               </button>
             ))}
           </div>
+        )}
+        {t.failed && t.result && (
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            disabled={t.disabled}
+            onClick={() => {
+              if (t.result) void t.translate(t.result.options, true);
+            }}
+          >
+            重试翻译
+          </button>
         )}
         <button
           type="button"

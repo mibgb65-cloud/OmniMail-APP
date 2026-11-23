@@ -15,13 +15,15 @@ export function ReaderTranslateButton() {
     setOpen(false);
     if (restoreFocus) toggle.current?.focus({ preventScroll: true });
   }, []);
-  const active = Boolean(t.result && t.mode !== "original");
+  const active = t.hasTranslation && t.mode !== "original";
   const lang = t.result?.content.target;
   const label = t.pending
     ? "翻译中…"
-    : active && lang
-      ? `已译${lang.startsWith("zh-") ? "中文" : languages[lang]}`
-      : "翻译";
+    : active && t.partial
+      ? "部分已译"
+      : active && lang
+        ? `已译${lang.startsWith("zh-") ? "中文" : languages[lang]}`
+        : "翻译";
 
   return (
     <div
@@ -37,7 +39,7 @@ export function ReaderTranslateButton() {
         disabled={t.pending}
         title={label}
         onClick={() => {
-          if (t.result) {
+          if (t.hasTranslation) {
             t.setMode(active ? "original" : t.preferredMode);
             close();
           } else setOpen(true);

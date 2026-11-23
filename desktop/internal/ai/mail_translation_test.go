@@ -56,7 +56,7 @@ func TestMailTranslationUsesVisibleTextAndExplicitConsent(t *testing.T) {
 	}
 	gateway := NewGateway(nil)
 	session := &profilemgr.Session{ProfileDir: dir, DB: db, Ctx: context.Background()}
-	request := TranslateMailRequest{MailID: "mail-a", Source: "auto", Target: "zh-CN", IncludeSubject: true}
+	request := TranslateMailRequest{MailID: "mail-a", RequestID: "00000000-0000-4000-8000-000000000001", Source: "auto", Target: "zh-CN", IncludeSubject: true}
 	mismatch := request
 	mismatch.ProfileID = "other-profile"
 	if _, err := gateway.TranslateMail(session, mismatch); apperr.CodeOf(err) != apperr.CodeInvalidInput {

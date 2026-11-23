@@ -37,7 +37,14 @@ func GetMessageItem(db *sql.DB, msgID string, includeThread bool, blockRemoteIma
 		       m.folder, m.sender_name, m.sender_email, m.to_json, m.cc_json, m.subject, m.snippet,
 		       m.body_text, m.body_html_sanitized, m.raw_headers, m.received_at,
 		       m.is_unread, m.is_starred, m.has_remote_images, m.remote_images_allowed,
-		       m.snooze_until, m.scheduled_at, m.outbox_error, m.security_json, m.meeting_invite_json, m.ai_summarized
+		       m.snooze_until, m.scheduled_at, m.outbox_error, m.security_json, m.meeting_invite_json,
+		       CASE WHEN m.ai_summarized != 0 THEN 1 ELSE EXISTS (
+		           SELECT 1 FROM ai_insights i WHERE i.message_id = m.id AND
+		           CASE WHEN json_valid(i.insight_json)
+		               THEN json_type(i.insight_json, '$.summary') = 'text'
+		                   AND TRIM(json_extract(i.insight_json, '$.summary'), char(9, 10, 13, 32)) != ''
+		               ELSE 0 END
+		       ) END
 		FROM messages m
 		LEFT JOIN accounts a ON a.id = m.account_id
 		WHERE m.id = ?

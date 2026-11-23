@@ -1,12 +1,11 @@
-import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useState, type CSSProperties, type MouseEvent } from "react";
 import { useApp } from "../../state/AppContext";
 import type { FolderId, MailFilterTab, MailItem } from "../../types/mail";
 import { Icon } from "../common/Icon";
 import { Tooltip } from "../common/Tooltip";
-import { MailCard } from "./MailCard";
 import { MailContextMenu } from "./MailContextMenu";
-import { MailListBatchBar, MailListEmptyState } from "./MailListExtras";
+import { MailListBatchBar } from "./MailListExtras";
+import { MailListBody } from "./MailListBody";
 
 const FOLDER_TITLES: Record<FolderId, string> = {
   inbox: "统一收件箱",
@@ -21,7 +20,11 @@ const FOLDER_TITLES: Record<FolderId, string> = {
   trash: "回收站",
 };
 
-export function MailListPane() {
+export function MailListPane({
+  readOnlyExit = false,
+}: {
+  readOnlyExit?: boolean;
+}) {
   const { viewport, workspace, mailStore, triggerSyncAll } = useApp();
   const [menuState, setMenuState] = useState<{
     mail: MailItem;
@@ -30,17 +33,15 @@ export function MailListPane() {
   } | null>(null);
   const {
     filteredMails,
-    selectedMail,
     activeFolder,
     activeAccountId,
     activeLabelId,
     labels,
     filterTab,
     searchQuery,
-    checkedIds,
+    listScroll,
   } = mailStore;
   const isCompact = viewport === "compact";
-  const noAccounts = workspace.accounts.length === 0;
   const activeAccount = workspace.accounts.find(
     (a) => a.id === activeAccountId,
   );
@@ -74,7 +75,7 @@ export function MailListPane() {
 
   return (
     <section className="panel-card mail-list-pane" aria-label="邮件列表">
-      <div className="list-header">
+      <div className="list-header" data-scrolled={listScroll.scrolled}>
         <div className="list-title-row">
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="row" style={{ gap: 6, minWidth: 0 }}>
@@ -152,48 +153,12 @@ export function MailListPane() {
 
       <MailListBatchBar />
 
-      {filteredMails.length === 0 ? (
-        <MailListEmptyState noAccounts={noAccounts} />
-      ) : (
-        <FadeScroll
-          className="mail-list-scroll"
-          label="邮件列表"
-          viewportProps={{
-            onScroll: (e) => {
-              const el = e.currentTarget;
-              if (
-                mailStore.hasMore &&
-                el.scrollHeight - el.scrollTop - el.clientHeight < 120
-              ) {
-                void mailStore.loadMore();
-              }
-            },
-          }}
-        >
-          {!isCompact && (
-            <div className="list-group-head">
-              <span className="truncate">最新优先</span>
-              <span className="list-group-range">
-                1–{filteredMails.length} / {displayTotal}
-              </span>
-            </div>
-          )}
-          {filteredMails.map((mail) => (
-            <MailCard
-              key={mail.id}
-              mail={mail}
-              compact={isCompact}
-              selected={selectedMail?.id === mail.id}
-              checked={checkedIds.includes(mail.id)}
-              selectionMode={checkedIds.length > 0}
-              onSelect={() => mailStore.openMail(mail.id)}
-              onToggleCheck={() => mailStore.toggleChecked(mail.id)}
-              onContextMenu={(e) => handleContext(mail, e)}
-            />
-          ))}
-        </FadeScroll>
-      )}
-
+      <MailListBody
+        compact={isCompact}
+        displayTotal={displayTotal}
+        onContextMenu={handleContext}
+        readOnlyExit={readOnlyExit}
+      />
       <MailContextMenu state={menuState} onClose={() => setMenuState(null)} />
     </section>
   );

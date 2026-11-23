@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { openSafeExternalUrl } from "../../../state/desktopActions";
 import scrollbarReset from "../../../styles/scrollbar-reset.css?raw";
 import {
-  applyBodyTranslation,
+  createBodyTranslationRenderer,
   type BodyTranslation,
 } from "../translation/translatedText";
 
@@ -39,12 +39,16 @@ export function SafeMailHtmlView({
   translation?: BodyTranslation;
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
+  const renderTranslation = useRef<ReturnType<
+    typeof createBodyTranslationRenderer
+  > | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const host = hostRef.current;
     if (!host) return;
     const root = host.shadowRoot ?? host.attachShadow({ mode: "open" });
     root.innerHTML = `<style>${scrollbarReset}\n${SHADOW_RESET_CSS}</style><div class="mail-html-inner">${html}</div>`;
+    renderTranslation.current = null;
   }, [html]);
 
   useEffect(() => {
@@ -71,13 +75,17 @@ export function SafeMailHtmlView({
     return () => root.removeEventListener("click", onClick);
   }, [onMailto]);
 
-  useEffect(() => {
-    const inner =
-      hostRef.current?.shadowRoot?.querySelector<HTMLElement>(
-        ".mail-html-inner",
-      );
-    // 切换阅读模式只改已有文字节点，不重新加载图片或替换原有结构。
-    if (inner && translation) return applyBodyTranslation(inner, translation);
+  useLayoutEffect(() => {
+    // 切换模式或接收新批次只改已有文字节点，不重新加载图片或替换原有结构。
+    if (translation && !renderTranslation.current) {
+      const inner =
+        hostRef.current?.shadowRoot?.querySelector<HTMLElement>(
+          ".mail-html-inner",
+        );
+      if (inner)
+        renderTranslation.current = createBodyTranslationRenderer(inner);
+    }
+    renderTranslation.current?.(translation);
   }, [html, translation]);
 
   return <div ref={hostRef} />;

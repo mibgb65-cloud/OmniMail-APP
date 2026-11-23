@@ -5,18 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 	"unicode"
 
 	"omnimail/internal/apperr"
 	"omnimail/internal/config"
+	"omnimail/internal/events"
 	"omnimail/internal/profilemgr"
 )
 
 type TranslateMailRequest struct {
 	ProfileID        string `json:"profileId"`
 	MailID           string `json:"mailId"`
+	RequestID        string `json:"requestId"`
 	Source           string `json:"source"`
 	Target           string `json:"target"`
 	IncludeSubject   bool   `json:"includeSubject"`
@@ -24,11 +27,18 @@ type TranslateMailRequest struct {
 }
 
 type MailTranslation struct {
-	Source   string            `json:"source"`
-	Target   string            `json:"target"`
-	Subject  string            `json:"subject"`
-	Segments map[string]string `json:"segments"`
+	ProfileID        string            `json:"profileId"`
+	MailID           string            `json:"mailId"`
+	RequestID        string            `json:"requestId"`
+	Source           string            `json:"source"`
+	Target           string            `json:"target"`
+	Subject          string            `json:"subject"`
+	Segments         map[string]string `json:"segments"`
+	CompletedBatches int               `json:"completedBatches"`
+	TotalBatches     int               `json:"totalBatches"`
 }
+
+var translationRequestID = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 var translationLanguages = map[string]string{
 	"zh-CN": "简体中文", "zh-TW": "繁体中文", "en": "英语", "ja": "日语", "ko": "韩语",
@@ -39,6 +49,9 @@ var translationLanguages = map[string]string{
 func (g *Gateway) TranslateMail(sess *profilemgr.Session, req TranslateMailRequest) (MailTranslation, error) {
 	if req.ProfileID != sess.Meta.ID {
 		return MailTranslation{}, apperr.New(apperr.CodeInvalidInput, "工作空间已切换，请重新选择邮件")
+	}
+	if !translationRequestID.MatchString(req.RequestID) {
+		return MailTranslation{}, apperr.New(apperr.CodeInvalidInput, "翻译请求 ID 无效")
 	}
 	req.MailID = strings.TrimSpace(req.MailID)
 	if req.MailID == "" || len(req.MailID) > 512 || translationLanguages[req.Target] == "" ||
@@ -66,9 +79,16 @@ func (g *Gateway) TranslateMail(sess *profilemgr.Session, req TranslateMailReque
 	if err != nil {
 		return MailTranslation{}, err
 	}
-	hasSubject := req.IncludeSubject && canTranslateText(strings.TrimSpace(subject))
+	subject = strings.TrimSpace(subject)
+	hasSubject := req.IncludeSubject && canTranslateText(subject)
 	if hasSubject {
-		segments = append([]string{strings.TrimSpace(subject)}, segments...)
+		withSubject := []string{subject}
+		for _, segment := range segments {
+			if segment != subject {
+				withSubject = append(withSubject, segment)
+			}
+		}
+		segments = withSubject
 	}
 	if len(segments) == 0 {
 		return MailTranslation{}, apperr.New(apperr.CodeInvalidInput, "此邮件没有可翻译的正文文字")
@@ -80,21 +100,42 @@ func (g *Gateway) TranslateMail(sess *profilemgr.Session, req TranslateMailReque
 	ctx, cancel := context.WithTimeout(sess.Ctx, 120*time.Second)
 	defer cancel()
 	cfg := resolveProviderConfig(sess, settings)
-	result := MailTranslation{Source: req.Source, Target: req.Target, Segments: make(map[string]string)}
+	result := MailTranslation{
+		ProfileID: req.ProfileID, MailID: req.MailID, RequestID: req.RequestID,
+		Source: req.Source, Target: req.Target, Segments: make(map[string]string), TotalBatches: len(batches),
+	}
 	for _, batch := range batches {
 		src, translated, err := translateTextBatch(ctx, cfg, req.Source, req.Target, batch)
 		if err != nil {
+			// Wails 出错时只传错误对象；已完成的内容必须随终态快照返回，不能仅依赖事件。
+			if result.CompletedBatches > 0 {
+				return result, nil
+			}
 			return MailTranslation{}, err
 		}
 		if result.Source == "auto" && translationLanguages[src] != "" {
 			result.Source = src
 		}
+		delta := make(map[string]string, len(batch))
 		for i, original := range batch {
 			result.Segments[original] = translated[i]
+			delta[original] = translated[i]
 		}
-	}
-	if hasSubject {
-		result.Subject = result.Segments[strings.TrimSpace(subject)]
+		result.CompletedBatches++
+		subjectDelta := ""
+		if hasSubject && result.CompletedBatches == 1 {
+			subjectDelta = translated[0]
+			result.Subject = subjectDelta
+		}
+		if ctx.Err() == nil {
+			g.bus.Emit(events.MailTranslationBatch, events.MailTranslationBatchPayload{
+				MailTranslationRequestKey: events.MailTranslationRequestKey{
+					ProfileID: req.ProfileID, MailID: req.MailID, RequestID: req.RequestID,
+				},
+				Source: result.Source, Subject: subjectDelta, Segments: delta,
+				CompletedBatches: result.CompletedBatches, TotalBatches: result.TotalBatches,
+			})
+		}
 	}
 	return result, nil
 }

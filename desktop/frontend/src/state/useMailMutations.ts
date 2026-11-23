@@ -1,6 +1,7 @@
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { mailApi } from "../services/backendClient";
 import type { FolderId, MailItem } from "../types/mail";
+import { openedUnreadId } from "./mailReadingPolicy";
 import { isWailsDesktop } from "./storageHelpers";
 
 export function useMailMutations(
@@ -10,6 +11,7 @@ export function useMailMutations(
   setSelectedMailId: Dispatch<SetStateAction<string>>,
   activeFolder: FolderId,
   refreshCounts: () => Promise<void>,
+  rememberRead: (ids: string[]) => void,
 ) {
   const toggleStar = useCallback(
     (mailIds: string[]) => {
@@ -27,12 +29,18 @@ export function useMailMutations(
 
   const markRead = useCallback(
     (mailIds: string[], unread: boolean) => {
-      setMails((prev) =>
-        prev.map((m) => (mailIds.includes(m.id) ? { ...m, unread } : m)),
-      );
-      void mailApi.markRead(mailIds, !unread).then(() => refreshCounts());
+      void mailApi
+        .markRead(mailIds, !unread)
+        .then(() => {
+          if (!unread) rememberRead(mailIds);
+          setMails((prev) =>
+            prev.map((m) => (mailIds.includes(m.id) ? { ...m, unread } : m)),
+          );
+          if (isWailsDesktop()) void refreshCounts();
+        })
+        .catch(() => undefined);
     },
-    [refreshCounts, setMails],
+    [refreshCounts, rememberRead, setMails],
   );
 
   const moveMails = useCallback(
@@ -75,10 +83,11 @@ export function useMailMutations(
 
   const addMail = useCallback(
     (item: MailItem) => {
-      setMails((p) => [item, ...p]);
+      setMails((p) => [item, ...p.filter((mail) => mail.id !== item.id)]);
       setSelectedMailId(item.id);
+      if (item.unread) markRead([item.id], false);
     },
-    [setMails, setSelectedMailId],
+    [markRead, setMails, setSelectedMailId],
   );
 
   const toggleChecked = useCallback(
@@ -91,8 +100,12 @@ export function useMailMutations(
 
   const clearChecked = useCallback(() => setCheckedIds([]), [setCheckedIds]);
   const openMail = useCallback(
-    (id: string) => setSelectedMailId(id),
-    [setSelectedMailId],
+    (id: string) => {
+      setSelectedMailId(id);
+      const unreadId = openedUnreadId(mails, id);
+      if (unreadId) markRead([unreadId], false);
+    },
+    [mails, markRead, setSelectedMailId],
   );
 
   return {

@@ -159,6 +159,8 @@ export function useAiStore() {
     pendingRequestId: pending?.requestId,
     loadCachedForMail,
     getInsight,
+    hasMailSummary: (mail: Pick<MailItem, "id" | "aiSummarized">) =>
+      Boolean(mail.aiSummarized || insights[mail.id]?.summary.trim()),
     getChats,
     runPrompt,
     stopGeneration,

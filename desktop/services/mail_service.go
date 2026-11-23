@@ -73,6 +73,14 @@ func (s *MailService) ListMessages(query search.MailSearchQuery) (search.Message
 	return search.ListMessages(sess.DB, query, cfg.BlockRemoteImages)
 }
 
+func (s *MailService) MatchMailIDs(query search.MailSearchQuery, ids []string) ([]string, error) {
+	sess, err := s.mgr.ActiveSession()
+	if err != nil {
+		return nil, err
+	}
+	return search.MatchMailIDs(sess.DB, query, ids)
+}
+
 func (s *MailService) GetThreadDetail(threadID string) (search.MailItemDTO, error) {
 	sess, err := s.mgr.ActiveSession()
 	if err != nil {

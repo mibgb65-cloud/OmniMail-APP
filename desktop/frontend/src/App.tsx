@@ -105,7 +105,7 @@ function OmniMailShell() {
                   <ContactsWorkspace nav={contactsNav} readOnlyExit />
                 ) : (
                   <>
-                    <MailListPane />
+                    <MailListPane readOnlyExit />
                     <MailReaderPane />
                   </>
                 )}

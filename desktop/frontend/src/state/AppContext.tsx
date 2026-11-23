@@ -24,6 +24,7 @@ function useAppController() {
   const viewport = useViewportMode();
   const workspace = useWorkspaceStore();
   const mailStore = useMailStore(workspace.settings.blockRemoteImages);
+  const { refreshAfterMailDelta, refreshUnreadView } = mailStore;
   const aiStore = useAiStore();
   const toastStore = useToasts();
   const composeStore = useComposeStore(
@@ -48,6 +49,7 @@ function useAppController() {
       minSpin,
     ])
       .then(() => {
+        refreshUnreadView();
         workspace.setSyncLabel("所有邮箱已同步");
         toastStore.pushToast({
           tone: "success",
@@ -62,7 +64,7 @@ function useAppController() {
           detail: parseBackendError(err).message,
         });
       });
-  }, [workspace, toastStore]);
+  }, [workspace, toastStore, refreshUnreadView]);
 
   const onResetStoresForSwitch = useCallback(() => {
     workspace.clearCollections();
@@ -81,9 +83,8 @@ function useAppController() {
     updateAccount: workspace.updateAccount,
     refreshProfilesAndAccounts: workspace.refreshProfilesAndAccounts,
     onResetStoresForSwitch,
-    onMailDelta: (counts) => {
-      if (counts) mailStore.setFolderCounts(counts);
-      void mailStore.reloadMessages();
+    onMailDelta: (addedIds) => {
+      refreshAfterMailDelta(addedIds);
       void workspace.refreshProfilesAndAccounts();
     },
     openNewCompose: composeStore.openNewCompose,

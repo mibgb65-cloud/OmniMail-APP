@@ -15,6 +15,12 @@ import { mapAttachment, mapMailDTO } from "./mailMapper";
 export { mapAttachment, mapMailDTO, type MailSearchQuery };
 
 export const mailApi = {
+  async matchMailIds(query: MailSearchQuery, ids: string[]): Promise<string[]> {
+    return isWailsDesktop()
+      ? ((await MailService.MatchMailIDs(query, ids)) ?? [])
+      : [];
+  },
+
   async getFolderCounts(accountId = ""): Promise<Record<string, number>> {
     if (!isWailsDesktop()) {
       return {

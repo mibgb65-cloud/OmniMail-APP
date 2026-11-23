@@ -5,32 +5,27 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { TranslateMail } from "../../../../bindings/omnimail/services/aiservice";
-import { parseBackendError } from "../../../services/backendClient";
 import { useApp } from "../../../state/AppContext";
-import { isWailsDesktop } from "../../../state/storageHelpers";
-import { detectMailLanguage, isLanguage } from "./translationLanguages";
+import { detectMailLanguage } from "./translationLanguages";
 import {
   readTranslationPreferences,
   type TranslationPreferences,
 } from "./translationPreferences";
-import type {
-  TranslationMode,
-  TranslationOptions,
-  TranslationResult,
-  TranslatedMode,
-} from "./translationTypes";
+import {
+  changeTranslationMode,
+  type TranslationEntry,
+} from "./translationStreamState";
+import { updateScopedTranslation } from "./translationSessionCache";
+import type { TranslationMode } from "./translationTypes";
+import {
+  useTranslationRequests,
+  type UpdateTranslationEntry,
+} from "./useTranslationRequests";
 
-type Entry = {
-  result?: TranslationResult;
-  mode?: TranslationMode;
-  pending?: boolean;
-  error?: string;
-};
 type ProfileTranslationState = {
   key: string;
   token: object;
-  entries: Record<string, Entry>;
+  entries: Record<string, TranslationEntry>;
   preferences: TranslationPreferences;
 };
 
@@ -88,77 +83,19 @@ function useMailTranslations() {
       /* 本次进程仍可使用。 */
     }
   };
-  const patch = (next: Entry) =>
-    setSaved((prev) => {
-      if (prev.token !== token) return prev;
-      // 仅在本次工作空间会话保留译文，限制缓存大小。
-      const rest = Object.entries(prev.entries)
-        .filter(([mailId]) => mailId !== id)
-        .slice(-23);
-      return {
-        ...prev,
-        entries: Object.fromEntries([
-          ...rest,
-          [id, { ...prev.entries[id], ...next }],
-        ]),
-      };
-    });
+  const update: UpdateTranslationEntry = (change) =>
+    setSaved((prev) => updateScopedTranslation(prev, token, id, change));
   const setMode = (mode: TranslationMode) => {
-    if (result)
-      patch({
-        mode,
-        result:
-          mode === "original"
-            ? result
-            : { ...result, options: { ...result.options, mode } },
-      });
+    update((current) => current && changeTranslationMode(current, mode));
   };
-
-  const translate = async (options: TranslationOptions) => {
-    if (!id || disabled || entry?.pending) return;
-    if (
-      result &&
-      result.options.source === options.source &&
-      result.options.target === options.target &&
-      result.options.includeSubject === options.includeSubject
-    ) {
-      patch({
-        mode: options.mode,
-        result: { ...result, options },
-        error: undefined,
-      });
-      return;
-    }
-    patch({ pending: true, error: undefined });
-    try {
-      if (!isWailsDesktop())
-        throw new Error("请在 OmniMail 桌面应用中翻译邮件");
-      const data = await TranslateMail({
-        profileId,
-        mailId: id,
-        source: options.source,
-        target: options.target,
-        includeSubject: options.includeSubject,
-        consentConfirmed: true,
-      });
-      const content = {
-        source: isLanguage(data.source) ? data.source : ("auto" as const),
-        target: options.target,
-        subject: data.subject,
-        segments: data.segments ?? {},
-      };
-      patch({
-        result: { content, options },
-        mode: options.mode,
-        pending: false,
-      });
-    } catch (err) {
-      patch({
-        pending: false,
-        error: parseBackendError(err).message || "翻译失败，原文未改变",
-      });
-    }
-  };
+  const translate = useTranslationRequests({
+    profileId,
+    mailId: id,
+    token,
+    disabled,
+    entry,
+    update,
+  });
   return {
     mailId: id,
     result,
@@ -169,10 +106,16 @@ function useMailTranslations() {
     savePreferences,
     translate,
     setMode,
-    pending: Boolean(entry?.pending),
+    pending: entry?.phase === "pending",
+    partial: entry?.phase === "partial",
+    hasTranslation:
+      entry?.phase === "partial" || Boolean(entry?.completedBatches),
+    failed: entry?.phase === "failed" || entry?.phase === "partial",
+    completedBatches: entry?.completedBatches ?? 0,
+    totalBatches: entry?.totalBatches ?? 0,
     error: entry?.error,
     mode: entry?.mode ?? ("original" as TranslationMode),
-    preferredMode: (result?.options.mode ?? preferences.mode) as TranslatedMode,
+    preferredMode: result?.options.mode ?? preferences.mode,
   };
 }
 

@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { INITIAL_MAILS } from "../data/mails";
-import { mailApi } from "../services/backendClient";
 import type { FolderId, MailFilterTab, MailItem } from "../types/mail";
 import {
   EMPTY_ADV_SEARCH,
@@ -8,9 +7,11 @@ import {
   filterMailList,
   type AdvancedSearchCriteria,
 } from "./mailFilter";
+import { previewMail, shouldReloadOnMailDelta } from "./mailReadingPolicy";
 import { isWailsDesktop } from "./storageHelpers";
 import { useMailLabels } from "./useMailLabels";
 import { useMailMutations } from "./useMailMutations";
+import { useMailPages } from "./useMailPages";
 import { useMailReaderEffects } from "./useMailReaderEffects";
 
 export type { AdvancedSearchCriteria };
@@ -19,9 +20,6 @@ export function useMailStore(blockRemoteImages: boolean) {
   const [mails, setMails] = useState<MailItem[]>(() =>
     isWailsDesktop() ? [] : INITIAL_MAILS,
   );
-  const [folderCounts, setFolderCounts] = useState<Record<string, number>>({});
-  const [totalCount, setTotalCount] = useState(0);
-  const [nextCursor, setNextCursor] = useState("");
   const [activeFolder, setActiveFolder] = useState<FolderId>("inbox");
   const [activeAccountId, setActiveAccountId] = useState<string | null>(null);
   const [activeLabelId, setActiveLabelId] = useState<string | null>(null);
@@ -33,16 +31,7 @@ export function useMailStore(blockRemoteImages: boolean) {
     isWailsDesktop() ? "" : "mail-1",
   );
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
-  const reqSeqRef = useRef(0);
-
   const labelActions = useMailLabels(mails, setMails, setActiveLabelId);
-
-  const refreshCounts = useCallback(async () => {
-    const counts = await mailApi
-      .getFolderCounts(activeAccountId ?? "")
-      .catch(() => ({}));
-    setFolderCounts(counts);
-  }, [activeAccountId]);
 
   const buildQuery = useCallback(
     (cursor = "") =>
@@ -67,47 +56,50 @@ export function useMailStore(blockRemoteImages: boolean) {
     ],
   );
 
-  const reloadMessages = useCallback(async () => {
-    if (!isWailsDesktop()) return;
-    const seq = ++reqSeqRef.current;
-    const [page] = await Promise.all([
-      mailApi
-        .listMessages(buildQuery())
-        .catch(() => ({ items: [], nextCursor: "", totalCount: 0 })),
-      refreshCounts(),
-    ]);
-    if (seq !== reqSeqRef.current) return;
-    setMails(page.items);
-    setNextCursor(page.nextCursor);
-    setTotalCount(page.totalCount);
-    if (
-      page.items.length > 0 &&
-      !page.items.some((m) => m.id === selectedMailId)
-    ) {
-      setSelectedMailId(page.items[0].id);
-    }
-  }, [buildQuery, refreshCounts, selectedMailId]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => void reloadMessages(), 60);
-    return () => window.clearTimeout(timer);
-  }, [reloadMessages]);
-
-  const loadMore = useCallback(async () => {
-    if (!isWailsDesktop() || !nextCursor) return;
-    const page = await mailApi
-      .listMessages(buildQuery(nextCursor))
-      .catch(() => null);
-    if (!page) return;
-    setMails((p) => [
-      ...p,
-      ...page.items.filter((i) => !p.some((x) => x.id === i.id)),
-    ]);
-    setNextCursor(page.nextCursor);
-  }, [buildQuery, nextCursor]);
+  const {
+    folderCounts,
+    totalCount,
+    loaded,
+    hasMore,
+    loadMore,
+    reloadMessages,
+    refreshCounts,
+    resetPages,
+    listArrivals: { deferMailDelta, ...listScroll },
+  } = useMailPages(buildQuery, activeAccountId, setMails);
+  const [demoRead, setDemoRead] = useState<{
+    scope: typeof buildQuery;
+    ids: Set<string>;
+  }>();
+  const rememberRead = useCallback(
+    (ids: string[]) => {
+      if (isWailsDesktop() || filterTab !== "unread") return;
+      setDemoRead((previous) => ({
+        scope: buildQuery,
+        ids: new Set([
+          ...(previous?.scope === buildQuery ? previous.ids : []),
+          ...ids,
+        ]),
+      }));
+    },
+    [buildQuery, filterTab],
+  );
+  const refreshAfterMailDelta = (addedIds: readonly string[] = []) => {
+    const wouldReload = shouldReloadOnMailDelta(filterTab);
+    if (deferMailDelta(addedIds, mails, wouldReload) || !wouldReload)
+      void refreshCounts();
+    else void reloadMessages();
+  };
+  const refreshUnreadView = useCallback(() => {
+    if (filterTab !== "unread") return;
+    setDemoRead(undefined);
+    void reloadMessages();
+  }, [filterTab, reloadMessages]);
 
   const filteredMails = isWailsDesktop()
-    ? mails
+    ? loaded
+      ? mails
+      : []
     : filterMailList({
         mails,
         searchQuery,
@@ -116,16 +108,15 @@ export function useMailStore(blockRemoteImages: boolean) {
         activeLabelId,
         filterTab,
         advSearch,
+        readInView: demoRead?.scope === buildQuery ? demoRead.ids : undefined,
       });
 
-  const selectedMail =
-    mails.find((m) => m.id === selectedMailId) ?? filteredMails[0] ?? null;
-  useMailReaderEffects(
-    selectedMail,
-    blockRemoteImages,
-    setMails,
-    refreshCounts,
+  const selectedMail = previewMail(
+    isWailsDesktop() && !loaded ? [] : mails,
+    filteredMails,
+    selectedMailId,
   );
+  useMailReaderEffects(selectedMail, blockRemoteImages, setMails);
   const mutations = useMailMutations(
     mails,
     setMails,
@@ -133,19 +124,23 @@ export function useMailStore(blockRemoteImages: boolean) {
     setSelectedMailId,
     activeFolder,
     refreshCounts,
+    rememberRead,
   );
 
   const resetMailState = useCallback(() => {
     setMails(isWailsDesktop() ? [] : INITIAL_MAILS);
-    setFolderCounts({});
+    resetPages();
     setActiveFolder("inbox");
     setActiveAccountId(null);
     setActiveLabelId(null);
     setSearchQuery("");
+    setFilterTab("all");
+    setAdvSearch(EMPTY_ADV_SEARCH);
+    setSelectedMailId("");
+    setDemoRead(undefined);
     setCheckedIds([]);
     void labelActions.reloadLabels();
-    void reloadMessages();
-  }, [labelActions, reloadMessages]);
+  }, [labelActions, resetPages]);
 
   const selectFolder = (f: FolderId) => {
     setActiveFolder(f);
@@ -171,11 +166,12 @@ export function useMailStore(blockRemoteImages: boolean) {
     mails,
     setMails,
     folderCounts,
-    setFolderCounts,
     totalCount,
-    hasMore: Boolean(nextCursor),
+    hasMore,
     loadMore,
     reloadMessages,
+    refreshAfterMailDelta,
+    refreshUnreadView,
     resetMailState,
     filteredMails,
     selectedMail,
@@ -189,6 +185,8 @@ export function useMailStore(blockRemoteImages: boolean) {
     advSearch,
     setAdvSearch,
     resetAdvSearch: () => setAdvSearch(EMPTY_ADV_SEARCH),
+    listScope: buildQuery,
+    listScroll,
     checkedIds,
     selectFolder,
     selectAccount,

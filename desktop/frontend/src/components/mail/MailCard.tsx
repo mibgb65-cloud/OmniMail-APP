@@ -5,6 +5,7 @@ import { Icon } from "../common/Icon";
 
 interface MailCardProps {
   mail: MailItem;
+  summarized: boolean;
   compact: boolean;
   selected: boolean;
   checked: boolean;
@@ -16,6 +17,7 @@ interface MailCardProps {
 
 export function MailCard({
   mail,
+  summarized,
   compact,
   selected,
   checked,
@@ -29,19 +31,17 @@ export function MailCard({
         text: mail.statusBadge,
         cls: mail.folder === "outbox" ? "pill-danger" : "pill-blue",
       }
-    : mail.aiSummarized
-      ? { text: compact ? "AI" : "AI 已摘要", cls: "pill-ai" }
-      : mail.attachments.length > 0
-        ? {
-            text:
-              mail.attachments.length > 1
-                ? `${mail.attachments.length} 附件`
-                : mail.attachments[0].ext,
-            cls: "pill-neutral",
-          }
-        : mail.starred
-          ? { text: "星标", cls: "pill-neutral" }
-          : null;
+    : !summarized && mail.attachments.length > 0
+      ? {
+          text:
+            mail.attachments.length > 1
+              ? `${mail.attachments.length} 附件`
+              : mail.attachments[0].ext,
+          cls: "pill-neutral",
+        }
+      : !summarized && mail.starred
+        ? { text: "星标", cls: "pill-neutral" }
+        : null;
 
   const showCheckbox = selectionMode || checked;
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -61,6 +61,7 @@ export function MailCard({
       onClick={onSelect}
       onContextMenu={onContextMenu}
       onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onSelect();
@@ -99,6 +100,7 @@ export function MailCard({
               {rightMeta.text}
             </span>
           )}
+          {summarized && <span className="mail-summary-badge">AI 已摘要</span>}
         </div>
       </div>
     </div>

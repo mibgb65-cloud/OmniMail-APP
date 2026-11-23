@@ -7,11 +7,10 @@ export function useMailReaderEffects(
   selectedMail: MailItem | null,
   blockRemoteImages: boolean,
   setMails: Dispatch<SetStateAction<MailItem[]>>,
-  refreshCounts: () => Promise<void>,
 ) {
+  const targetId = selectedMail?.id;
   useEffect(() => {
-    if (!isWailsDesktop() || !selectedMail?.id) return;
-    const targetId = selectedMail.id;
+    if (!isWailsDesktop() || !targetId) return;
     let alive = true;
     void mailApi
       .getThreadDetail(targetId)
@@ -19,30 +18,16 @@ export function useMailReaderEffects(
         if (!alive || !detail) return;
         setMails((p) =>
           p.map((m) =>
-            m.id === targetId ? { ...m, ...detail, id: targetId } : m,
+            m.id === targetId
+              ? { ...m, ...detail, id: targetId, unread: m.unread }
+              : m,
           ),
         );
       })
       .catch(() => undefined);
 
-    let readTimer: number | null = null;
-    if (selectedMail.unread) {
-      readTimer = window.setTimeout(() => {
-        setMails((p) =>
-          p.map((m) => (m.id === targetId ? { ...m, unread: false } : m)),
-        );
-        void mailApi.markRead([targetId], true).then(() => refreshCounts());
-      }, 600);
-    }
     return () => {
       alive = false;
-      if (readTimer !== null) window.clearTimeout(readTimer);
     };
-  }, [
-    blockRemoteImages,
-    refreshCounts,
-    selectedMail?.id,
-    selectedMail?.unread,
-    setMails,
-  ]);
+  }, [blockRemoteImages, targetId, setMails]);
 }

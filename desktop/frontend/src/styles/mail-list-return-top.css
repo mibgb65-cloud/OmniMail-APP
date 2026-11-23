@@ -1,0 +1,123 @@
+.mail-list-pane {
+  --list-header-edge-shadow: 0 4px 12px rgb(15 23 42 / 6%);
+  --list-pill-bg: rgb(255 255 255 / 92%);
+  --list-pill-border: #cbd5e1;
+  --list-pill-text: #0f172a;
+  --list-pill-hover: #f8fafc;
+  --list-pill-hover-border: #94a3b8;
+  --list-pill-shadow: 0 6px 18px rgb(15 23 42 / 10%);
+  --list-pill-blue: #2563eb;
+  --list-pill-blue-hover: #1d4ed8;
+  --list-pill-blue-shadow: 0 6px 18px rgb(37 99 235 / 30%);
+}
+
+:root[data-theme="dark"] .mail-list-pane {
+  --list-header-edge-shadow: 0 4px 14px rgb(0 0 0 / 25%);
+  --list-pill-bg: rgb(30 41 59 / 92%);
+  --list-pill-border: #334155;
+  --list-pill-text: #f1f5f9;
+  --list-pill-hover: #273449;
+  --list-pill-hover-border: #475569;
+  --list-pill-shadow: 0 8px 22px rgb(0 0 0 / 45%);
+  --list-pill-blue: #3b82f6;
+  --list-pill-blue-hover: #2563eb;
+  --list-pill-blue-shadow: var(--list-pill-shadow);
+}
+
+.mail-list-pane > .list-header {
+  position: relative;
+  z-index: 1;
+  transition: box-shadow 180ms ease-out;
+}
+
+.mail-list-pane > .list-header[data-scrolled="true"] {
+  box-shadow: var(--list-header-edge-shadow);
+}
+
+.mail-list-body {
+  position: relative;
+  isolation: isolate;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.mail-list-scroll[data-return-pill="true"]::after {
+  height: min(48px, 100%);
+  opacity: 1;
+}
+
+.mail-list-scroll .fade-scroll-viewport {
+  overflow-anchor: none;
+}
+
+.mail-list-scroll[data-return-pill="true"] .fade-scroll-content {
+  /* 留出最后一张卡片可完全移到胶囊上方的空间。 */
+  padding-block-end: 56px;
+}
+
+.mail-list-return-top {
+  position: absolute;
+  z-index: 20;
+  inset: auto auto 16px 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding-inline: 14px;
+  border: 1px solid var(--list-pill-border);
+  border-radius: 999px;
+  background: var(--list-pill-bg);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--list-pill-shadow);
+  color: var(--list-pill-text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  pointer-events: none;
+  transition:
+    visibility 0s linear 180ms,
+    opacity 180ms ease-out,
+    transform 180ms ease-out,
+    background-color 180ms ease-out,
+    border-color 180ms ease-out;
+}
+
+.mail-list-return-top[data-visible="true"] {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.mail-list-return-top[data-visible="true"]:hover {
+  transform: translate(-50%, -2px);
+  background: var(--list-pill-hover);
+  border-color: var(--list-pill-hover-border);
+}
+
+.mail-list-return-top[data-new-mail="true"] {
+  background: var(--list-pill-blue);
+  border-color: var(--list-pill-blue);
+  color: #fff;
+  box-shadow: var(--list-pill-blue-shadow);
+}
+
+.mail-list-return-top[data-visible="true"][data-new-mail="true"]:hover {
+  background: var(--list-pill-blue-hover);
+  border-color: var(--list-pill-blue-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mail-list-pane > .list-header,
+  .mail-list-return-top {
+    transition: none;
+  }
+}

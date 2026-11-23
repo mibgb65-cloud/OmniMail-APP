@@ -33,7 +33,7 @@ interface BridgeDeps {
     requiresUnlock: boolean;
   }>;
   onResetStoresForSwitch: () => void;
-  onMailDelta: (folderCounts?: Record<string, number>) => void;
+  onMailDelta: (addedIds?: readonly string[]) => void;
   openNewCompose: (to?: string[]) => void;
   updateComposeDraft: (patch: { subject?: string; body?: string }) => void;
   pushToast: (notice: {
@@ -150,8 +150,7 @@ export function useDesktopBridge(deps: BridgeDeps) {
         if (p.status === "syncing") deps.setSyncLabel("正在同步…");
         else deps.setSyncLabel(p.stage);
       },
-      onMailDelta: (p: { folderCounts?: Record<string, number> }) =>
-        deps.onMailDelta(p.folderCounts),
+      onMailDelta: deps.onMailDelta,
       onOutboxUpdated: (p: { state: string; lastError?: string }) => {
         deps.onMailDelta();
         if (p.state === "sent") {

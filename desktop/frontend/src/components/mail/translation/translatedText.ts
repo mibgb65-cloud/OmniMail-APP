@@ -22,18 +22,18 @@ const skip =
 const hiddenStyle =
   /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\b/i;
 
-export function applyBodyTranslation(
-  inner: HTMLElement,
-  translation: BodyTranslation,
-) {
+export function createBodyTranslationRenderer(inner: HTMLElement) {
   const walker = inner.ownerDocument.createTreeWalker(
     inner,
     NodeFilter.SHOW_TEXT,
   );
-  const nodes: Text[] = [];
-  const restore: Array<() => void> = [];
-  while (walker.nextNode()) nodes.push(walker.currentNode as Text);
-  for (const node of nodes) {
+  const nodes: Array<{
+    node: Text;
+    original: string;
+    sibling?: HTMLSpanElement;
+  }> = [];
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text;
     const parent = node.parentElement;
     if (!parent || parent.closest(skip)) continue;
     let hidden = false;
@@ -47,23 +47,39 @@ export function applyBodyTranslation(
         break;
       }
     }
-    if (hidden) continue;
-    const text = translatedSegment(node.data, translation.segments);
-    if (!text) continue;
-    if (translation.mode === "translated") {
-      const original = node.data;
-      node.data = node.data.replace(/\S[\s\S]*\S|\S/u, () => text);
-      restore.push(() => {
-        node.data = original;
-      });
-    } else {
-      const second = inner.ownerDocument.createElement("span");
-      second.className = "omnimail-bilingual-text";
-      second.lang = translation.target;
-      second.textContent = ` ${text}`;
-      node.after(second);
-      restore.push(() => second.remove());
-    }
+    if (!hidden) nodes.push({ node, original: node.data });
   }
-  return () => restore.forEach((undo) => undo());
+
+  return (translation?: BodyTranslation) => {
+    // 始终按原始文字查找；提交新批次时不回退已完成节点或重建双语元素。
+    for (const record of nodes) {
+      const { node, original } = record;
+      const text =
+        translation && translatedSegment(original, translation.segments);
+      const next =
+        text && translation?.mode === "translated"
+          ? original.replace(/\S[\s\S]*\S|\S/u, () => text)
+          : original;
+      if (node.data !== next) node.data = next;
+      if (!text || translation?.mode !== "bilingual") {
+        record.sibling?.remove();
+        record.sibling = undefined;
+        continue;
+      }
+      const label = ` ${text}`;
+      if (!record.sibling) {
+        const second = inner.ownerDocument.createElement("span");
+        second.className = "omnimail-bilingual-text";
+        second.lang = translation.target;
+        second.textContent = label;
+        node.after(second);
+        record.sibling = second;
+      } else {
+        if (record.sibling.lang !== translation.target)
+          record.sibling.lang = translation.target;
+        if (record.sibling.textContent !== label)
+          record.sibling.textContent = label;
+      }
+    }
+  };
 }

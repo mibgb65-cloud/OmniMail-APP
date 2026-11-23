@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -58,7 +59,7 @@ func (g *Gateway) AnalyzeMail(sess *profilemgr.Session, mailID string, consentCo
 		return AiMailInsight{}, err
 	}
 	ins := parseInsightFromRaw(raw)
-	if strings.TrimSpace(ins.DraftReply) == "" {
+	if strings.TrimSpace(ins.Summary) == "" || strings.TrimSpace(ins.DraftReply) == "" {
 		return AiMailInsight{}, errors.New("模型未返回完整的摘要与回复草稿，请重试")
 	}
 	ins.ModelName, ins.SummaryLanguage, ins.DraftTone = pCfg.Model, target, tone
@@ -67,16 +68,34 @@ func (g *Gateway) AnalyzeMail(sess *profilemgr.Session, mailID string, consentCo
 	} else if translationLanguages[ins.DraftLanguage] == "" {
 		ins.DraftLanguage = ""
 	}
-	insJ, _ := json.Marshal(ins)
-	if _, err := sess.DB.ExecContext(ctx, `
+	if err := saveMailInsight(ctx, sess.DB, mailID, ins); err != nil {
+		return AiMailInsight{}, errors.New("无法在本地保存 AI 摘要")
+	}
+	return ins, nil
+}
+
+func saveMailInsight(ctx context.Context, db *sql.DB, mailID string, insight AiMailInsight) error {
+	insJ, err := json.Marshal(insight)
+	if err != nil {
+		return err
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	// 摘要和邮件列表标记同时提交，避免一处保存成功、另一处仍显示未摘要。
+	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO ai_insights(message_id, model_name, insight_json, chat_turns_json, updated_at)
 		VALUES (?, ?, ?, '[]', ?)
 		ON CONFLICT(message_id) DO UPDATE SET model_name=excluded.model_name, insight_json=excluded.insight_json, updated_at=excluded.updated_at
-	`, mailID, pCfg.Model, string(insJ), time.Now().UnixMilli()); err != nil {
-		return AiMailInsight{}, errors.New("无法在本地保存 AI 摘要")
+	`, mailID, insight.ModelName, string(insJ), time.Now().UnixMilli()); err != nil {
+		return err
 	}
-	_, _ = sess.DB.Exec(`UPDATE messages SET ai_summarized = 1 WHERE id = ?`, mailID)
-	return ins, nil
+	if _, err := tx.ExecContext(ctx, `UPDATE messages SET ai_summarized = 1 WHERE id = ?`, mailID); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func mailAnalysisPrompt(source, target, tone string) string {

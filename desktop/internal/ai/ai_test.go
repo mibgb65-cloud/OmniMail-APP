@@ -14,6 +14,7 @@ import (
 	"omnimail/internal/config"
 	"omnimail/internal/events"
 	"omnimail/internal/profilemgr"
+	"omnimail/internal/search"
 	"omnimail/internal/security"
 	"omnimail/internal/storage"
 )
@@ -110,6 +111,15 @@ func TestPrivacyGuardFiveGatesAndGatewayCache(t *testing.T) {
 	ins1, err := gw.AnalyzeMail(sess, "m-ok", true, false)
 	if err != nil || ins1.SummaryTitle != "周五反馈进度" || atomic.LoadInt32(&httpCalls) != 1 {
 		t.Fatalf("AnalyzeMail 1 failed: %+v, calls=%d, err=%v", ins1, httpCalls, err)
+	}
+	page, err := search.ListMessages(db, search.MailSearchQuery{Folder: "inbox"}, true)
+	if err != nil || len(page.Items) != 2 {
+		t.Fatalf("读取邮件列表失败：%v", err)
+	}
+	for _, item := range page.Items {
+		if item.AiSummarized != (item.ID == "m-ok") {
+			t.Fatal("邮件列表仅应为成功完成摘要的邮件返回标记")
+		}
 	}
 	ins2, err := gw.AnalyzeMail(sess, "m-ok", true, false)
 	if err != nil || !ins2.Cached || atomic.LoadInt32(&httpCalls) != 1 {
