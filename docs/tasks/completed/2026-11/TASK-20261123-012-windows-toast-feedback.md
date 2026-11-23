@@ -22,4 +22,5 @@
 ## 验证与限制
 
 - `task verify` 通过；新增了 XML 特殊字符、Unicode 长度边界和错误反馈回归测试。当前 Windows 上以只读方式检查，既有 OmniMail AUMID 注册项不存在；实际脚本干跑验证了 WinRT 对象、权限状态缺失时的回退以及 UTF-8 XML 解析，未调用 `Show`。
-- 未启动桌面程序或实际发送系统通知，横幅与通知中心效果待按[冒烟步骤](../../../development/TESTING.md#桌面窗口手工冒烟)复验。已更新[架构](../../../architecture/OVERVIEW.md)，未提交或打包 Beta。
+- 未启动桌面程序或实际发送系统通知，横幅与通知中心效果待按[冒烟步骤](../../../development/TESTING.md#桌面窗口手工冒烟)复验。已更新[架构](../../../architecture/OVERVIEW.md)。
+- 实现提交：`b2ef5db`。已纳入 `v0.0.1.beta.4` 本地安装包；打包信息见[本次 Beta 记录](TASK-20261123-013-account-rows-ai-model-discovery.md#beta-本地更新)。发包前未重复执行测试套件。

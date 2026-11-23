@@ -24,4 +24,4 @@
 
 - `task verify` 通过（格式、ESLint、TypeScript、Vite、Go 静态检查、单测和开发构建），变更的手写源文件均不超过 200 行。
 - 已把宽屏、窄屏、快速反转和减少动效的复验项加入[桌面窗口手工冒烟](../../../development/TESTING.md#桌面窗口手工冒烟)。未启动桌面应用，未实测 Windows WebView2 的视觉效果。
-- 未提交、未发布 Beta。
+- 实现提交：`9bc68f4`。已纳入 `v0.0.1.beta.4` 本地安装包；打包信息见[本次 Beta 记录](TASK-20261123-013-account-rows-ai-model-discovery.md#beta-本地更新)。发包前未重复执行测试套件。

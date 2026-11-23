@@ -24,4 +24,12 @@
 
 - `task verify` 通过（104 个 IPC 方法、68 个 DTO、格式、ESLint、TypeScript、Vite、Go 静态检查和单测、Windows 开发 EXE）。
 - 离线测试覆盖官方端点锁定、分页、Gemini 能力过滤、排序去重、免密网关、重定向拦截、凭据隔离与旧密钥迁移，以及临时连通测试不写入配置。
-- 未启动 Windows 桌面应用、未做 WebView2 像素对照或真实厂商付费调用。可按[手工冒烟项](../../../development/TESTING.md#桌面窗口手工冒烟)复验。已更新[架构记录](../../../architecture/OVERVIEW.md)。未提交、未打包 Beta。
+- 未启动 Windows 桌面应用、未做 WebView2 像素对照或真实厂商付费调用。可按[手工冒烟项](../../../development/TESTING.md#桌面窗口手工冒烟)复验。已更新[架构记录](../../../architecture/OVERVIEW.md)。
+
+## Beta 本地更新
+
+- 实现提交及打包基线：`09cf13378bc634193985c9e6a25fd477b6f8dfdb`。包含 `9bc68f4`（AI 侧栏可逆滑动）和 `b2ef5db`（Windows 测试通知）。
+- 构建命令：`pwsh -NoProfile -File ./desktop/build/windows/package-windows.ps1 -Version v0.0.1.beta.4`。生产构建和 NSIS 打包成功，核对 PE 版本 `0.0.1.4` 及 SHA-256。
+- 本地产物：`dist/release/v0.0.1.beta.4/OmniMail-Setup-v0.0.1.beta.4-windows-amd64.exe` 与同目录下的 `SHA256SUMS.txt`。
+- SHA-256：`74455e4f3d1284a5065eb72a1d295650f85601aa93e2d1d620ce97510d4c6e19`。
+- 按用户要求，沿用前一轮验证结果，未重跑测试套件、未安装、未启动应用、未推送或创建远程发布。
