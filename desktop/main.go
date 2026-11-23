@@ -129,8 +129,10 @@ func main() {
 			rebuildTrayMenu(app, tray, desktopSvc, profMgr)
 		}
 	})
+	enqueueToast, stopToasts := startSystemToastQueue()
+	defer stopToasts()
 	pipeline.SetNotifier(func(mailID, sender, subject, accountTag string) {
-		showPrivacySystemToast("新邮件 · "+sender, accountTag+" · "+subject)
+		enqueueToast("新邮件 · "+sender, accountTag+" · "+subject)
 		bus.Emit(events.DesktopIntent, events.DesktopIntentPayload{Type: "new-mail-toast", Payload: mailID})
 	})
 	syncMgr.SetUnreadCallback(func(unread int) {

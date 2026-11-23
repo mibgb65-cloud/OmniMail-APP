@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"omnimail/internal/apperr"
-	"omnimail/internal/events"
 )
 
 type PickedFileInfo struct {
@@ -167,16 +166,8 @@ func (s *DesktopService) CheckForUpdates() (UpdateCheckResult, error) {
 	return res, nil
 }
 
-func (s *DesktopService) SendTestNotification() error {
-	showPrivacySystemToast("OmniMail · 隐私桌面通知", "新邮件通知已就绪（默认隐藏邮件正文摘要）")
-	app, _ := s.runtimeHandles()
-	if app != nil {
-		app.Event.Emit(events.DesktopIntent, events.DesktopIntentPayload{
-			Type:    "test-notification",
-			Payload: "OmniMail 隐私通知通道工作正常（默认隐藏邮件正文摘要）",
-		})
-	}
-	return nil
+func (s *DesktopService) SendTestNotification(ctx context.Context) error {
+	return showPrivacySystemToast(ctx, "OmniMail · 测试通知", "这是一条 Windows 系统通知，不会显示邮件正文。")
 }
 
 func formatHumanBytes(b int64) string {

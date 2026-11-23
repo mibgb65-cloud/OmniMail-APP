@@ -1,15 +1,50 @@
+import { useState } from "react";
 import { SendTestNotification } from "../../../bindings/omnimail/desktopservice";
+import { parseBackendError } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import { isWailsDesktop } from "../../state/storageHelpers";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
 
 export function DesktopExtrasModal({ tab }: { tab: "tray" | "notifications" }) {
-  const { workspace, composeStore, triggerSyncAll, toastStore } = useApp();
+  const { workspace, composeStore, triggerSyncAll } = useApp();
+  const [sending, setSending] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    error: boolean;
+  }>();
   const totalUnread = workspace.accounts.reduce(
     (sum, a) => sum + a.unreadCount,
     0,
   );
+
+  async function sendTestNotification() {
+    if (!isWailsDesktop()) {
+      setFeedback({
+        error: true,
+        message: "请在 Windows 桌面应用中发送测试通知。",
+      });
+      return;
+    }
+
+    setSending(true);
+    setFeedback(undefined);
+    try {
+      await SendTestNotification();
+      setFeedback({
+        error: false,
+        message:
+          "已提交给 Windows。若没有弹出横幅，请查看通知中心，并检查 Windows 的通知横幅和勿扰设置。",
+      });
+    } catch (err) {
+      setFeedback({
+        error: true,
+        message: `测试通知未发送：${parseBackendError(err).message}`,
+      });
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <ModalShell
@@ -100,7 +135,7 @@ export function DesktopExtrasModal({ tab }: { tab: "tray" | "notifications" }) {
       ) : (
         <div className="settings-card">
           <div className="row-between">
-            <strong style={{ fontSize: 14 }}>系统隐私通知状态</strong>
+            <strong style={{ fontSize: 14 }}>应用内新邮件通知</strong>
             <span
               className={`pill ${
                 workspace.settings.showDesktopNotifications
@@ -114,31 +149,34 @@ export function DesktopExtrasModal({ tab }: { tab: "tray" | "notifications" }) {
             </span>
           </div>
           <div className="text-xs text-muted" style={{ lineHeight: 1.65 }}>
-            开启后，非黑名单的新收件将在 Windows 右下角展示「发件人 + 主题 +
-            账号标签」，严格不预览敏感正文。
+            开启后，将非黑名单新收件的发件人、主题和账号标签提交给
+            Windows，不包含邮件正文。测试通知不会改变应用或系统设置。
           </div>
           <div className="row">
             <button
               type="button"
               className="btn btn-primary btn-sm"
-              onClick={() => {
-                workspace.updateSettings({
-                  showDesktopNotifications: true,
-                  notificationPermission: "granted",
-                });
-                if (isWailsDesktop()) {
-                  void SendTestNotification();
-                }
-                toastStore.pushToast({
-                  tone: "success",
-                  title: "已触发原生测试通知",
-                  detail: "默认隐藏邮件正文摘要以保障阅读隐私",
-                });
-              }}
+              disabled={sending}
+              aria-busy={sending}
+              onClick={() => void sendTestNotification()}
             >
-              <Icon name="bell" size={14} /> 发送测试桌面通知
+              <Icon name="bell" size={14} />
+              {sending ? "正在提交给 Windows…" : "发送测试桌面通知"}
             </button>
           </div>
+          {feedback && (
+            <div
+              className="text-xs"
+              role={feedback.error ? "alert" : "status"}
+              style={{
+                color: feedback.error
+                  ? "var(--status-danger)"
+                  : "var(--text-muted)",
+              }}
+            >
+              {feedback.message}
+            </div>
+          )}
         </div>
       )}
     </ModalShell>
