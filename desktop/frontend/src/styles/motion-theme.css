@@ -66,6 +66,28 @@ html[data-theme="dark"] .theme-seg-indicator {
   transform: translateX(28px);
 }
 
+.brand-logo-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  transition: opacity var(--dur-fast) var(--ease-standard);
+}
+.brand-logo-light {
+  opacity: 1;
+}
+.brand-logo-dark {
+  opacity: 0;
+}
+[data-theme="dark"] .brand-logo-light {
+  opacity: 0;
+}
+[data-theme="dark"] .brand-logo-dark {
+  opacity: 1;
+}
+
 /* View Transitions API 可反向 GPU 扩散切色（关闭离屏混合与默认 UA 动画，由 Web Animations 接管） */
 ::view-transition-image-pair(root) {
   isolation: auto;
