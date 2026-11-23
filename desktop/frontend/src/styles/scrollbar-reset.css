@@ -1,0 +1,21 @@
+/* 隐藏绘制和占位，不改变任何元素的 overflow 或滚动输入。 */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+:host {
+  scrollbar-width: none;
+}
+
+:host::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}

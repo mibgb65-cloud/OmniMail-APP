@@ -1,3 +1,4 @@
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 import { ProfileSwitcherCard } from "./ProfileSwitcherCard";
@@ -58,7 +59,7 @@ export function Sidebar() {
         <div className="sidebar-divider" />
       </div>
 
-      <div className="sidebar-scroll">
+      <FadeScroll className="sidebar-scroll" label="邮箱和标签">
         {(outboxCount > 0 || scheduledCount > 0) && (
           <div className="nav-section">
             <button
@@ -92,7 +93,7 @@ export function Sidebar() {
         )}
 
         <SidebarAccountsAndLabels />
-      </div>
+      </FadeScroll>
 
       <div className="sidebar-footer">
         <div className="sidebar-footer-pair">

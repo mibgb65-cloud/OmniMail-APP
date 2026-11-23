@@ -19,7 +19,7 @@ export function ReaderSecurityBanners({ mail }: { mail: MailItem }) {
       {mail.securityWarning && (
         <div className="security-banner danger" role="alert">
           <div style={{ display: "flex", gap: 10 }}>
-            <Icon name="shield" size={18} />
+            <Icon name="shieldWarning" size={18} />
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <strong>{mail.securityWarning.title}</strong>
               <span style={{ fontSize: 12, lineHeight: 1.5 }}>

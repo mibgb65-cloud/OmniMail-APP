@@ -12,6 +12,7 @@ export type SettingsTabId =
   | "rules"
   | "auto-reply"
   | "ai"
+  | "translation"
   | "privacy"
   | "storage"
   | "shortcuts"

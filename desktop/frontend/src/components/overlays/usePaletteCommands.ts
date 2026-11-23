@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useApp } from "../../state/AppContext";
+import type { IconName } from "../common/Icon";
 
 export type PaletteCategory =
   "all" | "actions" | "accounts" | "folders" | "settings";
@@ -7,7 +8,7 @@ export type PaletteCategory =
 export interface PaletteCommand {
   id: string;
   cat: Exclude<PaletteCategory, "all">;
-  icon: string;
+  icon: IconName;
   title: string;
   hint: string;
   shortcut?: string;
@@ -144,9 +145,9 @@ export function usePaletteCommands(
         hint: "查看磁盘占用明细、清理附件缓存或导出备份",
         run: () => workspace.setOverlay({ type: "settings", tab: "storage" }),
       },
-      ...workspace.accounts.map((acc) => ({
+      ...workspace.accounts.map<PaletteCommand>((acc) => ({
         id: `acc-${acc.id}`,
-        cat: "accounts" as const,
+        cat: "accounts",
         icon: "mail",
         title: `仅看：${acc.name}`,
         hint: acc.email,

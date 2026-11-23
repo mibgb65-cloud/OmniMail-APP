@@ -1,3 +1,4 @@
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useApp } from "../../state/AppContext";
 import { Icon, type IconName } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
@@ -110,7 +111,7 @@ export function ContactsSidebar({
         <div className="sidebar-divider" />
       </div>
 
-      <div className="sidebar-scroll">
+      <FadeScroll className="sidebar-scroll" label="联系人分组和账户">
         <div className="nav-section">
           <div className="sidebar-section-head">
             <span>联系人分组</span>
@@ -156,7 +157,7 @@ export function ContactsSidebar({
             </button>
           ))}
         </div>
-      </div>
+      </FadeScroll>
     </aside>
   );
 }

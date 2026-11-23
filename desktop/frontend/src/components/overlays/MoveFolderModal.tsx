@@ -1,9 +1,9 @@
 import { useApp } from "../../state/AppContext";
 import type { FolderId } from "../../types/mail";
-import { Icon } from "../common/Icon";
+import { Icon, type IconName } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
 
-const TARGET_FOLDERS: Array<{ id: FolderId; label: string; icon: string }> = [
+const TARGET_FOLDERS: Array<{ id: FolderId; label: string; icon: IconName }> = [
   { id: "inbox", label: "统一收件箱", icon: "inbox" },
   { id: "archive", label: "归档邮件", icon: "archive" },
   { id: "spam", label: "垃圾邮件", icon: "spam" },

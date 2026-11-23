@@ -127,14 +127,8 @@
 }
 
 .mail-list-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 9px 8px 10px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
+  --scroll-padding: 9px 10px 10px;
+  --scroll-gap: 7px;
 }
 
 .list-empty-state {

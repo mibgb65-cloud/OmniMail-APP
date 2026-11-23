@@ -1,3 +1,4 @@
+import { ScrollCodeBlock } from "../common/scroll-fade/FadeScroll";
 import { mailApi, parseBackendError } from "../../services/backendClient";
 import { isWailsDesktop } from "../../state/storageHelpers";
 import { useApp } from "../../state/AppContext";
@@ -103,9 +104,9 @@ export function AttachmentPreviewModal({
           }}
         />
       ) : attachment.previewSummary ? (
-        <pre className="code-block" style={{ maxHeight: 340 }}>
+        <ScrollCodeBlock maxHeight={340} label="附件预览">
           {attachment.previewSummary}
-        </pre>
+        </ScrollCodeBlock>
       ) : (
         <div
           className="settings-card"

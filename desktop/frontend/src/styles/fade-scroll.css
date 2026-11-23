@@ -1,0 +1,87 @@
+.fade-scroll,
+.fade-textarea {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.fade-scroll {
+  --scroll-padding: 0;
+  --scroll-gap: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overflow: clip;
+}
+
+.fade-scroll-viewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden auto;
+}
+
+.fade-scroll-viewport:focus-visible {
+  outline: 2px solid var(--brand-accent);
+  outline-offset: -2px;
+}
+
+.fade-scroll-content {
+  /* 填满短视口，同时保留长内容的固有高度供 ResizeObserver 观察。 */
+  flex: 1 0 auto;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  padding: var(--scroll-padding);
+  gap: var(--scroll-gap);
+  min-width: 0;
+}
+
+.fade-scroll::after,
+.fade-textarea::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: min(30px, 100%);
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    var(--scroll-fade-surface, var(--bg-card)),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-standard);
+}
+
+.fade-scroll[data-scroll-more]::after,
+.fade-textarea[data-scroll-more]::after {
+  opacity: 1;
+}
+
+.fade-textarea > textarea {
+  display: block;
+}
+
+.fade-textarea::after {
+  inset: auto 1px 1px;
+  height: min(30px, 45%);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
+.fade-code-block {
+  flex: 0 0 auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-scroll::after,
+  .fade-textarea::after {
+    transition: none;
+  }
+}

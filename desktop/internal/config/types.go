@@ -33,30 +33,31 @@ type AutoReplyConfig struct {
 }
 
 type AppSettings struct {
-	Theme                         string          `json:"theme"`
-	ThemePreference               string          `json:"themePreference"`
-	Language                      string          `json:"language"`
-	Density                       string          `json:"density"`
-	FontSize                      string          `json:"fontSize"`
-	LaunchAtStartup               bool            `json:"launchAtStartup"`
-	SilentStartToTray             bool            `json:"silentStartToTray"`
-	CloseToTray                   bool            `json:"closeToTray"`
-	ShowDesktopNotifications      bool            `json:"showDesktopNotifications"`
-	NotificationPermission        string          `json:"notificationPermission"`
-	SyncIntervalMinutes           int             `json:"syncIntervalMinutes"`
-	OfflineRetentionDays          int             `json:"offlineRetentionDays"`
-	ImapIdle                      bool            `json:"imapIdle"`
-	DefaultSendAccountID          string          `json:"defaultSendAccountId"`
-	LockReplyToOriginalAccount    bool            `json:"lockReplyToOriginalAccount"`
-	UndoSendSeconds               int             `json:"undoSendSeconds"`
-	DefaultFontFamily             string          `json:"defaultFontFamily"`
-	AutoAppendSignature           bool            `json:"autoAppendSignature"`
-	AiEnabled                     bool            `json:"aiEnabled"`
-	AiRequireConfirmEachTime      bool            `json:"aiRequireConfirmEachTime"`
-	AiProvider                    string          `json:"aiProvider"`
-	AiModel                       string          `json:"aiModel"`
-	AiBaseURL                     string          `json:"aiBaseUrl"`
-	AiApiKeyMasked                string          `json:"aiApiKeyMasked"`
+	Theme                      string `json:"theme"`
+	ThemePreference            string `json:"themePreference"`
+	Language                   string `json:"language"`
+	Density                    string `json:"density"`
+	FontSize                   string `json:"fontSize"`
+	LaunchAtStartup            bool   `json:"launchAtStartup"`
+	SilentStartToTray          bool   `json:"silentStartToTray"`
+	CloseToTray                bool   `json:"closeToTray"`
+	ShowDesktopNotifications   bool   `json:"showDesktopNotifications"`
+	NotificationPermission     string `json:"notificationPermission"`
+	SyncIntervalMinutes        int    `json:"syncIntervalMinutes"`
+	OfflineRetentionDays       int    `json:"offlineRetentionDays"`
+	ImapIdle                   bool   `json:"imapIdle"`
+	DefaultSendAccountID       string `json:"defaultSendAccountId"`
+	LockReplyToOriginalAccount bool   `json:"lockReplyToOriginalAccount"`
+	UndoSendSeconds            int    `json:"undoSendSeconds"`
+	DefaultFontFamily          string `json:"defaultFontFamily"`
+	AutoAppendSignature        bool   `json:"autoAppendSignature"`
+	AiEnabled                  bool   `json:"aiEnabled"`
+	AiRequireConfirmEachTime   bool   `json:"aiRequireConfirmEachTime"`
+	AiProvider                 string `json:"aiProvider"`
+	AiModel                    string `json:"aiModel"`
+	AiBaseURL                  string `json:"aiBaseUrl"`
+	AiApiKeyMasked             string `json:"aiApiKeyMasked"`
+	// 保留旧字段兼容已有工作空间配置；现在只控制是否发送邮件主题。
 	AiIncludeSenderAndAttachments bool            `json:"aiIncludeSenderAndAttachments"`
 	BlockRemoteImages             bool            `json:"blockRemoteImages"`
 	PhishingCheckEnabled          bool            `json:"phishingCheckEnabled"`

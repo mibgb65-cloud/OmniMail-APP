@@ -2,6 +2,8 @@ import { useApp } from "../../state/AppContext";
 import { useValuePresence } from "../../state/usePresence";
 import { Icon } from "../common/Icon";
 import { Tooltip } from "../common/Tooltip";
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
+import { FadeTextarea } from "../common/scroll-fade/FadeTextarea";
 import { ComposeAttachmentsBar } from "./ComposeAttachmentsBar";
 import { ComposeHeaderFields, ComposeToolbar } from "./ComposeHeaderFields";
 import { ComposeInlineAiBar } from "./ComposeInlineAiBar";
@@ -102,10 +104,12 @@ export function ComposeModal() {
             <ComposeToolbar />
           </div>
 
-          <div className="compose-body-scroll">
+          <FadeScroll label="邮件正文编辑区">
             <ComposeInlineAiBar />
-            <textarea
+            <FadeTextarea
               className="compose-editor"
+              frameClassName="compose-editor-frame"
+              aria-label="邮件正文"
               value={draft.body}
               onChange={(e) =>
                 composeStore.updateDraft({ body: e.target.value })
@@ -119,7 +123,7 @@ export function ComposeModal() {
               placeholder="输入邮件正文…支持插入 AI 改写建议与本地签名。"
             />
             <ComposeAttachmentsBar />
-          </div>
+          </FadeScroll>
 
           <div className="modal-footer compose-footer-fixed">
             <div className="row" style={{ gap: 8 }}>

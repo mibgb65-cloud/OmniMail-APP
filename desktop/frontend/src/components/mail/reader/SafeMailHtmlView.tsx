@@ -1,5 +1,10 @@
 import { useEffect, useRef } from "react";
 import { openSafeExternalUrl } from "../../../state/desktopActions";
+import scrollbarReset from "../../../styles/scrollbar-reset.css?raw";
+import {
+  applyBodyTranslation,
+  type BodyTranslation,
+} from "../translation/translatedText";
 
 const SHADOW_RESET_CSS = `
 :host {
@@ -20,14 +25,18 @@ blockquote {
 }
 table { max-width: 100%; border-collapse: collapse; }
 pre, code { white-space: pre-wrap; word-break: break-all; }
+.omnimail-bilingual-text { opacity: .8; }
+:is(p,li,h1,h2,h3,h4,td,th) > .omnimail-bilingual-text { display: block; margin-block: .18em; }
 `;
 
 export function SafeMailHtmlView({
   html,
   onMailto,
+  translation,
 }: {
   html: string;
   onMailto?: (mailtoUrl: string) => void;
+  translation?: BodyTranslation;
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
 
@@ -35,8 +44,12 @@ export function SafeMailHtmlView({
     const host = hostRef.current;
     if (!host) return;
     const root = host.shadowRoot ?? host.attachShadow({ mode: "open" });
-    root.innerHTML = `<style>${SHADOW_RESET_CSS}</style><div class="mail-html-inner">${html}</div>`;
+    root.innerHTML = `<style>${scrollbarReset}\n${SHADOW_RESET_CSS}</style><div class="mail-html-inner">${html}</div>`;
+  }, [html]);
 
+  useEffect(() => {
+    const root = hostRef.current?.shadowRoot;
+    if (!root) return;
     const onClick = (ev: Event) => {
       const target = ev.target as HTMLElement | null;
       const anchor = target?.closest?.("a");
@@ -56,7 +69,16 @@ export function SafeMailHtmlView({
 
     root.addEventListener("click", onClick);
     return () => root.removeEventListener("click", onClick);
-  }, [html, onMailto]);
+  }, [onMailto]);
+
+  useEffect(() => {
+    const inner =
+      hostRef.current?.shadowRoot?.querySelector<HTMLElement>(
+        ".mail-html-inner",
+      );
+    // 切换阅读模式只改已有文字节点，不重新加载图片或替换原有结构。
+    if (inner && translation) return applyBodyTranslation(inner, translation);
+  }, [html, translation]);
 
   return <div ref={hostRef} />;
 }

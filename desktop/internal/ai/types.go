@@ -27,13 +27,16 @@ type AiDeadlineItem struct {
 }
 
 type AiMailInsight struct {
-	SummaryTitle string           `json:"summaryTitle"`
-	Summary      string           `json:"summary"`
-	Deadlines    []AiDeadlineItem `json:"deadlines"`
-	DraftTag     string           `json:"draftTag"`
-	DraftReply   string           `json:"draftReply"`
-	Cached       bool             `json:"cached,omitempty"`
-	ModelName    string           `json:"modelName,omitempty"`
+	SummaryTitle    string           `json:"summaryTitle"`
+	Summary         string           `json:"summary"`
+	Deadlines       []AiDeadlineItem `json:"deadlines"`
+	DraftTag        string           `json:"draftTag"`
+	DraftReply      string           `json:"draftReply"`
+	SummaryLanguage string           `json:"summaryLanguage,omitempty"`
+	DraftLanguage   string           `json:"draftLanguage,omitempty"`
+	DraftTone       string           `json:"draftTone,omitempty"`
+	Cached          bool             `json:"cached,omitempty"`
+	ModelName       string           `json:"modelName,omitempty"`
 }
 
 type AiChatTurn struct {
@@ -44,10 +47,10 @@ type AiChatTurn struct {
 }
 
 type AskMailRequest struct {
-	MailID           string       `json:"mailId"`
-	Question         string       `json:"question"`
-	History          []AiChatTurn `json:"history,omitempty"`
-	ConsentConfirmed bool         `json:"consentConfirmed"`
+	RequestID        string `json:"requestId,omitempty"`
+	MailID           string `json:"mailId"`
+	Question         string `json:"question"`
+	ConsentConfirmed bool   `json:"consentConfirmed"`
 }
 
 type ComposeAssistRequest struct {

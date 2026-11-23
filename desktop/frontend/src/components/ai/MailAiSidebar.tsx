@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { useApp } from "../../state/AppContext";
 import { AiPane } from "./AiPane";
+import type { AiResizeHandleProps } from "./AiResizeHandle";
 
 function focusAiToggle() {
   document.getElementById("mail-ai-toggle")?.focus({ preventScroll: true });
@@ -9,9 +10,11 @@ function focusAiToggle() {
 export function MailAiSidebar({
   open,
   isDrawer,
+  resize,
 }: {
   open: boolean;
   isDrawer: boolean;
+  resize: AiResizeHandleProps;
 }) {
   const { aiStore } = useApp();
   const layerRef = useRef<HTMLDivElement>(null);
@@ -40,7 +43,7 @@ export function MailAiSidebar({
       {isDrawer && (
         <div className="ai-slide-scrim" aria-hidden="true" onClick={close} />
       )}
-      <AiPane isDrawer={isDrawer} open={open} onClose={close} />
+      <AiPane isDrawer={isDrawer} open={open} onClose={close} resize={resize} />
     </div>
   );
 }

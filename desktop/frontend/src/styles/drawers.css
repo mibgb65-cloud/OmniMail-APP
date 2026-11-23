@@ -73,6 +73,10 @@
 }
 
 .icon-rail-accounts-badge.is-empty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   width: 44px;
   padding: 0 3px;
   border: 1px dashed var(--border-strong);
@@ -175,7 +179,7 @@
 .left-nav-drawer {
   animation: omni-drawer-left-in 220ms var(--ease-enter) both;
 }
-.ai-drawer .ai-scroll > * {
+.ai-drawer .ai-scroll .fade-scroll-content > * {
   animation: omni-reader-enter 160ms var(--ease-enter) both;
 }
 .workspace-drawer-layer[data-closing="true"] {

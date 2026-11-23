@@ -19,6 +19,9 @@ export interface AiMailInsight {
   deadlines: AiDeadlineItem[];
   draftTag: string;
   draftReply: string;
+  summaryLanguage?: string;
+  draftLanguage?: string;
+  draftTone?: string;
 }
 
 export interface AiChatTurn {
@@ -32,6 +35,7 @@ export interface ContactItem {
   id: string;
   name: string;
   email: string;
+  alternateEmails?: string[];
   avatarText: string;
   avatarTone: "blue" | "indigo" | "emerald" | "amber" | "slate" | "rose";
   company: string;

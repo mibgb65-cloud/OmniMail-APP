@@ -1,12 +1,13 @@
 package contacts
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"sort"
 	"strings"
 	"time"
-
-	"omnimail/internal/apperr"
 )
 
 func canonicalEmailKey(email string) string {
@@ -23,7 +24,15 @@ func canonicalEmailKey(email string) string {
 }
 
 func FindDuplicateContacts(db *sql.DB) ([]DuplicateGroupDTO, error) {
-	all, err := ListContacts(db, ContactQuery{})
+	return findDuplicateContacts(db)
+}
+
+func findDuplicateContacts(db contactReader) ([]DuplicateGroupDTO, error) {
+	all, err := listContacts(db, ContactQuery{}, -1)
+	if err != nil {
+		return nil, err
+	}
+	ignored, err := ignoredDuplicateKeys(db)
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +49,27 @@ func FindDuplicateContacts(db *sql.DB) ([]DuplicateGroupDTO, error) {
 
 	seen := make(map[string]bool)
 	out := make([]DuplicateGroupDTO, 0)
+	addGroup := func(kind, reason string, list []ContactItemDTO) {
+		ids := make([]string, 0, len(list))
+		hasRelay := false
+		for _, item := range list {
+			ids = append(ids, item.ID+"\x00"+strings.ToLower(item.Email))
+			hasRelay = hasRelay || looksLikeRelay(item.Email)
+		}
+		sort.Strings(ids)
+		data, _ := json.Marshal([]any{kind, ids})
+		key := fmt.Sprintf("%x", sha256.Sum256(data))
+		if ignored[key] {
+			return
+		}
+		sort.Slice(list, func(i, j int) bool {
+			if list[i].MailCount != list[j].MailCount {
+				return list[i].MailCount > list[j].MailCount
+			}
+			return list[i].ID < list[j].ID
+		})
+		out = append(out, DuplicateGroupDTO{Key: key, Reason: reason, Candidates: list, HasRelay: hasRelay})
+	}
 	for k, list := range byAlias {
 		if len(list) < 2 {
 			continue
@@ -47,7 +77,7 @@ func FindDuplicateContacts(db *sql.DB) ([]DuplicateGroupDTO, error) {
 		for _, item := range list {
 			seen[item.ID] = true
 		}
-		out = append(out, DuplicateGroupDTO{Key: "alias:" + k, Reason: "同一主邮箱 +alias 别名", Candidates: list})
+		addGroup("alias:"+k, "同一主邮箱 +alias 别名", list)
 	}
 	for k, list := range byName {
 		if len(list) < 2 {
@@ -60,40 +90,21 @@ func FindDuplicateContacts(db *sql.DB) ([]DuplicateGroupDTO, error) {
 			}
 		}
 		if len(unmerged) >= 2 {
-			out = append(out, DuplicateGroupDTO{Key: "name:" + k, Reason: "同名多邮箱联系人", Candidates: unmerged})
+			addGroup("name:"+k, "同名多邮箱联系人", unmerged)
 		}
 	}
+	sort.Slice(out, func(i, j int) bool {
+		if len(out[i].Candidates) != len(out[j].Candidates) {
+			return len(out[i].Candidates) > len(out[j].Candidates)
+		}
+		return out[i].Key < out[j].Key
+	})
 	return out, nil
 }
 
-func MergeContacts(db *sql.DB, primaryID string, duplicateIDs []string) (ContactItemDTO, error) {
-	all, err := ListContacts(db, ContactQuery{})
-	if err != nil {
-		return ContactItemDTO{}, err
-	}
-	byID := make(map[string]ContactItemDTO, len(all))
-	for _, c := range all {
-		byID[c.ID] = c
-	}
-	primary, ok := byID[primaryID]
-	if !ok {
-		return ContactItemDTO{}, apperr.New(apperr.CodeNotFound, "主联系人不存在")
-	}
-
-	tx, err := db.Begin()
-	if err != nil {
-		return ContactItemDTO{}, err
-	}
+func mergeContactGroup(tx *sql.Tx, primary ContactItemDTO, duplicates []ContactItemDTO) (ContactItemDTO, error) {
 	groupSet := append([]string{}, primary.Groups...)
-	var altEmails []string
-	for _, dupID := range duplicateIDs {
-		if dupID == primaryID {
-			continue
-		}
-		dup, exists := byID[dupID]
-		if !exists {
-			continue
-		}
+	for _, dup := range duplicates {
 		if primary.Company == "" {
 			primary.Company = dup.Company
 		}
@@ -107,6 +118,7 @@ func MergeContacts(db *sql.DB, primaryID string, duplicateIDs []string) (Contact
 			primary.Note = dup.Note
 		}
 		primary.VIP = primary.VIP || dup.VIP
+		primary.Blocked = primary.Blocked || dup.Blocked
 		primary.MailCount += dup.MailCount
 		if dup.LastContactAt > primary.LastContactAt {
 			primary.LastContactAt = dup.LastContactAt
@@ -116,40 +128,44 @@ func MergeContacts(db *sql.DB, primaryID string, duplicateIDs []string) (Contact
 				groupSet = append(groupSet, g)
 			}
 		}
-		if !strings.EqualFold(dup.Email, primary.Email) {
-			altEmails = append(altEmails, dup.Email)
+		if _, err := tx.Exec(`UPDATE contact_aliases SET contact_id=? WHERE contact_id=?`, primary.ID, dup.ID); err != nil {
+			return ContactItemDTO{}, err
 		}
-		_, _ = tx.Exec(`DELETE FROM contacts WHERE id = ?`, dupID)
-	}
-	if len(altEmails) > 0 {
-		suffix := "备用邮箱: " + strings.Join(altEmails, ", ")
-		if !strings.Contains(primary.Note, suffix) {
-			if strings.TrimSpace(primary.Note) == "" {
-				primary.Note = suffix
-			} else {
-				primary.Note = primary.Note + " | " + suffix
+		if !strings.EqualFold(dup.Email, primary.Email) {
+			if _, err := tx.Exec(`INSERT INTO contact_aliases(email, contact_id) VALUES (?, ?)`, dup.Email, primary.ID); err != nil {
+				return ContactItemDTO{}, err
 			}
+			primary.AlternateEmails = append(primary.AlternateEmails, dup.Email)
+		}
+		primary.AlternateEmails = append(primary.AlternateEmails, dup.AlternateEmails...)
+		if _, err := tx.Exec(`DELETE FROM contacts WHERE id=?`, dup.ID); err != nil {
+			return ContactItemDTO{}, err
 		}
 	}
 	grpJ, _ := json.Marshal(groupSet)
-	vipInt := 0
-	if primary.VIP {
-		vipInt = 1
-	}
-	_, err = tx.Exec(`
-		UPDATE contacts SET company=?, title=?, phone=?, note=?, groups_json=?, is_vip=?,
+	_, err := tx.Exec(`
+		UPDATE contacts SET company=?, title=?, phone=?, note=?, groups_json=?, is_vip=?, is_blocked=?,
 		       mail_count=?, last_contact_at=?, user_edited=1, updated_at=?
 		WHERE id=?
-	`, primary.Company, primary.Title, primary.Phone, primary.Note, string(grpJ), vipInt,
+	`, primary.Company, primary.Title, primary.Phone, primary.Note, string(grpJ), primary.VIP, primary.Blocked,
 		primary.MailCount, primary.LastContactAt, time.Now().UnixMilli(), primary.ID)
 	if err != nil {
-		_ = tx.Rollback()
-		return ContactItemDTO{}, err
-	}
-	if err := tx.Commit(); err != nil {
 		return ContactItemDTO{}, err
 	}
 	primary.Groups = groupSet
 	primary.LastContactText = formatContactTime(primary.LastContactAt)
 	return primary, nil
+}
+
+func looksLikeRelay(email string) bool {
+	local, domain, ok := strings.Cut(strings.ToLower(email), "@")
+	if !ok {
+		return false
+	}
+	if strings.Contains(local, "noreply") || strings.Contains(local, "no-reply") ||
+		strings.Contains(local, "no_reply") || domain == "privaterelay.appleid.com" {
+		return true
+	}
+	// iCloud 转发地址常以 _at_ 连接原域，尾段带随机字母或数字。
+	return domain == "icloud.com" && strings.Contains(local, "_at_")
 }

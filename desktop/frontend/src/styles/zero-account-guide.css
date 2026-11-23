@@ -1,16 +1,11 @@
 /* 右侧阅读区 0 邮箱冷启动快速接入引导卡（双主题与小屏自适应） */
 .zero-guide-stage {
-  flex: 1;
-  min-height: 0;
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 28px 24px;
-  overflow-y: auto;
+  --scroll-padding: 28px 24px;
 }
 
 .zero-guide-card {
+  margin: auto;
   width: 100%;
   max-width: 560px;
   display: flex;
@@ -144,7 +139,7 @@
 
 @media (max-width: 1024px) {
   .zero-guide-stage {
-    padding: 16px;
+    --scroll-padding: 16px;
   }
   .zero-guide-card {
     padding: 22px 20px;

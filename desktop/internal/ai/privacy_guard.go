@@ -26,12 +26,12 @@ func PrepareMailContext(db *sql.DB, settings config.AppSettings, mailID string, 
 		return "", apperr.New(apperr.CodeAiDisabled, "AI 助手总开关未启用，请前往「设置 → AI 配置」开启")
 	}
 
-	var folder, senderName, subj, bodyText, snippet, secJSON string
+	var folder, subj, bodyText, snippet, secJSON string
 	var aiBlocked int
 	err := db.QueryRow(`
-		SELECT folder, sender_name, subject, body_text, snippet, security_json, ai_blocked
+		SELECT folder, subject, body_text, snippet, security_json, ai_blocked
 		FROM messages WHERE id = ?
-	`, strings.TrimSpace(mailID)).Scan(&folder, &senderName, &subj, &bodyText, &snippet, &secJSON, &aiBlocked)
+	`, strings.TrimSpace(mailID)).Scan(&folder, &subj, &bodyText, &snippet, &secJSON, &aiBlocked)
 	if err != nil {
 		return "", apperr.New(apperr.CodeNotFound, "未找到目标邮件")
 	}
@@ -48,26 +48,16 @@ func PrepareMailContext(db *sql.DB, settings config.AppSettings, mailID string, 
 	}
 	trimmedBody := truncateRunes(rawBody, 8000)
 
-	var ctxBuilder strings.Builder
+	prepared := trimmedBody
+	scopeNote := "仅邮件正文，不含附件"
+	// 兼容旧配置键，但分享范围只包括主题；不读取附件、附件名、预览或邮件头。
 	if settings.AiIncludeSenderAndAttachments {
-		ctxBuilder.WriteString("发件人显示名: " + senderName + "\n")
-		ctxBuilder.WriteString("邮件主题: " + subj + "\n")
-		ctxBuilder.WriteString("正文内容:\n" + trimmedBody + "\n")
-		if attPrev := loadTextAttachmentPreviews(db, mailID); attPrev != "" {
-			ctxBuilder.WriteString("\n文本附件摘要:\n" + truncateRunes(attPrev, 4000))
-		}
-	} else {
-		// 严格模式：绝不附带发件人/收件人邮箱、邮件头或任何附件名与内容
-		ctxBuilder.WriteString(trimmedBody)
+		prepared = "邮件主题: " + truncateRunes(subj, 1000) + "\n正文内容:\n" + trimmedBody
+		scopeNote = "邮件主题与正文，不含附件"
 	}
-	prepared := ctxBuilder.String()
 
 	// Gate 2: 单次发送确认闸门
 	if settings.AiRequireConfirmEachTime && !consentConfirmed {
-		scopeNote := "不含发件人地址与任何附件"
-		if settings.AiIncludeSenderAndAttachments {
-			scopeNote = "含主题与纯文本附件摘要，不含二进制附件"
-		}
 		return "", apperr.New(
 			apperr.CodeAiConsentRequired,
 			fmt.Sprintf("即将发送约 %d 字符内容（%s）至 %s", len([]rune(prepared)), scopeNote, settings.AiProvider),
@@ -116,22 +106,6 @@ func RedactOutgoingPrompt(s string) string {
 	out = reBankCard.ReplaceAllString(out, "[REDACTED_CARD]")
 	out = reCNMobile.ReplaceAllString(out, "[REDACTED_PHONE]")
 	return out
-}
-
-func loadTextAttachmentPreviews(db *sql.DB, mailID string) string {
-	rows, err := db.Query(`SELECT filename, preview_text FROM attachments WHERE message_id=? AND is_inline=0 AND preview_text != '' LIMIT 5`, mailID)
-	if err != nil {
-		return ""
-	}
-	defer rows.Close()
-	var parts []string
-	for rows.Next() {
-		var fn, prev string
-		if rows.Scan(&fn, &prev) == nil && prev != "" {
-			parts = append(parts, fmt.Sprintf("[%s]: %s", fn, prev))
-		}
-	}
-	return strings.Join(parts, "\n")
 }
 
 func truncateRunes(s string, max int) string {

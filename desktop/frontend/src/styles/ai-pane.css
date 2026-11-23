@@ -20,14 +20,8 @@
 }
 
 .ai-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
+  --scroll-padding: 10px 12px;
+  --scroll-gap: 9px;
 }
 
 .ai-privacy-pill {
@@ -105,6 +99,10 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 6px;
   flex-shrink: 0;
+}
+
+.ai-draft-actions {
+  flex-wrap: wrap;
 }
 
 .ai-chat-bubble {

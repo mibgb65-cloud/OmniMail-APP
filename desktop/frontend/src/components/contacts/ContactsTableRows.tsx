@@ -1,3 +1,4 @@
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useState } from "react";
 import { useApp } from "../../state/AppContext";
 import { useValuePresence } from "../../state/usePresence";
@@ -35,7 +36,7 @@ export function ContactsTableRows({
         <span style={{ textAlign: "right" }}>快捷操作</span>
       </div>
 
-      <div className="contacts-rows-scroll">
+      <FadeScroll className="contacts-rows-scroll" label="联系人列表">
         {contacts.map((c) => (
           <div
             key={c.id}
@@ -139,7 +140,7 @@ export function ContactsTableRows({
             </div>
           </div>
         ))}
-      </div>
+      </FadeScroll>
 
       {activeMenu && (
         <ActionMenu

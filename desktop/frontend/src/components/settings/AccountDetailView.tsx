@@ -1,3 +1,4 @@
+import { FadeTextarea } from "../common/scroll-fade/FadeTextarea";
 import { useState } from "react";
 import { accountApi, parseBackendError } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
@@ -21,9 +22,7 @@ export function AccountDetailView({
   const [replyTo, setReplyTo] = useState(detail?.replyTo ?? "");
   const [signature, setSignature] = useState(detail?.signature ?? "");
   const [saveStatus, setSaveStatus] = useState<AsyncActionStatus>("idle");
-
   if (!detail) return null;
-
   const saveMeta = async () => {
     setSaveStatus("loading");
     try {
@@ -68,7 +67,6 @@ export function AccountDetailView({
         : { tone: "pill-warning", text: "同步中" };
   const openOverlay = workspace.setOverlay;
   const isDefault = workspace.settings.defaultSendAccountId === detail.id;
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div className="row-between">
@@ -121,8 +119,11 @@ export function AccountDetailView({
           </div>
         </div>
         <div>
-          <label className="text-xs text-muted">邮箱签名模板</label>
-          <textarea
+          <label className="text-xs text-muted" htmlFor="account-signature">
+            邮箱签名模板
+          </label>
+          <FadeTextarea
+            id="account-signature"
             className="textarea"
             rows={3}
             style={{ marginTop: 4 }}
@@ -130,7 +131,6 @@ export function AccountDetailView({
             onChange={(e) => setSignature(e.target.value)}
           />
         </div>
-
         <div className="row-between">
           <div className="text-xs text-muted">
             IMAP: {detail.imap.host}:{detail.imap.port} · SMTP:{" "}

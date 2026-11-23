@@ -1,3 +1,4 @@
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { createPortal } from "react-dom";
 import { useApp } from "../../state/AppContext";
 import type { ContactItem } from "../../types/workspace";
@@ -38,7 +39,11 @@ export function ContactDetailPanel({
         </Tooltip>
       </div>
 
-      <div className="ai-scroll">
+      <FadeScroll
+        className="ai-scroll"
+        surface={isDrawer ? "--bg-ai-surface" : "--bg-card"}
+        label="联系人详细信息"
+      >
         <div className="row" style={{ gap: 12 }}>
           <div
             className={`avatar avatar-${contact.avatarTone}`}
@@ -154,7 +159,7 @@ export function ContactDetailPanel({
             <Icon name="trash" size={14} /> 删除联系人
           </button>
         </div>
-      </div>
+      </FadeScroll>
     </aside>
   );
 

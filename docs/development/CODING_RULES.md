@@ -5,3 +5,4 @@
 - Go 用 gofmt，前端使用严格 TypeScript、ESLint 和 Prettier。可用 `task format` 统一格式化。
 - 前后端手写代码文件（含 `.go`、`.ts`、`.tsx`、`.css` 等）单个不超过 200 行；目录结构采用按业务模块和职责分层的树状文件夹设计，合理拆分组件、状态、样式与数据定义。
 - 手写源码使用 UTF-8 无 BOM；生成绑定不作为手写代码修改。
+- 通用 UI 图标使用共享的 `Icon`（Heroicons 24 Outline，1.5 描边），保留设计所需的显示尺寸；品牌资源继续使用独立的 `BrandLogo` / `ProviderIcon`。在图标按钮上保留明确的无障碍名称。

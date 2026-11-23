@@ -6,49 +6,21 @@ import { ActionMenu, type ActionMenuEntry } from "../../common/ActionMenu";
 import { Icon } from "../../common/Icon";
 import { Tooltip } from "../../common/Tooltip";
 
-export function ReaderMoreMenu({ mail }: { mail: MailItem }) {
-  const { viewport, workspace, mailStore, composeStore, toastStore } = useApp();
+export function ReaderMoreMenu({
+  mail,
+  onDelete,
+  foldedItems,
+}: {
+  mail: MailItem;
+  onDelete: () => void;
+  foldedItems: ActionMenuEntry[];
+}) {
+  const { workspace } = useApp();
   const [menuPos, setMenuPos] = useState<{ left: number; top: number } | null>(
     null,
   );
   const { rendered: activePos, closing } = useValuePresence(menuPos, 100);
   const btnRef = useRef<HTMLButtonElement | null>(null);
-
-  const foldedItems: ActionMenuEntry[] = [
-    ...(viewport === "compact"
-      ? [
-          {
-            label: "转发此封邮件",
-            icon: "forward" as const,
-            shortcut: "F",
-            onSelect: () =>
-              composeStore.openReplyCompose(mail, "forward", false),
-          },
-        ]
-      : []),
-    ...(viewport !== "wide"
-      ? [
-          {
-            label: "稍后处理提醒…",
-            icon: "clock" as const,
-            shortcut: "H",
-            onSelect: () =>
-              workspace.setOverlay({ type: "snooze", mailIds: [mail.id] }),
-          },
-          {
-            label: "管理邮件标签…",
-            icon: "tag" as const,
-            shortcut: "L",
-            onSelect: () =>
-              workspace.setOverlay({
-                type: "label-manage",
-                mailIds: [mail.id],
-                mode: "assign",
-              }),
-          },
-        ]
-      : []),
-  ];
 
   const items: ActionMenuEntry[] = [
     ...foldedItems,
@@ -83,19 +55,7 @@ export function ReaderMoreMenu({ mail }: { mail: MailItem }) {
       icon: "trash",
       shortcut: "Del",
       danger: true,
-      onSelect: () => {
-        if (mail.folder === "trash") {
-          workspace.setOverlay({
-            type: "danger-confirm",
-            kind: "permanent-delete",
-            targetId: mail.id,
-            targetLabel: mail.subject,
-          });
-        } else {
-          mailStore.moveMails([mail.id], "trash");
-          toastStore.pushToast({ tone: "info", title: "已移入回收站" });
-        }
-      },
+      onSelect: onDelete,
     },
   ];
 
@@ -107,6 +67,8 @@ export function ReaderMoreMenu({ mail }: { mail: MailItem }) {
           type="button"
           className="icon-btn icon-btn-bordered reader-icon-btn"
           aria-label="更多邮件操作"
+          aria-haspopup="menu"
+          aria-expanded={menuPos !== null}
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();

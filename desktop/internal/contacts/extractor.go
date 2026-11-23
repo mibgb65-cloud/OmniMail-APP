@@ -62,7 +62,7 @@ func ExtractFromSent(db *sql.DB, accountID string, to, cc []mailproto.EmailAddre
 
 func upsertExtractedContact(db *sql.DB, accountID, selfEmail, rawName, rawEmail string, ts int64) {
 	email := strings.ToLower(strings.TrimSpace(rawEmail))
-	if email == "" || !strings.Contains(email, "@") || strings.EqualFold(email, selfEmail) || IsAutomatedAddress(email) {
+	if email == "" || !strings.Contains(email, "@") || strings.EqualFold(email, selfEmail) {
 		return
 	}
 	name := strings.TrimSpace(rawName)
@@ -74,32 +74,21 @@ func upsertExtractedContact(db *sql.DB, accountID, selfEmail, rawName, rawEmail 
 	id := "cnt-" + hex.EncodeToString(sum[:8])
 	nowMs := time.Now().UnixMilli()
 
-	var existID, existName string
-	var userEdited, mailCount int
-	var lastAt int64
-	err := db.QueryRow(`SELECT id, name, user_edited, mail_count, last_contact_at FROM contacts WHERE LOWER(email) = ?`, email).
-		Scan(&existID, &existName, &userEdited, &mailCount, &lastAt)
-	if err == sql.ErrNoRows {
-		_, _ = db.Exec(`
-			INSERT OR IGNORE INTO contacts (
-				id, name, email, source_account_id, groups_json, is_vip, is_blocked,
-				user_edited, mail_count, last_contact_at, updated_at
-			) VALUES (?, ?, ?, ?, '[]', 0, 0, 0, 1, ?, ?)
-		`, id, name, email, accountID, ts, nowMs)
-		return
-	}
+	// 备用邮箱更新归属联系人，只为非自动发件的新地址创建独立联系人。
+	res, err := db.Exec(`UPDATE contacts SET
+		name=CASE WHEN user_edited=0 AND (name='' OR LOWER(name)=? OR LOWER(name)=?) AND LOWER(?)<>?
+			THEN ? ELSE name END,
+		mail_count=mail_count+1, last_contact_at=MAX(last_contact_at, ?), updated_at=?
+		WHERE id IN (SELECT id FROM contacts WHERE email=? UNION SELECT contact_id FROM contact_aliases WHERE email=?)`,
+		localPart, email, name, localPart, name, ts, nowMs, email, email)
 	if err != nil {
 		return
 	}
-	nextAt := lastAt
-	if ts > nextAt {
-		nextAt = ts
+	if updated, _ := res.RowsAffected(); updated != 0 || IsAutomatedAddress(email) {
+		return
 	}
-	nextName := existName
-	if userEdited == 0 && (existName == "" || strings.EqualFold(existName, localPart) || strings.EqualFold(existName, email)) &&
-		name != "" && !strings.EqualFold(name, localPart) {
-		nextName = name
-	}
-	_, _ = db.Exec(`UPDATE contacts SET name=?, mail_count=?, last_contact_at=?, updated_at=? WHERE id=?`,
-		nextName, mailCount+1, nextAt, nowMs, existID)
+	_, _ = db.Exec(`INSERT INTO contacts(id, name, email, source_account_id, mail_count, last_contact_at, updated_at)
+		SELECT ?, ?, ?, ?, 1, ?, ? WHERE NOT EXISTS (SELECT 1 FROM contact_aliases WHERE email=?)
+		ON CONFLICT(email) DO UPDATE SET mail_count=mail_count+1, last_contact_at=MAX(last_contact_at, excluded.last_contact_at)`,
+		id, name, email, accountID, ts, nowMs, email)
 }

@@ -11,6 +11,7 @@ type ContactItemDTO struct {
 	ID              string   `json:"id"`
 	Name            string   `json:"name"`
 	Email           string   `json:"email"`
+	AlternateEmails []string `json:"alternateEmails,omitempty"`
 	AvatarText      string   `json:"avatarText"`
 	AvatarTone      string   `json:"avatarTone"`
 	Company         string   `json:"company"`
@@ -37,6 +38,18 @@ type DuplicateGroupDTO struct {
 	Key        string           `json:"key"`
 	Reason     string           `json:"reason"`
 	Candidates []ContactItemDTO `json:"candidates"`
+	HasRelay   bool             `json:"hasRelay"`
+}
+
+type ContactMergeGroup struct {
+	GroupKey     string   `json:"groupKey"`
+	PrimaryID    string   `json:"primaryId"`
+	DuplicateIDs []string `json:"duplicateIds"`
+}
+
+type ContactMergeResult struct {
+	Groups  int `json:"groups"`
+	Removed int `json:"removed"`
 }
 
 type BlacklistEntryDTO struct {

@@ -1,3 +1,4 @@
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useState, type CSSProperties, type MouseEvent } from "react";
 import { useApp } from "../../state/AppContext";
 import type { FolderId, MailFilterTab, MailItem } from "../../types/mail";
@@ -154,16 +155,19 @@ export function MailListPane() {
       {filteredMails.length === 0 ? (
         <MailListEmptyState noAccounts={noAccounts} />
       ) : (
-        <div
+        <FadeScroll
           className="mail-list-scroll"
-          onScroll={(e) => {
-            const el = e.currentTarget;
-            if (
-              mailStore.hasMore &&
-              el.scrollHeight - el.scrollTop - el.clientHeight < 120
-            ) {
-              void mailStore.loadMore();
-            }
+          label="邮件列表"
+          viewportProps={{
+            onScroll: (e) => {
+              const el = e.currentTarget;
+              if (
+                mailStore.hasMore &&
+                el.scrollHeight - el.scrollTop - el.clientHeight < 120
+              ) {
+                void mailStore.loadMore();
+              }
+            },
           }}
         >
           {!isCompact && (
@@ -187,7 +191,7 @@ export function MailListPane() {
               onContextMenu={(e) => handleContext(mail, e)}
             />
           ))}
-        </div>
+        </FadeScroll>
       )}
 
       <MailContextMenu state={menuState} onClose={() => setMenuState(null)} />

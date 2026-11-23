@@ -1,3 +1,4 @@
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 import { Tooltip } from "../common/Tooltip";
@@ -83,9 +84,9 @@ export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
           <div className="sidebar-divider" />
         </div>
 
-        <div className="sidebar-scroll">
+        <FadeScroll className="sidebar-scroll" label="邮箱和标签">
           <SidebarAccountsAndLabels onNavigate={close} />
-        </div>
+        </FadeScroll>
 
         <div className="sidebar-footer">
           <div className="sidebar-footer-pair">

@@ -1,7 +1,10 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../../../state/AppContext";
 import { Icon } from "../../common/Icon";
 import { ProviderIcon } from "../../common/ProviderIcon";
+import { FadeScroll } from "../../common/scroll-fade/FadeScroll";
+import { useTranslation } from "../translation/TranslationContext";
+import { TranslationBanner } from "../translation/TranslationBanner";
 import { MeetingInviteCard } from "./MeetingInviteCard";
 import { QuickReplyBox } from "./QuickReplyBox";
 import { ReaderAttachmentsSection } from "./ReaderAttachmentsSection";
@@ -12,9 +15,18 @@ import { ReaderZeroAccountGuide } from "./ReaderZeroAccountGuide";
 
 export function MailReaderPane() {
   const { workspace, mailStore } = useApp();
+  const t = useTranslation();
   const { filteredMails, selectedMail, labels } = mailStore;
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const content = t.result?.content;
+  const translation = useMemo(
+    () =>
+      content && t.mode !== "original"
+        ? { mode: t.mode, segments: content.segments, target: content.target }
+        : undefined,
+    [content, t.mode],
+  );
 
   useLayoutEffect(() => {
     if (scrollRef.current) {
@@ -53,6 +65,7 @@ export function MailReaderPane() {
   };
 
   const mailLabels = labels.filter((l) => selectedMail.labels.includes(l.id));
+  const translatedSubject = translation && content?.subject;
 
   return (
     <section className="panel-card mail-reader-pane" aria-label="邮件正文阅读">
@@ -62,8 +75,13 @@ export function MailReaderPane() {
         totalCount={filteredMails.length}
         onNavigate={navigate}
       />
+      <TranslationBanner />
 
-      <div ref={scrollRef} className="reader-scroll selectable">
+      <FadeScroll
+        className="reader-scroll selectable"
+        label="邮件正文"
+        viewportProps={{ ref: scrollRef }}
+      >
         <div key={selectedMail.id} className="reader-motion-stage">
           <div className="reader-badges-row">
             <div
@@ -114,7 +132,19 @@ export function MailReaderPane() {
             </span>
           </div>
 
-          <h2 className="reader-subject">{selectedMail.subject}</h2>
+          <h2
+            className="reader-subject"
+            title={translatedSubject ? selectedMail.subject : undefined}
+          >
+            {t.mode === "translated" && translatedSubject
+              ? translatedSubject
+              : selectedMail.subject}
+          </h2>
+          {t.mode === "bilingual" && translatedSubject && (
+            <p className="reader-translated-subject" lang={content?.target}>
+              {translatedSubject}
+            </p>
+          )}
 
           <ReaderSecurityBanners mail={selectedMail} />
 
@@ -128,13 +158,19 @@ export function MailReaderPane() {
           {selectedMail.messages.map((msg, idx) => {
             const isLatest = idx === selectedMail.messages.length - 1;
             const isExpanded =
-              isLatest || !msg.collapsed || Boolean(expandedIds[msg.id]);
+              isLatest ||
+              !msg.collapsed ||
+              Boolean(expandedIds[msg.id]) ||
+              Boolean(translation && msg.id === selectedMail.id);
 
             return (
               <ReaderThreadCard
                 key={msg.id}
                 mail={selectedMail}
                 msg={msg}
+                translation={
+                  msg.id === selectedMail.id ? translation : undefined
+                }
                 isLatest={isLatest}
                 isExpanded={isExpanded}
                 onExpand={() =>
@@ -149,7 +185,7 @@ export function MailReaderPane() {
             mailSubject={selectedMail.subject}
           />
         </div>
-      </div>
+      </FadeScroll>
 
       <QuickReplyBox mail={selectedMail} />
     </section>

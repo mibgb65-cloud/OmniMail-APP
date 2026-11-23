@@ -1,0 +1,159 @@
+.contacts-directory-card {
+  container: contact-directory / inline-size;
+}
+
+.contacts-dir-header .modal-title {
+  font-size: 17px;
+}
+
+.contacts-directory-toolbar,
+.contacts-toolbar-actions,
+.contacts-toolbar-end {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.contacts-directory-toolbar {
+  justify-content: space-between;
+  height: 32px;
+}
+
+.contacts-directory-toolbar .btn {
+  height: 32px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.contacts-toolbar-end {
+  justify-content: flex-end;
+  flex: 0 1 370px;
+}
+
+.contacts-toolbar-end input {
+  width: min(100%, 276px);
+  height: 32px;
+  min-width: 32px;
+  flex: 0 1 auto;
+}
+
+.contacts-dup-count {
+  background: var(--contact-warning-pill);
+  color: var(--contact-warning-text);
+  border-radius: 999px;
+  padding-inline: 5px;
+  font-size: 11px;
+  flex: none;
+}
+
+.contacts-review-trigger[data-has-duplicates="true"] {
+  background: var(--contact-warning-bg);
+  border-color: var(--contact-warning-border);
+  color: var(--contact-warning-text);
+}
+
+.contacts-compact-groups {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.contacts-compact-groups .btn {
+  flex: none;
+  height: 26px;
+}
+
+.contacts-dup-notice {
+  height: 44px;
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding-inline: 11px;
+  gap: 8px;
+  border: 1px solid var(--contact-warning-border);
+  border-radius: 10px;
+  background: var(--contact-warning-bg);
+  color: var(--contact-warning-text);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.contacts-dup-notice-copy,
+.contacts-dup-notice-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.contacts-dup-notice-copy {
+  flex: 1;
+  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.contacts-dup-notice-copy > svg,
+.contacts-dup-divider {
+  flex: none;
+}
+
+.contacts-dup-notice-copy strong {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.contacts-dup-preview {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.contacts-dup-notice-actions {
+  flex-shrink: 0;
+}
+
+.contacts-dup-notice-actions .btn,
+.contacts-dup-notice-actions .icon-btn {
+  height: 28px;
+}
+
+.contacts-dup-notice-actions .btn-secondary {
+  border-color: var(--contact-warning-border);
+  color: var(--contact-warning-text);
+}
+
+@container contact-directory (max-width: 650px) {
+  .contacts-dup-preview,
+  .contacts-dup-divider {
+    display: none;
+  }
+}
+
+@container contact-directory (max-width: 540px) {
+  .contacts-directory-toolbar .btn span {
+    display: none;
+  }
+
+  .contacts-directory-toolbar .btn {
+    padding-inline: 8px;
+  }
+}
+
+@container contact-directory (max-width: 360px) {
+  .contacts-dup-notice,
+  .contacts-dup-notice-actions {
+    gap: 4px;
+  }
+
+  .contacts-dup-notice {
+    padding-inline: 6px;
+  }
+
+  .contacts-dup-notice .btn {
+    padding-inline: 5px;
+  }
+}

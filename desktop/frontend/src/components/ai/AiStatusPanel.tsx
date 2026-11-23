@@ -13,9 +13,9 @@ const STATUS_META: Record<
 > = {
   error: {
     tone: "danger",
-    title: "AI 响应超时或网络波动",
-    detail: "当前请求未能完成，你可以直接重试，邮件正文未保留在远端。",
-    actionLabel: "重新尝试",
+    title: "AI 请求未完成",
+    detail: "本次请求未成功完成。请检查模型服务状态后重试。",
+    actionLabel: "重新分析邮件",
   },
   "invalid-key": {
     tone: "danger",
@@ -57,18 +57,20 @@ export function AiStatusPanel({
       <div className="ai-status-box">
         <div className="ai-card-head">
           <span className="row" style={{ color: "var(--brand-ai)" }}>
-            <Icon name="sparkle" size={14} /> 正在分析当前邮件正文…
+            <Icon name="sparkle" size={14} /> 正在处理 AI 请求…
           </span>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={aiStore.stopGeneration}
-          >
-            停止生成
-          </button>
+          {aiStore.canStop && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={aiStore.stopGeneration}
+            >
+              停止生成
+            </button>
+          )}
         </div>
         <div className="text-muted text-xs">
-          严格遵循隐私边界：仅使用本封邮件正文，不包含地址簿与附件内容。
+          不会发送附件文件、文件名或附件内容预览。
         </div>
       </div>
     );
@@ -83,7 +85,11 @@ export function AiStatusPanel({
         <strong>{meta.title}</strong>
         <Icon name="alertCircle" size={15} />
       </div>
-      <div style={{ lineHeight: 1.5 }}>{meta.detail}</div>
+      <div style={{ lineHeight: 1.5 }}>
+        {status === "error" && aiStore.errorDetail
+          ? aiStore.errorDetail
+          : meta.detail}
+      </div>
       <div className="row">
         <button
           type="button"

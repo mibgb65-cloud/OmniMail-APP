@@ -2,14 +2,13 @@
 .onboarding-page {
   width: 100%;
   height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 20px 32px;
+  --scroll-gap: 16px;
+  --scroll-padding: 20px 32px;
   background: var(--bg-canvas);
-  overflow-y: auto;
-  overflow-x: hidden;
+}
+
+.onboarding-page .fade-scroll-content {
+  justify-content: space-between;
 }
 
 .onboarding-grid {
@@ -122,14 +121,8 @@
 }
 
 .contacts-rows-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  --scroll-padding: 8px 10px;
+  --scroll-gap: 6px;
 }
 
 .contacts-table-row {

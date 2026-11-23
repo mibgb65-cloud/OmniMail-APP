@@ -1,5 +1,6 @@
 import type {
   ContactItemDTO,
+  ContactMergeGroup,
   ContactQuery,
   DuplicateGroupDTO,
   VCardImportResult,
@@ -9,7 +10,12 @@ import { INITIAL_BLACKLIST, INITIAL_CONTACTS } from "../data/contacts";
 import { isWailsDesktop } from "../state/storageHelpers";
 import type { BlacklistEntry, ContactItem } from "../types/workspace";
 
-export type { ContactQuery, DuplicateGroupDTO, VCardImportResult };
+export type {
+  ContactQuery,
+  ContactMergeGroup,
+  DuplicateGroupDTO,
+  VCardImportResult,
+};
 
 const VALID_TONES = new Set([
   "blue",
@@ -28,6 +34,7 @@ function mapContactDTO(c: ContactItemDTO): ContactItem {
     id: c.id,
     name: c.name,
     email: c.email,
+    alternateEmails: c.alternateEmails ?? [],
     avatarText: c.avatarText || "U",
     avatarTone: tone,
     company: c.company ?? "",
@@ -57,10 +64,18 @@ export const contactApi = {
     return (rows ?? []).map(mapContactDTO);
   },
 
+  async listContactsForProfile(profileId: string) {
+    if (!isWailsDesktop()) return INITIAL_CONTACTS;
+    return ((await ContactService.ListContactsForProfile(profileId)) ?? []).map(
+      mapContactDTO,
+    );
+  },
+
   async saveContact(item: ContactItem): Promise<ContactItem> {
     if (!isWailsDesktop()) return item;
     const saved = await ContactService.SaveContact({
       ...item,
+      alternateEmails: item.alternateEmails ?? [],
       lastContactAt: Date.now(),
       phone: item.phone ?? "",
       note: item.note ?? "",
@@ -87,17 +102,21 @@ export const contactApi = {
     return (rows ?? []).map(mapContactDTO);
   },
 
-  async findDuplicates(): Promise<DuplicateGroupDTO[]> {
+  async findDuplicates(profileId: string): Promise<DuplicateGroupDTO[]> {
     if (!isWailsDesktop()) return [];
-    return (await ContactService.FindDuplicateContacts()) ?? [];
+    return (await ContactService.FindDuplicateContacts(profileId)) ?? [];
   },
 
-  async mergeContacts(
-    primaryId: string,
-    dupIds: string[],
-  ): Promise<ContactItem> {
-    const merged = await ContactService.MergeContacts(primaryId, dupIds);
-    return mapContactDTO(merged);
+  batchMerge(profileId: string, plans: ContactMergeGroup[]) {
+    return ContactService.BatchMergeContacts(profileId, plans);
+  },
+
+  ignoreDuplicates(profileId: string, key: string) {
+    return ContactService.IgnoreDuplicateContacts(profileId, key);
+  },
+
+  async mailHistory(profileId: string, id: string, cursor: string) {
+    return ContactService.ListContactMailHistory(profileId, id, cursor);
   },
 
   async importVCard(): Promise<VCardImportResult> {

@@ -1,3 +1,4 @@
+import { FadeTextarea } from "../common/scroll-fade/FadeTextarea";
 import { useState } from "react";
 import { parseBackendError, ruleApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
@@ -114,7 +115,8 @@ export function AutoReplyTab() {
           onChange={(e) => updateAutoReply({ subject: e.target.value })}
         />
         <label className="text-xs text-muted">自动回复正文</label>
-        <textarea
+        <FadeTextarea
+          aria-label="自动回复正文"
           className="textarea"
           rows={4}
           value={ar.body}

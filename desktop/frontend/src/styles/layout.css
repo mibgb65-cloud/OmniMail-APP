@@ -63,6 +63,8 @@
 /* 工作区舞台：承载底层三栏与位于顶栏下方的浮层抽屉 */
 .workspace-stage {
   --workspace-column-gap: 10px;
+  --mail-sidebar-width: 224px;
+  --mail-list-width: 328px;
   position: relative;
   flex: 1;
   min-width: 0;
@@ -93,8 +95,8 @@
 }
 
 .sidebar-pane {
-  width: 224px;
-  min-width: 224px;
+  width: var(--mail-sidebar-width);
+  min-width: var(--mail-sidebar-width);
   flex-shrink: 0;
   padding: 12px;
   gap: 10px;
@@ -102,8 +104,8 @@
 }
 
 .mail-list-pane {
-  width: 328px;
-  min-width: 328px;
+  width: var(--mail-list-width);
+  min-width: var(--mail-list-width);
   flex-shrink: 0;
 }
 

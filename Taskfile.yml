@@ -51,10 +51,11 @@ tasks:
       - './{{.APP_BINARY}}'
 
   test:
-    desc: 构建前端资源并运行 Go 测试
+    desc: 构建前端资源并运行前端与 Go 测试
     cmds:
       - task: bindings
       - task: frontend:build
+      - task: frontend:test
       - task: go:test
 
   verify:
@@ -65,6 +66,7 @@ tasks:
       - task: format:check
       - task: frontend:lint
       - task: frontend:build
+      - task: frontend:test
       - task: go:vet
       - task: go:test
       - task: go:build
@@ -97,6 +99,11 @@ tasks:
     dir: desktop/frontend
     cmds:
       - pnpm build:dev
+
+  frontend:test:
+    dir: desktop/frontend
+    cmds:
+      - pnpm test
 
   common:dev:frontend:
     dir: desktop/frontend

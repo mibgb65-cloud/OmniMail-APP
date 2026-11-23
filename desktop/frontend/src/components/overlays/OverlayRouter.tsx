@@ -4,6 +4,7 @@ import type { OverlayModal } from "../../types/ui";
 import { AiConsentModal } from "../ai/AiConsentModal";
 import { ScheduleSendModal } from "../compose/ScheduleSendModal";
 import { ContactEditModal } from "../contacts/ContactEditModal";
+import { DuplicateModal } from "../contacts/duplicates/DuplicateModal";
 import { AddAccountModal } from "../onboarding/AddAccountModal";
 import { LegalDocModal } from "../onboarding/LegalDocModal";
 import { ManualImapModal } from "../onboarding/ManualImapModal";
@@ -69,6 +70,7 @@ function renderModal(ov: Exclude<OverlayModal, { type: "none" }>) {
         <AiConsentModal
           actionLabel={ov.actionLabel}
           onConfirmPrompt={ov.onConfirmPrompt}
+          mailId={ov.mailId}
         />
       );
     case "snooze":
@@ -104,6 +106,8 @@ function renderModal(ov: Exclude<OverlayModal, { type: "none" }>) {
       return <DataDirMigrateModal />;
     case "contact-edit":
       return <ContactEditModal contactId={ov.contactId} />;
+    case "contact-duplicates":
+      return <DuplicateModal key={ov.mode} mode={ov.mode} />;
     case "danger-confirm":
       return (
         <DangerConfirmModal

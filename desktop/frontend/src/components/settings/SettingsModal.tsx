@@ -1,3 +1,4 @@
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useState } from "react";
 import { useApp } from "../../state/AppContext";
 import type { SettingsTabId } from "../../types/settings";
@@ -12,20 +13,8 @@ import { RulesTab } from "./RulesTab";
 import { AboutTab, ShortcutsTab } from "./ShortcutsAndAboutTabs";
 import { StorageTab } from "./StorageTab";
 import { SyncTab } from "./SyncTab";
-
-const NAV_ITEMS: Array<{ id: SettingsTabId; label: string; icon: string }> = [
-  { id: "general", label: "通用", icon: "sliders" },
-  { id: "accounts", label: "邮箱账户", icon: "mail" },
-  { id: "sync", label: "收信与同步", icon: "refresh" },
-  { id: "compose", label: "写信与签名", icon: "pen" },
-  { id: "rules", label: "收件规则", icon: "rule" },
-  { id: "auto-reply", label: "自动回复", icon: "autoReply" },
-  { id: "ai", label: "AI 助手", icon: "sparkle" },
-  { id: "privacy", label: "隐私与安全", icon: "shield" },
-  { id: "storage", label: "存储与数据", icon: "database" },
-  { id: "shortcuts", label: "快捷键", icon: "keyboard" },
-  { id: "about", label: "关于 OmniMail", icon: "info" },
-];
+import { TranslationSettingsTab } from "./TranslationSettingsTab";
+import { settingsNav } from "./settingsNav";
 
 export function SettingsModal({
   initialTab,
@@ -42,12 +31,11 @@ export function SettingsModal({
     initialAccountId,
   );
   const [query, setQuery] = useState("");
-
-  const visibleTabs = NAV_ITEMS.filter((item) =>
+  const visibleTabs = settingsNav.filter((item) =>
     item.label.toLowerCase().includes(query.trim().toLowerCase()),
   );
-  const activeMeta = NAV_ITEMS.find((item) => item.id === tab) ?? NAV_ITEMS[0];
-
+  const activeMeta =
+    settingsNav.find((item) => item.id === tab) ?? settingsNav[0];
   const renderTabBody = () => {
     switch (tab) {
       case "general":
@@ -70,6 +58,8 @@ export function SettingsModal({
         return <AutoReplyTab />;
       case "ai":
         return <AiSettingsTab />;
+      case "translation":
+        return <TranslationSettingsTab onOpenAi={() => setTab("ai")} />;
       case "privacy":
         return <PrivacyTab />;
       case "storage":
@@ -80,7 +70,6 @@ export function SettingsModal({
         return <AboutTab />;
     }
   };
-
   return (
     <div
       className="modal-backdrop"
@@ -107,8 +96,11 @@ export function SettingsModal({
               placeholder="搜索设置项…"
             />
           </div>
-
-          <div className="settings-nav-scroll">
+          <FadeScroll
+            className="settings-nav-scroll"
+            surface="--bg-surface"
+            label="设置分类"
+          >
             {visibleTabs.map((item) => (
               <button
                 key={item.id}
@@ -128,7 +120,7 @@ export function SettingsModal({
                 )}
               </button>
             ))}
-          </div>
+          </FadeScroll>
 
           <button
             type="button"
@@ -174,11 +166,11 @@ export function SettingsModal({
               <Icon name="x" size={14} />
             </button>
           </div>
-          <div className="modal-body">
+          <FadeScroll className="modal-body" label={activeMeta.label}>
             <div key={tab} className="settings-tab-stage">
               {renderTabBody()}
             </div>
-          </div>
+          </FadeScroll>
           <div className="modal-footer settings-modal-footer">
             <span className="row" style={{ gap: 6, fontSize: 12 }}>
               <span className="status-dot" />

@@ -33,7 +33,7 @@ export function SidebarAccountsAndLabels({
               workspace.setOverlay({ type: "add-account" });
             }}
           >
-            + 添加
+            <Icon name="plus" size={12} /> 添加
           </button>
         </div>
         {accounts.length === 0 ? (
@@ -47,7 +47,7 @@ export function SidebarAccountsAndLabels({
           >
             <div className="account-empty-head">
               <span className="account-empty-plus" aria-hidden="true">
-                +
+                <Icon name="plus" size={16} />
               </span>
               <div className="account-empty-meta">
                 <span className="account-empty-title truncate">
@@ -58,7 +58,9 @@ export function SidebarAccountsAndLabels({
                 </span>
               </div>
             </div>
-            <span className="account-empty-cta">+ 添加第一个邮箱</span>
+            <span className="account-empty-cta">
+              <Icon name="plus" size={12} /> 添加第一个邮箱
+            </span>
           </button>
         ) : (
           accounts.map((acc) => {
@@ -67,7 +69,7 @@ export function SidebarAccountsAndLabels({
             return (
               <Tooltip
                 key={acc.id}
-                label={`${acc.email} · 点击筛选该邮箱`}
+                label={`${acc.name} · ${acc.email} · ${statusLabel}`}
                 badge={acc.unreadCount}
                 placement="right"
               >
@@ -83,10 +85,7 @@ export function SidebarAccountsAndLabels({
                 >
                   <ProviderIcon provider={acc.provider} size={28} />
                   <div className="account-row-meta">
-                    <span
-                      className="account-row-name truncate"
-                      title={acc.name}
-                    >
+                    <span className="account-row-name truncate">
                       {acc.name}
                     </span>
                     <span className="account-row-sub truncate">
@@ -98,9 +97,7 @@ export function SidebarAccountsAndLabels({
                       <span
                         className="account-status-dot"
                         data-status={acc.status}
-                        role="img"
-                        title={statusLabel}
-                        aria-label={statusLabel}
+                        aria-hidden="true"
                       />
                     </span>
                     <span
@@ -132,7 +129,7 @@ export function SidebarAccountsAndLabels({
               }}
               aria-label="新建标签"
             >
-              +
+              <Icon name="plus" size={13} />
             </button>
           </Tooltip>
         </div>

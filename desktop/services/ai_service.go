@@ -31,12 +31,12 @@ func (s *AiService) GetCachedMailInsight(mailID string) (AiCachedStateDTO, error
 	return AiCachedStateDTO{Insight: ins, Turns: turns}, nil
 }
 
-func (s *AiService) AnalyzeMail(mailID string, consentConfirmed bool, forceRefresh bool) (ai.AiMailInsight, error) {
+func (s *AiService) AnalyzeMail(mailID string, consentConfirmed bool, forceRefresh bool, options ai.MailAnalysisOptions) (ai.AiMailInsight, error) {
 	sess, err := s.mgr.ActiveSession()
 	if err != nil {
 		return ai.AiMailInsight{}, err
 	}
-	return s.gateway.AnalyzeMail(sess, mailID, consentConfirmed, forceRefresh)
+	return s.gateway.AnalyzeMail(sess, mailID, consentConfirmed, forceRefresh, options)
 }
 
 func (s *AiService) AskMailStream(req ai.AskMailRequest) (string, error) {
@@ -45,6 +45,14 @@ func (s *AiService) AskMailStream(req ai.AskMailRequest) (string, error) {
 		return "", err
 	}
 	return s.gateway.AskMailStream(sess, req)
+}
+
+func (s *AiService) TranslateMail(req ai.TranslateMailRequest) (ai.MailTranslation, error) {
+	sess, err := s.mgr.ActiveSession()
+	if err != nil {
+		return ai.MailTranslation{}, err
+	}
+	return s.gateway.TranslateMail(sess, req)
 }
 
 func (s *AiService) AssistComposeStream(req ai.ComposeAssistRequest) (string, error) {

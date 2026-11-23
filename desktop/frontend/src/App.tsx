@@ -1,15 +1,24 @@
-import { useEffect, useState, type MouseEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+} from "react";
 import { MailAiSidebar } from "./components/ai/MailAiSidebar";
+import { useAiPanelResize } from "./components/ai/useAiPanelResize";
 import { ToastStack } from "./components/common/ToastStack";
 import { ComposeDock } from "./components/compose/ComposeDock";
 import { ComposeModal } from "./components/compose/ComposeModal";
 import { ContactsSidebar } from "./components/contacts/ContactsSidebar";
+import { DuplicateCenter } from "./components/contacts/duplicates/DuplicateCenter";
 import {
   ContactsWorkspace,
   useContactsNavState,
 } from "./components/contacts/ContactsWorkspace";
 import { MailListPane } from "./components/mail/MailListPane";
 import { MailReaderPane } from "./components/mail/reader/MailReaderPane";
+import { TranslationProvider } from "./components/mail/translation/TranslationContext";
 import { OnboardingScreen } from "./components/onboarding/OnboardingScreen";
 import { OverlayRouter } from "./components/overlays/OverlayRouter";
 import { LaunchSplash } from "./components/shell/LaunchSplash";
@@ -56,6 +65,8 @@ function OmniMailShell() {
 
   const isMailScreen = workspace.screen === "mail";
   const dockAi = isMailScreen && viewport === "wide";
+  const stageRef = useRef<HTMLDivElement>(null);
+  const aiPanel = useAiPanelResize(stageRef, dockAi, isMailScreen);
   const showLeftDrawer =
     isMailScreen && viewport === "compact" && workspace.leftNavOpen;
 
@@ -73,7 +84,13 @@ function OmniMailShell() {
       <TopBar />
       <StatusBanner />
 
-      <div id="workspace-stage" className="workspace-stage">
+      <div
+        ref={stageRef}
+        id="workspace-stage"
+        className="workspace-stage"
+        data-ai-resizing={aiPanel.isResizing}
+        style={{ "--ai-slide-width": `${aiPanel.width}px` } as CSSProperties}
+      >
         <main className="workspace-grid" aria-label="主工作空间">
           {activeRoute === "contacts" ? (
             <ContactsSidebar {...contactsNav} />
@@ -115,7 +132,11 @@ function OmniMailShell() {
 
         {leftDrawer.mounted && <LeftNavDrawer closing={leftDrawer.closing} />}
         {isMailScreen && (
-          <MailAiSidebar open={aiStore.aiOpen} isDrawer={!dockAi} />
+          <MailAiSidebar
+            open={aiStore.aiOpen}
+            isDrawer={!dockAi}
+            resize={aiPanel.separator}
+          />
         )}
       </div>
     </div>
@@ -158,7 +179,11 @@ function OmniMailShell() {
 export default function App() {
   return (
     <AppProvider>
-      <OmniMailShell />
+      <TranslationProvider>
+        <DuplicateCenter>
+          <OmniMailShell />
+        </DuplicateCenter>
+      </TranslationProvider>
     </AppProvider>
   );
 }

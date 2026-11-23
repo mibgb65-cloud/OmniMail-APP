@@ -1,3 +1,4 @@
+import { FadeTextarea } from "../common/scroll-fade/FadeTextarea";
 import { useState } from "react";
 import { useApp } from "../../state/AppContext";
 import { Checkbox } from "../common/Checkbox";
@@ -29,6 +30,7 @@ export function ContactEditModal({ contactId }: { contactId?: string }) {
       id: existing?.id ?? `ct-${Date.now()}`,
       name: name.trim(),
       email: email.trim(),
+      alternateEmails: existing?.alternateEmails,
       avatarText: name.trim().slice(0, 1),
       avatarTone: existing?.avatarTone ?? "blue",
       company: company.trim() || "未填写公司",
@@ -158,7 +160,8 @@ export function ContactEditModal({ contactId }: { contactId?: string }) {
 
       <div>
         <label className="text-xs text-muted">备注</label>
-        <textarea
+        <FadeTextarea
+          aria-label="联系人备注"
           className="textarea"
           rows={3}
           style={{ marginTop: 4 }}

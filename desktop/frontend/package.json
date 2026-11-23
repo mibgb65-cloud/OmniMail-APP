@@ -15,12 +15,16 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
+    "test": "node --experimental-strip-types --test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@heroicons/react": "2.2.0",
     "@wailsio/runtime": "3.1.0",
+    "franc-min": "6.2.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "react-markdown": "10.1.0"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

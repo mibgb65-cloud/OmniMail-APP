@@ -1,6 +1,7 @@
 import type {
   AskMailRequest,
   ComposeAssistRequest,
+  MailAnalysisOptions,
   ModelsRequest,
   SaveConfigRequest,
   TestResult,
@@ -68,6 +69,9 @@ export const aiApi = {
           })),
           draftTag: dto.insight.draftTag ?? "建议回复",
           draftReply: dto.insight.draftReply ?? "",
+          summaryLanguage: dto.insight.summaryLanguage,
+          draftLanguage: dto.insight.draftLanguage,
+          draftTone: dto.insight.draftTone,
         }
       : null;
     const turns: AiChatTurn[] = (dto.turns ?? []).map((t) => ({
@@ -81,13 +85,17 @@ export const aiApi = {
 
   async analyzeMail(
     mailId: string,
-    consentConfirmed = false,
-    forceRefresh = false,
+    consentConfirmed: boolean,
+    {
+      forceRefresh,
+      ...options
+    }: MailAnalysisOptions & { forceRefresh: boolean },
   ): Promise<AiMailInsight> {
     const res = await AiService.AnalyzeMail(
       mailId,
       consentConfirmed,
       forceRefresh,
+      options,
     );
     return {
       summaryTitle: res.summaryTitle ?? "",
@@ -99,13 +107,16 @@ export const aiApi = {
       })),
       draftTag: res.draftTag ?? "建议回复",
       draftReply: res.draftReply ?? "",
+      summaryLanguage: res.summaryLanguage,
+      draftLanguage: res.draftLanguage,
+      draftTone: res.draftTone,
     };
   },
 
   async askMailStream(req: {
+    requestId: string;
     mailId: string;
     question: string;
-    history: AiChatTurn[];
     consentConfirmed: boolean;
   }): Promise<string> {
     return AiService.AskMailStream(req);

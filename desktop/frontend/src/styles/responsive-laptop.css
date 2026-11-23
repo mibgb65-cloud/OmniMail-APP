@@ -37,14 +37,13 @@
   }
 
   .mail-list-scroll {
-    padding: 8px 6px 8px 8px;
-    gap: 6px;
+    --scroll-padding: 8px;
+    --scroll-gap: 6px;
   }
 
   .reader-toolbar {
-    height: 48px;
     min-height: 48px;
-    padding: 0 14px;
+    padding-inline: 14px;
   }
 
   .reader-act-btn {
@@ -54,8 +53,8 @@
   }
 
   .reader-scroll {
-    padding: 14px 18px;
-    gap: 12px;
+    --scroll-padding: 14px 18px;
+    --scroll-gap: 12px;
   }
 
   .reader-subject {

@@ -1,10 +1,30 @@
+import { useState } from "react";
+import { profileApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
+import type { AppSettings } from "../../types/settings";
 import { AiProviderCard } from "./ai/AiProviderCard";
 import { SwitchRow } from "./SwitchRow";
 
 export function AiSettingsTab() {
-  const { workspace } = useApp();
+  const { workspace, toastStore } = useApp();
   const s = workspace.settings;
+  const [saving, setSaving] = useState(false);
+
+  const savePrivacy = async (patch: Partial<AppSettings>) => {
+    setSaving(true);
+    try {
+      // 后端确认保存后再改变提示，避免开关与真正发送范围不一致。
+      await profileApi.updateAppSettings(patch);
+      workspace.applySettingsFromBackend(patch);
+    } catch {
+      toastStore.pushToast({
+        tone: "warning",
+        title: "无法保存 AI 隐私设置，请重试",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -14,22 +34,23 @@ export function AiSettingsTab() {
           heading="启用右侧 Omni AI 助手"
           desc="关闭后不会加载任何摘要与建议，工作台完全作为纯协议邮件客户端运行"
           checked={s.aiEnabled}
-          onChange={(v) => workspace.updateSettings({ aiEnabled: v })}
+          disabled={saving}
+          onChange={(v) => void savePrivacy({ aiEnabled: v })}
         />
         <SwitchRow
           heading="每次显式触发前弹出数据范围确认"
-          desc="清晰展示「仅发送当前邮件正文 · 不外传地址与附件」并等待确认"
+          desc="在发送前说明这次会使用正文、可选主题和对话上下文，并等待确认"
           checked={s.aiRequireConfirmEachTime}
-          onChange={(v) =>
-            workspace.updateSettings({ aiRequireConfirmEachTime: v })
-          }
+          disabled={saving}
+          onChange={(v) => void savePrivacy({ aiRequireConfirmEachTime: v })}
         />
         <SwitchRow
-          heading="允许附带主题与纯文本附件摘要（默认关闭）"
-          desc="默认严格仅发纯文本正文；开启后仍永不上传二进制附件与敏感邮件"
+          heading="允许附带正在阅读的邮件主题（默认关闭）"
+          desc="关闭时仅取邮件正文；开启后同时使用主题。两种模式均不发送邮件附件、文件名或附件内容预览。"
           checked={s.aiIncludeSenderAndAttachments}
+          disabled={saving}
           onChange={(v) =>
-            workspace.updateSettings({ aiIncludeSenderAndAttachments: v })
+            void savePrivacy({ aiIncludeSenderAndAttachments: v })
           }
         />
       </div>

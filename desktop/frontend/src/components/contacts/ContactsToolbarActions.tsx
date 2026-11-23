@@ -1,30 +1,15 @@
-import { useEffect, useState } from "react";
-import {
-  contactApi,
-  parseBackendError,
-  type DuplicateGroupDTO,
-} from "../../services/backendClient";
+import { contactApi, parseBackendError } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
-import { isWailsDesktop } from "../../state/storageHelpers";
 import { Icon } from "../common/Icon";
 
-export function ContactsToolbarActions() {
+export function ContactsToolbarActions({
+  groupCount,
+  onReview,
+}: {
+  groupCount: number;
+  onReview: () => void;
+}) {
   const { workspace, toastStore } = useApp();
-  const [dupGroups, setDupGroups] = useState<DuplicateGroupDTO[]>([]);
-
-  useEffect(() => {
-    if (!isWailsDesktop()) return;
-    let active = true;
-    void contactApi
-      .findDuplicates()
-      .then((groups) => {
-        if (active) setDupGroups(groups);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [workspace.contacts.length]);
 
   const handleImportVCard = () => {
     void contactApi
@@ -68,66 +53,41 @@ export function ContactsToolbarActions() {
       );
   };
 
-  const firstDup = dupGroups[0];
-
   return (
-    <>
-      <div className="row" style={{ gap: 6, flexShrink: 0 }}>
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          style={{ height: 32 }}
-          onClick={handleImportVCard}
-        >
-          导入 vCard
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          style={{ height: 32 }}
-          onClick={handleExportVCard}
-        >
-          <Icon name="download" size={13} /> 导出
-        </button>
-      </div>
-
-      {firstDup && (firstDup.candidates?.length ?? 0) >= 2 && (
-        <div
-          className="security-banner warning"
-          style={{ marginTop: 6, padding: "6px 12px" }}
-        >
-          <span className="text-xs">
-            检测到重复联系人（{firstDup.reason}）：
-            <strong>
-              {(firstDup.candidates ?? []).map((c) => c.email).join(" / ")}
-            </strong>
-          </span>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => {
-              const [primary, ...rest] = firstDup.candidates ?? [];
-              if (!primary) return;
-              void contactApi
-                .mergeContacts(
-                  primary.id,
-                  rest.map((r) => r.id),
-                )
-                .then(async () => {
-                  const fresh = await contactApi.listContacts();
-                  workspace.setContacts(fresh);
-                  setDupGroups((prev) => prev.slice(1));
-                  toastStore.pushToast({
-                    tone: "success",
-                    title: `已合并重复联系人至 ${primary.name}`,
-                  });
-                });
-            }}
-          >
-            一键合并
-          </button>
-        </div>
-      )}
-    </>
+    <div className="contacts-toolbar-actions">
+      <button
+        type="button"
+        className="btn btn-secondary btn-sm"
+        aria-label="导入 vCard"
+        title="导入 vCard"
+        onClick={handleImportVCard}
+      >
+        <Icon name="upload" size={14} /> <span>导入 vCard</span>
+      </button>
+      <button
+        type="button"
+        className="btn btn-secondary btn-sm"
+        aria-label="导出"
+        title="导出"
+        onClick={handleExportVCard}
+      >
+        <Icon name="download" size={14} /> <span>导出</span>
+      </button>
+      <button
+        type="button"
+        className="btn btn-secondary btn-sm contacts-review-trigger"
+        data-has-duplicates={groupCount > 0}
+        aria-label={
+          groupCount ? `整理重复项（${groupCount} 组）` : "整理重复项"
+        }
+        title="整理重复项"
+        onClick={onReview}
+      >
+        <Icon name="users" size={14} /> <span>整理重复项</span>
+        {groupCount > 0 && (
+          <strong className="contacts-dup-count">{groupCount}</strong>
+        )}
+      </button>
+    </div>
   );
 }

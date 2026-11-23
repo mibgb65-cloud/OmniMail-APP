@@ -147,7 +147,7 @@ html[data-theme-sync="true"] .btn {
   .drawer-scrim,
   .ai-drawer,
   .ai-pane-inline,
-  .ai-drawer .ai-scroll > *,
+  .ai-drawer .ai-scroll .fade-scroll-content > *,
   .left-nav-drawer,
   .toast-item {
     animation: omni-fade-in var(--dur-instant) linear both !important;

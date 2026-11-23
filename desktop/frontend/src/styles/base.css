@@ -1,3 +1,5 @@
+@import "./scrollbar-reset.css";
+
 *,
 *::before,
 *::after {
@@ -59,25 +61,6 @@ button:focus-visible,
 [role="switch"]:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--focus-ring);
-}
-
-/* 自定义 6px 细滚动条（透明轨道 + 悬停加深，替代 Windows 17px 默认粗灰条） */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
 }
 
 /* 通用排版与布局工具类 */

@@ -47,13 +47,7 @@
 }
 
 .sidebar-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  --scroll-gap: 8px;
 }
 
 .nav-section {
@@ -76,6 +70,9 @@
 }
 
 .nav-section-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   font-size: 11px;
   font-weight: 500;
   color: var(--brand-accent);

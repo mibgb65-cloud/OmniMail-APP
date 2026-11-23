@@ -1,3 +1,4 @@
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useState } from "react";
 import { useApp } from "../../state/AppContext";
 import { BrandLogo } from "../common/BrandLogo";
@@ -33,7 +34,11 @@ export function OnboardingScreen() {
   };
 
   return (
-    <div className="onboarding-page">
+    <FadeScroll
+      className="onboarding-page"
+      surface="--bg-canvas"
+      label="首次使用引导"
+    >
       <div
         className="row-between window-drag-region"
         onDoubleClick={handleDragRegionDoubleClick}
@@ -190,6 +195,6 @@ export function OnboardingScreen() {
         支持浏览器 OAuth、客户端授权码与标准 IMAP/SMTP ·
         可随时在设置中迁移数据目录或清理缓存
       </div>
-    </div>
+    </FadeScroll>
   );
 }

@@ -1,16 +1,14 @@
 import {
   useCallback,
-  useEffect,
   useRef,
   useState,
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
 import { useValuePresence } from "../../state/usePresence";
 import { Icon } from "./Icon";
-import { CustomSelectOptionList } from "./CustomSelectOptionList";
+import { CustomSelectPopover } from "./CustomSelectPopover";
 import {
   computePopoverGeometry,
   usePopoverDismiss,
@@ -57,7 +55,6 @@ export function CustomSelect({
   const [focusIdx, setFocusIdx] = useState(0);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
   const query = search.trim().toLowerCase();
   const choices = query
@@ -83,10 +80,6 @@ export function CustomSelect({
   }, [disabled, minMenuWidth, options, searchLabel, selectedIndex]);
 
   usePopoverDismiss(isOpen, btnRef, menuRef, closeMenu);
-  useEffect(() => {
-    if (isOpen && searchLabel)
-      searchRef.current?.focus({ preventScroll: true });
-  }, [isOpen, searchLabel]);
 
   const choose = (choice?: CustomSelectOption) => {
     if (choice) onChange(String(choice.value));
@@ -148,52 +141,26 @@ export function CustomSelect({
         <Icon name="chevronDown" size={13} className="select-chevron" />
       </button>
 
-      {activeGeo &&
-        createPortal(
-          <div
-            ref={menuRef}
-            role={searchLabel ? undefined : "listbox"}
-            inert={closing}
-            data-side={activeGeo.side}
-            data-closing={closing ? "true" : "false"}
-            className="custom-select-menu"
-            style={{
-              left: activeGeo.left,
-              top: activeGeo.top,
-              bottom: activeGeo.bottom,
-              width: activeGeo.width,
-            }}
-          >
-            {searchLabel && (
-              <input
-                ref={searchRef}
-                className="input custom-select-search"
-                type="search"
-                aria-label={searchLabel}
-                placeholder={searchLabel}
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setFocusIdx(0);
-                }}
-                onKeyDown={(e) => {
-                  if (["ArrowUp", "ArrowDown", "Enter", "Tab"].includes(e.key))
-                    handleKeyDown(e);
-                }}
-              />
-            )}
-            <CustomSelectOptionList
-              choices={choices}
-              value={value}
-              focusIndex={focusIdx}
-              mono={mono}
-              searchLabel={searchLabel}
-              onFocusIndex={setFocusIdx}
-              onChoose={choose}
-            />
-          </div>,
-          document.body,
-        )}
+      {activeGeo && (
+        <CustomSelectPopover
+          ref={menuRef}
+          geo={activeGeo}
+          closing={closing}
+          search={search}
+          searchLabel={searchLabel}
+          choices={choices}
+          value={value}
+          focusIndex={focusIdx}
+          mono={mono}
+          onFocusIndex={setFocusIdx}
+          onChoose={choose}
+          onSearch={(query) => {
+            setSearch(query);
+            setFocusIdx(0);
+          }}
+          onKeyDown={handleKeyDown}
+        />
+      )}
     </>
   );
 }

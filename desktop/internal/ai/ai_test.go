@@ -41,6 +41,10 @@ func TestPrivacyGuardFiveGatesAndGatewayCache(t *testing.T) {
 	// 敏感验证码邮件（Gate 3）
 	_, _ = db.Exec(`INSERT INTO messages(id,account_id,thread_id,folder,sender_name,sender_email,subject,body_text,sent_at,received_at)
 		VALUES ('m-otp','acc-1','t1','inbox','Sec','sec@bank.com','您的登录一次性密码','验证码为 883920',?,?)`, nowMs, nowMs)
+	if _, err := db.Exec(`INSERT INTO attachments(id,message_id,filename,preview_text)
+		VALUES ('a-text','m-ok','local-only.txt','local-preview-marker')`); err != nil {
+		t.Fatal(err)
+	}
 
 	settings := config.DefaultAppSettings()
 	settings.AiEnabled = false
@@ -68,6 +72,19 @@ func TestPrivacyGuardFiveGatesAndGatewayCache(t *testing.T) {
 	}
 	if strings.Contains(ctxText, "13912345678") || strings.Contains(ctxText, "6222021234567890123") {
 		t.Fatalf("Gate 5 violation: phone or bank card not redacted: %s", ctxText)
+	}
+	if strings.Contains(ctxText, "项目进度") {
+		t.Fatal("strict mode included the mail subject")
+	}
+	settings.AiIncludeSenderAndAttachments = true
+	ctxText, err = PrepareMailContext(db, settings, "m-ok", true)
+	if err != nil || !strings.Contains(ctxText, "项目进度") || !strings.Contains(ctxText, "请于周五前反馈") {
+		t.Fatalf("subject mode did not include subject and body: %v", err)
+	}
+	for _, forbidden := range []string{"Alice", "alice@secret.com", "local-only.txt", "local-preview-marker"} {
+		if strings.Contains(ctxText, forbidden) {
+			t.Fatalf("subject mode included excluded field %q", forbidden)
+		}
 	}
 
 	// 验证 SSE 流式网关与 ai_insights 缓存命中（第二次零 HTTP 调用）

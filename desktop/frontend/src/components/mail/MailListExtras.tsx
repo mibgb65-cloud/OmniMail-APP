@@ -98,7 +98,7 @@ export function MailListEmptyState({
           }}
           onClick={() => workspace.setOverlay({ type: "add-account" })}
         >
-          + 添加第一个邮箱
+          <Icon name="plus" size={13} /> 添加第一个邮箱
         </button>
       </div>
     );

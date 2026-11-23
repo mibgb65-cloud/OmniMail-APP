@@ -44,7 +44,12 @@ export type OverlayModal =
       targetProfileId?: string;
     }
   | { type: "legal-doc"; doc: "terms" | "privacy" }
-  | { type: "ai-consent"; actionLabel: string; onConfirmPrompt?: string }
+  | {
+      type: "ai-consent";
+      actionLabel: string;
+      onConfirmPrompt: string;
+      mailId: string;
+    }
   | { type: "snooze"; mailIds: string[] }
   | {
       type: "label-manage";
@@ -68,6 +73,7 @@ export type OverlayModal =
   | { type: "backup-migration" }
   | { type: "data-dir-migrate" }
   | { type: "contact-edit"; contactId?: string }
+  | { type: "contact-duplicates"; mode: "review" | "confirm-all" }
   | {
       type: "danger-confirm";
       kind: DangerConfirmKind;

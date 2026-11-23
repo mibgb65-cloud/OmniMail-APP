@@ -94,5 +94,8 @@ func RunMigrations(db *sql.DB) error {
 		}
 		seedDefaultLabels(db)
 	}
+	if current < 2 {
+		return migrateContactAliases(db)
+	}
 	return nil
 }

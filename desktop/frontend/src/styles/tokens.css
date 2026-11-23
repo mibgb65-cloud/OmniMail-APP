@@ -44,7 +44,7 @@
   --tag-imap-bg: #e2e8f0;
   --tag-imap-fg: #334155;
 
-  /* 自定义下拉、右键菜单、Tooltip 与细滚动条令牌 */
+  /* 自定义下拉、右键菜单与 Tooltip 令牌 */
   --bg-popover: #ffffff;
   --border-popover: #e2e7f0;
   --bg-popover-hover: #f1f5f9;
@@ -56,8 +56,6 @@
   --tooltip-kbd-ink: #cbd5e1;
   --tooltip-badge-bg: #1e3a5f;
   --tooltip-badge-ink: #93c5fd;
-  --scrollbar-thumb: #cbd5e1;
-  --scrollbar-thumb-hover: #94a3b8;
   --focus-ring: rgba(37, 99, 235, 0.16);
 
   --shadow-card: 0 2px 10px rgba(15, 23, 42, 0.04);
@@ -150,8 +148,6 @@
   --tooltip-kbd-ink: #94a3b8;
   --tooltip-badge-bg: #1b2842;
   --tooltip-badge-ink: #60a5fa;
-  --scrollbar-thumb: #334155;
-  --scrollbar-thumb-hover: #475569;
   --focus-ring: rgba(59, 130, 246, 0.24);
 
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);

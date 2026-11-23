@@ -1,0 +1,64 @@
+.ai-markdown,
+.ai-chat-bubble {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.ai-chat-bubble.user {
+  white-space: pre-wrap;
+}
+
+.ai-markdown {
+  font-size: 13px;
+  line-height: 1.65;
+  user-select: text;
+}
+
+.ai-markdown :is(p, ul, ol, pre, blockquote, h1, h2, h3, h4, h5, h6) {
+  margin: 0 0 0.55em;
+}
+
+.ai-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.ai-markdown p {
+  white-space: pre-line;
+}
+
+.ai-markdown :is(h1, h2, h3, h4, h5, h6) {
+  font-size: 1.05em;
+  color: var(--text-ink);
+}
+
+.ai-markdown :is(ul, ol) {
+  padding-inline-start: 1.45em;
+}
+
+.ai-markdown li + li {
+  margin-top: 0.15em;
+}
+
+.ai-markdown blockquote {
+  border-inline-start: 2px solid var(--border-strong);
+  padding-inline-start: 0.7em;
+}
+
+.ai-markdown :is(pre, code) {
+  background: var(--bg-surface);
+  border-radius: 5px;
+}
+
+.ai-markdown code {
+  padding: 0.12em 0.28em;
+}
+
+.ai-markdown pre {
+  padding: 0.5em 0.65em;
+  white-space: pre-wrap;
+}
+
+.ai-markdown pre code {
+  padding: 0;
+}

@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { parseMailtoUrl } from "../../../state/storageHelpers";
 import { useApp } from "../../../state/AppContext";
 import type { MailItem, ThreadMessage } from "../../../types/mail";
 import { Icon } from "../../common/Icon";
+import {
+  translatedSegment,
+  type BodyTranslation,
+} from "../translation/translatedText";
 import { SafeMailHtmlView } from "./SafeMailHtmlView";
 
 export function ReaderThreadCard({
@@ -11,15 +15,30 @@ export function ReaderThreadCard({
   isLatest,
   isExpanded,
   onExpand,
+  translation,
 }: {
   mail: MailItem;
   msg: ThreadMessage;
   isLatest: boolean;
   isExpanded: boolean;
   onExpand: () => void;
+  translation?: BodyTranslation;
 }) {
   const { mailStore, composeStore } = useApp();
   const [showDetailHeaders, setShowDetailHeaders] = useState(false);
+  const { openNewCompose, updateDraft } = composeStore;
+  const onMailto = useCallback(
+    (url: string) => {
+      const p = parseMailtoUrl(url);
+      openNewCompose(p.to);
+      if (p.subject || p.body)
+        updateDraft({
+          ...(p.subject ? { subject: p.subject } : {}),
+          ...(p.body ? { body: p.body } : {}),
+        });
+    },
+    [openNewCompose, updateDraft],
+  );
 
   return (
     <article
@@ -111,19 +130,15 @@ export function ReaderThreadCard({
           {isLatest && (
             <button
               type="button"
-              className="icon-btn"
-              style={{
-                width: 26,
-                height: 26,
-                color: mail.starred ? "#d97706" : undefined,
-              }}
+              className="icon-btn thread-star-btn"
+              aria-pressed={mail.starred}
               onClick={(e) => {
                 e.stopPropagation();
                 mailStore.toggleStar([mail.id]);
               }}
               aria-label={mail.starred ? "取消星标" : "标记星标"}
             >
-              <Icon name="star" size={15} filled={mail.starred} />
+              <Icon name="star" size={15} />
             </button>
           )}
         </div>
@@ -147,19 +162,27 @@ export function ReaderThreadCard({
           {msg.bodyHtml ? (
             <SafeMailHtmlView
               html={msg.bodyHtml}
-              onMailto={(url) => {
-                const p = parseMailtoUrl(url);
-                composeStore.openNewCompose(p.to);
-                if (p.subject || p.body) {
-                  composeStore.updateDraft({
-                    ...(p.subject ? { subject: p.subject } : {}),
-                    ...(p.body ? { body: p.body } : {}),
-                  });
-                }
-              }}
+              translation={translation}
+              onMailto={onMailto}
             />
           ) : (
-            msg.bodyParagraphs.map((para, pIdx) => <p key={pIdx}>{para}</p>)
+            msg.bodyParagraphs.map((para, pIdx) => {
+              const text =
+                translation && translatedSegment(para, translation.segments);
+              return (
+                <p key={pIdx}>
+                  {translation?.mode === "translated" && text ? text : para}
+                  {translation?.mode === "bilingual" && text && (
+                    <span
+                      className="reader-translated-paragraph"
+                      lang={translation.target}
+                    >
+                      {text}
+                    </span>
+                  )}
+                </p>
+              );
+            })
           )}
         </div>
       )}

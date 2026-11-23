@@ -22,7 +22,7 @@ task setup       # 安装锁定的 Go 模块与前端依赖
 task dev         # 启动原生桌面窗口与 Vite 热更新，Ctrl+C 停止
 task build       # 单独构建开发版 EXE（desktop/bin/omnimail.exe），不启动窗口
 task run         # 运行已构建的开发版 EXE
-task verify      # 执行格式检查、Lint、TypeScript 检查、前端构建、go vet、Go 单测与编译
+task verify      # 执行格式检查、Lint、TypeScript 检查、前端构建、前端与 Go 单测、go vet 与编译
 ```
 
 ## Windows x64 生产发版与双轨版本号体系

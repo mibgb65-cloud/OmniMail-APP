@@ -1,3 +1,4 @@
+import { FadeTextarea } from "../../common/scroll-fade/FadeTextarea";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "../../../state/AppContext";
 import type { MailItem } from "../../../types/mail";
@@ -120,8 +121,11 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
           data-expanded={isOpen ? "true" : "false"}
         >
           <div className="quick-reply-expand-inner">
-            <textarea
+            <FadeTextarea
               ref={textareaRef}
+              frameClassName="quick-reply-textarea-frame"
+              surface="--quick-reply-surface"
+              aria-label="快速回复正文"
               tabIndex={isOpen ? 0 : -1}
               className="quick-reply-textarea"
               value={composeStore.quickReplyText}

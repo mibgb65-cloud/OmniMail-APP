@@ -1,3 +1,4 @@
+import { ScrollCodeBlock } from "../common/scroll-fade/FadeScroll";
 import { useEffect, useState } from "react";
 import {
   diagnosticApi,
@@ -105,9 +106,9 @@ export function MailSourceModal({ mailId }: { mailId: string }) {
           </span>
         </div>
       )}
-      <pre className="code-block" style={{ maxHeight: 360 }}>
+      <ScrollCodeBlock maxHeight={360} label="邮件原始头">
         {rawSource}
-      </pre>
+      </ScrollCodeBlock>
     </ModalShell>
   );
 }

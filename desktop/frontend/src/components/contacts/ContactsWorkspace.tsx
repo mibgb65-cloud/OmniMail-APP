@@ -1,11 +1,12 @@
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../../state/AppContext";
 import { useValuePresence } from "../../state/usePresence";
 import { BlacklistManagerView } from "./BlacklistManagerView";
 import { ContactDetailPanel } from "./ContactDetailPanel";
-import { CONTACT_GROUPS, type ContactNavFilter } from "./ContactsSidebar";
+import type { ContactNavFilter } from "./ContactsSidebar";
+import { ContactsDirectoryHeader } from "./ContactsDirectoryHeader";
 import { ContactsTableRows } from "./ContactsTableRows";
-import { ContactsToolbarActions } from "./ContactsToolbarActions";
 
 export function useContactsNavState() {
   const [navFilter, setNavFilter] = useState<ContactNavFilter>("all");
@@ -65,6 +66,9 @@ export function ContactsWorkspace({
           q &&
           !c.name.toLowerCase().includes(q) &&
           !c.email.toLowerCase().includes(q) &&
+          !c.alternateEmails?.some((email) =>
+            email.toLowerCase().includes(q),
+          ) &&
           !c.company.toLowerCase().includes(q)
         ) {
           return false;
@@ -91,68 +95,26 @@ export function ContactsWorkspace({
         className="panel-card contacts-directory-card"
         aria-label="联系人目录"
       >
-        <div className="contacts-dir-header">
-          <div className="row-between" style={{ gap: 10 }}>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <h1 className="modal-title truncate" style={{ fontSize: 17 }}>
-                {navFilter === "blacklist"
-                  ? "黑名单与发件人拦截"
-                  : groupFilter
-                    ? `分组：${groupFilter}`
-                    : "联系人与通讯录"}
-              </h1>
-              <div className="modal-sub truncate">
-                本地汇总多邮箱往来记录 · VIP 邮件在统一收件箱优先高亮提醒
-              </div>
-            </div>
-            {navFilter !== "blacklist" && (
-              <>
-                <ContactsToolbarActions />
-                <input
-                  type="search"
-                  className="input"
-                  style={{
-                    width: isCompact ? 172 : 216,
-                    height: 32,
-                    flexShrink: 0,
-                  }}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="搜索姓名、邮箱或公司…"
-                />
-              </>
-            )}
-          </div>
-
-          {isCompact && navFilter !== "blacklist" && (
-            <div className="row" style={{ gap: 6, overflow: "hidden" }}>
-              <button
-                type="button"
-                className={`btn btn-sm ${!groupFilter ? "btn-primary" : "btn-secondary"}`}
-                style={{ height: 26, padding: "0 9px" }}
-                onClick={() => onSelectGroup(null)}
-              >
-                全部分组
-              </button>
-              {CONTACT_GROUPS.map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  className={`btn btn-sm ${groupFilter === g ? "btn-primary" : "btn-secondary"}`}
-                  style={{ height: 26, padding: "0 9px" }}
-                  onClick={() => onSelectGroup(groupFilter === g ? null : g)}
-                >
-                  {g}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <ContactsDirectoryHeader
+          title={
+            navFilter === "blacklist"
+              ? "黑名单与发件人拦截"
+              : groupFilter
+                ? `分组：${groupFilter}`
+                : "联系人与通讯录"
+          }
+          blacklist={navFilter === "blacklist"}
+          compact={isCompact}
+          query={query}
+          groupFilter={groupFilter}
+          onQuery={setQuery}
+          onGroup={onSelectGroup}
+        />
 
         {navFilter === "blacklist" ? (
-          <div className="modal-body">
+          <FadeScroll className="modal-body" label="发件人黑名单">
             <BlacklistManagerView />
-          </div>
+          </FadeScroll>
         ) : (
           <ContactsTableRows
             contacts={filteredContacts}
@@ -166,14 +128,6 @@ export function ContactsWorkspace({
             显示第 1–{filteredContacts.length} 位，共{" "}
             {workspace.contacts.length} 位联系人 · 仅保存在本地加密通讯录数据库
           </span>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            style={{ height: 26, flexShrink: 0 }}
-            onClick={() => workspace.setOverlay({ type: "contact-edit" })}
-          >
-            + 新建联系人
-          </button>
         </div>
       </section>
 

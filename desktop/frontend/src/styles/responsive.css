@@ -24,8 +24,8 @@
   }
 
   .mail-list-scroll {
-    padding: 7px 5px 7px 7px;
-    gap: 5px;
+    --scroll-padding: 7px;
+    --scroll-gap: 5px;
   }
 
   .mail-card {
@@ -51,9 +51,8 @@
   }
 
   .reader-toolbar {
-    height: 46px;
     min-height: 46px;
-    padding: 0 12px;
+    padding-inline: 12px;
   }
 
   .reader-act-btn,
@@ -69,8 +68,8 @@
   }
 
   .reader-scroll {
-    padding: 12px 14px;
-    gap: 10px;
+    --scroll-padding: 12px 14px;
+    --scroll-gap: 10px;
   }
 
   .reader-subject {
@@ -91,7 +90,7 @@
   }
 
   .onboarding-page {
-    padding: 14px 20px;
+    --scroll-padding: 14px 20px;
   }
 
   .onboarding-grid {

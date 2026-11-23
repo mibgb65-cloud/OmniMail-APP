@@ -103,18 +103,19 @@
 }
 
 .quick-reply-box {
+  --quick-reply-surface: var(--bg-surface);
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 11px 13px;
   border-radius: 13px;
-  background: var(--bg-surface);
+  background: var(--quick-reply-surface);
   border: 1px solid var(--border-strong);
 }
 
 .quick-reply-box:focus-within {
   border-color: var(--brand-accent);
-  background: var(--bg-card);
+  --quick-reply-surface: var(--bg-card);
 }
 
 .quick-reply-lock-pill {
@@ -135,6 +136,10 @@
   font-size: 13px;
   line-height: 1.55;
   outline: none;
+}
+
+.quick-reply-textarea-frame {
+  flex-shrink: 0;
 }
 
 .quick-reply-expand-grid {

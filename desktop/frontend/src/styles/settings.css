@@ -33,13 +33,7 @@
 }
 
 .settings-nav-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  --scroll-gap: 2px;
 }
 
 .settings-content {
@@ -127,14 +121,10 @@
 .code-block {
   margin: 0;
   padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.6;
   color: var(--text-body);
-  overflow-x: hidden;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }

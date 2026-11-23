@@ -1,3 +1,5 @@
+import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+
 export type AsyncActionStatus = "idle" | "loading" | "success" | "error";
 
 export function waitSuccessHold(ms = 900): Promise<void> {
@@ -42,7 +44,7 @@ export function AsyncStateGlyph({
             r="7"
             stroke="currentColor"
             strokeOpacity="0.26"
-            strokeWidth="1.8"
+            strokeWidth="1.5"
           />
           <circle
             className={
@@ -52,7 +54,7 @@ export function AsyncStateGlyph({
             cy="10"
             r="7"
             stroke="currentColor"
-            strokeWidth="1.9"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeDasharray={hasDeterminate ? "44 44" : "30 44"}
             strokeDashoffset={hasDeterminate ? pctOffset : undefined}
@@ -77,16 +79,15 @@ export function AsyncStateGlyph({
             r="7"
             stroke="currentColor"
             strokeOpacity="0.72"
-            strokeWidth="1.55"
+            strokeWidth="1.5"
             strokeLinecap="round"
           />
-          <path
-            className="async-check-path"
-            d="M6.2 10.3 L8.9 13 L14.2 7.5"
-            stroke="currentColor"
-            strokeWidth="1.95"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <CheckIcon
+            className="async-check-shape"
+            x={3}
+            y={3}
+            width={14}
+            height={14}
           />
         </>
       )}
@@ -99,14 +100,14 @@ export function AsyncStateGlyph({
             r="7"
             stroke="currentColor"
             strokeOpacity="0.48"
-            strokeWidth="1.55"
+            strokeWidth="1.5"
           />
-          <path
-            className="async-cross-path"
-            d="M7.3 7.3 L12.7 12.7 M12.7 7.3 L7.3 12.7"
-            stroke="currentColor"
-            strokeWidth="1.85"
-            strokeLinecap="round"
+          <XMarkIcon
+            className="async-cross-shape"
+            x={4}
+            y={4}
+            width={12}
+            height={12}
           />
         </>
       )}

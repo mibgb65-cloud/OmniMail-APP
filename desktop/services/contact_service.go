@@ -62,22 +62,6 @@ func (s *ContactService) SuggestRecipients(prefix string) ([]contacts.ContactIte
 	return contacts.SuggestRecipients(sess.DB, prefix)
 }
 
-func (s *ContactService) FindDuplicateContacts() ([]contacts.DuplicateGroupDTO, error) {
-	sess, err := s.mgr.ActiveSession()
-	if err != nil {
-		return nil, err
-	}
-	return contacts.FindDuplicateContacts(sess.DB)
-}
-
-func (s *ContactService) MergeContacts(primaryID string, duplicateIDs []string) (contacts.ContactItemDTO, error) {
-	sess, err := s.mgr.ActiveSession()
-	if err != nil {
-		return contacts.ContactItemDTO{}, err
-	}
-	return contacts.MergeContacts(sess.DB, primaryID, duplicateIDs)
-}
-
 func (s *ContactService) ImportVCard() (contacts.VCardImportResult, error) {
 	sess, err := s.mgr.ActiveSession()
 	if err != nil {

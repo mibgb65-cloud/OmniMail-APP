@@ -1,5 +1,5 @@
 .workspace-stage {
-  --ai-slide-width: 320px;
+  --ai-min-reader-width: 480px;
   --ai-slide-distance: calc(
     var(--ai-slide-width) + var(--workspace-column-gap)
   );
@@ -54,6 +54,36 @@
 .ai-slide-layer[data-open="true"] .ai-slide-scrim {
   pointer-events: auto;
   opacity: 1;
+}
+
+.workspace-stage[data-ai-resizing="true"] .route-main-stage[data-ai-docked] {
+  transition: none;
+}
+
+.ai-resize-handle {
+  position: absolute;
+  z-index: 2;
+  inset: 0 auto 0 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  display: grid;
+  place-items: center;
+}
+
+.ai-resize-handle::before {
+  content: "";
+  width: 2px;
+  height: 32px;
+  border-radius: 2px;
+  background: var(--border-strong);
+}
+
+.ai-resize-handle:hover::before,
+.ai-resize-handle:focus-visible::before,
+[data-ai-resizing="true"] .ai-resize-handle::before {
+  background: var(--brand-ai);
 }
 
 @media (prefers-reduced-motion: reduce) {

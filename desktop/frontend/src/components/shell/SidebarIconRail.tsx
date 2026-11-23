@@ -14,7 +14,7 @@ export const MAIN_FOLDERS: Array<{
   { id: "starred", label: "星标邮件", icon: "star", shortcut: "G S" },
   { id: "snoozed", label: "稍后处理", icon: "clock", shortcut: "G L" },
   { id: "sent", label: "已发送", icon: "send", shortcut: "G T" },
-  { id: "drafts", label: "草稿箱", icon: "file", shortcut: "G D" },
+  { id: "drafts", label: "草稿箱", icon: "documentText", shortcut: "G D" },
   { id: "archive", label: "归档邮件", icon: "archive", shortcut: "G A" },
 ];
 
@@ -117,7 +117,7 @@ export function SidebarIconRail() {
               onClick={() => workspace.setOverlay({ type: "add-account" })}
               aria-label="点击添加第一个邮箱"
             >
-              + 邮箱
+              <Icon name="plus" size={10} /> 邮箱
             </button>
           </Tooltip>
         ) : (

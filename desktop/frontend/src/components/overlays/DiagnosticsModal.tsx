@@ -1,3 +1,4 @@
+import { ScrollCodeBlock } from "../common/scroll-fade/FadeScroll";
 import { useEffect, useState } from "react";
 import {
   diagnosticApi,
@@ -161,9 +162,9 @@ export function DiagnosticsModal({ accountId }: { accountId: string }) {
         endpointHint={acc ? `${acc.imap.host}:${acc.imap.port}` : undefined}
         onStepLabelChange={setStepLabel}
       />
-      <pre className="code-block" style={{ maxHeight: 280 }}>
+      <ScrollCodeBlock maxHeight={280} label="诊断日志">
         {logText}
-      </pre>
+      </ScrollCodeBlock>
     </ModalShell>
   );
 }

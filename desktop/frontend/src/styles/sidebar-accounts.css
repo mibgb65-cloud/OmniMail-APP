@@ -70,6 +70,7 @@
 }
 .account-empty-cta {
   width: 100%;
+  gap: 3px;
   height: 28px;
   border-radius: 7px;
   background: var(--bg-card);

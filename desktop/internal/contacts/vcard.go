@@ -90,7 +90,8 @@ func upsertVCardRecord(db *sql.DB, accID string, r struct {
 	}
 	nowMs := time.Now().UnixMilli()
 	var existID, existComp, existTitle, existPhone, existNote string
-	err := db.QueryRow(`SELECT id, company, title, phone, note FROM contacts WHERE LOWER(email)=?`, r.email).
+	err := db.QueryRow(`SELECT id, company, title, phone, note FROM contacts
+		WHERE email=? OR id=(SELECT contact_id FROM contact_aliases WHERE email=?)`, r.email, r.email).
 		Scan(&existID, &existComp, &existTitle, &existPhone, &existNote)
 	if err == sql.ErrNoRows {
 		sum := sha256.Sum256([]byte(r.email))
@@ -99,10 +100,17 @@ func upsertVCardRecord(db *sql.DB, accID string, r struct {
 		if r.cats == nil {
 			grpJ = []byte("[]")
 		}
-		_, _ = db.Exec(`
+		res, err := db.Exec(`
 			INSERT INTO contacts(id, name, email, company, title, phone, note, source_account_id, groups_json, user_edited, updated_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
-		`, id, name, r.email, r.org, r.title, r.tel, r.note, accID, string(grpJ), nowMs)
+			SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ? WHERE NOT EXISTS (SELECT 1 FROM contact_aliases WHERE email=?)
+			ON CONFLICT(email) DO NOTHING
+		`, id, name, r.email, r.org, r.title, r.tel, r.note, accID, string(grpJ), nowMs, r.email)
+		if err != nil {
+			return 0, 0, 1
+		}
+		if count, err := res.RowsAffected(); err != nil || count == 0 {
+			return 0, 0, 1
+		}
 		return 1, 0, 0
 	}
 	if err != nil {
@@ -148,6 +156,9 @@ func ExportVCardContent(db *sql.DB, contactIDs []string) (string, error) {
 		sb.WriteString("BEGIN:VCARD\r\nVERSION:3.0\r\n")
 		sb.WriteString(fmt.Sprintf("FN:%s\r\n", escapeVCard(c.Name)))
 		sb.WriteString(fmt.Sprintf("EMAIL;TYPE=INTERNET:%s\r\n", c.Email))
+		for _, email := range c.AlternateEmails {
+			sb.WriteString(fmt.Sprintf("EMAIL;TYPE=INTERNET:%s\r\n", escapeVCard(email)))
+		}
 		if c.Company != "" {
 			sb.WriteString(fmt.Sprintf("ORG:%s\r\n", escapeVCard(c.Company)))
 		}

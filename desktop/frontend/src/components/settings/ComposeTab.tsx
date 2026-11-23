@@ -1,3 +1,4 @@
+import { FadeTextarea } from "../common/scroll-fade/FadeTextarea";
 import { useApp } from "../../state/AppContext";
 import { CustomSelect } from "../common/CustomSelect";
 import { ToggleSwitch } from "../common/ModalShell";
@@ -89,7 +90,8 @@ export function ComposeTab() {
               }
             />
           </div>
-          <textarea
+          <FadeTextarea
+            aria-label="默认签名"
             className="textarea"
             rows={4}
             value={activeAcc.signature}

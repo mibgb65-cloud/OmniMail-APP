@@ -79,11 +79,8 @@
   overflow: hidden;
 }
 
-.compose-body-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+.compose-editor-frame {
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
 }

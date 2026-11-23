@@ -61,9 +61,11 @@ func TestContactExtractMergeVCardAndBlacklist(t *testing.T) {
 	if len(groups) == 0 {
 		t.Fatal("expected duplicate group for +alias contact")
 	}
-	merged, err := MergeContacts(db, saved.ID, []string{dup.ID})
-	if err != nil || merged.Phone != "13800001111" {
-		t.Fatalf("MergeContacts failed: %+v, err=%v", merged, err)
+	result, err := BatchMergeContacts(db, []ContactMergeGroup{{groups[0].Key, saved.ID, []string{dup.ID}}})
+	merged, lookupErr := ListContacts(db, ContactQuery{Keyword: dup.Email})
+	if err != nil || lookupErr != nil || result.Removed != 1 || len(merged) != 1 ||
+		merged[0].Phone != "13800001111" || len(merged[0].AlternateEmails) != 1 {
+		t.Fatalf("批量合并失败：%+v, %v, %v", result, err, lookupErr)
 	}
 
 	// 4. vCard 导入与导出闭环

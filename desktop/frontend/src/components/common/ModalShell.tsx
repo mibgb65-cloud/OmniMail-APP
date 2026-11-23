@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
+import { FadeScroll } from "./scroll-fade/FadeScroll";
 
 interface ModalShellProps {
   heading?: string;
@@ -30,6 +31,7 @@ export function ModalShell({
       className="modal-backdrop"
       role="dialog"
       aria-modal="true"
+      aria-label={heading}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -69,21 +71,25 @@ export function ModalShell({
             </div>
           </div>
         )}
-        <div
-          className={noPadding ? "" : "modal-body"}
-          style={
-            noPadding
-              ? {
-                  flex: 1,
-                  minHeight: 0,
-                  display: "flex",
-                  flexDirection: "column",
-                }
-              : undefined
-          }
-        >
-          {children}
-        </div>
+        {noPadding ? (
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {children}
+          </div>
+        ) : (
+          <FadeScroll
+            className="modal-body"
+            label={heading ? `${heading}内容` : "弹窗内容"}
+          >
+            {children}
+          </FadeScroll>
+        )}
         {footer && <div className="modal-footer">{footer}</div>}
       </div>
     </div>

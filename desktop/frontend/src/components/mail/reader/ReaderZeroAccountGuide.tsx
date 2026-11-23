@@ -1,6 +1,8 @@
+import { FadeScroll } from "../../common/scroll-fade/FadeScroll";
 import { useApp } from "../../../state/AppContext";
 import type { ProviderId } from "../../../types/account";
 import { ProviderIcon } from "../../common/ProviderIcon";
+import { Icon } from "../../common/Icon";
 
 const QUICK_PROVIDERS: Array<{
   id: ProviderId;
@@ -39,7 +41,7 @@ export function ReaderZeroAccountGuide() {
   };
 
   return (
-    <div className="zero-guide-stage">
+    <FadeScroll className="zero-guide-stage" label="邮箱接入引导">
       <div className="zero-guide-card">
         <span className="zero-guide-pill">
           <span className="zero-guide-pill-dot" aria-hidden="true" />
@@ -80,7 +82,7 @@ export function ReaderZeroAccountGuide() {
             className="btn btn-primary zero-guide-primary-btn"
             onClick={() => workspace.setOverlay({ type: "add-account" })}
           >
-            + 添加邮箱账户
+            <Icon name="plus" size={13} /> 添加邮箱账户
           </button>
           <button
             type="button"
@@ -104,6 +106,6 @@ export function ReaderZeroAccountGuide() {
           </button>
         </p>
       </div>
-    </div>
+    </FadeScroll>
   );
 }

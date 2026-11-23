@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useApp } from "../../state/AppContext";
+import { profileApi } from "../../services/backendClient";
+import { parseAnalysisPrompt } from "./aiAnalysisPrompt";
+import { mailAiScope } from "./aiPrivacyScope";
 import { Checkbox } from "../common/Checkbox";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
@@ -7,27 +10,34 @@ import { ModalShell } from "../common/ModalShell";
 export function AiConsentModal({
   actionLabel,
   onConfirmPrompt,
+  mailId,
 }: {
   actionLabel: string;
-  onConfirmPrompt?: string;
+  onConfirmPrompt: string;
+  mailId: string;
 }) {
   const { workspace, mailStore, aiStore, toastStore } = useApp();
   const [rememberChoice, setRememberChoice] = useState(false);
   const mail = mailStore.selectedMail;
+  const scope = mailAiScope(workspace.settings.aiIncludeSenderAndAttachments);
+  const isChat = !parseAnalysisPrompt(onConfirmPrompt);
+  const canConfirm = mail?.id === mailId && workspace.settings.aiEnabled;
 
   const handleConfirm = () => {
-    if (rememberChoice) {
-      workspace.updateSettings({ aiRequireConfirmEachTime: false });
-    }
+    if (!mail || !canConfirm) return;
     workspace.setOverlay({ type: "none" });
-    if (mail && onConfirmPrompt) {
-      aiStore.runPrompt(mail, onConfirmPrompt);
-    } else {
-      toastStore.pushToast({
-        tone: "info",
-        title: `已授权执行「${actionLabel}」`,
-        detail: "仅发送当前邮件正文，未包含收件人地址与附件",
-      });
+    aiStore.runPrompt(mail, onConfirmPrompt, true);
+    if (rememberChoice) {
+      const patch = { aiRequireConfirmEachTime: false };
+      void profileApi
+        .updateAppSettings(patch)
+        .then(() => workspace.applySettingsFromBackend(patch))
+        .catch(() =>
+          toastStore.pushToast({
+            tone: "warning",
+            title: "未能记住授权偏好，之后仍会确认",
+          }),
+        );
     }
   };
 
@@ -59,6 +69,7 @@ export function AiConsentModal({
             <button
               type="button"
               className="btn btn-primary"
+              disabled={!canConfirm}
               onClick={handleConfirm}
             >
               确认并发送给 AI
@@ -79,12 +90,13 @@ export function AiConsentModal({
           style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.75 }}
         >
           <li>
-            <strong>包含内容：</strong>当前邮件主题《
-            {mail?.subject ?? "当前草稿"}》及纯文本正文
+            <strong>包含内容：</strong>
+            {scope.mailContent}
+            {isChat ? "、本次提问及同一数据范围下的近期问答" : ""}
           </li>
           <li>
-            <strong>不会外传：</strong>
-            发件人/收件人邮箱地址、本地附件原文件、其他邮箱文件夹数据
+            <strong>不会作为独立内容发送：</strong>
+            {scope.notShared}
           </li>
           <li>
             <strong>当前模型：</strong>

@@ -1,62 +1,44 @@
 import { Events } from "@wailsio/runtime";
-import {
-  useEffect,
-  type Dispatch,
-  type MutableRefObject,
-  type SetStateAction,
-} from "react";
-import type { AiChatTurn, AiRunStatus } from "../types/workspace";
+import { useEffect } from "react";
+import type { AiRunStatus } from "../types/workspace";
 import { isWailsDesktop } from "./storageHelpers";
 
-export function useAiStreamEvents(
-  activeReqRef: MutableRefObject<{ reqId: string; mailId: string } | null>,
-  setChatsByMail: Dispatch<SetStateAction<Record<string, AiChatTurn[]>>>,
-  setAiStatus: Dispatch<SetStateAction<AiRunStatus>>,
-) {
+interface EventIdentity {
+  requestId: string;
+  mailId?: string;
+}
+
+export type AiStreamChunk = EventIdentity & { delta: string };
+export type AiStreamDone = EventIdentity & { fullText: string };
+export type AiStreamError = EventIdentity & {
+  runStatus: AiRunStatus;
+  message: string;
+};
+
+type AiStreamHandlers = {
+  onChunk: (event: AiStreamChunk) => void;
+  onDone: (event: AiStreamDone) => void;
+  onError: (event: AiStreamError) => void;
+};
+
+export function useAiStreamEvents({
+  onChunk,
+  onDone,
+  onError,
+}: AiStreamHandlers) {
   useEffect(() => {
     if (!isWailsDesktop()) return;
     const offs = [
       Events.On("omnimail:ai:chunk", (ev) => {
-        const d = ev.data as
-          { requestId?: string; mailId?: string; delta?: string } | undefined;
-        if (!d?.requestId || d.requestId !== activeReqRef.current?.reqId)
-          return;
-        const mid = d.mailId || activeReqRef.current.mailId;
-        setChatsByMail((prev) => {
-          const turns = [...(prev[mid] ?? [])];
-          const last = turns[turns.length - 1];
-          if (last && last.role === "assistant") {
-            turns[turns.length - 1] = {
-              ...last,
-              content: last.content + (d.delta ?? ""),
-            };
-          } else {
-            turns.push({
-              id: `a-${Date.now()}`,
-              role: "assistant",
-              content: d.delta ?? "",
-              timestamp: "刚刚",
-            });
-          }
-          return { ...prev, [mid]: turns };
-        });
+        if (ev.data) onChunk(ev.data as Parameters<typeof onChunk>[0]);
       }),
       Events.On("omnimail:ai:done", (ev) => {
-        const d = ev.data as { requestId?: string } | undefined;
-        if (d?.requestId === activeReqRef.current?.reqId) {
-          activeReqRef.current = null;
-          setAiStatus("idle");
-        }
+        if (ev.data) onDone(ev.data as Parameters<typeof onDone>[0]);
       }),
       Events.On("omnimail:ai:error", (ev) => {
-        const d = ev.data as
-          { requestId?: string; runStatus?: string } | undefined;
-        if (d && d.requestId === activeReqRef.current?.reqId) {
-          activeReqRef.current = null;
-          setAiStatus((d.runStatus as AiRunStatus) || "error");
-        }
+        if (ev.data) onError(ev.data as Parameters<typeof onError>[0]);
       }),
     ];
     return () => offs.forEach((off) => off());
-  }, [activeReqRef, setAiStatus, setChatsByMail]);
+  }, [onChunk, onDone, onError]);
 }

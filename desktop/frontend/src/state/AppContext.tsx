@@ -68,7 +68,7 @@ function useAppController() {
     workspace.clearCollections();
     mailStore.resetMailState();
     composeStore.closeDraft();
-    aiStore.setAiOpen(false);
+    aiStore.reset();
   }, [aiStore, composeStore, mailStore, workspace]);
 
   const desktopBridge = useDesktopBridge({
@@ -103,7 +103,12 @@ function useAppController() {
   const requestAiAction = useCallback(
     (actionLabel: string, prompt: string) => {
       const cur = mailStore.selectedMail;
-      if (!cur) return;
+      if (
+        !cur ||
+        !workspace.settings.aiEnabled ||
+        aiStore.aiStatus === "processing"
+      )
+        return;
       if (
         cur.folder === "spam" ||
         cur.folder === "trash" ||
@@ -122,8 +127,9 @@ function useAppController() {
           type: "ai-consent",
           actionLabel,
           onConfirmPrompt: prompt,
+          mailId: cur.id,
         });
-      } else aiStore.runPrompt(cur, prompt);
+      } else aiStore.runPrompt(cur, prompt, false);
     },
     [mailStore.selectedMail, workspace, aiStore, toastStore],
   );

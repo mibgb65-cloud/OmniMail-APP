@@ -1,8 +1,12 @@
 import { useApp } from "../../../state/AppContext";
 import type { MailItem } from "../../../types/mail";
-import { Icon, type IconName } from "../../common/Icon";
+import type { ActionMenuEntry } from "../../common/ActionMenu";
+import { Icon } from "../../common/Icon";
 import { Tooltip } from "../../common/Tooltip";
+import { ReaderTranslateButton } from "../translation/ReaderTranslateButton";
 import { ReaderMoreMenu } from "./ReaderMoreMenu";
+import type { ReaderActionId } from "./readerToolbarLayout";
+import { useReaderToolbarLayout } from "./useReaderToolbarLayout";
 
 interface ReaderToolbarProps {
   mail: MailItem;
@@ -17,23 +21,18 @@ export function ReaderToolbar({
   totalCount,
   onNavigate,
 }: ReaderToolbarProps) {
-  const { viewport, workspace, mailStore, composeStore, aiStore, toastStore } =
-    useApp();
+  const { workspace, mailStore, composeStore, aiStore, toastStore } = useApp();
+  const { ref, layout } = useReaderToolbarLayout();
+  const aiLabel = aiStore.aiOpen ? "收起 AI" : "展开 AI";
 
-  const isCompact = viewport === "compact";
-  const isWide = viewport === "wide";
-
-  const primaryActions: Array<{
-    icon: IconName;
-    label: string;
-    visible: boolean;
-    run: () => void;
-  }> = [
+  const actions: Array<
+    Extract<ActionMenuEntry, { label: string }> & { id: ReaderActionId }
+  > = [
     {
+      id: "reply",
       icon: "reply",
       label: "回复",
-      visible: true,
-      run: () =>
+      onSelect: () =>
         composeStore.openReplyCompose(
           mail,
           "reply",
@@ -41,31 +40,35 @@ export function ReaderToolbar({
         ),
     },
     {
+      id: "forward",
       icon: "forward",
       label: "转发",
-      visible: !isCompact,
-      run: () => composeStore.openReplyCompose(mail, "forward", false),
+      shortcut: "F",
+      onSelect: () => composeStore.openReplyCompose(mail, "forward", false),
     },
     {
+      id: "archive",
       icon: "archive",
       label: "归档",
-      visible: true,
-      run: () => {
+      onSelect: () => {
         mailStore.moveMails([mail.id], "archive");
         toastStore.pushToast({ tone: "info", title: "邮件已归档" });
       },
     },
     {
+      id: "snooze",
       icon: "clock",
       label: "稍后",
-      visible: isWide,
-      run: () => workspace.setOverlay({ type: "snooze", mailIds: [mail.id] }),
+      shortcut: "H",
+      onSelect: () =>
+        workspace.setOverlay({ type: "snooze", mailIds: [mail.id] }),
     },
     {
+      id: "label",
       icon: "tag",
       label: "标签",
-      visible: isWide,
-      run: () =>
+      shortcut: "L",
+      onSelect: () =>
         workspace.setOverlay({
           type: "label-manage",
           mailIds: [mail.id],
@@ -89,42 +92,59 @@ export function ReaderToolbar({
   };
 
   return (
-    <div className="reader-toolbar">
+    <div
+      ref={ref}
+      className="reader-toolbar"
+      data-tool-density={layout.shortAiLabel ? "tight" : undefined}
+    >
       <div className="reader-toolbar-group">
-        {primaryActions
-          .filter((act) => act.visible)
+        {actions
+          .filter((action) => layout.actions.includes(action.id))
           .map((act) => (
             <button
-              key={act.label}
+              key={act.id}
               type="button"
               className="btn btn-sm btn-secondary reader-act-btn"
-              onClick={act.run}
+              onClick={act.onSelect}
             >
-              <Icon name={act.icon} size={13} /> {act.label}
+              {act.icon && <Icon name={act.icon} size={13} />} {act.label}
             </button>
           ))}
 
-        <Tooltip
-          label={mail.folder === "trash" ? "永久删除" : "移入回收站"}
-          shortcut="Del"
-        >
-          <button
-            type="button"
-            className="icon-btn icon-btn-bordered reader-icon-btn"
-            onClick={handleDelete}
-            aria-label="删除邮件"
-          >
-            <Icon name="trash" size={13} />
-          </button>
-        </Tooltip>
+        <ReaderTranslateButton key={mail.id} />
 
-        <ReaderMoreMenu mail={mail} />
+        {layout.showDelete && (
+          <Tooltip
+            label={mail.folder === "trash" ? "永久删除" : "移入回收站"}
+            shortcut="Del"
+          >
+            <button
+              type="button"
+              className="icon-btn icon-btn-bordered reader-icon-btn"
+              onClick={handleDelete}
+              aria-label="删除邮件"
+            >
+              <Icon name="trash" size={13} />
+            </button>
+          </Tooltip>
+        )}
+
+        <ReaderMoreMenu
+          mail={mail}
+          onDelete={handleDelete}
+          foldedItems={actions.filter(
+            (action) => !layout.actions.includes(action.id),
+          )}
+        />
       </div>
 
-      <div className="reader-toolbar-group" style={{ flexShrink: 0 }}>
-        {!isCompact && (
-          <span className="reader-nav-count">
-            {currentIndex + 1} / {Math.max(totalCount, 128)}
+      <div className="reader-toolbar-group reader-toolbar-nav">
+        {layout.showCount && totalCount > 0 && (
+          <span
+            className="reader-nav-count"
+            title={`${currentIndex + 1} / ${totalCount}`}
+          >
+            {currentIndex + 1} / {totalCount}
           </span>
         )}
         <Tooltip label="上一封邮件" shortcut="K">
@@ -155,15 +175,14 @@ export function ReaderToolbar({
           className="btn btn-sm btn-ai reader-ai-toggle"
           aria-controls="mail-ai-pane"
           aria-expanded={aiStore.aiOpen}
+          aria-label={aiLabel}
           onClick={() => {
             workspace.setLeftNavOpen(false);
             aiStore.setAiOpen((v) => !v);
           }}
         >
           <Icon name="sparkle" size={13} />
-          <span>
-            {isCompact ? "AI" : aiStore.aiOpen ? "收起 AI" : "展开 AI"}
-          </span>
+          <span>{layout.shortAiLabel ? "AI" : aiLabel}</span>
         </button>
       </div>
     </div>

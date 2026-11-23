@@ -1,3 +1,4 @@
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useCallback, useState } from "react";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
@@ -77,10 +78,7 @@ export function CommandPaletteModal() {
           ))}
         </div>
 
-        <div
-          className="modal-body"
-          style={{ padding: 8, gap: 4, maxHeight: 380 }}
-        >
+        <FadeScroll className="modal-body command-results" label="指令搜索结果">
           {commands.map((cmd) => (
             <button
               key={cmd.id}
@@ -106,7 +104,7 @@ export function CommandPaletteModal() {
               未找到匹配指令，试试输入“写邮件”“深色”或“规则”
             </div>
           )}
-        </div>
+        </FadeScroll>
       </div>
     </div>
   );
