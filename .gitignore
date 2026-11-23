@@ -1,6 +1,8 @@
 /.task/
+/dist/
 /desktop/.wails/
 /desktop/bin/
+/desktop/*.syso
 /desktop/frontend/bindings/
 /desktop/frontend/dist/
 /desktop/frontend/node_modules/

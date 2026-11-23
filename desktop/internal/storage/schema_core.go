@@ -1,0 +1,143 @@
+package storage
+
+var coreSchemaStatements = []string{
+	`CREATE TABLE IF NOT EXISTS accounts (
+		id                  TEXT PRIMARY KEY,
+		name                TEXT NOT NULL,
+		short_tag           TEXT NOT NULL,
+		email               TEXT NOT NULL,
+		username            TEXT NOT NULL DEFAULT '',
+		provider            TEXT NOT NULL,
+		provider_label      TEXT NOT NULL,
+		auth_mode           TEXT NOT NULL,
+		status              TEXT NOT NULL DEFAULT 'connected',
+		last_error          TEXT NOT NULL DEFAULT '',
+		last_synced_at      INTEGER NOT NULL DEFAULT 0,
+		sender_name         TEXT NOT NULL DEFAULT '',
+		reply_to            TEXT NOT NULL DEFAULT '',
+		signature           TEXT NOT NULL DEFAULT '',
+		imap_host           TEXT NOT NULL,
+		imap_port           INTEGER NOT NULL,
+		imap_security       TEXT NOT NULL,
+		smtp_host           TEXT NOT NULL,
+		smtp_port           INTEGER NOT NULL,
+		smtp_security       TEXT NOT NULL,
+		cert_fingerprint    TEXT NOT NULL DEFAULT '',
+		imap_idle           INTEGER NOT NULL DEFAULT 1,
+		offline_window_days INTEGER NOT NULL DEFAULT 90,
+		is_default          INTEGER NOT NULL DEFAULT 0,
+		created_at          INTEGER NOT NULL
+	);`,
+
+	`CREATE TABLE IF NOT EXISTS remote_mailboxes (
+		id             TEXT PRIMARY KEY,
+		account_id     TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+		remote_name    TEXT NOT NULL,
+		local_folder   TEXT NOT NULL,
+		uid_validity   INTEGER NOT NULL DEFAULT 0,
+		last_uid       INTEGER NOT NULL DEFAULT 0,
+		highest_modseq INTEGER NOT NULL DEFAULT 0,
+		total_count    INTEGER NOT NULL DEFAULT 0,
+		unread_count   INTEGER NOT NULL DEFAULT 0,
+		updated_at     INTEGER NOT NULL
+	);`,
+
+	`CREATE TABLE IF NOT EXISTS threads (
+		id             TEXT PRIMARY KEY,
+		account_id     TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+		subject        TEXT NOT NULL,
+		snippet        TEXT NOT NULL DEFAULT '',
+		last_msg_at    INTEGER NOT NULL,
+		msg_count      INTEGER NOT NULL DEFAULT 1,
+		unread_count   INTEGER NOT NULL DEFAULT 0,
+		has_star       INTEGER NOT NULL DEFAULT 0,
+		has_attachment INTEGER NOT NULL DEFAULT 0
+	);`,
+	`CREATE INDEX IF NOT EXISTS idx_threads_last_msg ON threads(last_msg_at DESC);`,
+
+	`CREATE TABLE IF NOT EXISTS messages (
+		id                    TEXT PRIMARY KEY,
+		account_id            TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+		thread_id             TEXT NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+		remote_mailbox_id     TEXT NOT NULL DEFAULT '',
+		remote_uid            INTEGER NOT NULL DEFAULT 0,
+		rfc_message_id        TEXT NOT NULL DEFAULT '',
+		in_reply_to           TEXT NOT NULL DEFAULT '',
+		references_json       TEXT NOT NULL DEFAULT '[]',
+		folder                TEXT NOT NULL,
+		sender_name           TEXT NOT NULL DEFAULT '',
+		sender_email          TEXT NOT NULL DEFAULT '',
+		to_json               TEXT NOT NULL DEFAULT '[]',
+		cc_json               TEXT NOT NULL DEFAULT '[]',
+		bcc_json              TEXT NOT NULL DEFAULT '[]',
+		subject               TEXT NOT NULL DEFAULT '',
+		snippet               TEXT NOT NULL DEFAULT '',
+		body_text             TEXT NOT NULL DEFAULT '',
+		body_html_sanitized   TEXT NOT NULL DEFAULT '',
+		raw_blob_sha256       TEXT NOT NULL DEFAULT '',
+		raw_headers           TEXT NOT NULL DEFAULT '',
+		sent_at               INTEGER NOT NULL,
+		received_at           INTEGER NOT NULL,
+		is_unread             INTEGER NOT NULL DEFAULT 1,
+		is_starred            INTEGER NOT NULL DEFAULT 0,
+		has_attachments       INTEGER NOT NULL DEFAULT 0,
+		has_remote_images     INTEGER NOT NULL DEFAULT 0,
+		remote_images_allowed INTEGER NOT NULL DEFAULT 0,
+		snooze_until          INTEGER NOT NULL DEFAULT 0,
+		scheduled_at          INTEGER NOT NULL DEFAULT 0,
+		outbox_error          TEXT NOT NULL DEFAULT '',
+		security_json         TEXT NOT NULL DEFAULT '',
+		meeting_invite_json   TEXT NOT NULL DEFAULT '',
+		ai_summarized         INTEGER NOT NULL DEFAULT 0,
+		ai_blocked            INTEGER NOT NULL DEFAULT 0,
+		trusted_sender        INTEGER NOT NULL DEFAULT 0,
+		size_bytes            INTEGER NOT NULL DEFAULT 0
+	);`,
+	`CREATE UNIQUE INDEX IF NOT EXISTS idx_msg_acc_mb_uid ON messages(account_id, remote_mailbox_id, remote_uid) WHERE remote_uid > 0;`,
+	`CREATE INDEX IF NOT EXISTS idx_msg_folder_time ON messages(folder, received_at DESC);`,
+	`CREATE INDEX IF NOT EXISTS idx_msg_account_time ON messages(account_id, received_at DESC);`,
+	`CREATE INDEX IF NOT EXISTS idx_msg_thread ON messages(thread_id, sent_at ASC);`,
+	`CREATE INDEX IF NOT EXISTS idx_msg_rfc_id ON messages(rfc_message_id);`,
+	`CREATE INDEX IF NOT EXISTS idx_msg_snooze ON messages(snooze_until) WHERE snooze_until > 0;`,
+
+	`CREATE TABLE IF NOT EXISTS labels (
+		id    TEXT PRIMARY KEY,
+		name  TEXT NOT NULL UNIQUE,
+		color TEXT NOT NULL
+	);`,
+
+	`CREATE TABLE IF NOT EXISTS message_labels (
+		message_id TEXT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+		label_id   TEXT NOT NULL REFERENCES labels(id) ON DELETE CASCADE,
+		PRIMARY KEY (message_id, label_id)
+	);`,
+
+	`CREATE TABLE IF NOT EXISTS attachments (
+		id             TEXT PRIMARY KEY,
+		message_id     TEXT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+		part_id        TEXT NOT NULL DEFAULT '',
+		filename       TEXT NOT NULL,
+		ext            TEXT NOT NULL DEFAULT '',
+		mime_type      TEXT NOT NULL DEFAULT 'application/octet-stream',
+		content_id     TEXT NOT NULL DEFAULT '',
+		is_inline      INTEGER NOT NULL DEFAULT 0,
+		size_bytes     INTEGER NOT NULL DEFAULT 0,
+		kind           TEXT NOT NULL DEFAULT 'other',
+		status         TEXT NOT NULL DEFAULT 'ready',
+		blob_sha256    TEXT NOT NULL DEFAULT '',
+		local_path     TEXT NOT NULL DEFAULT '',
+		preview_text   TEXT NOT NULL DEFAULT '',
+		last_access_at INTEGER NOT NULL DEFAULT 0
+	);`,
+	`CREATE INDEX IF NOT EXISTS idx_att_msg ON attachments(message_id);`,
+
+	`CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
+		message_id UNINDEXED,
+		subject,
+		sender_name,
+		sender_email,
+		body_text,
+		attachment_names,
+		tokenize = 'trigram'
+	);`,
+}
