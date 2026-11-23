@@ -1,0 +1,13 @@
+{
+  "name": "omnimail-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OmniMail 本地优先多源统一邮件桌面客户端 (Wails v3 + Go + React)",
+  "scripts": {
+    "dev": "task dev",
+    "build": "task build",
+    "verify": "task verify",
+    "build:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1",
+    "package:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1"
+  }
+}

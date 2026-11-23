@@ -1,0 +1,26 @@
+{
+  "fixed": {
+    "file_version": "0.1.0.0",
+    "product_version": "0.1.0.0"
+  },
+  "info": {
+    "0804": {
+      "FileVersion": "0.1.0",
+      "ProductVersion": "0.1.0",
+      "CompanyName": "OmniMail Studio",
+      "FileDescription": "OmniMail 多源统一邮件桌面工作台",
+      "LegalCopyright": "© 2026 OmniMail Studio",
+      "ProductName": "OmniMail",
+      "Comments": "本地优先 · 多源统一收件箱 · 边界清晰的 AI 邮件桌面客户端"
+    },
+    "0409": {
+      "FileVersion": "0.1.0",
+      "ProductVersion": "0.1.0",
+      "CompanyName": "OmniMail Studio",
+      "FileDescription": "OmniMail Unified Desktop Mail Workspace",
+      "LegalCopyright": "© 2026 OmniMail Studio",
+      "ProductName": "OmniMail",
+      "Comments": "Local-First Multi-Account Desktop Email Client"
+    }
+  }
+}

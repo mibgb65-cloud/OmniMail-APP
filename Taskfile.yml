@@ -29,6 +29,21 @@ tasks:
       - task: frontend:build
       - task: go:build
 
+  package:win:
+    desc: 构建 Windows 生产版 NSIS 安装包 (.exe)，输出至 dist/release/<VERSION>/
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1 -Version "{{.VERSION | default "v0.0.1"}}"
+
+  package:windows:stable:
+    desc: 构建 Windows 正式稳定版 NSIS 安装包（默认 VERSION=v0.0.1）
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1 -Version "{{.VERSION | default "v0.0.1"}}"
+
+  package:windows:beta:
+    desc: 构建 Windows Beta 测试版 NSIS 安装包（默认 VERSION=v0.0.1.beta.1）
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1 -Version "{{.VERSION | default "v0.0.1.beta.1"}}"
+
   run:
     desc: 运行已经构建的开发版程序
     dir: desktop
@@ -58,7 +73,7 @@ tasks:
     desc: 格式化 Go 和前端源码
     dir: desktop
     cmds:
-      - gofmt -w *.go
+      - gofmt -w .
       - pnpm --dir frontend format
 
   format:check:
@@ -66,7 +81,7 @@ tasks:
     dir: desktop
     cmds:
       - |
-        unformatted=$(gofmt -l *.go) || exit 1
+        unformatted=$(gofmt -l .) || exit 1
         if [ -n "$unformatted" ]; then
           printf '%s\n' "$unformatted"
           exit 1
