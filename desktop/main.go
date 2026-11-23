@@ -106,38 +106,6 @@ func main() {
 	quitOnly := isQuitExistingRequest(args)
 	hideBoot := quitOnly || shouldHideMainWindowOnBoot(args, prefs)
 
-	startURL := "/"
-	if hideBoot {
-		startURL = "/?autostart=1&silent=1"
-	} else if silent {
-		startURL = "/?autostart=1"
-	}
-
-	winOpts := application.WebviewWindowOptions{
-		Name:                   "main",
-		Title:                  "OmniMail",
-		Width:                  geom.Width,
-		Height:                 geom.Height,
-		MinWidth:               minWindowWidth,
-		MinHeight:              minWindowHeight,
-		Frameless:              true,
-		Hidden:                 hideBoot,
-		BackgroundColour:       splashWindowBackground(prefs.ResolvedTheme),
-		URL:                    startURL,
-		OpenInspectorOnStartup: false,
-		DevToolsEnabled:        !isProductionBuild,
-		InitialPosition:        application.WindowCentered,
-		StartState:             application.WindowStateNormal,
-	}
-	if geom.HasPos {
-		winOpts.InitialPosition = application.WindowXY
-		winOpts.X = geom.X
-		winOpts.Y = geom.Y
-	}
-	if geom.Maximised && !hideBoot {
-		winOpts.StartState = application.WindowStateMaximised
-	}
-
 	if quitOnly {
 		go func() {
 			time.Sleep(80 * time.Millisecond)
@@ -146,14 +114,14 @@ func main() {
 		}()
 	}
 
-	mainWin := app.Window.NewWithOptions(winOpts)
+	mainWin := app.Window.NewWithOptions(mainWindowOptions(geom, prefs.ResolvedTheme, silent, hideBoot))
 	desktopSvc.bindRuntime(app, mainWin)
 	services.AttachProfileRuntime(profileSvc, app, mainWin)
 	services.AttachAccountRuntime(accountSvc, app, syncMgr)
 	services.AttachMailRuntime(mailSvc, app, mainWin, syncMgr, calResponder)
 	services.AttachContactRuntime(contactSvc, app, mainWin)
 	services.AttachDiagnosticRuntime(diagSvc, app, mainWin)
-	attachWindowLifecycle(app, mainWin, desktopSvc)
+	attachWindowLifecycle(app, mainWin, desktopSvc, geom, hideBoot)
 
 	tray := setupSystemTray(app, desktopSvc, profMgr)
 	bus.Subscribe(func(name string, _ any) {

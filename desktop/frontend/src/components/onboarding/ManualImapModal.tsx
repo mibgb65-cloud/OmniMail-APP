@@ -88,7 +88,6 @@ export function ManualImapModal() {
         type: "sync-progress",
         accountId: created.id,
         accountName: `${created.name}（${created.email}）`,
-        stage: "syncing",
       });
     } catch (err) {
       setStatus("error");

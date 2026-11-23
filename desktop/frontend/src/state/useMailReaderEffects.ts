@@ -5,6 +5,7 @@ import { isWailsDesktop } from "./storageHelpers";
 
 export function useMailReaderEffects(
   selectedMail: MailItem | null,
+  blockRemoteImages: boolean,
   setMails: Dispatch<SetStateAction<MailItem[]>>,
   refreshCounts: () => Promise<void>,
 ) {
@@ -13,7 +14,7 @@ export function useMailReaderEffects(
     const targetId = selectedMail.id;
     let alive = true;
     void mailApi
-      .getThreadDetail(selectedMail.threadId || targetId)
+      .getThreadDetail(targetId)
       .then((detail) => {
         if (!alive || !detail) return;
         setMails((p) =>
@@ -38,9 +39,9 @@ export function useMailReaderEffects(
       if (readTimer !== null) window.clearTimeout(readTimer);
     };
   }, [
+    blockRemoteImages,
     refreshCounts,
     selectedMail?.id,
-    selectedMail?.threadId,
     selectedMail?.unread,
     setMails,
   ]);

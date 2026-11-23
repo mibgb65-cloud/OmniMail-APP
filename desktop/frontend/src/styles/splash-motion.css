@@ -168,6 +168,10 @@
   animation: splash-workspace-settle 260ms var(--ease-spring) forwards;
 }
 
+.launch-splash[data-waiting="true"] * {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .splash-emblem,
   .splash-wing,

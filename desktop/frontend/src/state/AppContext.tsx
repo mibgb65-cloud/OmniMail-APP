@@ -23,7 +23,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 function useAppController() {
   const viewport = useViewportMode();
   const workspace = useWorkspaceStore();
-  const mailStore = useMailStore();
+  const mailStore = useMailStore(workspace.settings.blockRemoteImages);
   const aiStore = useAiStore();
   const toastStore = useToasts();
   const composeStore = useComposeStore(

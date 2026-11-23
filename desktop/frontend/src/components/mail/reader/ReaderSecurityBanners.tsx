@@ -6,6 +6,11 @@ import { ReaderOutboxBanners } from "./ReaderOutboxBanners";
 
 export function ReaderSecurityBanners({ mail }: { mail: MailItem }) {
   const { workspace, mailStore, toastStore } = useApp();
+  const showRemoteImageBanner =
+    workspace.settings.blockRemoteImages &&
+    mail.hasRemoteImages &&
+    !mail.remoteImagesAllowed &&
+    mail.securityWarning?.level !== "danger";
 
   return (
     <>
@@ -94,7 +99,7 @@ export function ReaderSecurityBanners({ mail }: { mail: MailItem }) {
         </div>
       )}
 
-      {mail.hasRemoteImages && !mail.remoteImagesAllowed && (
+      {showRemoteImageBanner && (
         <div className="security-banner warning" role="status">
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Icon name="image" size={16} />
@@ -112,8 +117,8 @@ export function ReaderSecurityBanners({ mail }: { mail: MailItem }) {
                 .then((restoredHtml) => {
                   mailStore.updateMail(mail.id, {
                     remoteImagesAllowed: true,
-                    messages: mail.messages.map((msg, idx) =>
-                      idx === mail.messages.length - 1 && restoredHtml
+                    messages: mail.messages.map((msg) =>
+                      msg.id === mail.id && restoredHtml
                         ? { ...msg, bodyHtml: restoredHtml }
                         : msg,
                     ),

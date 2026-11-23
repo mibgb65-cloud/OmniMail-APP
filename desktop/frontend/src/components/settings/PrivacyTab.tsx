@@ -2,18 +2,35 @@ import { useApp } from "../../state/AppContext";
 import { SwitchRow } from "./SwitchRow";
 
 export function PrivacyTab() {
-  const { workspace } = useApp();
+  const { workspace, toastStore } = useApp();
   const s = workspace.settings;
+  const [savingImagePolicy, setSavingImagePolicy] = useState(false);
+
+  async function saveImagePolicy(blockRemoteImages: boolean) {
+    setSavingImagePolicy(true);
+    try {
+      // 先持久化再刷新阅读器，否则正文可能按旧策略从后端取回。
+      const saved = await profileApi.updateAppSettings({ blockRemoteImages });
+      workspace.applySettingsFromBackend({
+        blockRemoteImages: saved.blockRemoteImages,
+      });
+    } catch {
+      toastStore.pushToast({ tone: "danger", title: "未能保存外部图片设置" });
+    } finally {
+      setSavingImagePolicy(false);
+    }
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div className="settings-card">
         <strong style={{ fontSize: 14 }}>邮件读取隐私与反钓鱼</strong>
         <SwitchRow
-          heading="默认拦截陌生发件人远程图片与追踪像素"
-          desc="防止发件人获知你的打开时间与 IP，阅读时可单封手动加载"
+          heading="默认拦截邮件远程图片与追踪像素"
+          desc="关闭后默认加载远程图片；高风险邮件仍会拦截"
           checked={s.blockRemoteImages}
-          onChange={(v) => workspace.updateSettings({ blockRemoteImages: v })}
+          disabled={savingImagePolicy}
+          onChange={(v) => void saveImagePolicy(v)}
         />
         <SwitchRow
           heading="开启 SPF / DKIM / DMARC 钓鱼风险校验"
@@ -60,3 +77,5 @@ export function PrivacyTab() {
     </div>
   );
 }
+import { useState } from "react";
+import { profileApi } from "../../services/backendClient";

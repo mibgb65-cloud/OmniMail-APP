@@ -35,10 +35,8 @@ export type OverlayModal =
   | { type: "manual-imap" }
   | {
       type: "sync-progress";
-      accountId?: string;
+      accountId: string;
       accountName: string;
-      stage:
-        "testing" | "connected" | "failed" | "syncing" | "partial" | "done";
     }
   | {
       type: "profile-manage";

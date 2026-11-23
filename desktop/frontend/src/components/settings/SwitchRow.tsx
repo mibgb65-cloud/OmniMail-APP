@@ -2,11 +2,13 @@ export function SwitchRow({
   heading,
   desc,
   checked,
+  disabled,
   onChange,
 }: {
   heading: string;
   desc?: string;
   checked: boolean;
+  disabled?: boolean;
   onChange: (next: boolean) => void;
 }) {
   return (
@@ -31,6 +33,7 @@ export function SwitchRow({
         role="switch"
         aria-checked={checked}
         aria-label={heading}
+        disabled={disabled}
         className={`switch-btn${checked ? " on" : ""}`}
         onClick={() => onChange(!checked)}
       >

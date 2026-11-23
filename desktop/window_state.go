@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -79,12 +80,54 @@ func (s *DesktopStateStore) saveWindowGeometry(state WindowGeometryState) {
 	_ = os.WriteFile(filepath.Join(dataDir, "window-state.json"), raw, 0o600)
 }
 
-func attachWindowLifecycle(app *application.App, win *application.WebviewWindow, svc *DesktopService) {
+func mainWindowOptions(geom WindowGeometryState, theme string, autostart, hidden bool) application.WebviewWindowOptions {
+	startURL := "/"
+	if hidden {
+		startURL = "/?silent=1"
+	} else if autostart {
+		startURL = "/?autostart=1"
+	}
+	opts := application.WebviewWindowOptions{
+		Name:             "main",
+		Title:            "OmniMail",
+		Width:            geom.Width,
+		Height:           geom.Height,
+		MinWidth:         minWindowWidth,
+		MinHeight:        minWindowHeight,
+		Frameless:        true,
+		Hidden:           hidden,
+		BackgroundColour: splashWindowBackground(theme),
+		URL:              startURL,
+		DevToolsEnabled:  !isProductionBuild,
+		InitialPosition:  application.WindowCentered,
+		StartState:       application.WindowStateNormal,
+	}
+	if geom.HasPos {
+		opts.InitialPosition = application.WindowXY
+		opts.X, opts.Y = geom.X, geom.Y
+	}
+	return opts
+}
+
+func attachWindowLifecycle(app *application.App, win *application.WebviewWindow, svc *DesktopService, cur WindowGeometryState, hidden bool) {
 	var mu sync.Mutex
-	cur := svc.store.readWindowGeometry()
+	var restoreMaximised atomic.Bool
+	restoreMaximised.Store(cur.Maximised && !hidden)
+
+	var restoreOnce sync.Once
+	win.OnWindowEvent(events.Common.WindowRuntimeReady, func(_ *application.WindowEvent) {
+		restoreOnce.Do(func() {
+			if restoreMaximised.Load() {
+				// Wails Windows 会先应用 StartState，再按普通窗口坐标重新移动窗口。
+				// 等初始几何和 WebView 就绪再最大化，避免窗口处于最大化状态却偏离工作区。
+				win.Maximise()
+				restoreMaximised.Store(false)
+			}
+		})
+	})
 
 	snapshotNormal := func() {
-		if win.IsMaximised() || win.IsMinimised() {
+		if restoreMaximised.Load() || win.IsMaximised() || win.IsMinimised() {
 			return
 		}
 		b := win.Bounds()
@@ -98,17 +141,15 @@ func attachWindowLifecycle(app *application.App, win *application.WebviewWindow,
 		cur.Height = b.Height
 		cur.HasPos = true
 		cur.Maximised = false
-		saved := cur
+		svc.store.saveWindowGeometry(cur)
 		mu.Unlock()
-		svc.store.saveWindowGeometry(saved)
 	}
 
 	setMaxState := func(maximised bool) {
 		mu.Lock()
 		cur.Maximised = maximised
-		saved := cur
+		svc.store.saveWindowGeometry(cur)
 		mu.Unlock()
-		svc.store.saveWindowGeometry(saved)
 	}
 
 	win.OnWindowEvent(events.Common.WindowDidMove, func(_ *application.WindowEvent) {
@@ -131,7 +172,9 @@ func attachWindowLifecycle(app *application.App, win *application.WebviewWindow,
 
 	win.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		snapshotNormal()
-		setMaxState(win.IsMaximised())
+		if !win.IsMinimised() && !restoreMaximised.Load() {
+			setMaxState(win.IsMaximised())
+		}
 		if !svc.isQuitting() && svc.store.readPreferences().CloseToTray {
 			event.Cancel()
 			win.Hide()

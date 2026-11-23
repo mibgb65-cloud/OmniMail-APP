@@ -96,9 +96,11 @@ func (w *SyncWorker) syncLoop() {
 
 func (w *SyncWorker) runOneSyncCycle() error {
 	start := time.Now()
+	w.emitSyncProgress("syncing", "正在连接收件服务器…")
 	epCfg, accDTO, err := accounts.ResolveEndpointConfig(w.ctx, w.sess.DB, w.sess.Vault, w.tm, w.accountID)
 	if err != nil {
 		w.reportStatus("auth-expired", err.Error(), 0)
+		w.emitSyncProgress("failed", "未能读取邮箱凭据")
 		return err
 	}
 	w.reportStatus("syncing", "", 0)
@@ -110,6 +112,7 @@ func (w *SyncWorker) runOneSyncCycle() error {
 			st = "auth-expired"
 		}
 		w.reportStatus(st, err.Error(), 0)
+		w.emitSyncProgress("failed", "未能连接收件服务器")
 		AppendSyncLog(w.sess.DB, w.sess.ProfileDir, w.accountID, "IMAP", "error", "auth", time.Since(start).Milliseconds(), "连接收件服务器失败", err.Error())
 		return err
 	}
@@ -120,9 +123,11 @@ func (w *SyncWorker) runOneSyncCycle() error {
 
 	FlushOpQueue(w.sess.DB, workConn, w.accountID)
 
+	w.emitSyncProgress("syncing", "正在读取邮件文件夹…")
 	boxes, err := mailproto.DiscoverMailboxes(workConn)
 	if err != nil {
 		w.reportStatus("error", err.Error(), 0)
+		w.emitSyncProgress("failed", "未能读取邮件文件夹")
 		return err
 	}
 	sort.SliceStable(boxes, func(i, j int) bool {
@@ -130,6 +135,8 @@ func (w *SyncWorker) runOneSyncCycle() error {
 	})
 
 	var allAdded []string
+	var syncedBox, failedBox bool
+	syncingOtherFolders := false
 	for _, mb := range boxes {
 		if mb.NoSelect || mb.LocalFolder == "custom" {
 			continue
@@ -139,24 +146,29 @@ func (w *SyncWorker) runOneSyncCycle() error {
 			return w.ctx.Err()
 		default:
 		}
+		if mb.LocalFolder != "inbox" && !syncingOtherFolders {
+			w.emitSyncProgress("syncing", "正在同步其他邮件文件夹…")
+			syncingOtherFolders = true
+		}
 		added, mbErr := syncSingleMailbox(workConn, w.sess.DB, w.sess.Blobs, w.hooks, w.bus, accDTO, mb)
-		if mbErr == nil && len(added) > 0 {
-			allAdded = append(allAdded, added...)
+		allAdded = append(allAdded, added...)
+		if mbErr != nil {
+			failedBox = true
+		} else {
+			syncedBox = true
 		}
 	}
 
-	nowMs := time.Now().UnixMilli()
-	w.reportStatus("connected", "", nowMs)
+	w.finishSyncProgress(syncedBox || len(allAdded) > 0, failedBox)
 	if w.bus != nil {
-		w.bus.Emit(events.SyncProgress, events.SyncProgressPayload{
-			AccountID: w.accountID, Stage: "同步已完成", Current: 1, Total: 1, Percent: 100,
-		})
 		counts, _ := search.GetFolderCounts(w.sess.DB, "")
 		w.bus.Emit(events.MailDelta, events.MailDeltaPayload{
 			AccountID: w.accountID, AddedIDs: allAdded, FolderCounts: counts.Counts,
 		})
 	}
-	AppendSyncLog(w.sess.DB, w.sess.ProfileDir, w.accountID, "IMAP", "info", "imap", time.Since(start).Milliseconds(), "邮箱增量同步完成", "")
+	if !failedBox {
+		AppendSyncLog(w.sess.DB, w.sess.ProfileDir, w.accountID, "IMAP", "info", "imap", time.Since(start).Milliseconds(), "邮箱增量同步完成", "")
+	}
 	return nil
 }
 
@@ -166,25 +178,6 @@ func (w *SyncWorker) reportStatus(status, lastErr string, syncedMs int64) {
 		w.bus.Emit(events.AccountStatus, events.AccountStatusPayload{
 			AccountID: w.accountID, Status: status, LastError: lastErr, LastSyncedAt: syncedMs,
 		})
-	}
-}
-
-func folderPriority(f string) int {
-	switch f {
-	case "inbox":
-		return 0
-	case "sent":
-		return 1
-	case "drafts":
-		return 2
-	case "archive":
-		return 3
-	case "spam":
-		return 4
-	case "trash":
-		return 5
-	default:
-		return 9
 	}
 }
 

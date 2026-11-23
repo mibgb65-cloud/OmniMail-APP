@@ -11,6 +11,7 @@ import {
 import type { PickedFileInfo } from "../../bindings/omnimail/models";
 import type { AppSettings } from "../types/settings";
 import { isWailsDesktop, parseMailtoUrl } from "./storageHelpers";
+import { isLiveSyncProgress, type LiveSyncProgress } from "./syncProgress";
 
 export async function syncDesktopPreferences(next: AppSettings): Promise<void> {
   if (!isWailsDesktop()) return;
@@ -69,13 +70,7 @@ export interface RuntimeEventHandlers {
     status: string;
     lastError?: string;
   }) => void;
-  onSyncProgress: (p: {
-    accountId: string;
-    stage: string;
-    current: number;
-    total: number;
-    percent: number;
-  }) => void;
+  onSyncProgress: (p: LiveSyncProgress) => void;
   onMailDelta?: (p: { folderCounts?: Record<string, number> }) => void;
   onAttachmentProgress?: (p: {
     attachmentId: string;
@@ -120,17 +115,7 @@ export function useDesktopRuntimeEvents(h: RuntimeEventHandlers) {
         }
       }),
       Events.On("omnimail:sync:progress", (ev) => {
-        if (ev.data && typeof ev.data === "object") {
-          h.onSyncProgress(
-            ev.data as {
-              accountId: string;
-              stage: string;
-              current: number;
-              total: number;
-              percent: number;
-            },
-          );
-        }
+        if (isLiveSyncProgress(ev.data)) h.onSyncProgress(ev.data);
       }),
       Events.On("omnimail:mail:delta", (ev) => {
         h.onMailDelta?.(

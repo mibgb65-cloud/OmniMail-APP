@@ -55,7 +55,6 @@ func GetMessageItem(db *sql.DB, msgID string, includeThread bool, blockRemoteIma
 	m.Unread = unreadInt != 0
 	m.Starred = starInt != 0
 	m.HasRemoteImages = remImgInt != 0
-	m.RemoteImagesAllowed = remAllowInt != 0
 	m.AiSummarized = aiSumInt != 0
 	m.AvatarText = pickAvatarChar(m.SenderName, m.SenderEmail)
 	m.AvatarTone = avatarTones[int(hashStr(m.SenderEmail))%len(avatarTones)]
@@ -68,12 +67,7 @@ func GetMessageItem(db *sql.DB, msgID string, includeThread bool, blockRemoteIma
 	if schedMs > 0 {
 		m.ScheduledAt = time.UnixMilli(schedMs).Format("2006-01-02 15:04")
 	}
-	if secJ != "" {
-		var sw SecurityWarningDTO
-		if json.Unmarshal([]byte(secJ), &sw) == nil && sw.Level != "" {
-			m.SecurityWarning = &sw
-		}
-	}
+	m.SecurityWarning = decodeSecurityWarning(secJ)
 	if icsJ != "" {
 		var inv MeetingInviteDTO
 		if json.Unmarshal([]byte(icsJ), &inv) == nil && inv.Title != "" {
@@ -84,30 +78,33 @@ func GetMessageItem(db *sql.DB, msgID string, includeThread bool, blockRemoteIma
 	m.Labels = queryMessageLabels(db, m.ID)
 	m.Attachments = queryMessageAttachments(db, m.ID)
 
-	allowImg := (!blockRemoteImages || m.RemoteImagesAllowed) && (m.SecurityWarning == nil || m.SecurityWarning.Level != "danger")
+	// DTO 表示实际渲染策略，而不是数据库里仅针对这一封邮件的放行记录。
+	highRisk := m.SecurityWarning != nil && m.SecurityWarning.Level == "danger"
+	m.RemoteImagesAllowed = (!blockRemoteImages || remAllowInt != 0) && !highRisk
 	if !includeThread {
-		m.Messages = []ThreadMessageDTO{buildSingleThreadMsg(m.ID, m.SenderName, m.SenderEmail, m.Recipients, m.Cc, m.FullTimeText, bodyText, bodyHTML, allowImg, false)}
+		m.Messages = []ThreadMessageDTO{buildSingleThreadMsg(m.ID, m.SenderName, m.SenderEmail, m.Recipients, m.Cc, m.FullTimeText, bodyText, bodyHTML, m.RemoteImagesAllowed, false)}
 		m.RawHeaders = ""
 		return m, nil
 	}
 
 	tRows, err := db.Query(`
-		SELECT id, sender_name, sender_email, to_json, cc_json, sent_at, body_text, body_html_sanitized, remote_images_allowed
+		SELECT id, sender_name, sender_email, to_json, cc_json, sent_at, body_text, body_html_sanitized, remote_images_allowed, security_json
 		FROM messages WHERE thread_id = ? ORDER BY sent_at ASC, received_at ASC
 	`, m.ThreadID)
 	if err != nil {
-		m.Messages = []ThreadMessageDTO{buildSingleThreadMsg(m.ID, m.SenderName, m.SenderEmail, m.Recipients, m.Cc, m.FullTimeText, bodyText, bodyHTML, allowImg, false)}
+		m.Messages = []ThreadMessageDTO{buildSingleThreadMsg(m.ID, m.SenderName, m.SenderEmail, m.Recipients, m.Cc, m.FullTimeText, bodyText, bodyHTML, m.RemoteImagesAllowed, false)}
 		return m, nil
 	}
 	defer tRows.Close()
 	var list []ThreadMessageDTO
 	for tRows.Next() {
-		var tid, sName, sEmail, tTo, tCc, tTxt, tHTML string
+		var tid, sName, sEmail, tTo, tCc, tTxt, tHTML, tSecurity string
 		var sentAt int64
 		var tAllow int
-		if tRows.Scan(&tid, &sName, &sEmail, &tTo, &tCc, &sentAt, &tTxt, &tHTML, &tAllow) == nil {
+		if tRows.Scan(&tid, &sName, &sEmail, &tTo, &tCc, &sentAt, &tTxt, &tHTML, &tAllow, &tSecurity) == nil {
 			_, fullT := formatMailTimes(sentAt)
-			msgAllow := (!blockRemoteImages || tAllow != 0) && (m.SecurityWarning == nil || m.SecurityWarning.Level != "danger")
+			warning := decodeSecurityWarning(tSecurity)
+			msgAllow := (!blockRemoteImages || tAllow != 0) && !highRisk && (warning == nil || warning.Level != "danger")
 			list = append(list, buildSingleThreadMsg(tid, sName, sEmail, formatAddrJSON(tTo), formatAddrJSON(tCc), fullT, tTxt, tHTML, msgAllow, true))
 		}
 	}
@@ -116,6 +113,14 @@ func GetMessageItem(db *sql.DB, msgID string, includeThread bool, blockRemoteIma
 		m.Messages = list
 	}
 	return m, nil
+}
+
+func decodeSecurityWarning(raw string) *SecurityWarningDTO {
+	var warning SecurityWarningDTO
+	if raw != "" && json.Unmarshal([]byte(raw), &warning) == nil && warning.Level != "" {
+		return &warning
+	}
+	return nil
 }
 
 func buildSingleThreadMsg(id, sName, sEmail, to, cc, timeTxt, bodyTxt, bodyHTML string, allowRemote, collapsed bool) ThreadMessageDTO {

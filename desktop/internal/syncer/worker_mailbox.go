@@ -72,7 +72,10 @@ func syncSingleMailbox(
 				start = sel.NumMessages - maxInitialPerBox + 1
 			}
 			allSeq.AddRange(start, sel.NumMessages)
-			fMsgs, _ := cli.Fetch(allSeq, &imap.FetchOptions{UID: true}).Collect()
+			fMsgs, err := cli.Fetch(allSeq, &imap.FetchOptions{UID: true}).Collect()
+			if err != nil {
+				return nil, err
+			}
 			for _, fm := range fMsgs {
 				if fm.UID > 0 {
 					targetUIDs = append(targetUIDs, fm.UID)
@@ -83,7 +86,10 @@ func syncSingleMailbox(
 		syncExistingFlags(cli, db, acc.ID, mbID, prevLastUID)
 		var newSet imap.UIDSet
 		newSet.AddRange(imap.UID(prevLastUID+1), 0)
-		fMsgs, _ := cli.Fetch(newSet, &imap.FetchOptions{UID: true}).Collect()
+		fMsgs, err := cli.Fetch(newSet, &imap.FetchOptions{UID: true}).Collect()
+		if err != nil {
+			return nil, err
+		}
 		for _, fm := range fMsgs {
 			if uint32(fm.UID) > prevLastUID {
 				targetUIDs = append(targetUIDs, fm.UID)
@@ -101,7 +107,16 @@ func syncSingleMailbox(
 	highestUID := uint32(targetUIDs[0])
 
 	var addedIDs []string
-	total := len(targetUIDs)
+	var firstIngestErr error
+	processed, total := 0, len(targetUIDs)
+	reportInboxProgress := func() {
+		if bus != nil && mb.LocalFolder == "inbox" {
+			bus.Emit(events.SyncProgress, events.SyncProgressPayload{
+				AccountID: acc.ID, Status: "syncing", Stage: "正在同步收件箱邮件…", Current: processed, Total: total,
+			})
+		}
+	}
+	reportInboxProgress()
 	for offset := 0; offset < total; offset += syncBatchSize {
 		end := offset + syncBatchSize
 		if end > total {
@@ -136,15 +151,19 @@ func syncSingleMailbox(
 				IsUnread: isUnread, IsStarred: isStar, ReceivedAt: fm.InternalDate,
 				RawBytes: raw, SizeBytes: fm.RFC822Size,
 			})
-			if ingErr == nil && created && mid != "" {
+			if ingErr != nil {
+				if firstIngestErr == nil {
+					firstIngestErr = ingErr
+				}
+				continue
+			}
+			processed++
+			if created && mid != "" {
 				addedIDs = append(addedIDs, mid)
 			}
 		}
 		if bus != nil && mb.LocalFolder == "inbox" {
-			pct := int(float64(end) / float64(total) * 100)
-			bus.Emit(events.SyncProgress, events.SyncProgressPayload{
-				AccountID: acc.ID, Stage: "正在同步收件箱邮件…", Current: end, Total: total, Percent: pct,
-			})
+			reportInboxProgress()
 			counts, _ := search.GetFolderCounts(db, "")
 			bus.Emit(events.MailDelta, events.MailDeltaPayload{
 				AccountID: acc.ID, AddedIDs: addedIDs, FolderCounts: counts.Counts,
@@ -155,46 +174,24 @@ func syncSingleMailbox(
 	if highestUID > prevLastUID {
 		_, _ = db.Exec(`UPDATE remote_mailboxes SET last_uid=?, updated_at=? WHERE id=?`, highestUID, time.Now().UnixMilli(), mbID)
 	}
-	return addedIDs, nil
+	return addedIDs, firstIngestErr
 }
 
-func syncExistingFlags(cli *imapclient.Client, db *sql.DB, accID, mbID string, lastUID uint32) {
-	rows, err := db.Query(`SELECT id, remote_uid, is_unread, is_starred FROM messages WHERE account_id=? AND remote_mailbox_id=? AND remote_uid > 0 ORDER BY received_at DESC LIMIT 120`, accID, mbID)
-	if err != nil {
-		return
-	}
-	type localState struct {
-		id           string
-		unread, star bool
-	}
-	localMap := make(map[imap.UID]localState)
-	var checkSet imap.UIDSet
-	for rows.Next() {
-		var id string
-		var uid uint32
-		var uInt, sInt int
-		if rows.Scan(&id, &uid, &uInt, &sInt) == nil && uid <= lastUID {
-			localMap[imap.UID(uid)] = localState{id: id, unread: uInt != 0, star: sInt != 0}
-			checkSet.AddNum(imap.UID(uid))
-		}
-	}
-	_ = rows.Close()
-	if len(localMap) == 0 {
-		return
-	}
-	fetched, err := cli.Fetch(checkSet, &imap.FetchOptions{UID: true, Flags: true}).Collect()
-	if err != nil {
-		return
-	}
-	for _, fm := range fetched {
-		ls, ok := localMap[fm.UID]
-		if !ok {
-			continue
-		}
-		remUnread := !slices.Contains(fm.Flags, imap.FlagSeen)
-		remStar := slices.Contains(fm.Flags, imap.FlagFlagged)
-		if remUnread != ls.unread || remStar != ls.star {
-			_, _ = db.Exec(`UPDATE messages SET is_unread=?, is_starred=? WHERE id=?`, boolToInt(remUnread), boolToInt(remStar), ls.id)
-		}
+func folderPriority(f string) int {
+	switch f {
+	case "inbox":
+		return 0
+	case "sent":
+		return 1
+	case "drafts":
+		return 2
+	case "archive":
+		return 3
+	case "spam":
+		return 4
+	case "trash":
+		return 5
+	default:
+		return 9
 	}
 }

@@ -53,7 +53,6 @@ function renderModal(ov: Exclude<OverlayModal, { type: "none" }>) {
         <SyncProgressModal
           accountId={ov.accountId}
           accountName={ov.accountName}
-          stage={ov.stage}
         />
       );
     case "profile-manage":

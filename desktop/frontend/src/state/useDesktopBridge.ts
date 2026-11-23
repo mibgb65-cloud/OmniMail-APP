@@ -17,15 +17,8 @@ import {
   resolveThemeFromPref,
   setDesktopBridgeReady,
 } from "./storageHelpers";
+import type { LiveSyncProgress } from "./syncProgress";
 import { useDesktopStorageOps } from "./useDesktopStorageOps";
-
-export interface LiveSyncProgress {
-  accountId: string;
-  stage: string;
-  current: number;
-  total: number;
-  percent: number;
-}
 
 interface BridgeDeps {
   settings: AppSettings;
@@ -57,8 +50,8 @@ export function useDesktopBridge(deps: BridgeDeps) {
     deps.refreshProfilesAndAccounts,
   );
   const { setStorage } = storageOps;
-  const [syncProgress, setSyncProgress] = useState<LiveSyncProgress | null>(
-    null,
+  const [syncProgressByAccount, setSyncProgressByAccount] = useState(
+    () => new Map<string, LiveSyncProgress>(),
   );
 
   const onTrayCompose = useCallback(
@@ -136,6 +129,7 @@ export function useDesktopBridge(deps: BridgeDeps) {
       onTraySyncAll: deps.onTraySyncAll,
       onOpenExternalFile,
       onProfileSwitched: () => {
+        setSyncProgressByAccount(new Map());
         deps.onResetStoresForSwitch();
         void deps.refreshProfilesAndAccounts();
       },
@@ -152,10 +146,9 @@ export function useDesktopBridge(deps: BridgeDeps) {
         else if (st === "connected") deps.setSyncLabel("所有邮箱已同步");
       },
       onSyncProgress: (p: LiveSyncProgress) => {
-        setSyncProgress(p);
-        deps.setSyncLabel(
-          p.percent >= 100 ? "所有邮箱已同步" : `正在同步 (${p.percent}%)…`,
-        );
+        setSyncProgressByAccount((prev) => new Map(prev).set(p.accountId, p));
+        if (p.status === "syncing") deps.setSyncLabel("正在同步…");
+        else deps.setSyncLabel(p.stage);
       },
       onMailDelta: (p: { folderCounts?: Record<string, number> }) =>
         deps.onMailDelta(p.folderCounts),
@@ -183,5 +176,5 @@ export function useDesktopBridge(deps: BridgeDeps) {
   );
   useDesktopRuntimeEvents(eventHandlers);
 
-  return { ...storageOps, syncProgress };
+  return { ...storageOps, syncProgressByAccount };
 }

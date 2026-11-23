@@ -15,7 +15,7 @@ import { useMailReaderEffects } from "./useMailReaderEffects";
 
 export type { AdvancedSearchCriteria };
 
-export function useMailStore() {
+export function useMailStore(blockRemoteImages: boolean) {
   const [mails, setMails] = useState<MailItem[]>(() =>
     isWailsDesktop() ? [] : INITIAL_MAILS,
   );
@@ -120,8 +120,12 @@ export function useMailStore() {
 
   const selectedMail =
     mails.find((m) => m.id === selectedMailId) ?? filteredMails[0] ?? null;
-
-  useMailReaderEffects(selectedMail, setMails, refreshCounts);
+  useMailReaderEffects(
+    selectedMail,
+    blockRemoteImages,
+    setMails,
+    refreshCounts,
+  );
   const mutations = useMailMutations(
     mails,
     setMails,

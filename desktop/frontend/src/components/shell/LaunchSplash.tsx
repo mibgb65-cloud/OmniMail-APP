@@ -1,4 +1,5 @@
 interface LaunchSplashProps {
+  waiting: boolean;
   exiting: boolean;
   progress: number;
   isSlowLoad: boolean;
@@ -6,6 +7,7 @@ interface LaunchSplashProps {
 }
 
 export function LaunchSplash({
+  waiting,
   exiting,
   progress,
   isSlowLoad,
@@ -14,6 +16,7 @@ export function LaunchSplash({
   return (
     <div
       className="launch-splash"
+      data-waiting={waiting}
       data-exiting={exiting ? "true" : "false"}
       role="status"
       aria-live="polite"

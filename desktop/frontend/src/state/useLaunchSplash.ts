@@ -1,17 +1,10 @@
 import { useEffect, useState } from "react";
 import { CheckConnection } from "../../bindings/omnimail/desktopservice";
 import { profileApi } from "../services/backendClient";
+import { resolveLaunchSplashOptions } from "./launchSplashOptions";
 import { isWailsDesktop } from "./storageHelpers";
 
-export type SplashPhase = "active" | "exiting" | "done";
-
-declare global {
-  interface Window {
-    __OMNIMAIL_BOOT_TS__?: number;
-    __OMNIMAIL_SPLASH_STATE__?: "running" | "done";
-    _wails?: unknown;
-  }
-}
+export type SplashPhase = "waiting" | "active" | "exiting" | "done";
 
 const MIN_HOLD_MS = 850;
 const SLOW_THRESHOLD_MS = 2000;
@@ -24,52 +17,6 @@ if (import.meta.hot) {
   import.meta.hot.dispose((data) => {
     data.hmrReloaded = true;
   });
-}
-
-interface BootOptions {
-  skip: boolean;
-  extraHoldMs: number;
-}
-
-function resolveBootOptions(): BootOptions {
-  if (typeof window === "undefined") return { skip: true, extraHoldMs: 0 };
-  if (isHmrReload || window.__OMNIMAIL_SPLASH_STATE__ === "done") {
-    return { skip: true, extraHoldMs: 0 };
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  const silentBoot =
-    params.get("autostart") === "1" ||
-    params.get("silent") === "1" ||
-    params.get("minimized") === "1";
-  const trayWake =
-    params.get("tray") === "1" ||
-    params.get("wake") === "1" ||
-    params.get("from") === "tray";
-  let traySession = false;
-  try {
-    traySession = window.sessionStorage.getItem("omnimail:tray-wake") === "1";
-  } catch {
-    // 忽略受限存储环境异常
-  }
-
-  const rawHold = params.get("bootHoldMs") ?? "";
-  const extraHoldMs = /^\d{1,4}$/.test(rawHold)
-    ? Math.min(5000, Number(rawHold))
-    : 0;
-
-  if (
-    silentBoot ||
-    trayWake ||
-    traySession ||
-    document.visibilityState === "hidden"
-  ) {
-    window.__OMNIMAIL_SPLASH_STATE__ = "done";
-    return { skip: true, extraHoldMs: 0 };
-  }
-
-  window.__OMNIMAIL_SPLASH_STATE__ = "running";
-  return { skip: false, extraHoldMs };
 }
 
 function waitMs(ms: number): Promise<void> {
@@ -99,9 +46,9 @@ async function runParallelBootInit(extraHoldMs: number): Promise<void> {
 }
 
 export function useLaunchSplash(accountCount: number) {
-  const [boot] = useState<BootOptions>(resolveBootOptions);
+  const [boot] = useState(() => resolveLaunchSplashOptions(isHmrReload));
   const [phase, setPhase] = useState<SplashPhase>(() =>
-    boot.skip ? "done" : "active",
+    boot.skip ? "done" : "waiting",
   );
   const [progress, setProgress] = useState(0.22);
   const [isSlowLoad, setIsSlowLoad] = useState(false);
@@ -114,14 +61,35 @@ export function useLaunchSplash(accountCount: number) {
     }
     document.documentElement.setAttribute(
       "data-splash-active",
-      phase === "active" ? "true" : "exiting",
+      phase === "exiting" ? "exiting" : "true",
     );
   }, [phase]);
 
+  const waitingForWindow = phase === "waiting";
   useEffect(() => {
-    if (boot.skip) return;
+    if (!waitingForWindow) return;
+    let frame = 0;
+    const startWhenVisible = () => {
+      window.cancelAnimationFrame(frame);
+      // 普通启动时 WebView2 也可能短暂不可见；等窗口可见才开始播放并计时。
+      if (document.visibilityState === "visible") {
+        frame = window.requestAnimationFrame(() => {
+          if (document.visibilityState === "visible") setPhase("active");
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", startWhenVisible);
+    startWhenVisible();
+    return () => {
+      document.removeEventListener("visibilitychange", startWhenVisible);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [waitingForWindow]);
+
+  useEffect(() => {
+    if (boot.skip || waitingForWindow) return;
     let cancelled = false;
-    const bootTs = window.__OMNIMAIL_BOOT_TS__ ?? performance.now();
+    const bootTs = performance.now();
 
     const t1 = window.setTimeout(() => {
       if (!cancelled) setProgress(0.58);
@@ -139,14 +107,15 @@ export function useLaunchSplash(accountCount: number) {
       if (!cancelled) setStageIndex(2);
     }, STAGE_THREE_MS);
 
-    let exitTimer: number | null = null;
+    let holdTimer = 0;
+    let exitTimer = 0;
 
     void runParallelBootInit(boot.extraHoldMs).then(() => {
       if (cancelled) return;
       const elapsed = performance.now() - bootTs;
       const remainHold = Math.max(0, MIN_HOLD_MS - elapsed);
 
-      window.setTimeout(() => {
+      holdTimer = window.setTimeout(() => {
         if (cancelled) return;
         setProgress(1);
         setPhase("exiting");
@@ -170,9 +139,10 @@ export function useLaunchSplash(accountCount: number) {
       window.clearTimeout(t2);
       window.clearTimeout(slowTimer);
       window.clearTimeout(stageThreeTimer);
-      if (exitTimer !== null) window.clearTimeout(exitTimer);
+      window.clearTimeout(holdTimer);
+      window.clearTimeout(exitTimer);
     };
-  }, [boot.extraHoldMs, boot.skip]);
+  }, [boot.extraHoldMs, boot.skip, waitingForWindow]);
 
   const statusMessages: [string, string, string] = [
     `正在加载本地加密索引与 ${accountCount} 个邮箱账户…`,
@@ -181,7 +151,7 @@ export function useLaunchSplash(accountCount: number) {
   ];
 
   const workspaceSplashState: "holding" | "revealing" | undefined =
-    phase === "active"
+    phase === "waiting" || phase === "active"
       ? "holding"
       : phase === "exiting"
         ? "revealing"

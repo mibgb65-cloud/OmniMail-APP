@@ -1,43 +1,32 @@
-import { useEffect } from "react";
-import { accountApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
+import type { LiveSyncProgress } from "../../state/syncProgress";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
-import { SYNC_STAGE_INFO, type SyncStage } from "./syncStageMeta";
+
+const badgeByStatus: Record<LiveSyncProgress["status"] | "waiting", string[]> =
+  {
+    waiting: ["等待同步", "pill-accent"],
+    syncing: ["首次同步中", "pill-accent"],
+    done: ["同步完成", "pill-success"],
+    partial: ["部分同步失败", "pill-warning"],
+    failed: ["同步失败", "pill-danger"],
+  };
 
 export function SyncProgressModal({
   accountId,
   accountName,
-  stage,
 }: {
-  accountId?: string;
+  accountId: string;
   accountName: string;
-  stage: SyncStage;
 }) {
-  const { workspace, desktopBridge, toastStore } = useApp();
-  const live = desktopBridge.syncProgress;
-  const matchesLive = Boolean(
-    live && (!accountId || live.accountId === accountId),
-  );
-  const resolvedStage: SyncStage =
-    matchesLive && (live?.percent ?? 0) >= 100 ? "done" : stage;
-  const info = SYNC_STAGE_INFO[resolvedStage];
-  const pct = matchesLive ? (live?.percent ?? info.progress) : info.progress;
-
-  useEffect(() => {
-    if (accountId) {
-      void accountApi.triggerSync(accountId).catch(() => undefined);
-    }
-  }, [accountId]);
+  const { workspace, desktopBridge } = useApp();
+  const live = desktopBridge.syncProgressByAccount.get(accountId);
+  const [badge, tone] = badgeByStatus[live?.status ?? "waiting"];
+  const inbox = live?.status === "syncing" && live.total > 0 ? live : null;
 
   const enterInbox = () => {
     workspace.setOverlay({ type: "none" });
     workspace.setScreen("mail");
-    toastStore.pushToast({
-      tone: "success",
-      title: `已就绪：${accountName}`,
-      detail: "后台同步引擎将持续增量更新并监听新邮件",
-    });
   };
 
   return (
@@ -65,33 +54,29 @@ export function SyncProgressModal({
         </>
       }
     >
-      <div className="settings-card">
+      <div className="settings-card" role="status">
         <div className="row-between">
           <strong style={{ fontSize: 15, color: "var(--text-ink)" }}>
-            {matchesLive && live?.stage ? live.stage : info.title}
+            {live?.stage || "首次同步即将开始"}
           </strong>
-          <span className={`pill ${info.tone}`}>
-            {matchesLive ? `${pct}%` : info.badge}
-          </span>
+          <span className={`pill ${tone}`}>{badge}</span>
         </div>
-        <div className="storage-bar">
-          <div
-            style={{
-              width: `${Math.max(8, Math.min(100, pct))}%`,
-              background:
-                resolvedStage === "failed"
-                  ? "var(--status-danger)"
-                  : resolvedStage === "done"
-                    ? "var(--status-success)"
-                    : "var(--brand-accent)",
-              transition: "width 0.25s ease",
-            }}
-          />
-        </div>
+        {inbox && (
+          <div className="storage-bar" aria-hidden="true">
+            <div
+              style={{
+                width: `${(inbox.current / inbox.total) * 100}%`,
+                background: "var(--brand-accent)",
+              }}
+            />
+          </div>
+        )}
         <div className="text-xs text-muted" style={{ lineHeight: 1.65 }}>
-          {matchesLive && live && live.total > 0
-            ? `已处理 ${live.current} / ${live.total} 封邮件，列表与全文索引正在增量刷新…`
-            : info.desc}
+          {inbox
+            ? `已处理 ${inbox.current} / ${inbox.total} 封待同步的收件箱邮件`
+            : live?.status === "failed" || live?.status === "partial"
+              ? "可进入收件箱查看已下载的邮件，或稍后手动重试同步。"
+              : "附件按需下载，不影响阅读。"}
         </div>
       </div>
 
@@ -101,7 +86,7 @@ export function SyncProgressModal({
           style={{ fontSize: 12, color: "var(--text-muted)" }}
         >
           <Icon name="shield" size={14} />
-          <span>凭据已加密写入本地 DPAPI 凭据盒 · 默认同步最近 90 天邮件</span>
+          <span>凭据已加密写入本地 DPAPI 凭据盒</span>
         </div>
       </div>
     </ModalShell>

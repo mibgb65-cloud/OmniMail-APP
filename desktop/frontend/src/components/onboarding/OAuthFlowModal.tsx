@@ -18,6 +18,7 @@ export function OAuthFlowModal({
   stage: "waiting" | "incomplete";
 }) {
   const { workspace, toastStore } = useApp();
+  const { refreshProfilesAndAccounts, setOverlay } = workspace;
   const meta =
     PROVIDER_CATALOG.find((p) => p.id === provider) ?? PROVIDER_CATALOG[0];
 
@@ -61,12 +62,13 @@ export function OAuthFlowModal({
           | undefined;
         if (!d || (activeFlow && d.flowId !== activeFlow)) return;
         if (d.ok && d.account) {
-          void workspace.refreshProfilesAndAccounts().then(() => {
-            workspace.setOverlay({
+          const account = d.account;
+          void refreshProfilesAndAccounts().then(() => {
+            if (!mounted) return;
+            setOverlay({
               type: "sync-progress",
-              accountId: d.account?.id,
-              accountName: `${d.account?.name}（${d.account?.email}）`,
-              stage: "syncing",
+              accountId: account.id,
+              accountName: `${account.name}（${account.email}）`,
             });
           });
         } else {
@@ -81,7 +83,7 @@ export function OAuthFlowModal({
       off();
       if (activeFlow) void accountApi.cancelOAuthFlow(activeFlow);
     };
-  }, [provider, workspace]);
+  }, [provider, refreshProfilesAndAccounts, setOverlay]);
 
   return (
     <ModalShell

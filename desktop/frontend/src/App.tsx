@@ -145,6 +145,7 @@ function OmniMailShell() {
       </div>
       {splash.phase !== "done" && (
         <LaunchSplash
+          waiting={splash.phase === "waiting"}
           exiting={splash.phase === "exiting"}
           progress={splash.progress}
           isSlowLoad={splash.isSlowLoad}

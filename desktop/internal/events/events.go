@@ -43,10 +43,10 @@ type AccountStatusPayload struct {
 
 type SyncProgressPayload struct {
 	AccountID string `json:"accountId"`
+	Status    string `json:"status"`
 	Stage     string `json:"stage"`
 	Current   int    `json:"current"`
 	Total     int    `json:"total"`
-	Percent   int    `json:"percent"`
 }
 
 type MailDeltaPayload struct {
