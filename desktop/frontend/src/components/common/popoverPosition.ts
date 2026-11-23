@@ -75,14 +75,19 @@ export function usePopoverDismiss(
         triggerRef.current?.focus();
       }
     };
+    const onScroll = (e: Event) => {
+      if (e.target instanceof Node && menuRef.current?.contains(e.target))
+        return;
+      onClose();
+    };
     window.addEventListener("mousedown", onPointerDown);
     window.addEventListener("resize", onClose);
-    window.addEventListener("scroll", onClose, true);
+    window.addEventListener("scroll", onScroll, true);
     window.addEventListener("keydown", onKeyCapture, true);
     return () => {
       window.removeEventListener("mousedown", onPointerDown);
       window.removeEventListener("resize", onClose);
-      window.removeEventListener("scroll", onClose, true);
+      window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("keydown", onKeyCapture, true);
     };
   }, [isOpen, triggerRef, menuRef, onClose]);

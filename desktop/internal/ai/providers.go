@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"omnimail/internal/security"
+	"omnimail/internal/apperr"
 )
 
 type ProviderConfig struct {
@@ -32,15 +32,15 @@ func (e *ProviderError) Error() string {
 }
 
 func StreamChat(ctx context.Context, cfg ProviderConfig, messages []ChatMessage, onChunk func(delta string)) (string, error) {
-	prov := strings.ToLower(strings.TrimSpace(cfg.Provider))
-	base := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
-	if base == "" {
-		base = DefaultBaseURL(prov)
+	cfg, err := NormalizeProviderConfig(cfg, true)
+	if err != nil {
+		return "", err
 	}
-	if prov != "ollama" && prov != "custom" && strings.TrimSpace(cfg.APIKey) == "" {
-		return "", &ProviderError{RunStatus: "invalid-key", Message: "尚未配置模型 API Key，请前往「设置 → AI 配置」填写"}
+	if err := requireProviderKey(cfg); err != nil {
+		return "", err
 	}
-	switch prov {
+	base := cfg.BaseURL
+	switch cfg.Provider {
 	case "claude":
 		return streamClaudeSSE(ctx, base, cfg.Model, cfg.APIKey, messages, onChunk)
 	case "gemini":
@@ -55,20 +55,23 @@ func TestProvider(ctx context.Context, cfg ProviderConfig) (TestResult, error) {
 	testCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
-	var full string
 	out, err := StreamChat(testCtx, cfg, []ChatMessage{
 		{Role: "user", Content: "Reply with OK only."},
-	}, func(delta string) { full += delta })
+	}, nil)
 	lat := time.Since(start).Milliseconds()
 	if err != nil {
 		var pe *ProviderError
 		if errors.As(err, &pe) {
 			return TestResult{OK: false, Status: pe.RunStatus, LatencyMs: lat, Message: pe.Message}, nil
 		}
-		return TestResult{OK: false, Status: "error", LatencyMs: lat, Message: security.RedactSensitive(err.Error())}, nil
+		var ae *apperr.AppError
+		if errors.As(err, &ae) {
+			return TestResult{OK: false, Status: "error", LatencyMs: lat, Message: ae.Message}, nil
+		}
+		return TestResult{OK: false, Status: "error", LatencyMs: lat, Message: "模型未能返回测试响应，请检查端点与模型配置"}, nil
 	}
-	if out == "" {
-		out = full
+	if strings.TrimSpace(out) == "" {
+		return TestResult{OK: false, Status: "error", LatencyMs: lat, Message: "端点没有返回模型响应，请确认该模型支持对话与流式输出"}, nil
 	}
 	return TestResult{
 		OK:        true,
@@ -84,9 +87,6 @@ func streamOpenAICompatSSE(
 	messages []ChatMessage,
 	onChunk func(string),
 ) (string, error) {
-	if strings.TrimSpace(model) == "" {
-		model = "gpt-4o-mini"
-	}
 	payload, _ := json.Marshal(map[string]any{
 		"model":       model,
 		"messages":    messages,
@@ -104,12 +104,12 @@ func streamOpenAICompatSSE(
 		req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
 	}
 
-	resp, err := (&http.Client{Timeout: 90 * time.Second}).Do(req)
+	resp, err := providerHTTPClient(90 * time.Second).Do(req)
 	if err != nil {
 		return "", mapNetworkError(err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
 		return "", mapHTTPStatusError(resp.StatusCode, string(body))
 	}
@@ -143,23 +143,23 @@ func streamOpenAICompatSSE(
 			}
 		}
 	}
-	return full.String(), sc.Err()
+	if err := sc.Err(); err != nil {
+		return "", mapNetworkError(err)
+	}
+	return full.String(), nil
 }
 
 func mapHTTPStatusError(code int, rawBody string) error {
-	clean := security.RedactSensitive(strings.TrimSpace(rawBody))
-	if len(clean) > 180 {
-		clean = clean[:180]
-	}
+	lower := strings.ToLower(rawBody)
 	switch {
 	case code == 401 || code == 403:
 		return &ProviderError{RunStatus: "invalid-key", Message: fmt.Sprintf("API Key 无效或权限不足 (HTTP %d)", code)}
-	case code == 429 || strings.Contains(strings.ToLower(clean), "insufficient_quota") || strings.Contains(strings.ToLower(clean), "balance"):
+	case code == 429 || strings.Contains(lower, "insufficient_quota") || strings.Contains(lower, "balance"):
 		return &ProviderError{RunStatus: "quota-exceeded", Message: "模型额度不足或触发限流 (HTTP 429)，请稍后再试或切换本地 Ollama"}
 	case code >= 500:
 		return &ProviderError{RunStatus: "unavailable", Message: fmt.Sprintf("上游模型服务暂时不可用 (HTTP %d)", code)}
 	default:
-		return &ProviderError{RunStatus: "error", Message: fmt.Sprintf("模型请求失败 (HTTP %d): %s", code, clean)}
+		return &ProviderError{RunStatus: "error", Message: fmt.Sprintf("模型请求失败（HTTP %d），请检查所选端点和模型", code)}
 	}
 }
 
@@ -167,8 +167,12 @@ func mapNetworkError(err error) error {
 	if errors.Is(err, context.Canceled) {
 		return context.Canceled
 	}
+	var timeout interface{ Timeout() bool }
+	if errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &timeout) && timeout.Timeout()) {
+		return &ProviderError{RunStatus: "unavailable", Message: "模型服务请求超时，请检查网络后重试"}
+	}
 	return &ProviderError{
 		RunStatus: "unavailable",
-		Message:   "无法连接到模型服务（若使用本地 Ollama，请确认 127.0.0.1:11434 已启动）: " + security.RedactSensitive(err.Error()),
+		Message:   "无法连接到模型服务，请检查网络、端点或本地服务是否已启动",
 	}
 }

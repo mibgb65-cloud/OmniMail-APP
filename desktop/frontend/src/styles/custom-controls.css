@@ -85,6 +85,11 @@
   text-align: left;
 }
 
+.custom-select-options {
+  display: grid;
+  gap: 3px;
+}
+
 .custom-select-option:hover,
 .custom-select-option.focused {
   background: var(--bg-popover-hover);
@@ -97,6 +102,7 @@
 }
 
 .select-opt-sub {
+  display: block;
   font-size: 10.5px;
   color: var(--text-muted);
   font-family: var(--font-mono);

@@ -1,6 +1,7 @@
 import type {
   AskMailRequest,
   ComposeAssistRequest,
+  ModelsRequest,
   SaveConfigRequest,
   TestResult,
 } from "../../bindings/omnimail/internal/ai/models";
@@ -13,35 +14,41 @@ import { mapBackendSettings } from "./profileApi";
 export type {
   AskMailRequest,
   ComposeAssistRequest,
+  ModelsRequest,
   SaveConfigRequest,
   TestResult,
 };
 
+function requireDesktop() {
+  if (!isWailsDesktop())
+    throw new Error("请在 OmniMail 桌面应用中配置 AI 服务");
+}
+
 export const aiApi = {
-  async saveProviderConfig(
-    req: SaveConfigRequest,
-  ): Promise<AppSettings | null> {
-    if (!isWailsDesktop()) return null;
+  async saveProviderConfig(req: SaveConfigRequest): Promise<AppSettings> {
+    requireDesktop();
     const saved = await AiService.SaveAiProviderConfig(req);
     return mapBackendSettings(saved as unknown as Partial<AppSettings>);
   },
 
-  async clearApiKey(provider = ""): Promise<AppSettings | null> {
-    if (!isWailsDesktop()) return null;
-    const saved = await AiService.ClearAiApiKey(provider);
+  async getApiKeyMask(provider: string, baseUrl: string): Promise<string> {
+    return isWailsDesktop() ? AiService.GetAiApiKeyMask(provider, baseUrl) : "";
+  },
+
+  async clearApiKey(provider: string, baseUrl: string): Promise<AppSettings> {
+    requireDesktop();
+    const saved = await AiService.ClearAiApiKey(provider, baseUrl);
     return mapBackendSettings(saved as unknown as Partial<AppSettings>);
   },
 
-  async testConnection(): Promise<TestResult> {
-    if (!isWailsDesktop()) {
-      return {
-        ok: true,
-        status: "idle",
-        latencyMs: 120,
-        message: "浏览器预览模式连接就绪",
-      };
-    }
-    return AiService.TestAiConnection();
+  async fetchModels(req: ModelsRequest): Promise<string[]> {
+    requireDesktop();
+    return (await AiService.FetchAiModels(req)) ?? [];
+  },
+
+  async testConnection(req: SaveConfigRequest): Promise<TestResult> {
+    requireDesktop();
+    return AiService.TestAiConnection(req);
   },
 
   async getCachedInsight(mailId: string): Promise<{

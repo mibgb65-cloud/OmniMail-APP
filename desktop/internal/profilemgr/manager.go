@@ -94,6 +94,7 @@ func (m *Manager) openSessionUnlocked(rootDir string, meta config.ProfileMeta) e
 		_ = storage.CheckpointAndClose(db)
 		return err
 	}
+	migrateAiEndpointKey(vault, config.LoadProfileSettings(profDir))
 	ctx, cancel := context.WithCancel(context.Background())
 	sess := &Session{
 		Meta: meta, ProfileDir: profDir, DB: db, Vault: vault,

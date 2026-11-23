@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -9,6 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { useValuePresence } from "../../state/usePresence";
 import { Icon } from "./Icon";
+import { CustomSelectOptionList } from "./CustomSelectOptionList";
 import {
   computePopoverGeometry,
   usePopoverDismiss,
@@ -34,6 +36,7 @@ interface CustomSelectProps {
   minMenuWidth?: number;
   style?: CSSProperties;
   ariaLabel?: string;
+  searchLabel?: string;
 }
 
 export function CustomSelect({
@@ -47,12 +50,19 @@ export function CustomSelect({
   minMenuWidth = 176,
   style,
   ariaLabel,
+  searchLabel,
 }: CustomSelectProps) {
   const [geo, setGeo] = useState<PopoverGeometry | null>(null);
   const { rendered: activeGeo, closing } = useValuePresence(geo, 100);
   const [focusIdx, setFocusIdx] = useState(0);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState("");
+  const query = search.trim().toLowerCase();
+  const choices = query
+    ? options.filter((o) => o.label.toLowerCase().includes(query))
+    : options;
 
   const selectedIndex = Math.max(
     0,
@@ -66,15 +76,26 @@ export function CustomSelect({
     const el = btnRef.current;
     if (!el || disabled) return;
     const rowH = options.some((o) => o.sublabel) ? 42 : 36;
-    const estH = Math.min(260, options.length * rowH + 12);
+    const estH = Math.min(260, options.length * rowH + (searchLabel ? 52 : 12));
+    setSearch("");
     setFocusIdx(selectedIndex);
     setGeo(computePopoverGeometry(el, estH, minMenuWidth));
-  }, [disabled, minMenuWidth, options, selectedIndex]);
+  }, [disabled, minMenuWidth, options, searchLabel, selectedIndex]);
 
   usePopoverDismiss(isOpen, btnRef, menuRef, closeMenu);
+  useEffect(() => {
+    if (isOpen && searchLabel)
+      searchRef.current?.focus({ preventScroll: true });
+  }, [isOpen, searchLabel]);
 
-  const handleKeyDown = (e: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (disabled) return;
+  const choose = (choice?: CustomSelectOption) => {
+    if (choice) onChange(String(choice.value));
+    btnRef.current?.focus({ preventScroll: true });
+    closeMenu();
+  };
+
+  const handleKeyDown = (e: ReactKeyboardEvent<HTMLElement>) => {
+    if (disabled || e.nativeEvent.isComposing) return;
     if (!isOpen) {
       if (["Enter", " ", "ArrowDown", "ArrowUp"].includes(e.key)) {
         e.preventDefault();
@@ -82,24 +103,24 @@ export function CustomSelect({
       }
       return;
     }
+    const count = Math.max(1, choices.length);
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setFocusIdx((i) => (i + 1) % options.length);
+      setFocusIdx((i) => (i + 1) % count);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setFocusIdx((i) => (i - 1 + options.length) % options.length);
+      setFocusIdx((i) => (i - 1 + count) % count);
     } else if (e.key === "Home") {
       e.preventDefault();
       setFocusIdx(0);
     } else if (e.key === "End") {
       e.preventDefault();
-      setFocusIdx(Math.max(0, options.length - 1));
+      setFocusIdx(count - 1);
     } else if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      const chosen = options[focusIdx];
-      if (chosen) onChange(String(chosen.value));
-      closeMenu();
+      choose(choices[focusIdx]);
     } else if (e.key === "Tab") {
+      if (searchLabel) btnRef.current?.focus({ preventScroll: true });
       closeMenu();
     }
   };
@@ -131,7 +152,8 @@ export function CustomSelect({
         createPortal(
           <div
             ref={menuRef}
-            role="listbox"
+            role={searchLabel ? undefined : "listbox"}
+            inert={closing}
             data-side={activeGeo.side}
             data-closing={closing ? "true" : "false"}
             className="custom-select-menu"
@@ -142,43 +164,33 @@ export function CustomSelect({
               width: activeGeo.width,
             }}
           >
-            {options.map((opt, idx) => {
-              const selected = String(opt.value) === String(value);
-              return (
-                <button
-                  key={String(opt.value)}
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  className={`custom-select-option${mono ? " mono" : ""}${selected ? " selected" : ""}${focusIdx === idx ? " focused" : ""}`}
-                  onMouseEnter={() => setFocusIdx(idx)}
-                  onClick={() => {
-                    onChange(String(opt.value));
-                    closeMenu();
-                  }}
-                >
-                  <span className="row" style={{ gap: 8, minWidth: 0 }}>
-                    {opt.icon}
-                    <span style={{ minWidth: 0 }}>
-                      <div className="select-opt-label truncate">
-                        {opt.label}
-                      </div>
-                      {opt.sublabel && (
-                        <div className="select-opt-sub truncate">
-                          {opt.sublabel}
-                        </div>
-                      )}
-                    </span>
-                  </span>
-                  <span className="row" style={{ gap: 6, flexShrink: 0 }}>
-                    {opt.hint && (
-                      <span className="select-opt-hint">{opt.hint}</span>
-                    )}
-                    {selected && <Icon name="check" size={13} />}
-                  </span>
-                </button>
-              );
-            })}
+            {searchLabel && (
+              <input
+                ref={searchRef}
+                className="input custom-select-search"
+                type="search"
+                aria-label={searchLabel}
+                placeholder={searchLabel}
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setFocusIdx(0);
+                }}
+                onKeyDown={(e) => {
+                  if (["ArrowUp", "ArrowDown", "Enter", "Tab"].includes(e.key))
+                    handleKeyDown(e);
+                }}
+              />
+            )}
+            <CustomSelectOptionList
+              choices={choices}
+              value={value}
+              focusIndex={focusIdx}
+              mono={mono}
+              searchLabel={searchLabel}
+              onFocusIndex={setFocusIdx}
+              onChoose={choose}
+            />
           </div>,
           document.body,
         )}

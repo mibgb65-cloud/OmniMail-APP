@@ -84,7 +84,7 @@ export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
         </div>
 
         <div className="sidebar-scroll">
-          <SidebarAccountsAndLabels onNavigate={close} compactSingleLine />
+          <SidebarAccountsAndLabels onNavigate={close} />
         </div>
 
         <div className="sidebar-footer">

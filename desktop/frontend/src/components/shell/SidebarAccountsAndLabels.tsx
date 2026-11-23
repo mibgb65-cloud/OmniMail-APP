@@ -1,19 +1,24 @@
 import { useApp } from "../../state/AppContext";
+import type { EmailAccount } from "../../types/account";
 import { Icon } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
 import { Tooltip } from "../common/Tooltip";
 
+const accountStatuses: Record<EmailAccount["status"], string> = {
+  connected: "已连接",
+  syncing: "同步中",
+  "auth-expired": "认证已过期",
+  error: "连接异常",
+};
+
 export function SidebarAccountsAndLabels({
   onNavigate,
-  compactSingleLine = false,
 }: {
   onNavigate?: () => void;
-  compactSingleLine?: boolean;
 }) {
-  const { viewport, workspace, mailStore } = useApp();
+  const { workspace, mailStore } = useApp();
   const { accounts } = workspace;
   const { labels, activeAccountId, activeLabelId } = mailStore;
-  const singleLine = compactSingleLine || viewport === "laptop";
 
   return (
     <>
@@ -58,6 +63,7 @@ export function SidebarAccountsAndLabels({
         ) : (
           accounts.map((acc) => {
             const active = activeAccountId === acc.id;
+            const statusLabel = accountStatuses[acc.status] ?? "连接异常";
             return (
               <Tooltip
                 key={acc.id}
@@ -68,36 +74,42 @@ export function SidebarAccountsAndLabels({
                 <button
                   type="button"
                   className={`account-row ${active ? "active" : ""}`}
+                  aria-pressed={active}
+                  aria-label={`${acc.name}，${statusLabel}，${acc.unreadCount} 封未读`}
                   onClick={() => {
                     mailStore.selectAccount(acc.id);
                     onNavigate?.();
                   }}
                 >
-                  <div className="account-row-left">
-                    <ProviderIcon
-                      provider={acc.provider}
-                      size={singleLine ? 20 : 24}
-                    />
-                    <div className="account-row-meta">
-                      <span className="account-row-name">
-                        <span className="truncate">
-                          {singleLine
-                            ? `${acc.name} · ${acc.providerLabel}`
-                            : acc.name}
-                        </span>
-                        <span
-                          className={`status-dot ${acc.status === "auth-expired" ? "danger" : ""}`}
-                          style={{ width: 6, height: 6 }}
-                        />
-                      </span>
-                      {!singleLine && (
-                        <span className="account-row-sub truncate">
-                          {acc.providerLabel}
-                        </span>
-                      )}
-                    </div>
+                  <ProviderIcon provider={acc.provider} size={28} />
+                  <div className="account-row-meta">
+                    <span
+                      className="account-row-name truncate"
+                      title={acc.name}
+                    >
+                      {acc.name}
+                    </span>
+                    <span className="account-row-sub truncate">
+                      {acc.providerLabel || acc.email}
+                    </span>
                   </div>
-                  <span className="nav-count">{acc.unreadCount}</span>
+                  <div className="account-row-stats">
+                    <span className="account-status-line">
+                      <span
+                        className="account-status-dot"
+                        data-status={acc.status}
+                        role="img"
+                        title={statusLabel}
+                        aria-label={statusLabel}
+                      />
+                    </span>
+                    <span
+                      className="account-unread-count"
+                      aria-label={`${acc.unreadCount} 封未读`}
+                    >
+                      {acc.unreadCount}
+                    </span>
+                  </div>
                 </button>
               </Tooltip>
             );

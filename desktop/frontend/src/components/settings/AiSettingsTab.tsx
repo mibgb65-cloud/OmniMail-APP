@@ -1,35 +1,6 @@
 import { useApp } from "../../state/AppContext";
-import { AiProviderCard, type AiProviderOption } from "./AiProviderCard";
+import { AiProviderCard } from "./ai/AiProviderCard";
 import { SwitchRow } from "./SwitchRow";
-
-const AI_PROVIDERS: AiProviderOption[] = [
-  { value: "openai", label: "OpenAI", sublabel: "https://api.openai.com/v1" },
-  {
-    value: "deepseek",
-    label: "DeepSeek",
-    sublabel: "https://api.deepseek.com/v1",
-  },
-  {
-    value: "claude",
-    label: "Anthropic Claude",
-    sublabel: "https://api.anthropic.com/v1",
-  },
-  {
-    value: "gemini",
-    label: "Google Gemini",
-    sublabel: "generativelanguage.googleapis.com",
-  },
-  {
-    value: "ollama",
-    label: "Ollama（完全本地离线）",
-    sublabel: "http://127.0.0.1:11434/v1",
-  },
-  {
-    value: "custom",
-    label: "自定义 OpenAI 兼容网关",
-    sublabel: "LM Studio / vLLM / OneAPI",
-  },
-];
 
 export function AiSettingsTab() {
   const { workspace } = useApp();
@@ -63,7 +34,7 @@ export function AiSettingsTab() {
         />
       </div>
 
-      <AiProviderCard options={AI_PROVIDERS} />
+      <AiProviderCard key={workspace.activeProfileId} />
     </div>
   );
 }

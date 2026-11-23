@@ -57,7 +57,7 @@ func TestPrivacyGuardFiveGatesAndGatewayCache(t *testing.T) {
 		t.Fatalf("Gate 2 failed: expected ERR_AI_CONSENT_REQUIRED, got %v", err)
 	}
 
-	settings.AiProvider = "openai"
+	settings.AiProvider = "custom"
 	settings.AiIncludeSenderAndAttachments = false
 	ctxText, err := PrepareMailContext(db, settings, "m-ok", true)
 	if err != nil {
@@ -80,7 +80,7 @@ func TestPrivacyGuardFiveGatesAndGatewayCache(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_ = vault.Set(VaultAiKey("openai"), "sk-test-1234567890abcdef")
+	_ = vault.Set(config.AiVaultKey("custom", srv.URL), "sk-test-1234567890abcdef")
 	settings.AiBaseURL = srv.URL
 	settings.AiRequireConfirmEachTime = false
 	_ = config.SaveProfileSettings(dir, settings)

@@ -8,6 +8,8 @@ interface PasswordInputProps {
   placeholder?: string;
   style?: CSSProperties;
   ariaLabel?: string;
+  disabled?: boolean;
+  maxLength?: number;
 }
 
 export function PasswordInput({
@@ -16,6 +18,8 @@ export function PasswordInput({
   placeholder,
   style,
   ariaLabel,
+  disabled = false,
+  maxLength,
 }: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
 
@@ -29,12 +33,15 @@ export function PasswordInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={ariaLabel}
+        disabled={disabled}
+        maxLength={maxLength}
       />
       <Tooltip label={visible ? "隐藏明文" : "显示明文"} placement="top">
         <button
           type="button"
           className="password-eye-btn"
           aria-label={visible ? "隐藏明文" : "显示明文"}
+          disabled={disabled}
           onClick={() => setVisible((v) => !v)}
         >
           <Icon name={visible ? "eyeOff" : "eye"} size={14} />

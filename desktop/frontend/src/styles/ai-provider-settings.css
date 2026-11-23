@@ -1,0 +1,130 @@
+.ai-provider-settings {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.custom-select-search {
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.ai-provider-heading,
+.ai-provider-row,
+.ai-provider-key-label,
+.ai-provider-input-row,
+.ai-provider-footer,
+.ai-provider-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ai-provider-heading,
+.ai-provider-key-label,
+.ai-provider-footer {
+  flex-wrap: wrap;
+}
+
+.ai-provider-heading > strong {
+  font-size: 14px;
+}
+
+.settings-card.ai-provider-surface {
+  padding: 0;
+  gap: 0;
+}
+
+.ai-provider-row,
+.ai-provider-field,
+.ai-provider-footer {
+  padding: 12px 16px;
+}
+
+.ai-provider-surface > :not(:first-child) {
+  border-top: 1px solid var(--border-default);
+}
+
+.ai-provider-caption,
+.ai-provider-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.ai-provider-caption {
+  gap: 2px;
+}
+
+.ai-provider-field,
+.ai-provider-caption > strong {
+  font-size: 13px;
+}
+
+.ai-provider-mono {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.ai-provider-choice {
+  flex: 0 0 min(40%, 278px);
+  min-width: 0;
+}
+
+.ai-provider-choice .custom-select-trigger {
+  min-width: 0;
+}
+
+.ai-provider-input-row > :first-child,
+.ai-provider-footer > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-provider-input-row > button,
+.ai-provider-actions > button {
+  flex-shrink: 0;
+}
+
+.ai-provider-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-inline-start: auto;
+}
+
+.ai-provider-clear {
+  align-self: flex-start;
+  color: var(--status-danger);
+}
+
+.ai-provider-feedback {
+  margin: 0;
+  padding: 10px 16px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.ai-provider-feedback.error {
+  color: var(--status-danger);
+}
+
+@media (max-width: 1024px) {
+  .ai-provider-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ai-provider-choice {
+    flex-basis: auto;
+  }
+
+  .ai-provider-footer > :first-child {
+    flex-basis: 100%;
+  }
+}

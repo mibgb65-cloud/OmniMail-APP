@@ -1,18 +1,14 @@
 package ai
 
-import "strings"
-
-func VaultAiKey(provider string) string {
-	p := strings.ToLower(strings.TrimSpace(provider))
-	if p == "" {
-		p = "openai"
-	}
-	return "ai:provider:" + p + ":api_key"
-}
-
 type SaveConfigRequest struct {
 	Provider string `json:"provider"`
 	Model    string `json:"model"`
+	BaseURL  string `json:"baseUrl"`
+	APIKey   string `json:"apiKey,omitempty"`
+}
+
+type ModelsRequest struct {
+	Provider string `json:"provider"`
 	BaseURL  string `json:"baseUrl"`
 	APIKey   string `json:"apiKey,omitempty"`
 }
@@ -67,19 +63,4 @@ type ComposeAssistRequest struct {
 type ChatMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
-}
-
-func DefaultBaseURL(provider string) string {
-	switch strings.ToLower(strings.TrimSpace(provider)) {
-	case "deepseek":
-		return "https://api.deepseek.com/v1"
-	case "claude":
-		return "https://api.anthropic.com/v1"
-	case "gemini":
-		return "https://generativelanguage.googleapis.com/v1beta"
-	case "ollama":
-		return "http://127.0.0.1:11434/v1"
-	default:
-		return "https://api.openai.com/v1"
-	}
 }

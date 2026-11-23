@@ -5,6 +5,7 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
+	"omnimail/internal/apperr"
 	"omnimail/internal/config"
 	"omnimail/internal/profilemgr"
 	"omnimail/internal/storage"
@@ -86,5 +87,8 @@ func (s *ProfileService) GetAppSettings() (config.AppSettings, error) {
 }
 
 func (s *ProfileService) UpdateAppSettings(patch config.AppSettingsPatch) (config.AppSettings, error) {
+	if patch.AiProvider != nil || patch.AiModel != nil || patch.AiBaseURL != nil {
+		return config.AppSettings{}, apperr.New(apperr.CodeInvalidInput, "请通过 AI 服务配置保存端点和模型")
+	}
 	return s.mgr.UpdateAppSettings(patch)
 }

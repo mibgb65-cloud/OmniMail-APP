@@ -1,53 +1,11 @@
-/* 左侧栏：已连接邮箱、0 邮箱空态占位卡与固定底栏 */
-.account-row {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  text-align: left;
-  min-width: 0;
-}
-.account-row:hover {
-  background: var(--bg-surface);
-}
-.account-row.active {
-  background: var(--bg-selected);
-  border-color: var(--border-selected);
-}
-.account-row-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
-}
-.account-row-meta,
+/* 左侧栏：0 邮箱空态占位卡与固定底栏 */
 .account-empty-meta {
   display: flex;
   flex-direction: column;
   min-width: 0;
   flex: 1;
-}
-.account-row-meta {
-  line-height: 1.25;
-}
-.account-empty-meta {
   gap: 2px;
 }
-.account-row-name {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-ink);
-}
-.account-row-sub,
 .profile-sub {
   font-size: 11px;
   color: var(--text-muted);

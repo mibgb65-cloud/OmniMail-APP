@@ -1,10 +1,7 @@
 package services
 
 import (
-	"strings"
-
 	"omnimail/internal/ai"
-	"omnimail/internal/config"
 	"omnimail/internal/profilemgr"
 )
 
@@ -20,63 +17,6 @@ type AiService struct {
 
 func NewAiService(mgr *profilemgr.Manager, gateway *ai.Gateway) *AiService {
 	return &AiService{mgr: mgr, gateway: gateway}
-}
-
-func (s *AiService) SaveAiProviderConfig(req ai.SaveConfigRequest) (config.AppSettings, error) {
-	sess, err := s.mgr.ActiveSession()
-	if err != nil {
-		return config.AppSettings{}, err
-	}
-	prov := strings.ToLower(strings.TrimSpace(req.Provider))
-	if prov == "" {
-		prov = "openai"
-	}
-	if strings.TrimSpace(req.APIKey) != "" && sess.Vault != nil {
-		if err := sess.Vault.Set(ai.VaultAiKey(prov), strings.TrimSpace(req.APIKey)); err != nil {
-			return config.AppSettings{}, err
-		}
-	}
-	model := strings.TrimSpace(req.Model)
-	baseURL := strings.TrimSpace(req.BaseURL)
-	return s.mgr.UpdateAppSettings(config.AppSettingsPatch{
-		AiProvider: &prov,
-		AiModel:    &model,
-		AiBaseURL:  &baseURL,
-	})
-}
-
-func (s *AiService) ClearAiApiKey(provider string) (config.AppSettings, error) {
-	sess, err := s.mgr.ActiveSession()
-	if err != nil {
-		return config.AppSettings{}, err
-	}
-	prov := strings.ToLower(strings.TrimSpace(provider))
-	if prov == "" {
-		cur := config.LoadProfileSettings(sess.ProfileDir)
-		prov = cur.AiProvider
-	}
-	if sess.Vault != nil {
-		_ = sess.Vault.Delete(ai.VaultAiKey(prov))
-	}
-	return s.mgr.GetAppSettings()
-}
-
-func (s *AiService) TestAiConnection() (ai.TestResult, error) {
-	sess, err := s.mgr.ActiveSession()
-	if err != nil {
-		return ai.TestResult{}, err
-	}
-	settings := config.LoadProfileSettings(sess.ProfileDir)
-	var apiKey string
-	if sess.Vault != nil {
-		apiKey, _ = sess.Vault.Get(ai.VaultAiKey(settings.AiProvider))
-	}
-	return ai.TestProvider(sess.Ctx, ai.ProviderConfig{
-		Provider: settings.AiProvider,
-		Model:    settings.AiModel,
-		BaseURL:  settings.AiBaseURL,
-		APIKey:   apiKey,
-	})
 }
 
 func (s *AiService) GetCachedMailInsight(mailID string) (AiCachedStateDTO, error) {

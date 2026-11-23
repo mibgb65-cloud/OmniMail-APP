@@ -1,0 +1,95 @@
+.account-row {
+  width: 100%;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  text-align: left;
+  min-width: 0;
+}
+
+.account-row:hover {
+  background: var(--bg-surface);
+}
+
+.account-row.active {
+  background: var(--bg-selected);
+  border-color: var(--border-selected);
+}
+
+.account-row-meta,
+.account-row-stats {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
+.account-row-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-row-name {
+  color: var(--text-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.account-row-sub,
+.account-unread-count {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 15px;
+}
+
+.account-row-stats {
+  min-width: 24px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.account-status-line {
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.account-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--account-status-error);
+}
+
+.account-status-dot[data-status="connected"] {
+  background: var(--account-status-online);
+}
+
+.account-status-dot[data-status="syncing"] {
+  background: var(--account-status-sync);
+}
+
+.account-unread-count {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.account-row {
+  --account-status-online: #15803d;
+  --account-status-sync: #2563eb;
+  --account-status-error: #dc2626;
+}
+
+[data-theme="dark"] .account-row {
+  --account-status-online: #4ade80;
+  --account-status-sync: #60a5fa;
+  --account-status-error: #f87171;
+}

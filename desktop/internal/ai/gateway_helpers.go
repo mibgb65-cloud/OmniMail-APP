@@ -12,18 +12,18 @@ import (
 )
 
 func resolveProviderConfig(sess *profilemgr.Session, settings config.AppSettings) ProviderConfig {
-	prov := strings.ToLower(strings.TrimSpace(settings.AiProvider))
-	if prov == "" {
-		prov = "openai"
-	}
+	prov, base, err := config.ResolveAiEndpoint(settings.AiProvider, settings.AiBaseURL)
 	var key string
-	if sess != nil && sess.Vault != nil {
-		key, _ = sess.Vault.Get(VaultAiKey(prov))
+	if err == nil && sess != nil && sess.Vault != nil {
+		key, _ = sess.Vault.Get(config.AiVaultKey(prov, base))
+	} else if err != nil {
+		// 保留原值，让请求入口返回校验错误，而不是静默退回 OpenAI。
+		prov, base = settings.AiProvider, settings.AiBaseURL
 	}
 	return ProviderConfig{
 		Provider: prov,
 		Model:    settings.AiModel,
-		BaseURL:  settings.AiBaseURL,
+		BaseURL:  base,
 		APIKey:   key,
 	}
 }

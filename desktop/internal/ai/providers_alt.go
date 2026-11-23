@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -17,9 +18,6 @@ func streamClaudeSSE(
 	messages []ChatMessage,
 	onChunk func(string),
 ) (string, error) {
-	if strings.TrimSpace(model) == "" {
-		model = "claude-3-5-haiku-latest"
-	}
 	var sysPrompt string
 	var turns []map[string]string
 	for _, m := range messages {
@@ -48,12 +46,12 @@ func streamClaudeSSE(
 	req.Header.Set("x-api-key", strings.TrimSpace(apiKey))
 	req.Header.Set("anthropic-version", "2023-06-01")
 
-	resp, err := (&http.Client{Timeout: 90 * time.Second}).Do(req)
+	resp, err := providerHTTPClient(90 * time.Second).Do(req)
 	if err != nil {
 		return "", mapNetworkError(err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
 		return "", mapHTTPStatusError(resp.StatusCode, string(b))
 	}
@@ -79,7 +77,10 @@ func streamClaudeSSE(
 			}
 		}
 	}
-	return full.String(), sc.Err()
+	if err := sc.Err(); err != nil {
+		return "", mapNetworkError(err)
+	}
+	return full.String(), nil
 }
 
 func streamGeminiSSE(
@@ -88,9 +89,6 @@ func streamGeminiSSE(
 	messages []ChatMessage,
 	onChunk func(string),
 ) (string, error) {
-	if strings.TrimSpace(model) == "" {
-		model = "gemini-2.5-flash"
-	}
 	var sysText string
 	var contents []map[string]any
 	for _, m := range messages {
@@ -115,7 +113,7 @@ func streamGeminiSSE(
 	}
 	payload, _ := json.Marshal(bodyMap)
 
-	endpoint := baseURL + "/models/" + strings.TrimSpace(model) + ":streamGenerateContent?alt=sse"
+	endpoint := baseURL + "/models/" + url.PathEscape(model) + ":streamGenerateContent?alt=sse"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
 	if err != nil {
 		return "", mapNetworkError(err)
@@ -123,12 +121,12 @@ func streamGeminiSSE(
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-goog-api-key", strings.TrimSpace(apiKey))
 
-	resp, err := (&http.Client{Timeout: 90 * time.Second}).Do(req)
+	resp, err := providerHTTPClient(90 * time.Second).Do(req)
 	if err != nil {
 		return "", mapNetworkError(err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
 		return "", mapHTTPStatusError(resp.StatusCode, string(b))
 	}
@@ -162,5 +160,8 @@ func streamGeminiSSE(
 			}
 		}
 	}
-	return full.String(), sc.Err()
+	if err := sc.Err(); err != nil {
+		return "", mapNetworkError(err)
+	}
+	return full.String(), nil
 }
