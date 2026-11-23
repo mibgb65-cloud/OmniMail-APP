@@ -24,3 +24,7 @@
 - `task verify` 通过，包含 5 个前端用例、类型检查、Go 测试和 Windows 开发 EXE 编译。新增用例核对所有注册图标的 `24×24`、`1.5` 描边、无填充及典型设计映射。
 - 已更新[技术栈](../../../architecture/TECH_STACK.md)、[编码规范](../../../development/CODING_RULES.md)和[测试说明](../../../development/TESTING.md)。通过 Git 差异核对品牌资源和品牌组件未变。
 - 未启动 Windows 桌面应用，未进行原生视觉对照。未提交，未打包 Beta。
+
+## Beta 本地更新
+
+- 已随提交 `89334e7` 纳入 [v0.0.1.beta.5 本地安装包](TASK-20261123-020-windows-beta-5-local-release.md#构建结果)。

@@ -24,3 +24,7 @@
 - `task frontend:test` 和 `task verify` 均通过：3 个前端用例覆盖边界、滚动、尺寸 / 文本变化、Tab 焦点和监听清理；格式、ESLint、TypeScript、Vite、Go 测试与开发 EXE 构建通过。确认构建产物包含基础隐藏规则且无旧滑块样式。
 - 已补充[手工复验](../../../development/TESTING.md#桌面窗口手工冒烟)和[架构说明](../../../architecture/OVERVIEW.md)。未启动 Windows 桌面应用，WebView2 的亮暗视觉、操作穿透和滚动手感未实机复验。
 - 未创建 Git 提交，未打包 Beta。
+
+## Beta 本地更新
+
+- 已随提交 `89334e7` 纳入 [v0.0.1.beta.5 本地安装包](TASK-20261123-020-windows-beta-5-local-release.md#构建结果)。
