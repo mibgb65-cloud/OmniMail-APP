@@ -12,5 +12,6 @@
 - 设计端点用固定示例测试返回 HTTP 404；已用固定示例验证[官方 Index-Translate 接口](https://github.com/bilibili/Index-Translate/blob/main/README_zh.md#推理)在无密钥时返回有效的编号译文。保留设计端点配置值作为预设，并在设置里注明实际请求地址。自定义端点不跟随重定向，也不向其他服务回退。
 - 免费路径不依赖 AI 开关或密钥，仍拦截敏感邮件并脱敏。测试覆盖旧配置迁移、端点校验、超时重试、逐批事件、固定示例连通性、敏感 HTML、引擎切换及 BYOK。生成了 Wails 绑定。
 - `task verify`（含 `go test ./...`、格式、Lint、类型检查、30 项前端测试与 Windows 开发构建）及 `pnpm build` 都通过；Vite 提示主包超过 800 kB。阅读翻译组件及其样式的品牌扫描无匹配。
-- 保留手动触发和现有会话内缓存，本次不引入自动翻译或 SQLite 译文持久化。未发送真实邮件到公网接口，未启动桌面做视觉走查，未发布或提交 Git。
+- 保留手动触发和现有会话内缓存，本次不引入自动翻译或 SQLite 译文持久化。未发送真实邮件到公网接口，未做桌面视觉走查。
+- 实现已提交：`e952995297996ff73399c4a5c2d67958041442f9`，纳入 [Beta 8 本地安装包](TASK-20261124-004-windows-beta-8-local-release.md)。
 - 关联：[产品范围](../../../product/PRD.md) · [架构](../../../architecture/OVERVIEW.md) · [冒烟测试](../../../development/TESTING.md)。

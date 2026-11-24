@@ -11,5 +11,6 @@
 - 依据[官方调用示例](https://github.com/bilibili/Index-Translate/blob/main/inference/llm/call_api.py)核对请求头、请求体和响应结构。固定样例再测设计端点返回 404，预设映射的官方接口无需密钥返回 200 和两段可定位译文。未发送真实邮件。
 - 本地模拟覆盖限流、非零业务码、OpenAI 错误、超时、取消、有限退避和部分翻译失败提示；阅读区不会回显第三方错误正文、地址或堆栈。
 - 同引擎和相同翻译参数才复用缓存；切换后旧请求不能覆盖新结果。无缓存使用 `null`，仅拟稿和空白摘要既不触发列表标记，也不阻止自动摘要。
-- `task verify`（含 `go test ./...`、32 项前端测试、类型检查和开发构建）及 `pnpm build` 通过，品牌扫描无匹配。Vite 提示主包超过 800 kB。未启动应用、发布或提交 Git。
+- `task verify`（含 `go test ./...`、32 项前端测试、类型检查和开发构建）及 `pnpm build` 通过，品牌扫描无匹配。Vite 提示主包超过 800 kB。
+- 实现已提交：`e952995297996ff73399c4a5c2d67958041442f9`，纳入 [Beta 8 本地安装包](TASK-20261124-004-windows-beta-8-local-release.md)。
 - 关联：[架构](../../../architecture/OVERVIEW.md) · [冒烟测试](../../../development/TESTING.md)。
