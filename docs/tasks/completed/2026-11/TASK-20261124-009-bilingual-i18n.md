@@ -9,3 +9,6 @@
   4. 全量覆盖 `common`、`shell`、`mail`（含 `reader`、`translation`、`security`）、`ai`、`compose`、`contacts`、`settings`（全部 12 页签）、`onboarding`、`overlays`、`state` 与 `services/errorParser.ts`；全部手写源码文件均严格控制在 `<= 200` 行。
 - 验证结果：
   - 新增 `desktop/frontend/tests/i18n.test.mjs`，全量前端单测（44/44）、`tsc --noEmit`、`eslint`、`pnpm build` 及全仓 `task verify`（含 Wails 绑定生成、Prettier、`gofmt`、`go vet`、`go test ./...` 与桌面端二进制构建）均 100% 通过。
+  - 未验证事项：按协作规则未启动原生桌面窗口人工走查。
+  - 实现已提交：`10e54548e47b0574ccbed4ef1031e4c1ef2dc24f`，纳入 [Beta 9 本地安装包](TASK-20261124-010-windows-beta-9-local-release.md)。
+  - 关联：[产品范围](../../../product/PRD.md) · [当前状态](../../../plans/CURRENT.md) · [测试与质量门](../../../development/TESTING.md)。

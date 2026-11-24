@@ -12,5 +12,6 @@
 - 亮/暗主题与样式收口：清理 `controls.css`、`mail-translation.css`、`translation-settings.css` 中废弃的原生 `select` 选择器，拆分 `tooltip.css` 保持所有源码文件不超过 200 行，统一 `.custom-select-search` 吸顶遮罩与 `.fade-scroll-viewport` 焦点轮廓，消除原生灰底黑框。
 - 全局门禁：`eslint.config.mjs` 增加 `no-restricted-syntax` 拦截 `<select>`、`<option>`、`<input type="checkbox">`、`<input type="radio">`（已通过 `eslint --stdin` 负向用例验证返回错误），新增 `tests/custom-controls-guard.test.mjs` 扫描源码并单测浮层边界。
 - 验证结果：`desktop/frontend/src` 原生控件扫描匹配数为 `0`；`tsc --noEmit`、`pnpm build`（零错误零警告）及全量 `task verify`（含 `gofmt`、Prettier、ESLint、35 项前端单测、`go vet`、`go test ./...` 与开发构建）全部通过。
-- 未验证事项：按协作规则未启动原生桌面窗口进行人工点击冒烟，也未创建 Git 提交。
+- 未验证事项：按协作规则未启动原生桌面窗口进行人工点击冒烟。
+- 实现已提交：`10e54548e47b0574ccbed4ef1031e4c1ef2dc24f`，纳入 [Beta 9 本地安装包](TASK-20261124-010-windows-beta-9-local-release.md)。
 - 关联：[编码规范](../../../development/CODING_RULES.md) · [测试与质量门](../../../development/TESTING.md)。
