@@ -1,8 +1,10 @@
 import { SaveThemePreference } from "../../bindings/omnimail/desktopservice";
 import { INITIAL_SETTINGS } from "../data/settingsDefaults";
+import { persistLocalLanguage, readStoredLanguage } from "../i18n";
 import { profileApi } from "../services/backendClient";
 import type {
   AppSettings,
+  LanguageCode,
   ThemeMode,
   ThemePreference,
 } from "../types/settings";
@@ -17,6 +19,7 @@ import {
 export function readInitialThemeState(): {
   theme: ThemeMode;
   themePreference: ThemePreference;
+  language: LanguageCode;
 } {
   let pref: ThemePreference = INITIAL_SETTINGS.themePreference;
   if (typeof window !== "undefined") {
@@ -35,7 +38,11 @@ export function readInitialThemeState(): {
       : null;
   const resolved: ThemeMode =
     attr === "dark" || attr === "light" ? attr : resolveThemeFromPref(pref);
-  return { theme: resolved, themePreference: pref };
+  return {
+    theme: resolved,
+    themePreference: pref,
+    language: readStoredLanguage(),
+  };
 }
 
 export function persistLocalTheme(pref: ThemePreference, resolved: ThemeMode) {
@@ -54,9 +61,11 @@ export function scheduleSettingsPersist(
   merged: AppSettings,
   persistPatch: Partial<AppSettings>,
 ) {
+  persistLocalLanguage(merged.language);
   window.clearTimeout(persistDebounceTimer);
   persistDebounceTimer = window.setTimeout(() => {
     persistLocalTheme(merged.themePreference, merged.theme);
+    persistLocalLanguage(merged.language);
     void profileApi.updateAppSettings(persistPatch).catch(() => undefined);
     void syncDesktopPreferences(merged);
   }, 220);

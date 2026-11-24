@@ -1,12 +1,14 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { t } from "./i18n";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/fade-scroll.css";
 import "./styles/buttons.css";
 import "./styles/controls.css";
 import "./styles/custom-controls.css";
+import "./styles/tooltip.css";
 import "./styles/datetime-picker.css";
 import "./styles/layout.css";
 import "./styles/topbar.css";
@@ -17,6 +19,7 @@ import "./styles/mail-list.css";
 import "./styles/mail-list-return-top.css";
 import "./styles/mail-card.css";
 import "./styles/mail-reader.css";
+import "./styles/mail-security-banner.css";
 import "./styles/mail-translation.css";
 import "./styles/mail-reader-extras.css";
 import "./styles/zero-account-guide.css";
@@ -39,12 +42,13 @@ import "./styles/motion.css";
 import "./styles/motion-theme.css";
 import "./styles/splash.css";
 import "./styles/splash-motion.css";
+import "./styles/i18n-layout.css";
 import "./styles/responsive-laptop.css";
 import "./styles/responsive.css";
 
 const root = document.getElementById("root");
 if (!root) {
-  throw new Error("缺少 OmniMail 界面挂载点。");
+  throw new Error(t("common.missingRoot"));
 }
 
 createRoot(root).render(

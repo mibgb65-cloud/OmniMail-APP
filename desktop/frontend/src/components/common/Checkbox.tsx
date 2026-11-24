@@ -6,6 +6,7 @@ interface CheckboxProps {
   onChange: (next: boolean) => void;
   children?: ReactNode;
   size?: "sm" | "md";
+  disabled?: boolean;
   ariaLabel?: string;
   style?: CSSProperties;
 }
@@ -15,12 +16,13 @@ export function Checkbox({
   onChange,
   children,
   size = "md",
+  disabled = false,
   ariaLabel,
   style,
 }: CheckboxProps) {
   const toggle = (e: MouseEvent<HTMLElement>) => {
     e.stopPropagation();
-    onChange(!checked);
+    if (!disabled) onChange(!checked);
   };
 
   const box = (
@@ -29,6 +31,7 @@ export function Checkbox({
       role="checkbox"
       aria-checked={checked}
       aria-label={ariaLabel}
+      disabled={disabled}
       className={`checkbox-box${size === "sm" ? " sm" : ""}${checked ? " checked" : ""}`}
       onClick={toggle}
     >
@@ -41,9 +44,10 @@ export function Checkbox({
   return (
     <div
       className="checkbox-row"
+      data-disabled={disabled ? "true" : undefined}
       style={style}
       onClick={(e) => {
-        if ((e.target as HTMLElement).closest("button")) return;
+        if (disabled || (e.target as HTMLElement).closest("button")) return;
         onChange(!checked);
       }}
     >

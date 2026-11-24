@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from "react";
+import { useI18n } from "../../i18n";
 import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
 
@@ -21,7 +22,11 @@ export function PasswordInput({
   disabled = false,
   maxLength,
 }: PasswordInputProps) {
+  const { t } = useI18n();
   const [visible, setVisible] = useState(false);
+  const toggleLabel = visible
+    ? t("common.hidePlaintext")
+    : t("common.showPlaintext");
 
   return (
     <div className="password-field-wrap" style={style}>
@@ -36,11 +41,11 @@ export function PasswordInput({
         disabled={disabled}
         maxLength={maxLength}
       />
-      <Tooltip label={visible ? "隐藏明文" : "显示明文"} placement="top">
+      <Tooltip label={toggleLabel} placement="top">
         <button
           type="button"
           className="password-eye-btn"
-          aria-label={visible ? "隐藏明文" : "显示明文"}
+          aria-label={toggleLabel}
           disabled={disabled}
           onClick={() => setVisible((v) => !v)}
         >

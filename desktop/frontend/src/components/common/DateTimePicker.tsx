@@ -6,6 +6,7 @@ import {
   type CSSProperties,
 } from "react";
 import { createPortal } from "react-dom";
+import { formatMonthName, useI18n } from "../../i18n";
 import { useValuePresence } from "../../state/usePresence";
 import { Icon } from "./Icon";
 import {
@@ -15,7 +16,6 @@ import {
   type PopoverGeometry,
 } from "./popoverPosition";
 
-const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
 const TIME_CHIPS = ["09:00", "14:00", "18:00", "20:00"];
 
 function parseDateTime(raw: string) {
@@ -44,6 +44,8 @@ export function DateTimePicker({
   style,
   ariaLabel,
 }: DateTimePickerProps) {
+  const { lang, t } = useI18n();
+  const weekdays = t("common.weekdays").split(",");
   const parsed = parseDateTime(value);
   const [viewYm, setViewYm] = useState({
     year: parsed.year,
@@ -77,8 +79,8 @@ export function DateTimePicker({
     });
   };
 
-  const commit = (y: number, m: number, d: number, t: string) => {
-    onChange(`${y}-${pad2(m + 1)}-${pad2(d)} ${t}`);
+  const commit = (y: number, m: number, d: number, tm: string) => {
+    onChange(`${y}-${pad2(m + 1)}-${pad2(d)} ${tm}`);
   };
 
   return (
@@ -104,7 +106,7 @@ export function DateTimePicker({
           <div
             ref={popRef}
             role="dialog"
-            aria-label="选择日期与时间"
+            aria-label={t("common.pickDateTime")}
             data-side={activeGeo.side}
             data-closing={closing ? "true" : "false"}
             className="dt-picker-popover"
@@ -116,7 +118,10 @@ export function DateTimePicker({
           >
             <div className="row-between">
               <strong style={{ fontSize: 12.5 }}>
-                {viewYm.year} 年 {viewYm.month + 1} 月
+                {t("common.monthYear", {
+                  year: viewYm.year,
+                  month: formatMonthName(viewYm.month, lang),
+                })}
               </strong>
               <div className="row" style={{ gap: 4 }}>
                 <button
@@ -124,7 +129,7 @@ export function DateTimePicker({
                   className="icon-btn icon-btn-bordered"
                   style={{ width: 24, height: 24 }}
                   onClick={() => shiftMonth(-1)}
-                  aria-label="上个月"
+                  aria-label={t("common.prevMonth")}
                 >
                   <Icon name="chevronLeft" size={12} />
                 </button>
@@ -133,7 +138,7 @@ export function DateTimePicker({
                   className="icon-btn icon-btn-bordered"
                   style={{ width: 24, height: 24 }}
                   onClick={() => shiftMonth(1)}
-                  aria-label="下个月"
+                  aria-label={t("common.nextMonth")}
                 >
                   <Icon name="chevronRight" size={12} />
                 </button>
@@ -141,7 +146,7 @@ export function DateTimePicker({
             </div>
 
             <div className="dt-weekdays">
-              {WEEKDAYS.map((w) => (
+              {weekdays.map((w) => (
                 <span key={w}>{w}</span>
               ))}
             </div>
@@ -167,19 +172,21 @@ export function DateTimePicker({
             </div>
 
             <div className="dt-time-bar">
-              <span className="text-xs text-muted">时间</span>
+              <span className="text-xs text-muted">
+                {t("common.timeLabel")}
+              </span>
               <div className="dt-time-chips">
-                {TIME_CHIPS.map((t) => (
+                {TIME_CHIPS.map((chip) => (
                   <button
-                    key={t}
+                    key={chip}
                     type="button"
-                    className={`dt-time-chip${parsed.time === t ? " active" : ""}`}
+                    className={`dt-time-chip${parsed.time === chip ? " active" : ""}`}
                     onClick={() => {
-                      commit(parsed.year, parsed.month, parsed.day, t);
+                      commit(parsed.year, parsed.month, parsed.day, chip);
                       close();
                     }}
                   >
-                    {t}
+                    {chip}
                   </button>
                 ))}
               </div>

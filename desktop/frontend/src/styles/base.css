@@ -47,6 +47,7 @@ button {
   background: transparent;
   color: inherit;
   padding: 0;
+  outline: none;
 }
 
 button:disabled {

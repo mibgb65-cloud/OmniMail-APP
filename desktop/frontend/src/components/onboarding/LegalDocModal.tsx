@@ -1,11 +1,12 @@
-import { LEGAL_DOCS } from "../../data/settingsDefaults";
+import { getLegalDoc, useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
 
 export function LegalDocModal({ doc }: { doc: "terms" | "privacy" }) {
   const { workspace } = useApp();
-  const data = LEGAL_DOCS[doc];
+  const { lang, t } = useI18n();
+  const data = getLegalDoc(doc, lang);
 
   return (
     <ModalShell
@@ -23,7 +24,7 @@ export function LegalDocModal({ doc }: { doc: "terms" | "privacy" }) {
                 workspace.setOverlay({ type: "legal-doc", doc: "terms" })
               }
             >
-              用户协议
+              {t("onboarding.legalTermsTab")}
             </button>
             <button
               type="button"
@@ -32,7 +33,7 @@ export function LegalDocModal({ doc }: { doc: "terms" | "privacy" }) {
                 workspace.setOverlay({ type: "legal-doc", doc: "privacy" })
               }
             >
-              隐私政策
+              {t("onboarding.legalPrivacyTab")}
             </button>
           </div>
           <button
@@ -40,14 +41,14 @@ export function LegalDocModal({ doc }: { doc: "terms" | "privacy" }) {
             className="btn btn-primary"
             onClick={() => workspace.setOverlay({ type: "none" })}
           >
-            我已知晓
+            {t("onboarding.legalGotItBtn")}
           </button>
         </>
       }
     >
       <div className="pill pill-warning" style={{ alignSelf: "flex-start" }}>
         <Icon name="info" size={13} />
-        本协议文本为界面设计预览草案，正式发版前将替换为法务定稿版本。
+        {t("onboarding.legalDraftWarning")}
       </div>
 
       {data.sections.map((sec) => (

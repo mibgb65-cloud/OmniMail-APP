@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useI18n } from "../../i18n";
 import {
   diagnosticApi,
   parseBackendError,
@@ -12,6 +13,7 @@ import { Tooltip } from "../common/Tooltip";
 
 export function StorageTab() {
   const { workspace, desktopBridge, toastStore } = useApp();
+  const { t, isEn } = useI18n();
   const { storage } = desktopBridge;
   const [breakdown, setBreakdown] = useState<StorageBreakdown | null>(null);
   const colors = ["#2563EB", "#6366F1", "#16A34A", "#D97706", "#64748B"];
@@ -43,14 +45,14 @@ export function StorageTab() {
         await workspace.refreshProfilesAndAccounts();
         toastStore.pushToast({
           tone: "success",
-          title: `已清理本地附件缓存（释放 ${formatBytes(freed)}）`,
-          detail: "邮件正文与附件元数据已保留，需要时可随时按需重新下载",
+          title: t("toasts.clearedAttCacheTitle", { size: formatBytes(freed) }),
+          detail: t("toasts.clearedAttCacheDetail"),
         });
       })
       .catch((err) =>
         toastStore.pushToast({
           tone: "danger",
-          title: "清理附件缓存失败",
+          title: t("toasts.clearAttCacheFailed"),
           detail: parseBackendError(err).message,
         }),
       );
@@ -61,10 +63,16 @@ export function StorageTab() {
       <div className="settings-card">
         <div className="row-between">
           <div style={{ minWidth: 0 }}>
-            <strong style={{ fontSize: 14 }}>本地数据存储目录</strong>
+            <strong style={{ fontSize: 14 }}>
+              {t("settings.storageDirTitle")}
+            </strong>
             <div className="text-xs text-muted">
-              引导文件：{storage.bootstrapPath} · 磁盘可用{" "}
-              {formatBytes(breakdown?.diskFreeBytes ?? storage.freeBytes)}
+              {t("settings.storageBootstrapSub", {
+                path: storage.bootstrapPath,
+                free: formatBytes(
+                  breakdown?.diskFreeBytes ?? storage.freeBytes,
+                ),
+              })}
             </div>
           </div>
           <div className="row" style={{ flexShrink: 0 }}>
@@ -73,14 +81,15 @@ export function StorageTab() {
               className="btn btn-secondary btn-sm"
               onClick={() => void desktopBridge.openDataDir()}
             >
-              <Icon name="folder" size={14} /> 打开数据目录
+              <Icon name="folder" size={14} /> {t("settings.storageOpenDirBtn")}
             </button>
             <button
               type="button"
               className="btn btn-primary btn-sm"
               onClick={() => workspace.setOverlay({ type: "data-dir-migrate" })}
             >
-              <Icon name="external" size={14} /> 迁移数据目录
+              <Icon name="external" size={14} />{" "}
+              {t("settings.storageMigrateDirBtn")}
             </button>
           </div>
         </div>
@@ -92,11 +101,17 @@ export function StorageTab() {
       <div className="settings-card">
         <div className="row-between">
           <div>
-            <strong style={{ fontSize: 14 }}>本地数据库与 CAS 缓存构成</strong>
+            <strong style={{ fontSize: 14 }}>
+              {t("settings.storageCasTitle")}
+            </strong>
             <div className="text-xs text-muted">
               {breakdown
-                ? `SQLite 库 ${formatBytes(breakdown.databaseBytes)} · 原始邮件 ${formatBytes(breakdown.rawMessagesBytes)} · 附件缓存 ${formatBytes(breakdown.attachmentsBytes)}`
-                : "包含本地 SQLite 库、邮件正文、附件缓存与全文索引"}
+                ? t("settings.storageBreakdownSub", {
+                    db: formatBytes(breakdown.databaseBytes),
+                    raw: formatBytes(breakdown.rawMessagesBytes),
+                    attachments: formatBytes(breakdown.attachmentsBytes),
+                  })
+                : t("settings.storageFallbackSub")}
             </div>
           </div>
           <div className="row" style={{ gap: 8 }}>
@@ -109,7 +124,7 @@ export function StorageTab() {
               className="btn btn-secondary btn-sm"
               onClick={handleClearCache}
             >
-              清理附件缓存
+              {t("settings.storageClearCacheBtn")}
             </button>
           </div>
         </div>
@@ -119,7 +134,7 @@ export function StorageTab() {
             {workspace.accounts.map((acc, idx) => (
               <Tooltip
                 key={acc.id}
-                label={`${acc.name}：${acc.storageMb} MB`}
+                label={`${acc.name}${isEn ? ": " : "："}${acc.storageMb} MB`}
                 placement="top"
               >
                 <div
@@ -138,18 +153,18 @@ export function StorageTab() {
         <div className="settings-row">
           <div>
             <div style={{ fontSize: 13, fontWeight: 600 }}>
-              附件离线缓存上限（LRU 自动回收）
+              {t("settings.storageQuotaTitle")}
             </div>
             <div className="text-xs text-muted">
-              达到上限后按最近最少访问自动回收非内联大附件
+              {t("settings.storageQuotaDesc")}
             </div>
           </div>
           <CustomSelect
             value={workspace.settings.attachmentCacheLimitGb}
-            ariaLabel="附件离线缓存上限"
+            ariaLabel={t("settings.storageQuotaAria")}
             options={[
               { value: 1, label: "1 GB" },
-              { value: 2, label: "2 GB", hint: "默认" },
+              { value: 2, label: "2 GB", hint: t("settings.defaultHint") },
               { value: 5, label: "5 GB" },
             ]}
             onChange={(val) =>
@@ -161,10 +176,10 @@ export function StorageTab() {
         <div className="settings-row">
           <div>
             <div style={{ fontSize: 13, fontWeight: 600 }}>
-              备份导出与 .mbox 批量归档
+              {t("settings.storageBackupTitle")}
             </div>
             <div className="text-xs text-muted">
-              导出当前空间完整 ZIP 备份包或批量导出收件箱为标准 .mbox
+              {t("settings.storageBackupDesc")}
             </div>
           </div>
           <button
@@ -172,7 +187,7 @@ export function StorageTab() {
             className="btn btn-secondary btn-sm"
             onClick={() => workspace.setOverlay({ type: "backup-migration" })}
           >
-            打开备份与导出
+            {t("settings.storageOpenBackupBtn")}
           </button>
         </div>
       </div>

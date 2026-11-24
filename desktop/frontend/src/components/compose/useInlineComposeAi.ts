@@ -1,5 +1,6 @@
 import { Events } from "@wailsio/runtime";
 import { useEffect, useState } from "react";
+import { t } from "../../i18n";
 import { aiApi, parseBackendError } from "../../services/backendClient";
 import { isWailsDesktop } from "../../state/storageHelpers";
 import type { ComposeDraftState } from "../../types/settings";
@@ -43,7 +44,7 @@ export function useInlineComposeAi(
           setReqId("");
           pushToast({
             tone: "warning",
-            title: "AI 写作生成中断",
+            title: t("toasts.aiComposeInterrupted"),
             detail: d.message,
           });
         }
@@ -56,7 +57,9 @@ export function useInlineComposeAi(
     if (!draft) return;
     if (!isWailsDesktop()) {
       setPreview(
-        `你好：\n\n关于「${draft.subject || "本次协作事宜"}」，我已整理好核心进度与确认项，欢迎随时沟通确认。`,
+        t("compose.demoPreviewText", {
+          subject: draft.subject || t("compose.demoFallbackSubject"),
+        }),
       );
       return;
     }
@@ -80,7 +83,9 @@ export function useInlineComposeAi(
           tone: "warning",
           title: parsed.message,
           actionLabel:
-            parsed.code === "ERR_AI_DISABLED" ? "前往配置" : undefined,
+            parsed.code === "ERR_AI_DISABLED"
+              ? t("compose.goConfigureAi")
+              : undefined,
           onAction:
             parsed.code === "ERR_AI_DISABLED" ? onOpenAiSettings : undefined,
         });

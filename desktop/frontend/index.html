@@ -8,7 +8,12 @@
     <script>
       (function () {
         var theme = "light";
+        var lang = "zh-CN";
         try {
+          var savedLang = window.localStorage.getItem("omnimail:lang");
+          if (savedLang === "en-US" || savedLang === "zh-CN") {
+            lang = savedLang;
+          }
           var pref = window.localStorage.getItem("omnimail:theme-pref");
           var saved = window.localStorage.getItem("omnimail:theme");
           var sysDark =
@@ -25,6 +30,7 @@
           }
         } catch (e) {}
         var root = document.documentElement;
+        root.lang = lang;
         root.setAttribute("data-theme", theme);
         root.style.colorScheme = theme;
       })();

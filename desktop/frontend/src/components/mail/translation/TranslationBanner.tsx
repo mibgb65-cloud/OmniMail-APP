@@ -1,40 +1,52 @@
+import { useI18n } from "../../../i18n";
 import { useApp } from "../../../state/AppContext";
 import { Icon } from "../../common/Icon";
 import { useTranslation } from "./TranslationContext";
-import { languages } from "./translationLanguages";
-import { translationModes } from "./translationTypes";
+import { getLanguages } from "./translationLanguages";
+import { getTranslationModes } from "./translationTypes";
 
 export function TranslationBanner() {
+  const { lang, t: tr } = useI18n();
   const t = useTranslation();
   const { workspace } = useApp();
   if (!t.result && !t.error && !t.pending) return null;
+  const languageMap = getLanguages(lang);
+  const modes = getTranslationModes(tr);
   const value = t.result?.content;
   const detectedSource =
     value && value.source !== "auto" ? value.source : t.language;
   const source =
-    detectedSource === "auto" ? "自动检测" : languages[detectedSource];
+    detectedSource === "auto"
+      ? tr("translation.autoDetect")
+      : languageMap[detectedSource];
   const progress =
     t.totalBatches > 0
-      ? `（${t.completedBatches} / ${t.totalBatches} 批）`
+      ? tr("translation.bannerBatchProgress", {
+          done: t.completedBatches,
+          total: t.totalBatches,
+        })
       : "";
+  const renderedLabel =
+    t.mode === "original"
+      ? tr("translation.bannerShowingOriginal")
+      : t.mode === "translated"
+        ? tr("translation.bannerInlineRendered")
+        : tr("translation.bannerBilingualRendered");
   const note = t.pending
-    ? `正在翻译${progress}，仍可继续阅读`
+    ? tr("translation.bannerTranslating", { progress })
     : t.partial
-      ? `部分翻译失败${progress}，已完成的译文已保留。${t.error ?? ""}`
+      ? tr("translation.bannerPartialFailed", {
+          progress,
+          error: t.error ?? "",
+        })
       : t.error ||
-        `${source} → ${value ? languages[value.target] : ""} · ${
-          t.mode === "original"
-            ? "当前显示原文"
-            : t.mode === "translated"
-              ? "原地保真渲染"
-              : "双语保真渲染"
-        }`;
+        `${source} → ${value ? languageMap[value.target] : ""} · ${renderedLabel}`;
   return (
     <div className="translation-banner">
       <div className="translation-banner-status" role="status">
         <span className="pill translation-badge">
           <Icon name="language" size={14} />
-          翻译
+          {tr("translation.translate")}
         </span>
         <span>{note}</span>
       </div>
@@ -43,9 +55,9 @@ export function TranslationBanner() {
           <div
             className="translation-display-modes"
             role="group"
-            aria-label="译文显示模式"
+            aria-label={tr("translation.bannerModesAria")}
           >
-            {translationModes.map(({ id, label }) => (
+            {modes.map(({ id, label }) => (
               <button
                 type="button"
                 key={id}
@@ -66,7 +78,7 @@ export function TranslationBanner() {
               if (t.result) void t.translate(t.result.options, true);
             }}
           >
-            重试翻译
+            {tr("translation.retryTranslate")}
           </button>
         )}
         <button
@@ -76,7 +88,7 @@ export function TranslationBanner() {
             workspace.setOverlay({ type: "settings", tab: "translation" })
           }
         >
-          设置
+          {tr("translation.bannerSettingsShort")}
         </button>
       </div>
     </div>

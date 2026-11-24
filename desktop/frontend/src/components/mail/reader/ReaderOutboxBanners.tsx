@@ -1,3 +1,4 @@
+import { useI18n } from "../../../i18n";
 import { composeApi, parseBackendError } from "../../../services/backendClient";
 import { useApp } from "../../../state/AppContext";
 import { isWailsDesktop } from "../../../state/storageHelpers";
@@ -5,6 +6,7 @@ import type { MailItem } from "../../../types/mail";
 import { Icon } from "../../common/Icon";
 
 export function ReaderOutboxBanners({ mail }: { mail: MailItem }) {
+  const { t, formatTime } = useI18n();
   const { workspace, mailStore, composeStore, toastStore } = useApp();
 
   return (
@@ -13,14 +15,14 @@ export function ReaderOutboxBanners({ mail }: { mail: MailItem }) {
         <div className="security-banner warning" role="status">
           <div className="row" style={{ gap: 8 }}>
             <Icon name="edit" size={16} />
-            <span>这是一封未发出的本地草稿，可随时恢复编辑或发送。</span>
+            <span>{t("reader.draftBannerText")}</span>
           </div>
           <button
             type="button"
             className="btn btn-sm btn-primary"
             onClick={() => composeStore.openSavedDraft(mail.id)}
           >
-            继续编辑草稿
+            {t("reader.continueEditDraft")}
           </button>
         </div>
       )}
@@ -30,8 +32,12 @@ export function ReaderOutboxBanners({ mail }: { mail: MailItem }) {
           <div className="row" style={{ gap: 8 }}>
             <Icon name="clock" size={16} />
             <span>
-              该邮件已加入定时队列
-              {mail.scheduledAt ? `（计划于 ${mail.scheduledAt} 发出）` : ""}
+              {t("reader.scheduledBannerText")}
+              {mail.scheduledAt
+                ? t("reader.scheduledBannerTime", {
+                    time: formatTime(mail.scheduledAt),
+                  })
+                : ""}
             </span>
           </div>
           <div className="row" style={{ gap: 6 }}>
@@ -45,19 +51,19 @@ export function ReaderOutboxBanners({ mail }: { mail: MailItem }) {
                     void mailStore.reloadMessages();
                     toastStore.pushToast({
                       tone: "info",
-                      title: "已跳过定时等待立即投递",
+                      title: t("toasts.skippedScheduleSentNow"),
                     });
                   })
                   .catch((err) =>
                     toastStore.pushToast({
                       tone: "danger",
-                      title: "立即发送失败",
+                      title: t("toasts.sendNowFailed"),
                       detail: parseBackendError(err).message,
                     }),
                   );
               }}
             >
-              立即发出
+              {t("reader.sendImmediately")}
             </button>
             <button
               type="button"
@@ -69,19 +75,19 @@ export function ReaderOutboxBanners({ mail }: { mail: MailItem }) {
                     void mailStore.reloadMessages();
                     toastStore.pushToast({
                       tone: "info",
-                      title: "已取消定时任务并还原回草稿箱",
+                      title: t("toasts.cancelledScheduleRestored"),
                     });
                   })
                   .catch((err) =>
                     toastStore.pushToast({
                       tone: "danger",
-                      title: "取消定时失败",
+                      title: t("toasts.cancelScheduleFailed"),
                       detail: parseBackendError(err).message,
                     }),
                   );
               }}
             >
-              取消定时
+              {t("reader.cancelSchedule")}
             </button>
           </div>
         </div>
@@ -92,7 +98,7 @@ export function ReaderOutboxBanners({ mail }: { mail: MailItem }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Icon name="alertCircle" size={16} />
             <span>
-              <strong>发送失败：</strong>
+              <strong>{t("reader.outboxErrorPrefix")}</strong>
               {mail.outboxError}
             </span>
           </div>
@@ -114,19 +120,19 @@ export function ReaderOutboxBanners({ mail }: { mail: MailItem }) {
                     void mailStore.reloadMessages();
                     toastStore.pushToast({
                       tone: "info",
-                      title: "已重新加入发送队列重试",
+                      title: t("toasts.requeuedOutboxRetry"),
                     });
                   })
                   .catch((err) =>
                     toastStore.pushToast({
                       tone: "danger",
-                      title: "重试发送失败",
+                      title: t("toasts.retrySendFailed"),
                       detail: parseBackendError(err).message,
                     }),
                   );
               }}
             >
-              立即重试发送
+              {t("reader.retrySendNow")}
             </button>
             <button
               type="button"
@@ -138,7 +144,7 @@ export function ReaderOutboxBanners({ mail }: { mail: MailItem }) {
                 })
               }
             >
-              连接诊断
+              {t("reader.connDiagnostics")}
             </button>
           </div>
         </div>

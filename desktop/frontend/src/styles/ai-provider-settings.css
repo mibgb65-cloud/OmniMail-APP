@@ -4,13 +4,6 @@
   min-width: 0;
 }
 
-.custom-select-search {
-  position: sticky;
-  top: 0;
-  flex-shrink: 0;
-  z-index: 1;
-}
-
 .ai-provider-heading,
 .ai-provider-row,
 .ai-provider-key-label,

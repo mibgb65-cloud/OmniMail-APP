@@ -1,6 +1,7 @@
-const PROFILE_COLORS = ["#141E2E", "#2563EB", "#059669", "#7C3AED", "#D97706"];
-
+import { useI18n } from "../../i18n";
 import { PasswordInput } from "../common/PasswordInput";
+
+const PROFILE_COLORS = ["#141E2E", "#2563EB", "#059669", "#7C3AED", "#D97706"];
 
 export interface CreateProfileFormValues {
   name: string;
@@ -19,80 +20,92 @@ export function ProfileCreateForm({
   onChange: (patch: Partial<CreateProfileFormValues>) => void;
   onPickDir: () => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr", gap: 10 }}>
         <div>
-          <label className="text-xs text-muted">空间名称</label>
+          <label className="text-xs text-muted">
+            {t("overlays.profNameLabel")}
+          </label>
           <input
             className="input"
             style={{ marginTop: 4 }}
             value={val.name}
             onChange={(e) => onChange({ name: e.target.value })}
-            placeholder="例如：开源社区 / 独立业务"
+            placeholder={t("overlays.profNamePlaceholder")}
           />
         </div>
         <div>
-          <label className="text-xs text-muted">徽章单字</label>
+          <label className="text-xs text-muted">
+            {t("overlays.profBadgeCharLabel")}
+          </label>
           <input
             className="input"
             style={{ marginTop: 4 }}
             maxLength={2}
             value={val.badge}
             onChange={(e) => onChange({ badge: e.target.value })}
-            placeholder={val.name.slice(0, 1) || "开"}
+            placeholder={
+              val.name.slice(0, 1) || t("overlays.profBadgeDefaultChar")
+            }
           />
         </div>
       </div>
 
       <div className="row" style={{ gap: 8 }}>
-        <span className="text-xs text-muted">标识色：</span>
-        {PROFILE_COLORS.map((c) => (
+        <span className="text-xs text-muted">
+          {t("overlays.profColorLabel")}
+        </span>
+        {PROFILE_COLORS.map((hex) => (
           <button
-            key={c}
+            key={hex}
             type="button"
-            onClick={() => onChange({ color: c })}
+            onClick={() => onChange({ color: hex })}
             style={{
               width: 22,
               height: 22,
               borderRadius: "50%",
-              background: c,
+              background: hex,
               border:
-                val.color === c ? "2px solid var(--brand-accent)" : "none",
+                val.color === hex ? "2px solid var(--brand-accent)" : "none",
             }}
-            aria-label={`选择颜色 ${c}`}
+            aria-label={t("overlays.profPickColorAria", { hex })}
           />
         ))}
       </div>
 
       <div>
         <label className="text-xs text-muted">
-          本地 PIN 锁（可选，4~32 位）
+          {t("overlays.profOptionalPinLabel")}
         </label>
         <PasswordInput
           style={{ marginTop: 4 }}
           value={val.pin}
           onChange={(pin) => onChange({ pin })}
-          placeholder="留空则不启用 PIN 锁"
-          ariaLabel="新空间 PIN 码"
+          placeholder={t("overlays.profOptionalPinPlaceholder")}
+          ariaLabel={t("overlays.profNewPinAria")}
         />
       </div>
 
       <div>
-        <label className="text-xs text-muted">独立物理目录（可选）</label>
+        <label className="text-xs text-muted">
+          {t("overlays.profCustomDirLabel")}
+        </label>
         <div className="row" style={{ gap: 8, marginTop: 4 }}>
           <input
             className="input"
             value={val.customDir}
             onChange={(e) => onChange({ customDir: e.target.value })}
-            placeholder="默认存放在主数据目录 profiles/ 下"
+            placeholder={t("overlays.profCustomDirPlaceholder")}
           />
           <button
             type="button"
             className="btn btn-secondary btn-sm"
             onClick={onPickDir}
           >
-            浏览
+            {t("common.browse")}
           </button>
         </div>
       </div>

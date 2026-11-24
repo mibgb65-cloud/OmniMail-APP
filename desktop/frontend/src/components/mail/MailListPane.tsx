@@ -1,4 +1,5 @@
 import { useState, type CSSProperties, type MouseEvent } from "react";
+import { useI18n, type TranslationKey } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import type { FolderId, MailFilterTab, MailItem } from "../../types/mail";
 import { Icon } from "../common/Icon";
@@ -7,17 +8,17 @@ import { MailContextMenu } from "./MailContextMenu";
 import { MailListBatchBar } from "./MailListExtras";
 import { MailListBody } from "./MailListBody";
 
-const FOLDER_TITLES: Record<FolderId, string> = {
-  inbox: "统一收件箱",
-  starred: "星标邮件",
-  snoozed: "稍后处理",
-  sent: "已发送",
-  drafts: "草稿箱",
-  archive: "归档邮件",
-  outbox: "待发送队列",
-  scheduled: "定时邮件",
-  spam: "垃圾邮件",
-  trash: "回收站",
+const FOLDER_TITLE_KEYS: Record<FolderId, TranslationKey> = {
+  inbox: "sidebar.unifiedInbox",
+  starred: "sidebar.starred",
+  snoozed: "sidebar.snoozed",
+  sent: "sidebar.sent",
+  drafts: "sidebar.drafts",
+  archive: "sidebar.archive",
+  outbox: "sidebar.outbox",
+  scheduled: "sidebar.scheduled",
+  spam: "sidebar.spam",
+  trash: "sidebar.trash",
 };
 
 export function MailListPane({
@@ -25,6 +26,7 @@ export function MailListPane({
 }: {
   readOnlyExit?: boolean;
 }) {
+  const { t } = useI18n();
   const { viewport, workspace, mailStore, triggerSyncAll } = useApp();
   const [menuState, setMenuState] = useState<{
     mail: MailItem;
@@ -47,25 +49,37 @@ export function MailListPane({
   );
   const activeLabel = labels.find((l) => l.id === activeLabelId);
   const title = searchQuery.trim()
-    ? `搜索：“${searchQuery.trim()}”`
+    ? t("mailList.searchTitle", { query: searchQuery.trim() })
     : activeLabel
-      ? `标签 · ${activeLabel.name}`
-      : FOLDER_TITLES[activeFolder];
+      ? t("mailList.labelTitle", { name: activeLabel.name })
+      : t(FOLDER_TITLE_KEYS[activeFolder]);
   const unreadCount = filteredMails.filter((m) => m.unread).length;
   const badgeCount = mailStore.folderCounts[activeFolder] ?? unreadCount;
   const displayTotal = mailStore.totalCount || filteredMails.length;
   const subtitle = activeAccount
-    ? `${activeAccount.shortTag} · ${displayTotal} 封邮件`
-    : `${workspace.accounts.length} 个邮箱 · ${badgeCount} 封未读`;
+    ? t("mailList.accountSubtitle", {
+        tag: activeAccount.shortTag,
+        total: displayTotal,
+      })
+    : t("mailList.unifiedSubtitle", {
+        accounts: workspace.accounts.length,
+        unread: badgeCount,
+      });
   const tabs: Array<{ id: MailFilterTab; label: string }> = [
-    { id: "all", label: "全部" },
-    { id: "unread", label: isCompact ? "未读" : `未读 ${badgeCount}` },
-    { id: "starred", label: "星标" },
-    { id: "attachments", label: "附件" },
+    { id: "all", label: t("mailList.tabAll") },
+    {
+      id: "unread",
+      label:
+        isCompact || badgeCount <= 0
+          ? t("mailList.tabUnread")
+          : t("mailList.tabUnreadCount", { count: badgeCount }),
+    },
+    { id: "starred", label: t("mailList.tabStarred") },
+    { id: "attachments", label: t("mailList.tabFiles") },
   ];
   const activeTabIdx = Math.max(
     0,
-    tabs.findIndex((t) => t.id === filterTab),
+    tabs.findIndex((item) => item.id === filterTab),
   );
   const handleContext = (mail: MailItem, e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -74,7 +88,10 @@ export function MailListPane({
   };
 
   return (
-    <section className="panel-card mail-list-pane" aria-label="邮件列表">
+    <section
+      className="panel-card mail-list-pane"
+      aria-label={t("mailList.ariaPane")}
+    >
       <div className="list-header" data-scrolled={listScroll.scrolled}>
         <div className="list-title-row">
           <div style={{ minWidth: 0, flex: 1 }}>
@@ -96,33 +113,35 @@ export function MailListPane({
                   workspace.setOverlay({
                     type: "danger-confirm",
                     kind: "empty-trash",
-                    targetLabel: `${filteredMails.length} 封回收站邮件`,
+                    targetLabel: t("mailList.trashTargetCount", {
+                      count: filteredMails.length,
+                    }),
                   })
                 }
               >
-                清空
+                {t("common.clear")}
               </button>
             )}
             {!isCompact && (
-              <Tooltip label="刷新同步" shortcut="Ctrl+R">
+              <Tooltip label={t("mailList.refreshSyncTip")} shortcut="Ctrl+R">
                 <button
                   type="button"
                   className="icon-btn icon-btn-bordered list-head-icon-btn"
                   onClick={triggerSyncAll}
-                  aria-label="刷新同步"
+                  aria-label={t("mailList.refreshSyncTip")}
                 >
                   <Icon name="refresh" size={13} />
                 </button>
               </Tooltip>
             )}
-            <Tooltip label="高级筛选">
+            <Tooltip label={t("mailList.advancedFilterTip")}>
               <button
                 type="button"
                 className="icon-btn icon-btn-bordered list-head-icon-btn"
                 onClick={() =>
                   workspace.setOverlay({ type: "advanced-search" })
                 }
-                aria-label="高级筛选"
+                aria-label={t("mailList.advancedFilterTip")}
               >
                 <Icon name="filter" size={13} />
               </button>

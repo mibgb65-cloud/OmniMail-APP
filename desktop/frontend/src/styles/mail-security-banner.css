@@ -1,0 +1,118 @@
+/* 邮件阅读区三段式钓鱼与可疑发件人安全警示横幅（20 · 邮件安全、源码与日程） */
+.phishing-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.phishing-banner.danger {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  --phishing-accent: var(--status-danger);
+}
+
+:root[data-theme="dark"] .phishing-banner.danger {
+  background: #3b1820;
+  border-color: #7f1d1d;
+}
+
+.phishing-banner.warning {
+  background: var(--status-warning-bg);
+  border: 1px solid color-mix(in srgb, var(--status-warning) 35%, transparent);
+  --phishing-accent: var(--status-warning);
+}
+
+.phishing-banner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.phishing-banner-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--phishing-accent);
+}
+
+.phishing-banner-title > strong {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.phishing-auth-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.phishing-auth-pill {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.phishing-auth-pill.pill-success {
+  border: 1px solid color-mix(in srgb, var(--status-success) 32%, transparent);
+}
+
+.phishing-auth-pill.pill-danger {
+  border: 1px solid color-mix(in srgb, var(--status-danger) 32%, transparent);
+}
+
+.phishing-auth-pill.pill-warning {
+  border: 1px solid color-mix(in srgb, var(--status-warning) 35%, transparent);
+}
+
+.phishing-auth-pill.pill-neutral {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+}
+
+.phishing-banner-detail {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.phishing-banner-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.phishing-banner-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.phishing-trust-btn {
+  margin-inline-start: auto;
+  color: var(--text-secondary);
+}
+
+.phishing-trust-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text-ink) 8%, transparent);
+  color: var(--text-ink);
+}

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useI18n } from "../../i18n";
+import { parseBackendError } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import {
   formatBytes,
@@ -6,16 +8,17 @@ import {
   type TargetDirCheck,
 } from "../../state/storageHelpers";
 import {
-  AsyncActionButton,
   waitSuccessHold,
   type AsyncActionStatus,
 } from "../common/AsyncActionButton";
 import { Checkbox } from "../common/Checkbox";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
+import { DataDirMigrateFooter } from "./DataDirMigrateFooter";
 
 export function DataDirMigrateModal() {
   const { workspace, desktopBridge, toastStore } = useApp();
+  const { lang, t } = useI18n();
   const { storage } = desktopBridge;
 
   const [targetPath, setTargetPath] = useState("D:\\OmniMailData");
@@ -39,7 +42,7 @@ export function DataDirMigrateModal() {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [desktopBridge, targetPath]);
+  }, [desktopBridge, targetPath, lang]);
 
   const handleBrowse = async () => {
     const picked = await desktopBridge.pickDirectory();
@@ -57,8 +60,8 @@ export function DataDirMigrateModal() {
       setStatus("success");
       toastStore.pushToast({
         tone: "success",
-        title: "本地数据目录已完成安全迁移",
-        detail: `bootstrap.json 已指向 ${res.newDataDir}`,
+        title: t("toasts.migratedDataDirTitle"),
+        detail: t("toasts.migratedDataDirDetail", { dir: res.newDataDir }),
       });
       await waitSuccessHold(900);
       setDoneResult(res);
@@ -66,8 +69,8 @@ export function DataDirMigrateModal() {
       setStatus("error");
       toastStore.pushToast({
         tone: "danger",
-        title: "数据目录迁移失败",
-        detail: err instanceof Error ? err.message : "请检查目录读写权限",
+        title: t("toasts.migrateDataDirFailed"),
+        detail: parseBackendError(err).message,
       });
     }
   };
@@ -77,65 +80,54 @@ export function DataDirMigrateModal() {
   const checkValid = Boolean(check?.valid && !check.sameAsCurrent);
   const backToStorage = () =>
     workspace.setOverlay({ type: "settings", tab: "storage" });
+  const spaceRow =
+    check && check.freeBytes > 0
+      ? t("overlays.migrateSpaceCheckRow", {
+          free: formatBytes(check.freeBytes),
+          required: formatBytes(check.requiredBytes),
+        })
+      : "";
+  const copiedSummary = doneResult
+    ? t("overlays.migrateCopiedSummary", {
+        files: doneResult.copiedFiles,
+        bytes: formatBytes(doneResult.copiedBytes),
+        dir: doneResult.newDataDir,
+      })
+    : "";
+  const bootstrapHint = t("overlays.migrateBootstrapUpdatedHint", {
+    path: storage.bootstrapPath,
+  });
 
   return (
     <ModalShell
-      heading="更改本地数据存储位置"
-      subtitle="安全迁移本地 SQLite 库、邮件正文/附件缓存、搜索索引与日志，并更新 bootstrap.json"
+      heading={t("overlays.migrateHeading")}
+      subtitle={t("overlays.migrateSubtitle")}
       maxWidth={580}
       onClose={backToStorage}
       footer={
-        doneResult ? (
-          <>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={backToStorage}
-            >
-              稍后手动重启
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => void desktopBridge.restartApp()}
-            >
-              <Icon name="refresh" size={14} /> 立即重启 OmniMail 生效
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              disabled={busyOrDone}
-              onClick={backToStorage}
-            >
-              取消
-            </button>
-            <AsyncActionButton
-              status={status}
-              disabled={!checkValid}
-              idleIcon="database"
-              idleLabel="开始迁移并更新引导配置"
-              loadingLabel="正在校验并迁移数据…"
-              successLabel="迁移完成 · 引导已更新"
-              errorLabel="迁移失败 · 点击重试"
-              onClick={() => void handleMigrate()}
-            />
-          </>
-        )
+        <DataDirMigrateFooter
+          done={Boolean(doneResult)}
+          status={status}
+          busyOrDone={busyOrDone}
+          checkValid={checkValid}
+          onBack={backToStorage}
+          onRestart={() => void desktopBridge.restartApp()}
+          onMigrate={() => void handleMigrate()}
+        />
       }
     >
       <div className="settings-card">
         <div className="text-xs text-muted">
-          当前数据目录（已占用 {formatBytes(storage.usedBytes)}）
+          {t("overlays.migrateCurrentDirUsed", {
+            used: formatBytes(storage.usedBytes),
+          })}
         </div>
         <div className="storage-path-box selectable truncate">
           {storage.dataDir}
         </div>
 
         <label style={{ fontSize: 13, fontWeight: 600 }}>
-          选择新的数据存储目录
+          {t("overlays.migrateChooseNewLabel")}
         </label>
         <div className="row">
           <input
@@ -148,7 +140,7 @@ export function DataDirMigrateModal() {
               setTargetPath(e.target.value);
               if (status === "error") setStatus("idle");
             }}
-            placeholder="例如 D:\OmniMailData"
+            placeholder={t("overlays.migratePathPlaceholder")}
           />
           <button
             type="button"
@@ -156,7 +148,7 @@ export function DataDirMigrateModal() {
             disabled={busyOrDone}
             onClick={() => void handleBrowse()}
           >
-            <Icon name="folder" size={14} /> 浏览选择…
+            <Icon name="folder" size={14} /> {t("overlays.migrateBrowseBtn")}
           </button>
         </div>
 
@@ -172,31 +164,21 @@ export function DataDirMigrateModal() {
               />
               <span>{check.message}</span>
             </div>
-            {check.freeBytes > 0 && (
-              <div>
-                可用：{formatBytes(check.freeBytes)} · 需：
-                {formatBytes(check.requiredBytes)}
-              </div>
-            )}
+            {spaceRow && <div>{spaceRow}</div>}
           </div>
         )}
         {doneResult ? (
           <div className="migrate-status-box" data-tone="ok">
-            <strong>
-              已复制 {doneResult.copiedFiles} 个文件（
-              {formatBytes(doneResult.copiedBytes)}）至 {doneResult.newDataDir}
-            </strong>
-            <div>
-              引导文件 {storage.bootstrapPath} 已原子更新，建议立即重启生效。
-            </div>
+            <strong>{copiedSummary}</strong>
+            <div>{bootstrapHint}</div>
           </div>
         ) : (
           <Checkbox
             checked={keepSource}
             onChange={setKeepSource}
-            ariaLabel="保留原目录数据副本"
+            ariaLabel={t("overlays.migrateKeepSourceAria")}
           >
-            保留原目录数据副本（推荐，重启确认无误后再手动删除旧副本）
+            {t("overlays.migrateKeepSourceLabel")}
           </Checkbox>
         )}
       </div>

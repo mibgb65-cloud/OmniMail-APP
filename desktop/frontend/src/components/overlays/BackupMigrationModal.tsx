@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import {
   mailApi,
   parseBackendError,
@@ -15,6 +16,7 @@ import { PasswordInput } from "../common/PasswordInput";
 
 export function BackupMigrationModal() {
   const { workspace, toastStore } = useApp();
+  const { t } = useI18n();
   const [includeAtts, setIncludeAtts] = useState(false);
   const [includeSecrets, setIncludeSecrets] = useState(false);
   const [password, setPassword] = useState("");
@@ -37,14 +39,14 @@ export function BackupMigrationModal() {
       setZipStatus("success");
       toastStore.pushToast({
         tone: "success",
-        title: "已导出本地空间 ZIP 备份包",
+        title: t("toasts.exportedZipBackup"),
         detail: saved,
       });
     } catch (err) {
       setZipStatus("error");
       toastStore.pushToast({
         tone: "danger",
-        title: "导出备份失败",
+        title: t("toasts.exportBackupFailed"),
         detail: parseBackendError(err).message,
       });
     }
@@ -61,67 +63,70 @@ export function BackupMigrationModal() {
       setMboxStatus("success");
       toastStore.pushToast({
         tone: "success",
-        title: "已导出收件箱标准 .mbox 归档文件",
+        title: t("toasts.exportedInboxMbox"),
         detail: saved,
       });
     } catch (err) {
       setMboxStatus("error");
       toastStore.pushToast({
         tone: "danger",
-        title: "导出 .mbox 失败",
+        title: t("toasts.exportMboxFailed"),
         detail: parseBackendError(err).message,
       });
     }
   };
 
+  const closeToStorage = () =>
+    workspace.setOverlay({ type: "settings", tab: "storage" });
+
   return (
     <ModalShell
-      heading="备份导出与归档迁移"
-      subtitle="导出本地空间一致性快照（自动暂停后台同步做 SQLite WAL 检查点）"
+      heading={t("overlays.backupHeading")}
+      subtitle={t("overlays.backupSubtitle")}
       maxWidth={560}
-      onClose={() => workspace.setOverlay({ type: "settings", tab: "storage" })}
+      onClose={closeToStorage}
       footer={
         <>
           <span className="text-xs text-muted">
-            默认不导出邮箱密码与 OAuth 令牌
+            {t("overlays.backupFooterHint")}
           </span>
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() =>
-              workspace.setOverlay({ type: "settings", tab: "storage" })
-            }
+            onClick={closeToStorage}
           >
-            完成
+            {t("common.done")}
           </button>
         </>
       }
     >
       <div className="settings-card">
-        <strong style={{ fontSize: 14 }}>导出当前本地空间备份包 (.zip)</strong>
+        <strong style={{ fontSize: 14 }}>
+          {t("overlays.backupZipCardTitle")}
+        </strong>
         <div className="text-xs text-muted">
-          包含本地 SQLite 邮件索引数据库、签名、自定义标签、收件规则与通讯录。
+          {t("overlays.backupZipCardDesc")}
         </div>
         <Checkbox
           checked={includeAtts}
           onChange={setIncludeAtts}
-          ariaLabel="包含已下载的附件二进制缓存"
+          ariaLabel={t("overlays.backupIncludeAttsAria")}
         >
-          同时打包本地已下载的附件与原始邮件归档
+          {t("overlays.backupIncludeAttsLabel")}
         </Checkbox>
         <Checkbox
           checked={includeSecrets}
           onChange={setIncludeSecrets}
-          ariaLabel="加密导出账户凭据"
+          ariaLabel={t("overlays.backupIncludeSecretsAria")}
         >
-          包含加密凭据（需设置独立 AES-256-GCM 导出密码）
+          {t("overlays.backupIncludeSecretsLabel")}
         </Checkbox>
         {includeSecrets && (
           <PasswordInput
             value={password}
             onChange={setPassword}
-            placeholder="设置至少 8 位备份加密口令"
-            ariaLabel="备份加密口令"
+            placeholder={t("overlays.backupPasswordPlaceholder")}
+            ariaLabel={t("overlays.backupPasswordAria")}
           />
         )}
         <AsyncActionButton
@@ -132,10 +137,10 @@ export function BackupMigrationModal() {
           }
           style={{ alignSelf: "flex-start" }}
           idleIcon="download"
-          idleLabel="立即导出 ZIP 备份包"
-          loadingLabel="正在生成一致性快照…"
-          successLabel="已导出 ZIP 备份包"
-          errorLabel="导出失败 · 重试"
+          idleLabel={t("overlays.backupExportZipIdle")}
+          loadingLabel={t("overlays.backupExportZipLoading")}
+          successLabel={t("overlays.backupExportZipSuccess")}
+          errorLabel={t("overlays.backupExportRetryError")}
           successHoldMs={1000}
           onSuccessHoldEnd={() => setZipStatus("idle")}
           onClick={() => void handleExportZip()}
@@ -143,9 +148,11 @@ export function BackupMigrationModal() {
       </div>
 
       <div className="settings-card">
-        <strong style={{ fontSize: 14 }}>批量导出标准 .mbox 邮件归档</strong>
+        <strong style={{ fontSize: 14 }}>
+          {t("overlays.backupMboxCardTitle")}
+        </strong>
         <div className="text-xs text-muted">
-          将当前空间收件箱邮件导出为跨客户端兼容的标准 RFC4155 .mbox 文件。
+          {t("overlays.backupMboxCardDesc")}
         </div>
         <AsyncActionButton
           size="sm"
@@ -154,10 +161,10 @@ export function BackupMigrationModal() {
           disabled={zipStatus === "loading"}
           style={{ alignSelf: "flex-start" }}
           idleIcon="download"
-          idleLabel="导出收件箱为 .mbox"
-          loadingLabel="正在封装 .mbox 归档…"
-          successLabel="已导出 .mbox 归档"
-          errorLabel="导出失败 · 重试"
+          idleLabel={t("overlays.backupExportMboxIdle")}
+          loadingLabel={t("overlays.backupExportMboxLoading")}
+          successLabel={t("overlays.backupExportMboxSuccess")}
+          errorLabel={t("overlays.backupExportRetryError")}
           successHoldMs={1000}
           onSuccessHoldEnd={() => setMboxStatus("idle")}
           onClick={() => void handleExportMbox()}

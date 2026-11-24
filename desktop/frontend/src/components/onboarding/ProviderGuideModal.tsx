@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PROVIDER_CATALOG } from "../../data/providers";
+import { localizeProviderPreset, useI18n } from "../../i18n";
 import {
   accountApi,
   parseBackendError,
@@ -20,45 +21,39 @@ import { ProviderStepsCard } from "./ProbeReportList";
 
 export function ProviderGuideModal({ provider }: { provider: ProviderId }) {
   const { workspace, toastStore } = useApp();
-  const meta =
+  const { lang, isEn, t } = useI18n();
+  const rawMeta =
     PROVIDER_CATALOG.find((p) => p.id === provider) ?? PROVIDER_CATALOG[0];
-
+  const meta = localizeProviderPreset(rawMeta, lang);
   const [email, setEmail] = useState("");
   const [secret, setSecret] = useState("");
-  const [imapHost, setImapHost] = useState(meta.defaultImapHost);
-  const [imapPort, setImapPort] = useState(meta.defaultImapPort || 993);
-  const [smtpHost, setSmtpHost] = useState(meta.defaultSmtpHost);
-  const [smtpPort, setSmtpPort] = useState(meta.defaultSmtpPort || 465);
+  const [imapHost, setImapHost] = useState(rawMeta.defaultImapHost);
+  const [imapPort, setImapPort] = useState(rawMeta.defaultImapPort || 993);
+  const [smtpHost, setSmtpHost] = useState(rawMeta.defaultSmtpHost);
+  const [smtpPort, setSmtpPort] = useState(rawMeta.defaultSmtpPort || 465);
   const [status, setStatus] = useState<AsyncActionStatus>("idle");
-  const [stepLabel, setStepLabel] = useState("正在执行四步握手…");
+  const [stepLabel, setStepLabel] = useState("");
   const [report, setReport] = useState<ConnectionTestReport | null>(null);
-
   const formReady =
     email.trim().includes("@") &&
     secret.trim().length >= 4 &&
-    imapHost.trim().length > 0 &&
-    smtpHost.trim().length > 0;
-
+    Boolean(imapHost.trim() && smtpHost.trim());
   const bindField = (setter: (v: string) => void) => (v: string) => {
     setter(v);
     if (status === "error") setStatus("idle");
   };
-
   const autoResolveEmail = async (val: string) => {
     if (!val.includes("@")) return;
-    const preset = await accountApi
-      .resolveProviderByEmail(val)
-      .catch(() => null);
-    if (preset && preset.defaultImapHost) {
-      setImapHost(preset.defaultImapHost);
-      setImapPort(preset.defaultImapPort || 993);
-      setSmtpHost(preset.defaultSmtpHost);
-      setSmtpPort(preset.defaultSmtpPort || 465);
-    }
+    const p = await accountApi.resolveProviderByEmail(val).catch(() => null);
+    if (!p?.defaultImapHost) return;
+    setImapHost(p.defaultImapHost);
+    setImapPort(p.defaultImapPort || 993);
+    setSmtpHost(p.defaultSmtpHost);
+    setSmtpPort(p.defaultSmtpPort || 465);
   };
-
   const handleTestAndConnect = async () => {
     setStatus("loading");
+    setStepLabel("");
     setReport(null);
     const req = {
       name: `${meta.name} · ${email.split("@")[0]}`,
@@ -88,17 +83,21 @@ export function ProviderGuideModal({ provider }: { provider: ProviderId }) {
       await workspace.refreshProfilesAndAccounts();
       setStatus("success");
       await waitSuccessHold(900);
+      const accountName = isEn
+        ? `${created.name} (${created.email})`
+        : `${created.name}（${created.email}）`;
       workspace.setOverlay({
         type: "sync-progress",
         accountId: created.id,
-        accountName: `${created.name}（${created.email}）`,
+        accountName,
       });
     } catch (err) {
       setStatus("error");
+      const detail = parseBackendError(err).message;
       toastStore.pushToast({
         tone: "danger",
-        title: "连接或保存账户失败",
-        detail: parseBackendError(err).message,
+        title: t("toasts.connectSaveAccountFailed"),
+        detail,
       });
     }
   };
@@ -117,22 +116,22 @@ export function ProviderGuideModal({ provider }: { provider: ProviderId }) {
             disabled={status === "loading" || status === "success"}
             onClick={() => workspace.setOverlay({ type: "add-account" })}
           >
-            <Icon name="arrowLeft" size={14} /> 返回选择服务商
+            <Icon name="arrowLeft" size={14} />{" "}
+            {t("onboarding.backToProviders")}
           </button>
           <AsyncActionButton
             status={status}
             disabled={!formReady}
-            idleLabel="测试连接并接入"
-            loadingLabel={stepLabel}
-            successLabel="握手成功 · 已接入"
-            errorLabel="认证失败 · 点击重试"
+            idleLabel={t("onboarding.testAndConnectIdle")}
+            loadingLabel={stepLabel || t("common.handshakeRunningIdle")}
+            successLabel={t("onboarding.testAndConnectSuccess")}
+            errorLabel={t("onboarding.testAndConnectError")}
             onClick={() => void handleTestAndConnect()}
           />
         </>
       }
     >
       <ProviderStepsCard provider={provider} steps={meta.steps} />
-
       <HandshakeSteps
         running={status === "loading"}
         report={report}
@@ -142,7 +141,9 @@ export function ProviderGuideModal({ provider }: { provider: ProviderId }) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div>
-          <label className="text-xs text-muted">完整邮箱地址</label>
+          <label className="text-xs text-muted">
+            {t("onboarding.fullEmailLabel")}
+          </label>
           <input
             type="email"
             className="input"
@@ -150,26 +151,28 @@ export function ProviderGuideModal({ provider }: { provider: ProviderId }) {
             value={email}
             onChange={(e) => bindField(setEmail)(e.target.value)}
             onBlur={(e) => void autoResolveEmail(e.target.value)}
-            placeholder="请输入完整邮箱地址，例如 name@example.com"
+            placeholder={t("onboarding.fullEmailPlaceholder")}
           />
         </div>
         <div>
           <label className="text-xs text-muted">
-            客户端授权码 / 应用专用密码
+            {t("onboarding.authCodeOrAppPwdLabel")}
           </label>
           <PasswordInput
             style={{ marginTop: 4 }}
             value={secret}
             onChange={bindField(setSecret)}
-            placeholder="凭据将经 DPAPI 加密写入本地凭据盒，不落明文"
-            ariaLabel="客户端授权码或应用专用密码"
+            placeholder={t("onboarding.dpapiVaultPlaceholder")}
+            ariaLabel={t("onboarding.authCodeOrAppPwdAria")}
           />
         </div>
         <div
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
         >
           <div>
-            <label className="text-xs text-muted">IMAP 主机 ({imapPort})</label>
+            <label className="text-xs text-muted">
+              {t("onboarding.imapHostPortLabel", { port: imapPort })}
+            </label>
             <input
               className="input"
               style={{ marginTop: 4 }}
@@ -178,7 +181,9 @@ export function ProviderGuideModal({ provider }: { provider: ProviderId }) {
             />
           </div>
           <div>
-            <label className="text-xs text-muted">SMTP 主机 ({smtpPort})</label>
+            <label className="text-xs text-muted">
+              {t("onboarding.smtpHostPortLabel", { port: smtpPort })}
+            </label>
             <input
               className="input"
               style={{ marginTop: 4 }}

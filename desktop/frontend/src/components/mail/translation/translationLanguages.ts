@@ -1,4 +1,6 @@
 import { franc } from "franc-min";
+import { getCurrentLanguage } from "../../../i18n/index.ts";
+import type { LanguageCode } from "../../../types/settings.ts";
 
 export const languages = {
   "zh-CN": "简体中文",
@@ -15,8 +17,37 @@ export const languages = {
   ar: "阿拉伯语",
 } as const;
 
+export const enLanguages: Record<keyof typeof languages, string> = {
+  "zh-CN": "Simplified Chinese",
+  "zh-TW": "Traditional Chinese",
+  en: "English",
+  ja: "Japanese",
+  ko: "Korean",
+  fr: "French",
+  de: "German",
+  es: "Spanish",
+  pt: "Portuguese",
+  ru: "Russian",
+  it: "Italian",
+  ar: "Arabic",
+};
+
 export type Language = keyof typeof languages;
 export type SourceLanguage = Language | "auto";
+
+export function getLanguages(
+  uiLang: LanguageCode = getCurrentLanguage(),
+): Record<Language, string> {
+  return uiLang === "en-US" ? enLanguages : languages;
+}
+
+export function getLanguageLabel(
+  code: Language,
+  uiLang: LanguageCode = getCurrentLanguage(),
+): string {
+  return getLanguages(uiLang)[code];
+}
+
 export const isLanguage = (value: unknown): value is Language =>
   typeof value === "string" &&
   Object.prototype.hasOwnProperty.call(languages, value);

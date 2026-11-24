@@ -9,6 +9,7 @@ import {
   UpdateDesktopPreferences,
 } from "../../bindings/omnimail/desktopservice";
 import type { PickedFileInfo } from "../../bindings/omnimail/models";
+import { t } from "../i18n";
 import type { AppSettings } from "../types/settings";
 import { addedMailIds } from "./mailListArrivalPolicy";
 import { isWailsDesktop, parseMailtoUrl } from "./storageHelpers";
@@ -46,7 +47,7 @@ export async function openSafeExternalUrl(url: string): Promise<void> {
 }
 
 export async function pickAttachmentFiles(
-  title = "选择邮件附件",
+  title = t("compose.pickAttachmentDialogTitle"),
 ): Promise<PickedFileInfo[]> {
   if (!isWailsDesktop()) return [];
   const picked = await PickLocalFiles(title, true).catch(() => []);
@@ -100,7 +101,7 @@ export function useDesktopRuntimeEvents(h: RuntimeEventHandlers) {
       }),
       Events.On("app:open-file", (ev) => {
         h.onOpenExternalFile(
-          typeof ev.data === "string" ? ev.data : "外部邮件归档",
+          typeof ev.data === "string" ? ev.data : "message.eml",
         );
       }),
       Events.On("omnimail:profile:switched", () => h.onProfileSwitched()),

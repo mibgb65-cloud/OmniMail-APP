@@ -67,14 +67,16 @@ export function CustomSelectPopover({
         tabIndex: -1,
       }}
       inert={closing}
+      data-omnimail-popover="select"
       data-side={geo.side}
       data-closing={closing ? "true" : "false"}
-      className="custom-select-menu"
+      className="custom-select-menu custom-select-popover"
       style={{
         left: geo.left,
         top: geo.top,
         bottom: geo.bottom,
         width: geo.width,
+        maxHeight: geo.maxHeight,
       }}
     >
       {searchLabel && (

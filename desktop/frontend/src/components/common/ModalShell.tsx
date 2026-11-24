@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { useI18n } from "../../i18n";
 import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
 import { FadeScroll } from "./scroll-fade/FadeScroll";
@@ -26,6 +27,8 @@ export function ModalShell({
   headerRight,
   noPadding = false,
 }: ModalShellProps) {
+  const { t } = useI18n();
+
   return (
     <div
       className="modal-backdrop"
@@ -58,12 +61,12 @@ export function ModalShell({
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {headerRight}
-              <Tooltip label="关闭弹窗" shortcut="Esc">
+              <Tooltip label={t("common.closeModal")} shortcut="Esc">
                 <button
                   type="button"
                   className="icon-btn icon-btn-bordered"
                   onClick={onClose}
-                  aria-label="关闭弹窗"
+                  aria-label={t("common.closeModal")}
                 >
                   <Icon name="x" size={15} />
                 </button>
@@ -85,7 +88,11 @@ export function ModalShell({
         ) : (
           <FadeScroll
             className="modal-body"
-            label={heading ? `${heading}内容` : "弹窗内容"}
+            label={
+              heading
+                ? t("common.modalBodyNamed", { heading })
+                : t("common.modalBody")
+            }
           >
             {children}
           </FadeScroll>

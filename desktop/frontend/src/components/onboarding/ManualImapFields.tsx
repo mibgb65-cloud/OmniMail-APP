@@ -1,11 +1,6 @@
+import { useI18n } from "../../i18n";
 import { CustomSelect } from "../common/CustomSelect";
 import { PasswordInput } from "../common/PasswordInput";
-
-const SECURITY_OPTIONS = [
-  { value: "SSL/TLS", label: "SSL / TLS", hint: "推荐 · 993/465" },
-  { value: "STARTTLS", label: "STARTTLS", hint: "143/587" },
-  { value: "NONE", label: "无加密 (不推荐)", hint: "仅内网调试" },
-];
 
 export interface ManualImapFormState {
   displayName: string;
@@ -27,11 +22,28 @@ export function ManualImapFields({
   onChange: (patch: Partial<ManualImapFormState>) => void;
   onEmailBlur: (email: string) => void;
 }) {
+  const { t } = useI18n();
+  const securityOptions = [
+    {
+      value: "SSL/TLS",
+      label: "SSL / TLS",
+      hint: t("onboarding.secRecommended993"),
+    },
+    { value: "STARTTLS", label: "STARTTLS", hint: "143/587" },
+    {
+      value: "NONE",
+      label: t("onboarding.secNoneLabel"),
+      hint: t("onboarding.secNoneHint"),
+    },
+  ];
+
   return (
     <>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
-          <label className="text-xs text-muted">账户显示名称</label>
+          <label className="text-xs text-muted">
+            {t("onboarding.displayNameLabel")}
+          </label>
           <input
             className="input"
             style={{ marginTop: 4 }}
@@ -40,7 +52,9 @@ export function ManualImapFields({
           />
         </div>
         <div>
-          <label className="text-xs text-muted">邮箱地址</label>
+          <label className="text-xs text-muted">
+            {t("onboarding.emailAddressLabel")}
+          </label>
           <input
             type="email"
             className="input"
@@ -54,19 +68,23 @@ export function ManualImapFields({
       </div>
 
       <div>
-        <label className="text-xs text-muted">应用密码 / 授权码</label>
+        <label className="text-xs text-muted">
+          {t("onboarding.appPwdLabel")}
+        </label>
         <PasswordInput
           style={{ marginTop: 4 }}
           value={val.password}
           onChange={(password) => onChange({ password })}
-          placeholder="密码将经 DPAPI 加密写入本地凭据盒"
-          ariaLabel="应用密码或授权码"
+          placeholder={t("onboarding.appPwdPlaceholder")}
+          ariaLabel={t("onboarding.appPwdAria")}
         />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10 }}>
         <div>
-          <label className="text-xs text-muted">收件服务器（IMAP）</label>
+          <label className="text-xs text-muted">
+            {t("onboarding.imapServerLabel")}
+          </label>
           <input
             className="input"
             style={{ marginTop: 4 }}
@@ -76,7 +94,9 @@ export function ManualImapFields({
           />
         </div>
         <div>
-          <label className="text-xs text-muted">IMAP 端口</label>
+          <label className="text-xs text-muted">
+            {t("onboarding.imapPortLabel")}
+          </label>
           <input
             className="input"
             style={{ marginTop: 4 }}
@@ -94,7 +114,9 @@ export function ManualImapFields({
         }}
       >
         <div>
-          <label className="text-xs text-muted">发件服务器（SMTP）</label>
+          <label className="text-xs text-muted">
+            {t("onboarding.smtpServerLabel")}
+          </label>
           <input
             className="input"
             style={{ marginTop: 4 }}
@@ -104,7 +126,9 @@ export function ManualImapFields({
           />
         </div>
         <div>
-          <label className="text-xs text-muted">SMTP 端口</label>
+          <label className="text-xs text-muted">
+            {t("onboarding.smtpPortLabel")}
+          </label>
           <input
             className="input"
             style={{ marginTop: 4 }}
@@ -113,15 +137,17 @@ export function ManualImapFields({
           />
         </div>
         <div>
-          <label className="text-xs text-muted">加密方式</label>
+          <label className="text-xs text-muted">
+            {t("onboarding.encryptionModeLabel")}
+          </label>
           <CustomSelect
             mono
             fullWidth
             minMenuWidth={216}
             style={{ marginTop: 4 }}
             value={val.security}
-            options={SECURITY_OPTIONS}
-            ariaLabel="加密方式"
+            options={securityOptions}
+            ariaLabel={t("onboarding.encryptionModeLabel")}
             onChange={(next) =>
               onChange({
                 security: next,

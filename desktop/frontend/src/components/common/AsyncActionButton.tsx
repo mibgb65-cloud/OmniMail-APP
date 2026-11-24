@@ -5,6 +5,7 @@ import {
   useState,
   type CSSProperties,
 } from "react";
+import { useI18n } from "../../i18n";
 import {
   AsyncStateGlyph,
   waitSuccessHold,
@@ -37,9 +38,9 @@ export function AsyncActionButton({
   variant = "primary",
   size = "md",
   idleLabel,
-  loadingLabel = "处理中…",
-  successLabel = "操作成功",
-  errorLabel = "操作失败 · 重试",
+  loadingLabel,
+  successLabel,
+  errorLabel,
   idleIcon,
   disabled = false,
   successHoldMs = 900,
@@ -49,6 +50,10 @@ export function AsyncActionButton({
   style,
   ariaLabel,
 }: AsyncActionButtonProps) {
+  const { t } = useI18n();
+  const resolvedLoading = loadingLabel ?? t("common.asyncLoading");
+  const resolvedSuccess = successLabel ?? t("common.asyncSuccess");
+  const resolvedError = errorLabel ?? t("common.asyncError");
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const holdCbRef = useRef(onSuccessHoldEnd);
   const [lockedWidth, setLockedWidth] = useState<number | undefined>(undefined);
@@ -74,11 +79,11 @@ export function AsyncActionButton({
 
   const activeText =
     status === "loading"
-      ? loadingLabel
+      ? resolvedLoading
       : status === "success"
-        ? successLabel
+        ? resolvedSuccess
         : status === "error"
-          ? errorLabel
+          ? resolvedError
           : idleLabel;
 
   const isBlocked = status === "loading" || status === "success";

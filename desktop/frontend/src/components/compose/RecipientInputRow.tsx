@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useI18n } from "../../i18n";
 import { contactApi } from "../../services/backendClient";
 import { isWailsDesktop } from "../../state/storageHelpers";
 import type { ContactItem } from "../../types/workspace";
@@ -24,6 +25,7 @@ export function RecipientInputRow({
   onChange: (next: string[]) => void;
   trailing?: React.ReactNode;
 }) {
+  const { t } = useI18n();
   const [text, setText] = useState("");
   const [remoteSuggestions, setRemoteSuggestions] = useState<ContactItem[]>([]);
   const query = text.trim().toLowerCase();
@@ -74,14 +76,14 @@ export function RecipientInputRow({
           return (
             <Tooltip
               key={token}
-              label={invalid ? "邮箱格式可能不正确，发送前请检查" : token}
+              label={invalid ? t("compose.invalidEmailTip") : token}
               placement="top"
             >
               <span className={`recipient-chip${invalid ? " invalid" : ""}`}>
                 <span>{token}</span>
                 <button
                   type="button"
-                  aria-label={`移除 ${token}`}
+                  aria-label={t("compose.removeRecipientAria", { token })}
                   onClick={() => onChange(values.filter((v) => v !== token))}
                 >
                   <Icon name="x" size={12} />
@@ -105,7 +107,7 @@ export function RecipientInputRow({
           onBlur={() => {
             if (text.trim()) commitValue(text);
           }}
-          placeholder="输入姓名或邮箱，回车添加…"
+          placeholder={t("compose.recipientPlaceholder")}
           style={{
             flex: 1,
             minWidth: 140,

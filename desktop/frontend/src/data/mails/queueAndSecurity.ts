@@ -96,9 +96,9 @@ export const QUEUE_AND_SECURITY_MAILS: MailItem[] = [
       title: "高风险可疑发件人与钓鱼警示",
       detail:
         "发件人显示名称与真实域名 verify-mail-check.invalid 不一致，SPF 与 DKIM 均未通过；OmniMail 已禁用远程图片、可疑链接与 AI 自动读取。",
-      spf: "FAIL",
-      dkim: "NONE",
-      dmarc: "FAIL",
+      spf: "fail",
+      dkim: "none",
+      dmarc: "fail",
     },
     attachments: [],
     messages: [

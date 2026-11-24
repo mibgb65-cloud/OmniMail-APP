@@ -1,14 +1,15 @@
+import { useI18n, type TranslationKey } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import type { EmailAccount } from "../../types/account";
 import { Icon } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
 import { Tooltip } from "../common/Tooltip";
 
-const accountStatuses: Record<EmailAccount["status"], string> = {
-  connected: "已连接",
-  syncing: "同步中",
-  "auth-expired": "认证已过期",
-  error: "连接异常",
+const STATUS_KEYS: Record<EmailAccount["status"], TranslationKey> = {
+  connected: "sidebar.statusConnected",
+  syncing: "sidebar.statusSyncing",
+  "auth-expired": "sidebar.statusAuthExpired",
+  error: "sidebar.statusError",
 };
 
 export function SidebarAccountsAndLabels({
@@ -17,6 +18,7 @@ export function SidebarAccountsAndLabels({
   onNavigate?: () => void;
 }) {
   const { workspace, mailStore } = useApp();
+  const { t, localizeText } = useI18n();
   const { accounts } = workspace;
   const { labels, activeAccountId, activeLabelId } = mailStore;
 
@@ -24,7 +26,9 @@ export function SidebarAccountsAndLabels({
     <>
       <div className="nav-section">
         <div className="nav-section-head">
-          <span className="truncate">我的邮箱 ({accounts.length})</span>
+          <span className="truncate">
+            {t("sidebar.accounts")} ({accounts.length})
+          </span>
           <button
             type="button"
             className="nav-section-action"
@@ -33,7 +37,7 @@ export function SidebarAccountsAndLabels({
               workspace.setOverlay({ type: "add-account" });
             }}
           >
-            <Icon name="plus" size={12} /> 添加
+            <Icon name="plus" size={12} /> {t("sidebar.addAccountBtn")}
           </button>
         </div>
         {accounts.length === 0 ? (
@@ -51,21 +55,23 @@ export function SidebarAccountsAndLabels({
               </span>
               <div className="account-empty-meta">
                 <span className="account-empty-title truncate">
-                  暂未接入邮箱
+                  {t("sidebar.noAccountsTitle")}
                 </span>
                 <span className="account-empty-sub truncate">
-                  支持 Gmail / QQ / 163 / IMAP
+                  {t("sidebar.noAccountsSub")}
                 </span>
               </div>
             </div>
             <span className="account-empty-cta">
-              <Icon name="plus" size={12} /> 添加第一个邮箱
+              <Icon name="plus" size={12} /> {t("sidebar.addFirstAccount")}
             </span>
           </button>
         ) : (
           accounts.map((acc) => {
             const active = activeAccountId === acc.id;
-            const statusLabel = accountStatuses[acc.status] ?? "连接异常";
+            const statusLabel = t(
+              STATUS_KEYS[acc.status] ?? "sidebar.statusError",
+            );
             return (
               <Tooltip
                 key={acc.id}
@@ -77,7 +83,11 @@ export function SidebarAccountsAndLabels({
                   type="button"
                   className={`account-row ${active ? "active" : ""}`}
                   aria-pressed={active}
-                  aria-label={`${acc.name}，${statusLabel}，${acc.unreadCount} 封未读`}
+                  aria-label={t("sidebar.accountUnreadAria", {
+                    name: acc.name,
+                    status: statusLabel,
+                    count: acc.unreadCount,
+                  })}
                   onClick={() => {
                     mailStore.selectAccount(acc.id);
                     onNavigate?.();
@@ -89,7 +99,7 @@ export function SidebarAccountsAndLabels({
                       {acc.name}
                     </span>
                     <span className="account-row-sub truncate">
-                      {acc.providerLabel || acc.email}
+                      {localizeText(acc.providerLabel || acc.email)}
                     </span>
                   </div>
                   <div className="account-row-stats">
@@ -102,7 +112,9 @@ export function SidebarAccountsAndLabels({
                     </span>
                     <span
                       className="account-unread-count"
-                      aria-label={`${acc.unreadCount} 封未读`}
+                      aria-label={t("mailList.tabUnreadCount", {
+                        count: acc.unreadCount,
+                      })}
                     >
                       {acc.unreadCount}
                     </span>
@@ -118,8 +130,8 @@ export function SidebarAccountsAndLabels({
 
       <div className="nav-section">
         <div className="nav-section-head">
-          <span>标签</span>
-          <Tooltip label="新建自定义标签" placement="right">
+          <span>{t("sidebar.labels")}</span>
+          <Tooltip label={t("sidebar.manageLabelsTip")} placement="right">
             <button
               type="button"
               className="nav-section-action"
@@ -127,7 +139,7 @@ export function SidebarAccountsAndLabels({
                 onNavigate?.();
                 workspace.setOverlay({ type: "label-manage", mode: "create" });
               }}
-              aria-label="新建标签"
+              aria-label={t("sidebar.manageLabelsAria")}
             >
               <Icon name="plus" size={13} />
             </button>
@@ -145,7 +157,7 @@ export function SidebarAccountsAndLabels({
           >
             <span className="nav-item-main">
               <span className="label-dot" style={{ background: lbl.color }} />
-              <span className="nav-item-label">{lbl.name}</span>
+              <span className="nav-item-label">{localizeText(lbl.name)}</span>
             </span>
           </button>
         ))}
@@ -162,7 +174,9 @@ export function SidebarAccountsAndLabels({
         >
           <span className="nav-item-main">
             <Icon name="users" size={14} />
-            <span className="nav-item-label">通讯录与 VIP</span>
+            <span className="nav-item-label">
+              {t("sidebar.contactsAndVip")}
+            </span>
           </span>
           <span className="nav-count">{workspace.contacts.length}</span>
         </button>

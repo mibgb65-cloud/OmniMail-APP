@@ -94,6 +94,12 @@
     monospace;
 }
 
+:root[lang="en-US"] {
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC",
+    "Microsoft YaHei UI", sans-serif;
+}
+
 [data-theme="dark"] {
   color-scheme: dark;
 

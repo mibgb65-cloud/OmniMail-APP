@@ -1,3 +1,4 @@
+import { useI18n } from "../../../i18n";
 import { AsyncActionButton } from "../../common/AsyncActionButton";
 import { CustomSelect } from "../../common/CustomSelect";
 import { PasswordInput } from "../../common/PasswordInput";
@@ -11,14 +12,18 @@ function ListModelsButton({
   form: AiProviderForm;
   preset: boolean;
 }) {
+  const { t } = useI18n();
+  const label = preset
+    ? t("settings.aiFetchModelsPreset")
+    : t("settings.aiFetchModelsCustom");
   return (
     <AsyncActionButton
       variant={preset ? "primary" : "secondary"}
       status={form.busy === "fetch" ? "loading" : "idle"}
       disabled={Boolean(form.busy) || !form.canFetch}
       idleIcon="refresh"
-      idleLabel={preset ? "获取模型列表" : "尝试拉取模型"}
-      loadingLabel="获取中…"
+      idleLabel={label}
+      loadingLabel={t("settings.aiFetchingModels")}
       onClick={() => void form.run("fetch")}
     />
   );
@@ -31,45 +36,74 @@ export function AiProviderFields({
   provider: AiProviderOption;
   form: AiProviderForm;
 }) {
+  const { t } = useI18n();
   const preset = provider.mode === "preset";
   const locked = Boolean(form.busy);
   const modelOptions = (form.models ?? []).map((id) => ({
     value: id,
     label: id,
   }));
-  const modelPlaceholder = form.models ? "未发现可用模型" : "请先获取模型列表";
-  const modelLabel = preset ? "选择模型" : "模型名称";
+  const modelPlaceholder = form.models
+    ? t("settings.aiNoModelsFound")
+    : t("settings.aiFetchModelsFirst");
+  const modelLabel = preset
+    ? t("settings.aiChooseModel")
+    : t("settings.aiModelName");
+  const pickLabel = t("settings.aiPickFetchedModel");
+  const customPlaceholder =
+    provider.defaultBaseUrl || "https://your-gateway.example.com/v1";
+  const keyPlaceholder = preset
+    ? t("settings.aiApiKeyPresetPlaceholder", { provider: provider.label })
+    : t("settings.aiApiKeyCustomPlaceholder");
+  const presetDesc = form.models?.length
+    ? t("settings.aiModelsLoadedDesc", {
+        provider: provider.label,
+        count: form.models.length,
+      })
+    : form.models
+      ? t("settings.aiNoModelsReturnedDesc")
+      : form.apiKey.trim() || form.keyMask
+        ? t("settings.aiKeyReadyFetchDesc")
+        : t("settings.aiEnterKeyFirstDesc");
+  const presetOpts = modelOptions.length
+    ? modelOptions
+    : [{ value: form.model, label: form.model || modelPlaceholder }];
   return (
     <>
       {!preset && (
         <label className="ai-provider-field">
           <span>
-            自定义 Base URL{provider.mode === "custom" ? "（必填）" : ""}
+            {t("settings.aiCustomBaseUrlLabel")}
+            {provider.mode === "custom"
+              ? t("settings.aiCustomBaseUrlRequired")
+              : ""}
           </span>
           <input
             className="input ai-provider-mono"
             value={form.baseUrl}
             maxLength={2048}
             disabled={locked}
-            placeholder={
-              provider.defaultBaseUrl || "https://your-gateway.example.com/v1"
-            }
+            placeholder={customPlaceholder}
             onChange={(e) => form.changeBase(e.target.value)}
           />
           <span className="text-xs text-muted">
-            非本机地址使用密钥时须用 HTTPS。
+            {t("settings.aiHttpsRequiredHint")}
           </span>
         </label>
       )}
       <div className="ai-provider-field">
         <div className="ai-provider-key-label">
           <span>
-            API 密钥（{!preset && "选填 · "}DPAPI 加密存储 · 当前：
-            {form.keyMask || "未设置"}）
+            {t("settings.aiApiKeyLabel", {
+              optional: !preset ? t("settings.aiOptionalPrefix") : "",
+              mask: form.keyMask || t("settings.aiNotSet"),
+            })}
           </span>
           {preset && (
             <span className="text-xs text-muted ai-provider-mono">
-              官方端点：{provider.defaultBaseUrl.replace(/^https:\/\//, "")}
+              {t("settings.aiOfficialEndpointPrefix", {
+                host: provider.defaultBaseUrl.replace(/^https:\/\//, ""),
+              })}
             </span>
           )}
         </div>
@@ -79,12 +113,8 @@ export function AiProviderFields({
             onChange={form.changeKey}
             disabled={locked}
             maxLength={4096}
-            ariaLabel="AI API 密钥"
-            placeholder={
-              preset
-                ? `输入 ${provider.label} API Key（留空使用已保存密钥）`
-                : "选填 · 本地免密网关可留空"
-            }
+            ariaLabel={t("settings.aiApiKeyAria")}
+            placeholder={keyPlaceholder}
           />
           {preset && <ListModelsButton form={form} preset />}
         </div>
@@ -95,7 +125,7 @@ export function AiProviderFields({
             disabled={locked}
             onClick={() => void form.run("clear")}
           >
-            清除已保存密钥
+            {t("settings.aiClearSavedKey")}
           </button>
         )}
       </div>
@@ -103,15 +133,7 @@ export function AiProviderFields({
         <div className="ai-provider-row">
           <div className="ai-provider-caption">
             <strong>{modelLabel}</strong>
-            <span className="text-xs text-muted">
-              {form.models?.length
-                ? `已通过 ${provider.label} API Key 拉取 ${form.models.length} 个模型`
-                : form.models
-                  ? "官方接口没有返回可用模型，请检查账号权限"
-                  : form.apiKey.trim() || form.keyMask
-                    ? "密钥已就绪，点击「获取模型列表」后选择"
-                    : "请先填写 API 密钥并点击「获取模型列表」"}
-            </span>
+            <span className="text-xs text-muted">{presetDesc}</span>
           </div>
           <div className="ai-provider-choice">
             <CustomSelect
@@ -119,17 +141,8 @@ export function AiProviderFields({
               fullWidth
               mono
               ariaLabel={modelLabel}
-              searchLabel="搜索模型"
-              options={
-                modelOptions.length
-                  ? modelOptions
-                  : [
-                      {
-                        value: form.model,
-                        label: form.model || modelPlaceholder,
-                      },
-                    ]
-              }
+              searchLabel={t("settings.aiSearchModelLabel")}
+              options={presetOpts}
               disabled={locked || modelOptions.length === 0}
               onChange={form.changeModel}
             />
@@ -137,7 +150,9 @@ export function AiProviderFields({
         </div>
       ) : (
         <div className="ai-provider-field">
-          <label htmlFor="ai-manual-model">{modelLabel}（可手动填写）</label>
+          <label htmlFor="ai-manual-model">
+            {t("settings.aiManualModelLabel", { label: modelLabel })}
+          </label>
           <div className="ai-provider-input-row">
             <input
               id="ai-manual-model"
@@ -145,7 +160,7 @@ export function AiProviderFields({
               value={form.model}
               maxLength={256}
               disabled={locked}
-              placeholder="如 qwen2.5:7b"
+              placeholder={t("settings.aiManualModelPlaceholder")}
               onChange={(e) => form.changeModel(e.target.value)}
             />
             <ListModelsButton form={form} preset={false} />
@@ -156,22 +171,19 @@ export function AiProviderFields({
               fullWidth
               mono
               disabled={locked}
-              ariaLabel="从拉取结果填入模型"
-              searchLabel="搜索模型"
+              ariaLabel={pickLabel}
+              searchLabel={t("settings.aiSearchModelLabel")}
               options={
-                modelOptions.some((option) => option.value === form.model)
+                modelOptions.some((o) => o.value === form.model)
                   ? modelOptions
-                  : [
-                      { value: form.model, label: "从拉取结果填入模型" },
-                      ...modelOptions,
-                    ]
+                  : [{ value: form.model, label: pickLabel }, ...modelOptions]
               }
               onChange={form.changeModel}
             />
           )}
           {form.models?.length === 0 && (
             <span className="text-xs text-muted">
-              没有发现模型，可以手动填写。
+              {t("settings.aiNoModelsManualHint")}
             </span>
           )}
         </div>

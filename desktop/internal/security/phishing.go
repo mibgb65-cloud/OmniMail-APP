@@ -51,10 +51,10 @@ func EvaluatePhishing(in PhishingCheckInput) *SecurityWarningResult {
 		}
 	}
 
-	// 1. 认证失败判定
+	// 1. 认证失败判定（遵循 DMARC 对齐原则：dmarc=pass 且 dkim=pass 时不因转发导致的 spf fail/softfail 误报）
 	if dmarc == "fail" || (spf == "fail" && dkim == "fail") {
 		elevate("danger", "发件域身份认证未通过（DMARC/SPF+DKIM 校验失败），极可能为伪造发件人")
-	} else if spf == "softfail" || spf == "fail" || dkim == "fail" {
+	} else if dmarc != "pass" && (spf == "fail" || spf == "softfail" || dkim == "fail") {
 		elevate("warning", "部分发件服务器签名校验未通过，请谨慎核实对方身份")
 	}
 

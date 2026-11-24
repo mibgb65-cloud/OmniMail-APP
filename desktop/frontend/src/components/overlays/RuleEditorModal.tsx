@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import {
   parseBackendError,
   ruleApi,
@@ -9,34 +10,39 @@ import { Checkbox } from "../common/Checkbox";
 import { CustomSelect } from "../common/CustomSelect";
 import { ModalShell } from "../common/ModalShell";
 import { ProviderIcon } from "../common/ProviderIcon";
-import { RuleEditorFooter, RulePreviewCard } from "./RuleEditorFooter";
 import {
-  ACTION_TYPES,
+  RuleEditorFooter,
+  RuleFieldRow,
+  RulePreviewCard,
+} from "./RuleEditorFooter";
+import {
   buildInboxRuleDraft,
-  CONDITION_FIELDS,
+  getActionTypeOptions,
+  getConditionFieldOptions,
 } from "./ruleEditorMeta";
 
 export function RuleEditorModal({ ruleId }: { ruleId?: string }) {
   const { workspace, mailStore, toastStore } = useApp();
+  const { lang, t } = useI18n();
   const existing = workspace.rules.find((r) => r.id === ruleId);
 
   const [name, setName] = useState(existing?.name ?? "");
   const [accountScope, setAccountScope] = useState(
     existing?.accountScope ?? "all",
   );
-  const [conditionField, setConditionField] = useState(
+  const initCond =
     existing?.conditionField && existing.conditionField.length < 20
       ? existing.conditionField
-      : "sender",
-  );
+      : "sender";
+  const initAct =
+    existing?.actionType && existing.actionType.length < 20
+      ? existing.actionType
+      : "archive";
+  const [conditionField, setConditionField] = useState(initCond);
   const [conditionValue, setConditionValue] = useState(
     existing?.conditionValue ?? "",
   );
-  const [actionType, setActionType] = useState(
-    existing?.actionType && existing.actionType.length < 20
-      ? existing.actionType
-      : "archive",
-  );
+  const [actionType, setActionType] = useState(initAct);
   const [actionTarget, setActionTarget] = useState(
     existing?.actionTarget ?? mailStore.labels[0]?.id ?? "",
   );
@@ -47,22 +53,57 @@ export function RuleEditorModal({ ruleId }: { ruleId?: string }) {
 
   const closeToRules = () =>
     workspace.setOverlay({ type: "settings", tab: "rules" });
-
-  const currentDraft = () =>
-    buildInboxRuleDraft(existing, {
-      name,
-      accountScope,
-      conditionField,
-      conditionValue,
-      actionType,
-      actionTarget,
-      stopMatching,
+  const formVal = {
+    name,
+    accountScope,
+    conditionField,
+    conditionValue,
+    actionType,
+    actionTarget,
+    stopMatching,
+  };
+  const currentDraft = () => buildInboxRuleDraft(existing, formVal, lang);
+  const scopeOptions = [
+    {
+      value: "all",
+      label: t("overlays.ruleAllAccountsCountOpt", {
+        count: workspace.accounts.length,
+      }),
+    },
+    ...workspace.accounts.map((acc) => ({
+      value: acc.id,
+      label: acc.name,
+      sublabel: acc.email,
+      icon: <ProviderIcon provider={acc.provider} size={18} />,
+    })),
+  ];
+  const runPreview = () => {
+    void ruleApi
+      .previewRule(currentDraft())
+      .then(setPreview)
+      .catch((err) =>
+        toastStore.pushToast({
+          tone: "danger",
+          title: t("toasts.dryRunFailed"),
+          detail: parseBackendError(err).message,
+        }),
+      );
+  };
+  const runSave = () => {
+    workspace.upsertRule(currentDraft());
+    closeToRules();
+    toastStore.pushToast({
+      tone: "success",
+      title: t("toasts.savedInboxRule", { name: name.trim() }),
     });
+  };
 
   return (
     <ModalShell
-      heading={existing ? "编辑收件规则" : "新建收件规则"}
-      subtitle="按条件自动为新收邮件归档、贴标签或标记已读"
+      heading={
+        existing ? t("overlays.ruleEditHeading") : t("overlays.ruleNewHeading")
+      }
+      subtitle={t("overlays.ruleSubtitle")}
       maxWidth={560}
       onClose={closeToRules}
       footer={
@@ -74,120 +115,74 @@ export function RuleEditorModal({ ruleId }: { ruleId?: string }) {
             if (existing) workspace.deleteRule(existing.id);
             closeToRules();
           }}
-          onPreview={() => {
-            void ruleApi
-              .previewRule(currentDraft())
-              .then(setPreview)
-              .catch((err) =>
-                toastStore.pushToast({
-                  tone: "danger",
-                  title: "干跑预览失败",
-                  detail: parseBackendError(err).message,
-                }),
-              );
-          }}
+          onPreview={runPreview}
           onCancel={closeToRules}
-          onSave={() => {
-            workspace.upsertRule(currentDraft());
-            closeToRules();
-            toastStore.pushToast({
-              tone: "success",
-              title: `已保存收件规则「${name.trim()}」`,
-            });
-          }}
+          onSave={runSave}
         />
       }
     >
-      <div>
-        <label className="text-xs text-muted">规则名称 *</label>
+      <RuleFieldRow label={t("overlays.ruleNameLabel")}>
         <input
           className="input"
-          style={{ marginTop: 4 }}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="例如 报销单据自动归档"
+          placeholder={t("overlays.ruleNamePlaceholder")}
         />
-      </div>
-
-      <div>
-        <label className="text-xs text-muted">适用邮箱范围</label>
+      </RuleFieldRow>
+      <RuleFieldRow label={t("overlays.ruleScopeLabel")}>
         <CustomSelect
           fullWidth
-          style={{ marginTop: 4 }}
           value={accountScope}
-          ariaLabel="适用邮箱范围"
-          options={[
-            {
-              value: "all",
-              label: `全部已连接邮箱 (${workspace.accounts.length})`,
-            },
-            ...workspace.accounts.map((acc) => ({
-              value: acc.id,
-              label: acc.name,
-              sublabel: acc.email,
-              icon: <ProviderIcon provider={acc.provider} size={18} />,
-            })),
-          ]}
+          ariaLabel={t("overlays.ruleScopeLabel")}
+          options={scopeOptions}
           onChange={setAccountScope}
         />
-      </div>
-
+      </RuleFieldRow>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
-        <div>
-          <label className="text-xs text-muted">匹配字段</label>
+        <RuleFieldRow label={t("overlays.ruleCondFieldLabel")}>
           <CustomSelect
             fullWidth
-            style={{ marginTop: 4 }}
             value={conditionField}
-            options={CONDITION_FIELDS}
-            ariaLabel="规则匹配字段"
+            options={getConditionFieldOptions(lang)}
+            ariaLabel={t("overlays.ruleCondFieldAria")}
             onChange={setConditionField}
           />
-        </div>
-        <div>
-          <label className="text-xs text-muted">匹配关键词 / 后缀 *</label>
+        </RuleFieldRow>
+        <RuleFieldRow label={t("overlays.ruleCondValLabel")}>
           <input
             className="input"
-            style={{ marginTop: 4 }}
             value={conditionValue}
             onChange={(e) => setConditionValue(e.target.value)}
-            placeholder="例如 发票 或 pdf"
+            placeholder={t("overlays.ruleCondValPlaceholder")}
           />
-        </div>
+        </RuleFieldRow>
       </div>
-
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
-        <div>
-          <label className="text-xs text-muted">执行动作</label>
+        <RuleFieldRow label={t("overlays.ruleActionLabel")}>
           <CustomSelect
             fullWidth
-            style={{ marginTop: 4 }}
             value={actionType}
-            options={ACTION_TYPES}
-            ariaLabel="规则执行动作"
+            options={getActionTypeOptions(lang)}
+            ariaLabel={t("overlays.ruleActionAria")}
             onChange={setActionType}
           />
-        </div>
-        <div>
-          <label className="text-xs text-muted">目标标签 ID（选填）</label>
+        </RuleFieldRow>
+        <RuleFieldRow label={t("overlays.ruleTargetLabelId")}>
           <input
             className="input"
-            style={{ marginTop: 4 }}
             value={actionTarget}
             onChange={(e) => setActionTarget(e.target.value)}
-            placeholder="当动作选添加标签时填写标签 ID"
+            placeholder={t("overlays.ruleTargetLabelPlaceholder")}
           />
-        </div>
+        </RuleFieldRow>
       </div>
-
       <Checkbox
         checked={stopMatching}
         onChange={setStopMatching}
-        ariaLabel="命中本规则后停止匹配后续规则"
+        ariaLabel={t("overlays.ruleStopMatchingAria")}
       >
-        命中本规则后停止匹配后续低优先级规则
+        {t("overlays.ruleStopMatchingLabel")}
       </Checkbox>
-
       {preview && <RulePreviewCard preview={preview} />}
     </ModalShell>
   );

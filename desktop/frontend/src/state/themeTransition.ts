@@ -34,9 +34,8 @@ let activeSession: ActiveVtSession | null = null;
 let syncCleanupTimer = 0;
 
 export function getEffectiveTheme(): ThemeMode {
-  if (activeSession && !activeSession.settled) {
+  if (activeSession && !activeSession.settled)
     return activeSession.desiredTheme;
-  }
   return document.documentElement.getAttribute("data-theme") === "dark"
     ? "dark"
     : "light";

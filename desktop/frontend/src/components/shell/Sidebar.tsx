@@ -1,27 +1,33 @@
-import { FadeScroll } from "../common/scroll-fade/FadeScroll";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { ProfileSwitcherCard } from "./ProfileSwitcherCard";
 import { SidebarAccountsAndLabels } from "./SidebarAccountsAndLabels";
 import {
-  MAIN_FOLDERS,
   SidebarIconRail,
   countForFolder,
+  getMainFolders,
 } from "./SidebarIconRail";
 
 export function Sidebar() {
   const { viewport, mailStore, composeStore } = useApp();
+  const { t } = useI18n();
   const { mails, folderCounts, activeFolder, activeLabelId } = mailStore;
 
   if (viewport === "compact") {
     return <SidebarIconRail />;
   }
 
+  const folders = getMainFolders(t);
   const outboxCount = countForFolder(mails, "outbox", folderCounts);
   const scheduledCount = countForFolder(mails, "scheduled", folderCounts);
 
   return (
-    <aside className="panel-card sidebar-pane" aria-label="邮箱与文件夹导航">
+    <aside
+      className="panel-card sidebar-pane"
+      aria-label={t("sidebar.ariaNav")}
+    >
       <div className="sidebar-core-fixed">
         <button
           type="button"
@@ -29,11 +35,11 @@ export function Sidebar() {
           onClick={() => composeStore.openNewCompose()}
         >
           <Icon name="pen" size={15} />
-          <span>写邮件</span>
+          <span>{t("sidebar.compose")}</span>
         </button>
 
-        <nav className="nav-section" aria-label="邮件文件夹">
-          {MAIN_FOLDERS.map((item) => {
+        <nav className="nav-section" aria-label={t("sidebar.ariaFolders")}>
+          {folders.map((item) => {
             const isActive =
               !activeLabelId &&
               !mailStore.searchQuery &&
@@ -59,7 +65,7 @@ export function Sidebar() {
         <div className="sidebar-divider" />
       </div>
 
-      <FadeScroll className="sidebar-scroll" label="邮箱和标签">
+      <FadeScroll className="sidebar-scroll" label={t("sidebar.ariaScroll")}>
         {(outboxCount > 0 || scheduledCount > 0) && (
           <div className="nav-section">
             <button
@@ -69,7 +75,7 @@ export function Sidebar() {
             >
               <span className="nav-item-main">
                 <Icon name="upload" size={14} />
-                <span className="nav-item-label">待发送队列</span>
+                <span className="nav-item-label">{t("sidebar.outbox")}</span>
               </span>
               <span
                 className="pill pill-danger"
@@ -85,7 +91,7 @@ export function Sidebar() {
             >
               <span className="nav-item-main">
                 <Icon name="calendar" size={14} />
-                <span className="nav-item-label">定时邮件</span>
+                <span className="nav-item-label">{t("sidebar.scheduled")}</span>
               </span>
               <span className="nav-count">{scheduledCount}</span>
             </button>
@@ -103,7 +109,7 @@ export function Sidebar() {
             onClick={() => mailStore.selectFolder("spam")}
           >
             <Icon name="spam" size={13} />
-            <span className="truncate">垃圾邮件</span>
+            <span className="truncate">{t("sidebar.spam")}</span>
           </button>
           <button
             type="button"
@@ -111,7 +117,7 @@ export function Sidebar() {
             onClick={() => mailStore.selectFolder("trash")}
           >
             <Icon name="trash" size={13} />
-            <span className="truncate">回收站</span>
+            <span className="truncate">{t("sidebar.trash")}</span>
           </button>
         </div>
 

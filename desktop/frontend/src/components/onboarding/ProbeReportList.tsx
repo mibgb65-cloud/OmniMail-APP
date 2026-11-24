@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import type { ConnectionTestReport } from "../../services/backendClient";
 import type { ProviderId } from "../../types/account";
 import { HandshakeSteps } from "../common/HandshakeSteps";
@@ -14,14 +15,18 @@ export function ProviderStepsCard({
   provider: ProviderId;
   steps: string[];
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="settings-card">
       <div className="row" style={{ gap: 10 }}>
         <ProviderIcon provider={provider} size={28} />
         <div>
-          <div style={{ fontWeight: 700, fontSize: 14 }}>接入前准备步骤</div>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>
+            {t("onboarding.prepStepsTitle")}
+          </div>
           <div className="text-xs text-muted">
-            按以下步骤在服务商网页端获取专用凭据
+            {t("onboarding.prepStepsSub")}
           </div>
         </div>
       </div>

@@ -11,6 +11,7 @@ import type { FlowStartResult } from "../../bindings/omnimail/internal/oauth/mod
 import * as AccountService from "../../bindings/omnimail/services/accountservice";
 import { INITIAL_ACCOUNTS } from "../data/accounts";
 import { PROVIDER_CATALOG } from "../data/providers";
+import { getCurrentLanguage } from "../i18n";
 import { isWailsDesktop } from "../state/storageHelpers";
 import type {
   AuthMode,
@@ -121,22 +122,33 @@ export const accountApi = {
 
   async testConnection(req: ConnectRequest): Promise<ConnectionTestReport> {
     if (!isWailsDesktop()) {
-      const mk = (
-        stage: string,
-        label: string,
-        durationMs: number,
-        detail: string,
-      ) => ({ stage, label, ok: true, durationMs, detail });
+      const en = getCurrentLanguage() === "en-US";
+      const rows = en
+        ? ([
+            ["dns", "DNS & port check", 18, "Reachable"],
+            ["tls", "TLS handshake", 42, "TLS 1.3 verified"],
+            ["imap", "IMAP auth", 95, "6 folders found"],
+            ["smtp", "SMTP auth", 76, "Ready"],
+          ] as const)
+        : ([
+            ["dns", "DNS 与端口连通", 18, "端口可达"],
+            ["tls", "TLS 安全握手", 42, "TLS 1.3 验证通过"],
+            ["imap", "IMAP 认证", 95, "已识别 6 个文件夹"],
+            ["smtp", "SMTP 认证", 76, "发件通道正常"],
+          ] as const);
       return {
         ok: true,
-        summary: "预览模式：四阶段连接模拟通过",
+        summary: en
+          ? "Preview mode: 4-step handshake simulated"
+          : "预览模式：四阶段连接模拟通过",
         discoveredMailboxes: 6,
-        steps: [
-          mk("dns", "DNS 与端口连通", 18, "端口可达"),
-          mk("tls", "TLS 安全握手", 42, "TLS 1.3 验证通过"),
-          mk("imap", "IMAP 认证", 95, "已识别 6 个文件夹"),
-          mk("smtp", "SMTP 认证", 76, "发件通道正常"),
-        ],
+        steps: rows.map(([stage, label, durationMs, detail]) => ({
+          stage,
+          label,
+          ok: true,
+          durationMs,
+          detail,
+        })),
       };
     }
     return AccountService.TestConnection(req);

@@ -1,19 +1,21 @@
-import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useCallback, useState } from "react";
+import { useI18n, type TranslationKey } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { usePaletteCommands, type PaletteCategory } from "./usePaletteCommands";
 
-const CATEGORIES: Array<readonly [PaletteCategory, string]> = [
-  ["all", "全部"],
-  ["actions", "快捷操作"],
-  ["accounts", "切换邮箱"],
-  ["folders", "文件夹与视图"],
-  ["settings", "偏好设置"],
+const CATEGORIES: Array<readonly [PaletteCategory, TranslationKey]> = [
+  ["all", "overlays.paletteCatAll"],
+  ["actions", "overlays.paletteCatActions"],
+  ["accounts", "overlays.paletteCatAccounts"],
+  ["folders", "overlays.paletteCatFolders"],
+  ["settings", "overlays.paletteCatSettings"],
 ];
 
 export function CommandPaletteModal() {
   const { workspace } = useApp();
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<PaletteCategory>("all");
 
@@ -36,7 +38,7 @@ export function CommandPaletteModal() {
         style={{ maxWidth: "min(620px, calc(100vw - 48px))" }}
         role="dialog"
         aria-modal="true"
-        aria-label="全局命令面板"
+        aria-label={t("overlays.paletteAria")}
       >
         <div className="compose-row" style={{ padding: "12px 16px" }}>
           <Icon name="command" size={16} />
@@ -45,7 +47,7 @@ export function CommandPaletteModal() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="输入命令、切换邮箱、跳转文件夹或搜索设置…"
+            placeholder={t("overlays.palettePlaceholder")}
             style={{
               flex: 1,
               border: "none",
@@ -66,19 +68,22 @@ export function CommandPaletteModal() {
             gap: 6,
           }}
         >
-          {CATEGORIES.map(([id, label]) => (
+          {CATEGORIES.map(([id, labelKey]) => (
             <button
               key={id}
               type="button"
               className={`btn btn-sm ${category === id ? "btn-primary" : "btn-ghost"}`}
               onClick={() => setCategory(id)}
             >
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>
 
-        <FadeScroll className="modal-body command-results" label="指令搜索结果">
+        <FadeScroll
+          className="modal-body command-results"
+          label={t("overlays.paletteResultsLabel")}
+        >
           {commands.map((cmd) => (
             <button
               key={cmd.id}
@@ -101,7 +106,7 @@ export function CommandPaletteModal() {
               className="text-muted text-xs"
               style={{ padding: 24, textAlign: "center" }}
             >
-              未找到匹配指令，试试输入“写邮件”“深色”或“规则”
+              {t("overlays.paletteEmptyHint")}
             </div>
           )}
         </FadeScroll>

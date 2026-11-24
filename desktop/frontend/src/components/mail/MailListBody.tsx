@@ -1,10 +1,17 @@
-import { ArrowUpIcon } from "@heroicons/react/24/outline";
 import { useLayoutEffect, useRef, type MouseEvent } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import type { MailItem } from "../../types/mail";
+import {
+  ScrollToTopPill,
+  scrollViewportToTop,
+} from "../common/ScrollToTopPill";
 import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { MailCard } from "./MailCard";
 import { MailListEmptyState } from "./MailListExtras";
+
+const TODAY_TIME_RE =
+  /^(?:\d{1,2}:\d{2}|刚刚|今天|Just now|Today|\d+\s*(?:分钟前|m ago))$/i;
 
 export function MailListBody({
   compact,
@@ -17,6 +24,7 @@ export function MailListBody({
   onContextMenu: (mail: MailItem, event: MouseEvent<HTMLDivElement>) => void;
   readOnlyExit: boolean;
 }) {
+  const { t } = useI18n();
   const { workspace, mailStore, aiStore } = useApp();
   const { filteredMails, selectedMail, checkedIds, listScope, listScroll } =
     mailStore;
@@ -24,24 +32,15 @@ export function MailListBody({
   const viewport = useRef<HTMLDivElement>(null);
   const hasItems = filteredMails.length > 0;
   const visible = showPill && !readOnlyExit;
+  const topFromToday = TODAY_TIME_RE.test(
+    filteredMails[0]?.timeText.trim() ?? "",
+  );
 
   useLayoutEffect(() => {
     if (readOnlyExit) return;
     if (viewport.current) viewport.current.scrollTop = 0;
     onScrollPosition(0);
   }, [hasItems, listScope, onScrollPosition, readOnlyExit]);
-
-  const scrollToTop = () => {
-    const el = viewport.current;
-    if (!el) return;
-    el.focus({ preventScroll: true });
-    el.scrollTo({
-      top: 0,
-      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth",
-    });
-  };
 
   if (!hasItems)
     return <MailListEmptyState noAccounts={workspace.accounts.length === 0} />;
@@ -51,7 +50,7 @@ export function MailListBody({
       <FadeScroll
         className="mail-list-scroll"
         data-return-pill={visible}
-        label="邮件列表"
+        label={t("mailList.ariaPane")}
         viewportProps={{
           ref: viewport,
           onScroll: (event) => {
@@ -68,7 +67,13 @@ export function MailListBody({
       >
         {!compact && (
           <div className="list-group-head">
-            <span className="truncate">最新优先</span>
+            <span className="truncate">
+              {t(
+                topFromToday
+                  ? "mailList.todayNewestFirst"
+                  : "mailList.newestFirst",
+              )}
+            </span>
             <span className="list-group-range">
               1–{filteredMails.length} / {displayTotal}
             </span>
@@ -89,28 +94,22 @@ export function MailListBody({
           />
         ))}
       </FadeScroll>
-      <button
-        type="button"
+      <ScrollToTopPill
         className="mail-list-return-top"
-        data-visible={visible}
-        data-new-mail={newCount > 0}
-        aria-hidden={!visible}
-        disabled={!visible}
-        tabIndex={visible ? 0 : -1}
-        aria-label={
-          newCount > 0 ? `回到顶部查看 ${newCount} 封新邮件` : "回到顶部"
+        visible={visible}
+        accent={newCount > 0}
+        label={
+          newCount > 0
+            ? t("mailList.newEmailsPill", { count: newCount })
+            : t("common.backToTop")
         }
-        onClick={scrollToTop}
-      >
-        <ArrowUpIcon
-          width={13}
-          height={13}
-          strokeWidth={1.8}
-          aria-hidden="true"
-          focusable="false"
-        />
-        {newCount > 0 ? `${newCount} 封新邮件` : "回到顶部"}
-      </button>
+        ariaLabel={
+          newCount > 0
+            ? t("mailList.newEmailsAria", { count: newCount })
+            : t("common.backToTop")
+        }
+        onClick={() => scrollViewportToTop(viewport.current)}
+      />
     </div>
   );
 }

@@ -16,12 +16,32 @@
   overflow-wrap: anywhere;
 }
 
-.translation-settings .settings-row > select {
-  width: min(100%, 280px);
+.translation-row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.translation-settings label.settings-row {
-  flex-wrap: wrap;
+.translation-row-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-ink);
+}
+
+.translation-settings .settings-row > .custom-select-trigger {
+  width: min(100%, 248px);
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .translation-settings .settings-row {
+    flex-wrap: wrap;
+  }
+
+  .translation-settings .settings-row > .custom-select-trigger {
+    width: 100%;
+  }
 }
 
 .translation-timeout-input {

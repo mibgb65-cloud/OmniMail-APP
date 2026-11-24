@@ -30,3 +30,31 @@
 .ai-draft-text {
   white-space: pre-wrap;
 }
+
+.ai-summary-deadline {
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 8px;
+  line-height: 1.45;
+  overflow: hidden;
+}
+
+.ai-deadline-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--text-body);
+  overflow-wrap: anywhere;
+}
+
+.ai-deadline-time {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--brand-accent);
+  overflow-wrap: anywhere;
+}
+
+.ai-deadline-time[data-urgent="true"] {
+  color: var(--status-danger);
+}

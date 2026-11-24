@@ -1,6 +1,8 @@
 import { useMemo } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import type { IconName } from "../common/Icon";
+import { filterPaletteCommands } from "./paletteCommandFilter";
 
 export type PaletteCategory =
   "all" | "actions" | "accounts" | "folders" | "settings";
@@ -22,166 +24,137 @@ export function usePaletteCommands(
 ): PaletteCommand[] {
   const { workspace, mailStore, composeStore, aiStore, triggerSyncAll } =
     useApp();
+  const { t, localizeText } = useI18n();
 
   return useMemo<PaletteCommand[]>(() => {
-    const q = query.trim();
+    const activeName = workspace.activeProfile?.name
+      ? localizeText(workspace.activeProfile.name)
+      : t("common.personalWorkspace");
+    const isLight = workspace.settings.theme === "light";
+    const closeRun = (fn: () => void) => () => {
+      fn();
+      close();
+    };
     const list: PaletteCommand[] = [
       {
         id: "cmd-compose",
         cat: "actions",
         icon: "pen",
-        title: "写新邮件",
-        hint: "使用默认发件账户新建邮件",
+        title: t("overlays.cmdComposeTitle"),
+        hint: t("overlays.cmdComposeHint"),
         shortcut: "Ctrl N",
-        run: () => {
-          close();
-          composeStore.openNewCompose();
-        },
+        run: closeRun(() => composeStore.openNewCompose()),
       },
       {
         id: "cmd-sync",
         cat: "actions",
         icon: "refresh",
-        title: "立即同步全部邮箱",
-        hint: "触发后台 SyncWorker 增量同步全部账户",
+        title: t("overlays.cmdSyncTitle"),
+        hint: t("overlays.cmdSyncHint"),
         shortcut: "Ctrl R",
-        run: () => {
-          close();
-          triggerSyncAll();
-        },
+        run: closeRun(triggerSyncAll),
       },
       {
         id: "cmd-profiles",
         cat: "accounts",
         icon: "lock",
-        title: "切换或管理本地工作空间",
-        hint: `当前活跃：${workspace.activeProfile?.name || "个人工作空间"}`,
+        title: t("overlays.cmdProfilesTitle"),
+        hint: t("overlays.cmdProfilesHint", { name: activeName }),
         run: () =>
           workspace.setOverlay({ type: "profile-manage", mode: "switch" }),
       },
       {
         id: "cmd-theme",
         cat: "settings",
-        icon: workspace.settings.theme === "light" ? "moon" : "sun",
-        title:
-          workspace.settings.theme === "light"
-            ? "切换为深色模式"
-            : "切换为亮色模式",
-        hint: "立即切换深浅色工作台",
+        icon: isLight ? "moon" : "sun",
+        title: isLight
+          ? t("overlays.cmdThemeDarkTitle")
+          : t("overlays.cmdThemeLightTitle"),
+        hint: t("overlays.cmdThemeHint"),
         shortcut: "Ctrl Shift T",
-        run: () => {
-          workspace.toggleTheme();
-          close();
-        },
+        run: closeRun(workspace.toggleTheme),
       },
       {
         id: "cmd-ai",
         cat: "actions",
         icon: "sparkle",
         title: aiStore.aiOpen
-          ? "收起右侧 Omni AI 面板"
-          : "展开右侧 Omni AI 面板",
-        hint: "切换阅读区旁的 AI 浮层卡片",
+          ? t("overlays.cmdAiHideTitle")
+          : t("overlays.cmdAiShowTitle"),
+        hint: t("overlays.cmdAiHint"),
         shortcut: "Alt A",
-        run: () => {
-          aiStore.setAiOpen((v) => !v);
-          close();
-        },
+        run: closeRun(() => aiStore.setAiOpen((v) => !v)),
       },
       {
         id: "cmd-adv-search",
         cat: "actions",
         icon: "filter",
-        title: "打开高级全文搜索",
-        hint: "走本地 SQLite FTS5 trigram 引擎组合过滤",
+        title: t("overlays.cmdAdvSearchTitle"),
+        hint: t("overlays.cmdAdvSearchHint"),
         run: () => workspace.setOverlay({ type: "advanced-search" }),
       },
       {
         id: "cmd-contacts",
         cat: "folders",
         icon: "users",
-        title: "打开联系人与通讯录",
-        hint: "管理 VIP 发件人、重复合并、vCard 与黑名单",
-        run: () => {
-          workspace.setScreen("contacts");
-          close();
-        },
+        title: t("overlays.cmdContactsTitle"),
+        hint: t("overlays.cmdContactsHint"),
+        run: closeRun(() => workspace.setScreen("contacts")),
       },
       {
         id: "cmd-add-acc",
         cat: "accounts",
         icon: "plus",
-        title: "添加新邮箱账户",
-        hint: "接入 Gmail、QQ、网易 163/126、Naver 或手动 IMAP",
+        title: t("overlays.cmdAddAccTitle"),
+        hint: t("overlays.cmdAddAccHint"),
         run: () => workspace.setOverlay({ type: "add-account" }),
       },
       {
         id: "cmd-inbox",
         cat: "folders",
         icon: "inbox",
-        title: "切换至统一收件箱",
-        hint: "查看全部邮箱收件箱",
+        title: t("overlays.cmdInboxTitle"),
+        hint: t("overlays.cmdInboxHint"),
         shortcut: "G I",
-        run: () => {
+        run: closeRun(() => {
           workspace.setScreen("mail");
           mailStore.selectFolder("inbox");
           mailStore.setAccountFilter(null);
-          close();
-        },
+        }),
       },
       {
         id: "cmd-settings-rules",
         cat: "settings",
         icon: "rule",
-        title: "管理收件规则与自动分拣",
-        hint: "打开设置 → 收件规则",
+        title: t("overlays.cmdRulesTitle"),
+        hint: t("overlays.cmdRulesHint"),
         run: () => workspace.setOverlay({ type: "settings", tab: "rules" }),
       },
       {
         id: "cmd-settings-storage",
         cat: "settings",
         icon: "database",
-        title: "存储空间与备份迁移",
-        hint: "查看磁盘占用明细、清理附件缓存或导出备份",
+        title: t("overlays.cmdStorageTitle"),
+        hint: t("overlays.cmdStorageHint"),
         run: () => workspace.setOverlay({ type: "settings", tab: "storage" }),
       },
       ...workspace.accounts.map<PaletteCommand>((acc) => ({
         id: `acc-${acc.id}`,
         cat: "accounts",
         icon: "mail",
-        title: `仅看：${acc.name}`,
+        title: t("overlays.cmdAccountOnlyTitle", { name: acc.name }),
         hint: acc.email,
-        run: () => {
+        run: closeRun(() => {
           workspace.setScreen("mail");
           mailStore.setAccountFilter(acc.id);
-          close();
-        },
+        }),
       })),
     ];
-
-    const lower = q.toLowerCase();
-    const matched = list.filter(
-      (c) =>
-        (category === "all" || c.cat === category) &&
-        (!lower ||
-          c.title.toLowerCase().includes(lower) ||
-          c.hint.toLowerCase().includes(lower)),
-    );
-    if (q) {
-      matched.unshift({
-        id: `fts-${q}`,
-        cat: "actions",
-        icon: "search",
-        title: `在全部邮件中全文检索：“${q}”`,
-        hint: "调用 SQLite FTS5 trigram 毫秒级本地搜索",
-        run: () => {
-          workspace.setScreen("mail");
-          mailStore.setSearchQuery(q);
-          close();
-        },
-      });
-    }
-    return matched;
+    return filterPaletteCommands(list, query, category, t, (q: string) => {
+      workspace.setScreen("mail");
+      mailStore.setSearchQuery(q);
+      close();
+    });
   }, [
     workspace,
     mailStore,
@@ -191,5 +164,7 @@ export function usePaletteCommands(
     query,
     category,
     close,
+    t,
+    localizeText,
   ]);
 }

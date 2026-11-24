@@ -1,8 +1,9 @@
 import { Events } from "@wailsio/runtime";
 import { useEffect, useState } from "react";
+import { useI18n } from "../../i18n";
 import { mailApi, parseBackendError } from "../../services/backendClient";
-import { isWailsDesktop } from "../../state/storageHelpers";
 import { useApp } from "../../state/AppContext";
+import { isWailsDesktop } from "../../state/storageHelpers";
 import { ModalShell } from "../common/ModalShell";
 
 export function AttachmentTransferModal({
@@ -11,6 +12,7 @@ export function AttachmentTransferModal({
   mode: "transfer" | "oversized";
 }) {
   const { workspace, mailStore, toastStore } = useApp();
+  const { t } = useI18n();
   const list = mailStore.selectedMail?.attachments ?? [];
   const [progMap, setProgMap] = useState<Record<string, number>>({});
 
@@ -28,27 +30,31 @@ export function AttachmentTransferModal({
   return (
     <ModalShell
       heading={
-        mode === "oversized" ? "超大附件按需下载确认" : "附件传输与本地缓存状态"
+        mode === "oversized"
+          ? t("overlays.attOversizedHeading")
+          : t("overlays.attTransferHeading")
       }
-      subtitle="采用 SHA-256 内容寻址去重存储，超出配额自动按 LRU 释放"
+      subtitle={t("overlays.attTransferSubtitle")}
       maxWidth={540}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
         <>
-          <span className="text-xs text-muted">常规发件上限提示：25 MB</span>
+          <span className="text-xs text-muted">
+            {t("overlays.attMaxSendLimitHint")}
+          </span>
           <button
             type="button"
             className="btn btn-primary"
             onClick={() => workspace.setOverlay({ type: "none" })}
           >
-            完成
+            {t("common.done")}
           </button>
         </>
       }
     >
       {list.length === 0 && (
         <div className="settings-card text-xs text-muted">
-          当前选中邮件没有外部附件传输任务。
+          {t("overlays.attNoTransferTasks")}
         </div>
       )}
       {list.map((att) => {
@@ -60,7 +66,9 @@ export function AttachmentTransferModal({
               <span
                 className={`pill ${att.status === "ready" ? "pill-success" : "pill-warning"}`}
               >
-                {att.status === "ready" ? "已就绪" : `${pct}%`}
+                {att.status === "ready"
+                  ? t("overlays.attReadyBadge")
+                  : `${pct}%`}
               </span>
             </div>
             <div className="storage-bar">
@@ -84,13 +92,13 @@ export function AttachmentTransferModal({
                       .catch((e) =>
                         toastStore.pushToast({
                           tone: "danger",
-                          title: "下载失败",
+                          title: t("toasts.downloadFailed"),
                           detail: parseBackendError(e).message,
                         }),
                       )
                   }
                 >
-                  确认下载
+                  {t("overlays.attConfirmDownloadBtn")}
                 </button>
               )}
             </div>

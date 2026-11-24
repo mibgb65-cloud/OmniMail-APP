@@ -1,5 +1,5 @@
-import { FadeTextarea } from "../common/scroll-fade/FadeTextarea";
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import { accountApi, parseBackendError } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import {
@@ -8,6 +8,7 @@ import {
 } from "../common/AsyncActionButton";
 import { Icon } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
+import { FadeTextarea } from "../common/scroll-fade/FadeTextarea";
 
 export function AccountDetailView({
   accountId,
@@ -17,12 +18,18 @@ export function AccountDetailView({
   onBack: () => void;
 }) {
   const { workspace, toastStore } = useApp();
+  const { t } = useI18n();
   const detail = workspace.accounts.find((a) => a.id === accountId);
   const [senderName, setSenderName] = useState(detail?.senderName ?? "");
   const [replyTo, setReplyTo] = useState(detail?.replyTo ?? "");
   const [signature, setSignature] = useState(detail?.signature ?? "");
   const [saveStatus, setSaveStatus] = useState<AsyncActionStatus>("idle");
   if (!detail) return null;
+  const pushErr = (err: unknown) =>
+    toastStore.pushToast({
+      tone: "danger",
+      title: parseBackendError(err).message,
+    });
   const saveMeta = async () => {
     setSaveStatus("loading");
     try {
@@ -36,14 +43,11 @@ export function AccountDetailView({
       setSaveStatus("success");
       toastStore.pushToast({
         tone: "success",
-        title: "已保存发件身份与签名配置",
+        title: t("toasts.savedIdentitySignature"),
       });
     } catch (err) {
       setSaveStatus("error");
-      toastStore.pushToast({
-        tone: "danger",
-        title: parseBackendError(err).message,
-      });
+      pushErr(err);
     }
   };
   const makeDefault = async () => {
@@ -51,27 +55,39 @@ export function AccountDetailView({
       await accountApi.setDefaultAccount(detail.id);
       workspace.updateSettings({ defaultSendAccountId: detail.id });
       await workspace.refreshProfilesAndAccounts();
-      toastStore.pushToast({ tone: "success", title: "已设为默认发件邮箱" });
-    } catch (err) {
       toastStore.pushToast({
-        tone: "danger",
-        title: parseBackendError(err).message,
+        tone: "success",
+        title: t("toasts.setDefaultSenderDone"),
       });
+    } catch (err) {
+      pushErr(err);
     }
   };
   const statusMeta =
     detail.status === "connected"
-      ? { tone: "pill-success", text: "连接正常" }
+      ? { tone: "pill-success", text: t("settings.statusHealthy") }
       : detail.status === "auth-expired"
-        ? { tone: "pill-danger", text: "授权已失效" }
-        : { tone: "pill-warning", text: "同步中" };
+        ? { tone: "pill-danger", text: t("settings.statusExpired") }
+        : { tone: "pill-warning", text: t("settings.statusSyncing") };
   const openOverlay = workspace.setOverlay;
+  const openServer = () =>
+    openOverlay({ type: "account-server", accountId: detail.id });
+  const openDiag = () =>
+    openOverlay({ type: "diagnostics", accountId: detail.id });
+  const onRemove = () =>
+    openOverlay({
+      type: "danger-confirm",
+      kind: "remove-account",
+      targetId: detail.id,
+      targetLabel: detail.name,
+    });
   const isDefault = workspace.settings.defaultSendAccountId === detail.id;
+  const protoLine = `IMAP: ${detail.imap.host}:${detail.imap.port} · SMTP: ${detail.smtp.host}:${detail.smtp.port}`;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div className="row-between">
         <button type="button" className="btn btn-ghost btn-sm" onClick={onBack}>
-          <Icon name="arrowLeft" size={14} /> 返回邮箱账户列表
+          <Icon name="arrowLeft" size={14} /> {t("settings.backToAccountsList")}
         </button>
         {!isDefault && (
           <button
@@ -79,7 +95,7 @@ export function AccountDetailView({
             className="btn btn-secondary btn-sm"
             onClick={() => void makeDefault()}
           >
-            设为默认发件邮箱
+            {t("settings.setAsDefaultSender")}
           </button>
         )}
       </div>
@@ -98,17 +114,17 @@ export function AccountDetailView({
         <div
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
         >
-          <div>
-            <label className="text-xs text-muted">发件显示名称</label>
+          <label className="text-xs text-muted">
+            {t("settings.senderDisplayName")}
             <input
               className="input"
               style={{ marginTop: 4 }}
               value={senderName}
               onChange={(e) => setSenderName(e.target.value)}
             />
-          </div>
-          <div>
-            <label className="text-xs text-muted">默认回复地址</label>
+          </label>
+          <label className="text-xs text-muted">
+            {t("settings.defaultReplyTo")}
             <input
               className="input"
               style={{ marginTop: 4 }}
@@ -116,12 +132,10 @@ export function AccountDetailView({
               onChange={(e) => setReplyTo(e.target.value)}
               placeholder={detail.email}
             />
-          </div>
-        </div>
-        <div>
-          <label className="text-xs text-muted" htmlFor="account-signature">
-            邮箱签名模板
           </label>
+        </div>
+        <label className="text-xs text-muted" htmlFor="account-signature">
+          {t("settings.signatureTemplate")}
           <FadeTextarea
             id="account-signature"
             className="textarea"
@@ -130,38 +144,31 @@ export function AccountDetailView({
             value={signature}
             onChange={(e) => setSignature(e.target.value)}
           />
-        </div>
+        </label>
         <div className="row-between">
-          <div className="text-xs text-muted">
-            IMAP: {detail.imap.host}:{detail.imap.port} · SMTP:{" "}
-            {detail.smtp.host}:{detail.smtp.port}
-          </div>
+          <div className="text-xs text-muted">{protoLine}</div>
           <div className="row" style={{ gap: 8 }}>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
-              onClick={() =>
-                openOverlay({ type: "account-server", accountId: detail.id })
-              }
+              onClick={openServer}
             >
-              编辑服务器参数
+              {t("settings.editServerParams")}
             </button>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
-              onClick={() =>
-                openOverlay({ type: "diagnostics", accountId: detail.id })
-              }
+              onClick={openDiag}
             >
-              连接诊断
+              {t("settings.connDiagnostics")}
             </button>
             <AsyncActionButton
               size="sm"
               status={saveStatus}
-              idleLabel="保存身份与签名"
-              loadingLabel="正在保存…"
-              successLabel="身份与签名已保存"
-              errorLabel="保存失败 · 重试"
+              idleLabel={t("settings.saveIdentityIdle")}
+              loadingLabel={t("settings.saveIdentityLoading")}
+              successLabel={t("settings.saveIdentitySuccess")}
+              errorLabel={t("settings.saveIdentityError")}
               onSuccessHoldEnd={() => setSaveStatus("idle")}
               onClick={() => void saveMeta()}
             />
@@ -173,25 +180,18 @@ export function AccountDetailView({
         <div className="row-between">
           <div>
             <strong style={{ fontSize: 13, color: "var(--status-danger)" }}>
-              移除此邮箱账户
+              {t("settings.removeAccountTitle")}
             </strong>
             <div className="text-xs text-muted">
-              仅清理本地缓存、索引与 DPAPI 凭据盒令牌，不删除远程邮局邮件
+              {t("settings.removeAccountDesc")}
             </div>
           </div>
           <button
             type="button"
             className="btn btn-danger btn-sm"
-            onClick={() =>
-              openOverlay({
-                type: "danger-confirm",
-                kind: "remove-account",
-                targetId: detail.id,
-                targetLabel: detail.name,
-              })
-            }
+            onClick={onRemove}
           >
-            移除账户
+            {t("settings.removeAccountBtn")}
           </button>
         </div>
       </div>

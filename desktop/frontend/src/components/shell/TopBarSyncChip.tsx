@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  isSyncLabelActive,
+  isSyncLabelBlocked,
+  isSyncLabelHealthy,
+  useI18n,
+} from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { AsyncStateGlyph } from "../common/AsyncStateGlyph";
 import { Tooltip } from "../common/Tooltip";
 
 export function TopBarSyncChip() {
   const { viewport, workspace, triggerSyncAll } = useApp();
+  const { t, localizeText } = useI18n();
   const { bannerMode, syncLabel } = workspace;
 
   const hasNoAccount = workspace.accounts.length === 0;
@@ -12,7 +19,7 @@ export function TopBarSyncChip() {
   const isAuthExpired = bannerMode === "auth-expired";
   const isCompact = viewport === "compact";
   const isLaptop = viewport === "laptop";
-  const isSyncing = !hasNoAccount && syncLabel.startsWith("正在同步");
+  const isSyncing = !hasNoAccount && isSyncLabelActive(syncLabel);
 
   const wasSyncingRef = useRef(false);
   const [showJustDone, setShowJustDone] = useState(false);
@@ -25,7 +32,7 @@ export function TopBarSyncChip() {
     }
     if (wasSyncingRef.current) {
       wasSyncingRef.current = false;
-      if (syncLabel === "所有邮箱已同步") {
+      if (isSyncLabelHealthy(syncLabel)) {
         const enterTimer = window.setTimeout(() => setShowJustDone(true), 0);
         const holdTimer = window.setTimeout(() => setShowJustDone(false), 1050);
         return () => {
@@ -40,34 +47,38 @@ export function TopBarSyncChip() {
   const syncPhase = isSyncing ? "syncing" : showJustDone ? "done" : "idle";
 
   const text = hasNoAccount
-    ? "暂未接入邮箱"
+    ? t("topbar.noAccount")
     : syncPhase === "syncing"
       ? isCompact
-        ? "同步中…"
-        : syncLabel
+        ? t("topbar.syncingShort")
+        : localizeText(syncLabel)
       : syncPhase === "done"
         ? isCompact
-          ? "已同步"
-          : "全部已同步"
+          ? t("topbar.syncedShort")
+          : t("topbar.allSyncedDone")
         : isOffline
           ? isCompact
-            ? "离线"
-            : "离线 · 本地缓存"
+            ? t("topbar.offlineShort")
+            : t("topbar.offlineCached")
           : isAuthExpired
             ? isCompact
-              ? "需重授权"
-              : "1 个邮箱需重新授权"
+              ? t("topbar.reauthShort")
+              : t("topbar.reauthOne")
             : isCompact
-              ? syncLabel === "所有邮箱已同步"
-                ? "已同步"
-                : "同步中"
-              : isLaptop && syncLabel === "所有邮箱已同步"
-                ? `${workspace.accounts.length} 邮箱已同步`
-                : syncLabel;
+              ? isSyncLabelHealthy(syncLabel)
+                ? t("topbar.syncedShort")
+                : isSyncLabelBlocked(syncLabel)
+                  ? t("topbar.syncPartialFailed")
+                  : t("topbar.syncingCompact")
+              : isLaptop && isSyncLabelHealthy(syncLabel)
+                ? t("topbar.accountsSyncedCount", {
+                    count: workspace.accounts.length,
+                  })
+                : localizeText(syncLabel);
 
   const dotTone = hasNoAccount
     ? "muted"
-    : isAuthExpired || syncLabel === "同步部分受阻"
+    : isAuthExpired || isSyncLabelBlocked(syncLabel)
       ? "danger"
       : isOffline
         ? "warning"
@@ -75,7 +86,9 @@ export function TopBarSyncChip() {
 
   return (
     <Tooltip
-      label={hasNoAccount ? "点击添加第一个邮箱" : "立即同步全部邮箱"}
+      label={
+        hasNoAccount ? t("topbar.addFirstAccountTip") : t("topbar.syncAllTip")
+      }
       shortcut={hasNoAccount ? undefined : "Ctrl+R"}
     >
       <button

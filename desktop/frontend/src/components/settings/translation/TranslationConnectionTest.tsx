@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useI18n } from "../../../i18n";
 import { aiApi, parseBackendError } from "../../../services/backendClient";
 import { AsyncActionButton } from "../../common/AsyncActionButton";
 
 export function TranslationConnectionTest({ disabled }: { disabled: boolean }) {
+  const { t } = useI18n();
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string }>();
   const test = async () => {
@@ -13,7 +15,7 @@ export function TranslationConnectionTest({ disabled }: { disabled: boolean }) {
       setResult({
         ok: report.ok,
         message: report.ok
-          ? `接口连通正常 · ${report.latencyMs} ms`
+          ? t("settings.transConnOkLatency", { ms: report.latencyMs })
           : report.message,
       });
     } catch (err) {
@@ -28,8 +30,8 @@ export function TranslationConnectionTest({ disabled }: { disabled: boolean }) {
         status={testing ? "loading" : "idle"}
         variant="secondary"
         size="sm"
-        idleLabel="测试连通性"
-        loadingLabel="正在测试…"
+        idleLabel={t("settings.transTestConnection")}
+        loadingLabel={t("settings.transTestingConnection")}
         disabled={disabled}
         onClick={() => void test()}
       />

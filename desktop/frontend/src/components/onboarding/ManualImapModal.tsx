@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import {
   accountApi,
   parseBackendError,
@@ -17,8 +18,9 @@ import { ManualImapFields, type ManualImapFormState } from "./ManualImapFields";
 
 export function ManualImapModal() {
   const { workspace, toastStore } = useApp();
-  const [form, setForm] = useState<ManualImapFormState>({
-    displayName: "企业邮箱 · IMAP",
+  const { isEn, t } = useI18n();
+  const [form, setForm] = useState<ManualImapFormState>(() => ({
+    displayName: t("onboarding.manualDefaultName"),
     email: "",
     password: "",
     imapHost: "",
@@ -26,11 +28,11 @@ export function ManualImapModal() {
     smtpHost: "",
     smtpPort: "465",
     security: "SSL/TLS",
-  });
+  }));
   const [pinCert, setPinCert] = useState(false);
   const [detectedCert, setDetectedCert] = useState("");
   const [status, setStatus] = useState<AsyncActionStatus>("idle");
-  const [stepLabel, setStepLabel] = useState("正在执行四步握手…");
+  const [stepLabel, setStepLabel] = useState("");
   const [report, setReport] = useState<ConnectionTestReport | null>(null);
 
   const autoPrefill = async (val: string) => {
@@ -51,6 +53,7 @@ export function ManualImapModal() {
 
   const handleSave = async () => {
     setStatus("loading");
+    setStepLabel("");
     setReport(null);
     const req = {
       name: form.displayName.trim() || form.email.trim(),
@@ -87,13 +90,15 @@ export function ManualImapModal() {
       workspace.setOverlay({
         type: "sync-progress",
         accountId: created.id,
-        accountName: `${created.name}（${created.email}）`,
+        accountName: isEn
+          ? `${created.name} (${created.email})`
+          : `${created.name}（${created.email}）`,
       });
     } catch (err) {
       setStatus("error");
       toastStore.pushToast({
         tone: "danger",
-        title: "保存手动邮箱失败",
+        title: t("toasts.saveManualImapFailed"),
         detail: parseBackendError(err).message,
       });
     }
@@ -106,8 +111,8 @@ export function ManualImapModal() {
 
   return (
     <ModalShell
-      heading="手动配置 IMAP / SMTP 邮箱"
-      subtitle="适用于自建邮局、企业邮箱或通用标准协议邮箱"
+      heading={t("onboarding.manualHeading")}
+      subtitle={t("onboarding.manualSubtitle")}
       maxWidth={560}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
@@ -118,15 +123,15 @@ export function ManualImapModal() {
             disabled={status === "loading" || status === "success"}
             onClick={() => workspace.setOverlay({ type: "add-account" })}
           >
-            返回常用服务商
+            {t("onboarding.backToCommonProviders")}
           </button>
           <AsyncActionButton
             status={status}
             disabled={!formReady}
-            idleLabel="测试连接并保存"
-            loadingLabel={stepLabel}
-            successLabel="握手成功 · 已连接"
-            errorLabel="连接未通过 · 点击重试"
+            idleLabel={t("onboarding.manualTestSaveIdle")}
+            loadingLabel={stepLabel || t("common.handshakeRunningIdle")}
+            successLabel={t("onboarding.manualTestSaveSuccess")}
+            errorLabel={t("onboarding.manualTestSaveError")}
             onClick={() => void handleSave()}
           />
         </>
@@ -150,9 +155,9 @@ export function ManualImapModal() {
               setPinCert(v);
               if (status === "error") setStatus("idle");
             }}
-            ariaLabel="信任并固定此服务器自签名证书指纹"
+            ariaLabel={t("onboarding.pinCertAria")}
           >
-            信任并固定此服务器证书指纹（SHA-256: {detectedCert.slice(0, 20)}…）
+            {t("onboarding.pinCertLabel", { fp: detectedCert.slice(0, 20) })}
           </Checkbox>
         </div>
       )}

@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import type { LanguageCode, ThemePreference } from "../../types/settings";
 import { Checkbox } from "../common/Checkbox";
@@ -14,6 +15,7 @@ export function OnboardingInitCard({
   onChangeDataDir,
 }: OnboardingInitCardProps) {
   const { workspace, desktopBridge } = useApp();
+  const { t } = useI18n();
   const s = workspace.settings;
 
   const handleBrowse = async () => {
@@ -24,15 +26,19 @@ export function OnboardingInitCard({
   return (
     <div className="settings-card" style={{ gap: 10, padding: "12px 14px" }}>
       <div className="row-between">
-        <strong style={{ fontSize: 13 }}>数据存储位置与桌面偏好</strong>
-        <span className="text-xs text-muted">与程序安装目录隔离</span>
+        <strong style={{ fontSize: 13 }}>
+          {t("onboarding.initCardTitle")}
+        </strong>
+        <span className="text-xs text-muted">
+          {t("onboarding.initCardIsolatedHint")}
+        </span>
       </div>
 
       <div className="row" style={{ gap: 6 }}>
         <input
           type="text"
           className="input"
-          aria-label="首次启动数据存储目录"
+          aria-label={t("onboarding.initDataDirAria")}
           style={{
             flex: 1,
             height: 32,
@@ -48,7 +54,7 @@ export function OnboardingInitCard({
           style={{ height: 32, flexShrink: 0 }}
           onClick={() => void handleBrowse()}
         >
-          <Icon name="folder" size={13} /> 更改目录
+          <Icon name="folder" size={13} /> {t("onboarding.changeDirBtn")}
         </button>
       </div>
 
@@ -63,11 +69,11 @@ export function OnboardingInitCard({
           compact
           fullWidth
           value={s.themePreference}
-          ariaLabel="初始化外观主题"
+          ariaLabel={t("onboarding.initThemeAria")}
           options={[
-            { value: "system", label: "主题：跟随系统" },
-            { value: "light", label: "主题：亮色模式" },
-            { value: "dark", label: "主题：深色模式" },
+            { value: "system", label: t("onboarding.themeSystemOpt") },
+            { value: "light", label: t("onboarding.themeLightOpt") },
+            { value: "dark", label: t("onboarding.themeDarkOpt") },
           ]}
           onChange={(val) =>
             workspace.updateSettings({
@@ -79,10 +85,10 @@ export function OnboardingInitCard({
           compact
           fullWidth
           value={s.language}
-          ariaLabel="初始化显示语言"
+          ariaLabel={t("onboarding.initLangAria")}
           options={[
-            { value: "zh-CN", label: "语言：简体中文" },
-            { value: "en-US", label: "语言：English" },
+            { value: "zh-CN", label: t("onboarding.langZhOpt") },
+            { value: "en-US", label: t("onboarding.langEnOpt") },
           ]}
           onChange={(val) =>
             workspace.updateSettings({ language: val as LanguageCode })
@@ -94,16 +100,16 @@ export function OnboardingInitCard({
         <Checkbox
           checked={s.closeToTray}
           onChange={(v) => workspace.updateSettings({ closeToTray: v })}
-          ariaLabel="关闭主窗口时最小化到系统托盘"
+          ariaLabel={t("onboarding.closeToTrayAria")}
         >
-          关闭窗口时最小化至系统托盘（取消勾选则直接退出程序）
+          {t("onboarding.closeToTrayLabel")}
         </Checkbox>
         <Checkbox
           checked={s.launchAtStartup}
           onChange={(v) => workspace.updateSettings({ launchAtStartup: v })}
-          ariaLabel="开机自动静默启动"
+          ariaLabel={t("onboarding.launchAtStartupAria")}
         >
-          开机自动启动 OmniMail（静默最小化驻留托盘）
+          {t("onboarding.launchAtStartupLabel")}
         </Checkbox>
       </div>
     </div>

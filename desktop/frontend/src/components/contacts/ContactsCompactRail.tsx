@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import type { IconName } from "../common/Icon";
 import { Icon } from "../common/Icon";
@@ -18,30 +19,47 @@ export function ContactsCompactRail({
   onSelectGroup: (group: string | null) => void;
 }) {
   const { workspace } = useApp();
+  const { t, localizeText } = useI18n();
+
+  const ownerName =
+    workspace.accounts[0]?.senderName ||
+    workspace.accounts[0]?.name ||
+    localizeText(
+      workspace.activeProfile?.name || t("common.personalWorkspace"),
+    );
+  const ownerBadge =
+    Array.from(ownerName.trim())[0] || t("common.personalBadge");
+  const manageAccountsLabel = t("contacts.compactManageAccountsTip", {
+    name: ownerName,
+  });
 
   return (
     <aside
       className="panel-card icon-rail-pane"
-      aria-label="联系人紧凑图标导航"
+      aria-label={t("contacts.compactRailAria")}
     >
       <div className="icon-rail-stack">
-        <Tooltip label="返回统一收件箱" shortcut="G I" placement="right">
+        <Tooltip
+          label={t("contacts.backToInbox")}
+          shortcut="G I"
+          placement="right"
+        >
           <button
             type="button"
             className="icon-rail-btn icon-rail-trigger"
             onClick={() => workspace.setScreen("mail")}
-            aria-label="返回统一收件箱"
+            aria-label={t("contacts.backToInbox")}
           >
             <Icon name="arrowLeft" size={15} />
           </button>
         </Tooltip>
 
-        <Tooltip label="新建联系人" placement="right">
+        <Tooltip label={t("contacts.newContact")} placement="right">
           <button
             type="button"
             className="icon-rail-compose"
             onClick={() => workspace.setOverlay({ type: "contact-edit" })}
-            aria-label="新建联系人"
+            aria-label={t("contacts.newContact")}
           >
             <Icon name="plus" size={15} />
           </button>
@@ -67,16 +85,16 @@ export function ContactsCompactRail({
       </div>
 
       <div className="icon-rail-stack">
-        <Tooltip label="陆星河 · 管理工作空间与账户" placement="right">
+        <Tooltip label={manageAccountsLabel} placement="right">
           <button
             type="button"
             className="profile-avatar icon-rail-avatar"
             onClick={() =>
               workspace.setOverlay({ type: "settings", tab: "accounts" })
             }
-            aria-label="陆星河"
+            aria-label={manageAccountsLabel}
           >
-            陆
+            {ownerBadge}
           </button>
         </Tooltip>
       </div>

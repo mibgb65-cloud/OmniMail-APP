@@ -1,5 +1,6 @@
 import { FadeTextarea } from "../../common/scroll-fade/FadeTextarea";
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "../../../i18n";
 import { useApp } from "../../../state/AppContext";
 import type { MailItem } from "../../../types/mail";
 import { originalReplyAction } from "../../ai/aiAnalysisPrompt";
@@ -7,17 +8,16 @@ import { Icon } from "../../common/Icon";
 import { ProviderIcon } from "../../common/ProviderIcon";
 import { Tooltip } from "../../common/Tooltip";
 
+const iconBtnStyle = { width: 26, height: 26, flexShrink: 0 };
+const aiBtnStyle = { width: 26, height: 26, color: "var(--brand-ai)" };
+const compactBtnStyle = { height: 28, padding: "0 12px", flexShrink: 0 };
+
 export function QuickReplyBox({ mail }: { mail: MailItem }) {
-  const {
-    viewport,
-    workspace,
-    composeStore,
-    requestAiAction,
-    sendMailWithUndo,
-  } = useApp();
+  const { t } = useI18n();
+  const app = useApp();
+  const { viewport, workspace, composeStore } = app;
   const [expanded, setExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-
   const account =
     workspace.accounts.find((a) => a.id === mail.accountId) ??
     workspace.accounts[0];
@@ -31,7 +31,7 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
   const handleSend = () => {
     const body = composeStore.quickReplyText.trim();
     if (!body) return;
-    sendMailWithUndo({
+    app.sendMailWithUndo({
       accountId: mail.accountId,
       to: [`${mail.senderName} <${mail.senderEmail}>`],
       subject: `Re: ${mail.subject.replace(/^Re:\s*/i, "")}`,
@@ -42,21 +42,33 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
     setExpanded(false);
   };
 
-  const senderLabel = `${account?.name ?? "工作邮箱"} · ${account?.providerLabel ?? "IMAP"}`;
+  const senderLabel = `${account?.name ?? t("reader.quickReplyDefaultAccount")} · ${account?.providerLabel ?? "IMAP"}`;
+  const replyLock = workspace.settings.lockReplyToOriginalAccount;
   const openFullReply = () =>
-    composeStore.openReplyCompose(
-      mail,
-      "reply",
-      workspace.settings.lockReplyToOriginalAccount,
-    );
+    composeStore.openReplyCompose(mail, "reply", replyLock);
   const draftAiReply = () =>
-    requestAiAction("生成回复草稿", originalReplyAction());
+    app.requestAiAction(t("ai.generateReplyDraft"), originalReplyAction());
   const headerStyle = {
     gap: 8,
     flex: 1,
     minWidth: 0,
     cursor: isOpen ? "default" : "text",
-  } as const;
+  };
+  const titleStyle = {
+    fontSize: 13,
+    fontWeight: isOpen ? 600 : 400,
+    color: isOpen ? "var(--text-ink)" : "var(--text-muted)",
+  };
+  const fullComposeTip = t("reader.quickReplyFullComposeTip");
+  const aiDraftTip = t("reader.quickReplyAiDraftTip");
+  const provider = account?.provider ?? mail.provider;
+  const sendViaText = t("reader.quickReplySendVia", { account: senderLabel });
+  const headerTitle = isOpen
+    ? t("reader.quickReplyOpenHeader", { sender: mail.senderName })
+    : t("reader.quickReplyCollapsedHeader", {
+        sender: mail.senderName,
+        account: senderLabel,
+      });
 
   return (
     <div className="quick-reply-wrap">
@@ -68,28 +80,16 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
         >
           <span className="row" style={{ gap: 7, minWidth: 0, flex: 1 }}>
             <Icon name="reply" size={14} />
-            <span
-              className="truncate"
-              style={{
-                fontSize: 13,
-                fontWeight: isOpen ? 600 : 400,
-                color: isOpen ? "var(--text-ink)" : "var(--text-muted)",
-              }}
-            >
-              {isOpen
-                ? `回复 ${mail.senderName}`
-                : `回复 ${mail.senderName}（锁定${senderLabel}）…`}
+            <span className="truncate" style={titleStyle}>
+              {headerTitle}
             </span>
           </span>
 
           {isOpen ? (
             <div className="row" style={{ gap: 6, flexShrink: 0 }}>
               <span className="pill pill-neutral quick-reply-lock-pill">
-                <ProviderIcon
-                  provider={account?.provider ?? mail.provider}
-                  size={15}
-                />
-                <span className="truncate">通过 {senderLabel} 发送</span>
+                <ProviderIcon provider={provider} size={15} />
+                <span className="truncate">{sendViaText}</span>
                 <Icon name="lock" size={11} />
               </span>
               {viewport !== "wide" && !hasText && (
@@ -98,7 +98,7 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
                   className="btn btn-ghost btn-sm"
                   onClick={() => setExpanded(false)}
                 >
-                  收起
+                  {t("reader.quickReplyCollapse")}
                 </button>
               )}
             </div>
@@ -106,13 +106,13 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
             <button
               type="button"
               className="btn btn-sm btn-primary"
-              style={{ height: 28, padding: "0 12px", flexShrink: 0 }}
+              style={compactBtnStyle}
               onClick={(e) => {
                 e.stopPropagation();
                 setExpanded(true);
               }}
             >
-              回复
+              {t("reader.reply")}
             </button>
           )}
         </div>
@@ -126,7 +126,7 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
               ref={textareaRef}
               frameClassName="quick-reply-textarea-frame"
               surface="--quick-reply-surface"
-              aria-label="快速回复正文"
+              aria-label={t("reader.quickReplyAria")}
               tabIndex={isOpen ? 0 : -1}
               className="quick-reply-textarea"
               value={composeStore.quickReplyText}
@@ -135,7 +135,7 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
                 if (viewport !== "wide" && !composeStore.quickReplyText.trim())
                   setExpanded(false);
               }}
-              placeholder="写下你的回复，或点击右侧 Omni AI 插入草稿后人工核对发送…"
+              placeholder={t("reader.quickReplyPlaceholder")}
               onKeyDown={(e) => {
                 if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
                   e.preventDefault();
@@ -146,24 +146,24 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
 
             <div className="row-between" style={{ gap: 8 }}>
               <div className="row" style={{ gap: 6, minWidth: 0 }}>
-                <Tooltip label="完整回复窗口并添加附件" placement="top">
+                <Tooltip label={fullComposeTip} placement="top">
                   <button
                     type="button"
                     className="icon-btn"
-                    style={{ width: 26, height: 26, flexShrink: 0 }}
-                    aria-label="完整回复窗口并添加附件"
+                    style={iconBtnStyle}
+                    aria-label={fullComposeTip}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={openFullReply}
                   >
                     <Icon name="paperclip" size={14} />
                   </button>
                 </Tooltip>
-                <Tooltip label="使用 Omni AI 起草回复" placement="top">
+                <Tooltip label={aiDraftTip} placement="top">
                   <button
                     type="button"
                     className="icon-btn"
-                    style={{ width: 26, height: 26, color: "var(--brand-ai)" }}
-                    aria-label="使用 Omni AI 起草回复"
+                    style={aiBtnStyle}
+                    aria-label={aiDraftTip}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={draftAiReply}
                   >
@@ -171,7 +171,7 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
                   </button>
                 </Tooltip>
                 <span className="text-xs text-muted truncate">
-                  回复自动锁定原收件账户，避免发错身份
+                  {t("reader.quickReplyLockHint")}
                 </span>
               </div>
 
@@ -186,7 +186,7 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={handleSend}
                 >
-                  <span>发送</span>
+                  <span>{t("reader.sendBtn")}</span>
                   <Icon name="send" size={13} />
                 </button>
               </div>

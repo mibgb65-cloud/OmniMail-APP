@@ -1,10 +1,16 @@
 import { Events } from "@wailsio/runtime";
 import { useEffect, useState } from "react";
 import { PROVIDER_CATALOG } from "../../data/providers";
+import {
+  getCurrentLanguage,
+  localizeProviderPreset,
+  t as translateNow,
+  useI18n,
+} from "../../i18n";
 import { accountApi, parseBackendError } from "../../services/backendClient";
+import { useApp } from "../../state/AppContext";
 import { openSafeExternalUrl } from "../../state/desktopActions";
 import { isWailsDesktop } from "../../state/storageHelpers";
-import { useApp } from "../../state/AppContext";
 import type { ProviderId } from "../../types/account";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
@@ -18,9 +24,11 @@ export function OAuthFlowModal({
   stage: "waiting" | "incomplete";
 }) {
   const { workspace, toastStore } = useApp();
+  const { lang, t } = useI18n();
   const { refreshProfilesAndAccounts, setOverlay } = workspace;
-  const meta =
+  const rawMeta =
     PROVIDER_CATALOG.find((p) => p.id === provider) ?? PROVIDER_CATALOG[0];
+  const meta = localizeProviderPreset(rawMeta, lang);
 
   const [flowId, setFlowId] = useState("");
   const [authUrl, setAuthUrl] = useState("");
@@ -68,12 +76,17 @@ export function OAuthFlowModal({
             setOverlay({
               type: "sync-progress",
               accountId: account.id,
-              accountName: `${account.name}（${account.email}）`,
+              accountName:
+                getCurrentLanguage() === "en-US"
+                  ? `${account.name} (${account.email})`
+                  : `${account.name}（${account.email}）`,
             });
           });
         } else {
           setStage("incomplete");
-          setErrorMsg(d.errorMessage || "浏览器授权未完成或已取消");
+          setErrorMsg(
+            d.errorMessage || translateNow("onboarding.oauthCancelledFallback"),
+          );
         }
       });
     }
@@ -87,8 +100,8 @@ export function OAuthFlowModal({
 
   return (
     <ModalShell
-      heading={`${meta.name} · 浏览器 OAuth 授权`}
-      subtitle="在系统默认浏览器中完成 PKCE 授权，本机 127.0.0.1 接收令牌"
+      heading={t("onboarding.oauthHeading", { provider: meta.name })}
+      subtitle={t("onboarding.oauthSubtitle")}
       maxWidth={520}
       onClose={() => {
         if (flowId) void accountApi.cancelOAuthFlow(flowId);
@@ -101,7 +114,7 @@ export function OAuthFlowModal({
             className="btn btn-ghost"
             onClick={() => workspace.setOverlay({ type: "add-account" })}
           >
-            返回
+            {t("common.back")}
           </button>
           <div className="row" style={{ gap: 8 }}>
             <button
@@ -111,7 +124,7 @@ export function OAuthFlowModal({
                 workspace.setOverlay({ type: "provider-guide", provider })
               }
             >
-              改用 16 位应用专用密码
+              {t("onboarding.use16CharAppPwd")}
             </button>
             {authUrl && (
               <button
@@ -119,7 +132,7 @@ export function OAuthFlowModal({
                 className="btn btn-primary"
                 onClick={() => void openSafeExternalUrl(authUrl)}
               >
-                重新打开浏览器
+                {t("onboarding.reopenBrowser")}
               </button>
             )}
           </div>
@@ -135,15 +148,14 @@ export function OAuthFlowModal({
           style={{ fontSize: 15, fontWeight: 700, color: "var(--text-ink)" }}
         >
           {stage === "waiting"
-            ? "正在等待系统浏览器返回授权结果…"
-            : "未能通过 OAuth 启动或完成授权"}
+            ? t("onboarding.oauthWaitingTitle")
+            : t("onboarding.oauthFailedTitle")}
         </div>
         <div
           className="text-xs text-muted"
           style={{ maxWidth: 400, lineHeight: 1.65 }}
         >
-          {errorMsg ||
-            "已在默认浏览器拉起官方登录页；若未配置 OAuth Client ID，可直接点击下方「改用 16 位应用专用密码」接入。"}
+          {errorMsg || t("onboarding.oauthDefaultHint")}
         </div>
         <div className="row" style={{ gap: 8 }}>
           <span
@@ -153,7 +165,9 @@ export function OAuthFlowModal({
               name={stage === "waiting" ? "external" : "alertCircle"}
               size={13}
             />
-            {stage === "waiting" ? "127.0.0.1 临时回调监听中" : "等待人工操作"}
+            {stage === "waiting"
+              ? t("onboarding.oauthCallbackListening")
+              : t("onboarding.oauthWaitingManual")}
           </span>
           {authUrl && (
             <button
@@ -161,10 +175,13 @@ export function OAuthFlowModal({
               className="btn btn-secondary btn-sm"
               onClick={() => {
                 void navigator.clipboard?.writeText(authUrl);
-                toastStore.pushToast({ tone: "info", title: "已复制授权链接" });
+                toastStore.pushToast({
+                  tone: "info",
+                  title: t("toasts.copiedAuthUrl"),
+                });
               }}
             >
-              <Icon name="copy" size={12} /> 复制授权链接
+              <Icon name="copy" size={12} /> {t("onboarding.copyAuthLinkBtn")}
             </button>
           )}
         </div>

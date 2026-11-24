@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { profileApi } from "../../services/backendClient";
 import type { MailAiAction } from "../../types/mailAi";
@@ -18,10 +19,14 @@ export function AiConsentModal({
   mailId: string;
   profileId: string;
 }) {
+  const { lang, isEn, t } = useI18n();
   const { workspace, mailStore, aiStore, toastStore } = useApp();
   const [rememberChoice, setRememberChoice] = useState(false);
   const mail = mailStore.selectedMail;
-  const scope = mailAiScope(workspace.settings.aiIncludeSenderAndAttachments);
+  const scope = mailAiScope(
+    workspace.settings.aiIncludeSenderAndAttachments,
+    lang,
+  );
   const isChat = action.kind === "chat";
   const canConfirm =
     mail?.id === mailId &&
@@ -41,16 +46,19 @@ export function AiConsentModal({
         .catch(() =>
           toastStore.pushToast({
             tone: "warning",
-            title: "未能记住授权偏好，之后仍会确认",
+            title: t("toasts.consentSavePrefFailed"),
           }),
         );
     }
   };
+  const modelText = isEn
+    ? `${workspace.settings.aiProvider} (${workspace.settings.aiModel})`
+    : `${workspace.settings.aiProvider}（${workspace.settings.aiModel}）`;
 
   return (
     <ModalShell
-      heading="发送前确认 Omni AI 数据范围"
-      subtitle={`即将执行：${actionLabel} · 仅本次显式触发`}
+      heading={t("ai.consentHeading")}
+      subtitle={t("ai.consentSubtitle", { action: actionLabel })}
       maxWidth={520}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
@@ -62,7 +70,7 @@ export function AiConsentModal({
               workspace.setOverlay({ type: "settings", tab: "ai" })
             }
           >
-            前往 AI 设置
+            {t("ai.consentGoSettings")}
           </button>
           <div className="row">
             <button
@@ -70,7 +78,7 @@ export function AiConsentModal({
               className="btn btn-secondary"
               onClick={() => workspace.setOverlay({ type: "none" })}
             >
-              取消
+              {t("common.cancel")}
             </button>
             <button
               type="button"
@@ -78,7 +86,7 @@ export function AiConsentModal({
               disabled={!canConfirm}
               onClick={handleConfirm}
             >
-              确认并发送给 AI
+              {t("ai.consentConfirmBtn")}
             </button>
           </div>
         </>
@@ -90,23 +98,23 @@ export function AiConsentModal({
           style={{ color: "var(--brand-ai)", fontWeight: 700 }}
         >
           <Icon name="shield" size={16} />
-          <span>本次发送范围说明</span>
+          <span>{t("ai.consentScopeHeading")}</span>
         </div>
         <ul
           style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.75 }}
         >
           <li>
-            <strong>包含内容：</strong>
+            <strong>{t("ai.consentIncludedLabel")}</strong>
             {scope.mailContent}
-            {isChat ? "、本次提问及同一数据范围下的近期问答" : ""}
+            {isChat ? t("ai.consentChatExtra") : ""}
           </li>
           <li>
-            <strong>不会作为独立内容发送：</strong>
+            <strong>{t("ai.consentExcludedLabel")}</strong>
             {scope.notShared}
           </li>
           <li>
-            <strong>当前模型：</strong>
-            {workspace.settings.aiProvider}（{workspace.settings.aiModel}）
+            <strong>{t("ai.consentModelLabel")}</strong>
+            {modelText}
           </li>
         </ul>
       </div>
@@ -114,9 +122,9 @@ export function AiConsentModal({
       <Checkbox
         checked={rememberChoice}
         onChange={setRememberChoice}
-        ariaLabel="记住本次选择"
+        ariaLabel={t("ai.consentRememberAria")}
       >
-        记住本次选择，后续触发 AI 动作不再每次弹窗确认（可随时在设置中重新开启）
+        {t("ai.consentRememberLabel")}
       </Checkbox>
     </ModalShell>
   );

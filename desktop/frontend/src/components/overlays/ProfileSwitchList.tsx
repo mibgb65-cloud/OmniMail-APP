@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { profileApi, type ProfileSummary } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import { Checkbox } from "../common/Checkbox";
@@ -17,11 +18,14 @@ export function ProfileSwitchList({
   onSelectUnlock: (p: ProfileSummary) => void;
 }) {
   const { workspace } = useApp();
+  const { t, localizeText } = useI18n();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {workspace.profiles.map((p) => {
         const isCur = p.id === workspace.activeProfileId;
+        const displayName = localizeText(p.name);
+        const displayBadge = localizeText(p.badge);
         return (
           <div
             key={p.id}
@@ -34,15 +38,17 @@ export function ProfileSwitchList({
                   className="profile-avatar"
                   style={{ background: p.color, color: "#fff" }}
                 >
-                  {p.badge}
+                  {displayBadge}
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div className="row" style={{ gap: 6 }}>
                     <strong className="truncate" style={{ fontSize: 13.5 }}>
-                      {p.name}
+                      {displayName}
                     </strong>
                     {isCur && (
-                      <span className="pill pill-accent">当前活跃</span>
+                      <span className="pill pill-accent">
+                        {t("overlays.profActiveBadge")}
+                      </span>
                     )}
                     {p.pinEnabled && (
                       <span className="pill pill-neutral">
@@ -54,7 +60,10 @@ export function ProfileSwitchList({
                     className="text-xs text-muted truncate"
                     title={p.profileDir}
                   >
-                    {p.accountCount} 个邮箱账户 · {p.profileDir}
+                    {t("overlays.profAccountDirSub", {
+                      count: p.accountCount,
+                      dir: p.profileDir,
+                    })}
                   </div>
                 </div>
               </div>
@@ -68,7 +77,7 @@ export function ProfileSwitchList({
                       p.locked ? onSelectUnlock(p) : onSelectSwitch(p)
                     }
                   >
-                    切换
+                    {t("overlays.profSwitchBtn")}
                   </button>
                 )}
                 {!isCur && workspace.profiles.length > 1 && (
@@ -80,10 +89,12 @@ export function ProfileSwitchList({
                         type: "danger-confirm",
                         kind: "delete-profile",
                         targetId: p.id,
-                        targetLabel: p.name,
+                        targetLabel: displayName,
                       })
                     }
-                    aria-label={`删除空间 ${p.name}`}
+                    aria-label={t("overlays.profDeleteAria", {
+                      name: displayName,
+                    })}
                   >
                     <Icon name="trash" size={13} />
                   </button>
@@ -105,9 +116,9 @@ export function ProfileSwitchList({
             });
           }
         }}
-        ariaLabel="启动时弹出本地工作空间选择器"
+        ariaLabel={t("overlays.profAskOnLaunchAria")}
       >
-        启动 OmniMail 时弹出本地工作空间选择器
+        {t("overlays.profAskOnLaunchLabel")}
       </Checkbox>
     </div>
   );

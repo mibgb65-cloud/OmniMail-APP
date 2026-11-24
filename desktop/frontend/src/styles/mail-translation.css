@@ -139,17 +139,19 @@
 }
 
 .translation-language-row > svg {
-  margin-bottom: 9px;
+  margin-bottom: 8px;
+  color: var(--text-muted);
 }
 
-.translation-language-row label {
+.translation-language-field {
   display: grid;
   gap: 4px;
+  min-width: 0;
 }
 
-.translation-language-row select {
-  width: 100%;
-  min-width: 0;
+.translation-language-label {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .translation-mode-options {

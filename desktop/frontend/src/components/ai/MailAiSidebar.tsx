@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { AiPane } from "./AiPane";
 import type { AiResizeHandleProps } from "./AiResizeHandle";
@@ -16,6 +17,7 @@ export function MailAiSidebar({
   isDrawer: boolean;
   resize: AiResizeHandleProps;
 }) {
+  const { t } = useI18n();
   const { aiStore } = useApp();
   const layerRef = useRef<HTMLDivElement>(null);
 
@@ -38,7 +40,7 @@ export function MailAiSidebar({
       data-placement={isDrawer ? "drawer" : "docked"}
       inert={!open}
       role={isDrawer ? "dialog" : undefined}
-      aria-label={isDrawer ? "Omni AI 浮层抽屉" : undefined}
+      aria-label={isDrawer ? t("ai.drawerAria") : undefined}
     >
       {isDrawer && (
         <div className="ai-slide-scrim" aria-hidden="true" onClick={close} />

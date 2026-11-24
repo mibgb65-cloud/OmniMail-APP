@@ -1,22 +1,39 @@
-import { isWailsDesktop } from "../../state/storageHelpers";
+import { t as defaultT, useI18n, type TranslationKey } from "../../i18n";
 import { useApp } from "../../state/AppContext";
+import { isWailsDesktop } from "../../state/storageHelpers";
 import type { FolderId, MailItem } from "../../types/mail";
 import { Icon, type IconName } from "../common/Icon";
 import { Tooltip } from "../common/Tooltip";
 
-export const MAIN_FOLDERS: Array<{
+export interface MainFolderItem {
   id: FolderId;
   label: string;
   icon: IconName;
   shortcut?: string;
-}> = [
-  { id: "inbox", label: "统一收件箱", icon: "inbox", shortcut: "G I" },
-  { id: "starred", label: "星标邮件", icon: "star", shortcut: "G S" },
-  { id: "snoozed", label: "稍后处理", icon: "clock", shortcut: "G L" },
-  { id: "sent", label: "已发送", icon: "send", shortcut: "G T" },
-  { id: "drafts", label: "草稿箱", icon: "documentText", shortcut: "G D" },
-  { id: "archive", label: "归档邮件", icon: "archive", shortcut: "G A" },
+}
+
+const FOLDER_DEFS: readonly [FolderId, TranslationKey, IconName, string][] = [
+  ["inbox", "sidebar.unifiedInbox", "inbox", "G I"],
+  ["starred", "sidebar.starred", "star", "G S"],
+  ["snoozed", "sidebar.snoozed", "clock", "G L"],
+  ["sent", "sidebar.sent", "send", "G T"],
+  ["drafts", "sidebar.drafts", "documentText", "G D"],
+  ["archive", "sidebar.archive", "archive", "G A"],
 ];
+
+export function getMainFolders(
+  translate: (key: TranslationKey) => string = defaultT,
+): MainFolderItem[] {
+  return FOLDER_DEFS.map(([id, key, icon, shortcut]) => ({
+    id,
+    label: translate(key),
+    icon,
+    shortcut,
+  }));
+}
+
+export const MAIN_FOLDERS = getMainFolders();
+export const mainFolders = MAIN_FOLDERS;
 
 export function countForFolder(
   mails: MailItem[],
@@ -45,8 +62,10 @@ export function countForFolder(
 
 export function SidebarIconRail() {
   const { workspace, mailStore, composeStore, aiStore } = useApp();
+  const { t, localizeText } = useI18n();
   const { mails, folderCounts, activeFolder, activeLabelId, searchQuery } =
     mailStore;
+  const folders = getMainFolders(t);
 
   const openLeftDrawer = () => {
     aiStore.setAiOpen(false);
@@ -56,26 +75,30 @@ export function SidebarIconRail() {
   return (
     <aside
       className="panel-card icon-rail-pane"
-      aria-label="紧凑模式图标导航栏"
+      aria-label={t("sidebar.iconRailAria")}
     >
       <div className="icon-rail-stack">
-        <Tooltip label="展开导航与邮箱抽屉" placement="right">
+        <Tooltip label={t("sidebar.openDrawerTip")} placement="right">
           <button
             type="button"
             className="icon-rail-btn icon-rail-trigger"
             onClick={openLeftDrawer}
-            aria-label="展开导航与邮箱抽屉"
+            aria-label={t("sidebar.openDrawerTip")}
           >
             <Icon name="menu" size={15} />
           </button>
         </Tooltip>
 
-        <Tooltip label="写新邮件" shortcut="C" placement="right">
+        <Tooltip
+          label={t("sidebar.composeNewTip")}
+          shortcut="C"
+          placement="right"
+        >
           <button
             type="button"
             className="icon-rail-compose"
             onClick={() => composeStore.openNewCompose()}
-            aria-label="写邮件"
+            aria-label={t("sidebar.compose")}
           >
             <Icon name="pen" size={15} />
           </button>
@@ -83,7 +106,7 @@ export function SidebarIconRail() {
 
         <div className="icon-rail-divider" />
 
-        {MAIN_FOLDERS.map((item) => {
+        {folders.map((item) => {
           const isActive =
             !activeLabelId && !searchQuery && activeFolder === item.id;
           const count = countForFolder(mails, item.id, folderCounts);
@@ -110,19 +133,19 @@ export function SidebarIconRail() {
 
       <div className="icon-rail-stack">
         {workspace.accounts.length === 0 ? (
-          <Tooltip label="点击添加第一个邮箱" placement="right">
+          <Tooltip label={t("topbar.addFirstAccountTip")} placement="right">
             <button
               type="button"
               className="icon-rail-accounts-badge is-empty"
               onClick={() => workspace.setOverlay({ type: "add-account" })}
-              aria-label="点击添加第一个邮箱"
+              aria-label={t("topbar.addFirstAccountTip")}
             >
-              <Icon name="plus" size={10} /> 邮箱
+              <Icon name="plus" size={10} /> {t("sidebar.railAddAccount")}
             </button>
           </Tooltip>
         ) : (
           <Tooltip
-            label="查看并切换已连接邮箱"
+            label={t("sidebar.railSwitchAccountsTip")}
             badge={workspace.accounts.length}
             placement="right"
           >
@@ -130,14 +153,20 @@ export function SidebarIconRail() {
               type="button"
               className="icon-rail-accounts-badge"
               onClick={openLeftDrawer}
-              aria-label="查看并切换已连接邮箱"
+              aria-label={t("sidebar.railSwitchAccountsTip")}
             >
-              {workspace.accounts.length} 邮
+              {t("sidebar.railAccountsCount", {
+                count: workspace.accounts.length,
+              })}
             </button>
           </Tooltip>
         )}
         <Tooltip
-          label={`${workspace.activeProfile?.name || "个人工作空间"} · 切换本地空间`}
+          label={t("sidebar.railSwitchProfileTip", {
+            name: localizeText(
+              workspace.activeProfile?.name || t("common.personalWorkspace"),
+            ),
+          })}
           placement="right"
         >
           <button
@@ -146,9 +175,11 @@ export function SidebarIconRail() {
             onClick={() =>
               workspace.setOverlay({ type: "profile-manage", mode: "switch" })
             }
-            aria-label="切换本地空间"
+            aria-label={t("sidebar.switchProfileAria")}
           >
-            {workspace.activeProfile?.badge || "个"}
+            {localizeText(
+              workspace.activeProfile?.badge || t("common.personalBadge"),
+            )}
           </button>
         </Tooltip>
       </div>

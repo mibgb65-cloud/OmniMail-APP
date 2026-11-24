@@ -55,6 +55,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-default);
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .ai-card-tinted {

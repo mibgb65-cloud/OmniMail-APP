@@ -1,10 +1,11 @@
-import { ScrollCodeBlock } from "../common/scroll-fade/FadeScroll";
+import { useI18n } from "../../i18n";
 import { mailApi, parseBackendError } from "../../services/backendClient";
-import { isWailsDesktop } from "../../state/storageHelpers";
 import { useApp } from "../../state/AppContext";
+import { isWailsDesktop } from "../../state/storageHelpers";
 import type { AttachmentItem } from "../../types/mail";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
+import { ScrollCodeBlock } from "../common/scroll-fade/FadeScroll";
 
 export { AttachmentTransferModal } from "./AttachmentTransferModal";
 
@@ -16,6 +17,7 @@ export function AttachmentPreviewModal({
   mailSubject: string;
 }) {
   const { workspace, toastStore } = useApp();
+  const { t, localizeText } = useI18n();
   const streamUrl =
     attachment.previewUrl ||
     `/omnimail-attachment/${encodeURIComponent(attachment.id)}`;
@@ -26,7 +28,7 @@ export function AttachmentPreviewModal({
     } catch (err) {
       toastStore.pushToast({
         tone: "danger",
-        title: "打开附件失败",
+        title: t("toasts.openAttFailed"),
         detail: parseBackendError(err).message,
       });
     }
@@ -38,14 +40,14 @@ export function AttachmentPreviewModal({
       if (dst) {
         toastStore.pushToast({
           tone: "success",
-          title: "已另存附件",
+          title: t("toasts.savedAttAsTitle"),
           detail: dst,
         });
       }
     } catch (err) {
       toastStore.pushToast({
         tone: "danger",
-        title: "另存附件失败",
+        title: t("toasts.saveAttAsFailed"),
         detail: parseBackendError(err).message,
       });
     }
@@ -54,13 +56,16 @@ export function AttachmentPreviewModal({
   return (
     <ModalShell
       heading={attachment.name}
-      subtitle={`${attachment.sizeText} · 来自《${mailSubject}》`}
+      subtitle={t("overlays.attFromMailSub", {
+        size: attachment.sizeText,
+        subject: localizeText(mailSubject),
+      })}
       maxWidth={680}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
         <>
           <span className="text-xs text-muted">
-            本地受控流只读预览 · 默认不向 AI 发送附件内容
+            {t("overlays.attPreviewFooterHint")}
           </span>
           <div className="row" style={{ gap: 8 }}>
             <button
@@ -68,14 +73,15 @@ export function AttachmentPreviewModal({
               className="btn btn-secondary"
               onClick={() => void handleOpenExternal()}
             >
-              <Icon name="external" size={13} /> 用系统应用打开
+              <Icon name="external" size={13} />{" "}
+              {t("overlays.attOpenSystemAppBtn")}
             </button>
             <button
               type="button"
               className="btn btn-primary"
               onClick={() => void handleSaveAs()}
             >
-              <Icon name="download" size={14} /> 另存为…
+              <Icon name="download" size={14} /> {t("overlays.attSaveAsBtn")}
             </button>
           </div>
         </>
@@ -104,7 +110,10 @@ export function AttachmentPreviewModal({
           }}
         />
       ) : attachment.previewSummary ? (
-        <ScrollCodeBlock maxHeight={340} label="附件预览">
+        <ScrollCodeBlock
+          maxHeight={340}
+          label={t("overlays.attPreviewScrollLabel")}
+        >
           {attachment.previewSummary}
         </ScrollCodeBlock>
       ) : (
@@ -115,7 +124,7 @@ export function AttachmentPreviewModal({
           <Icon name="file" size={34} />
           <strong>{attachment.name}</strong>
           <div className="text-xs text-muted">
-            可点击下方「用系统应用打开」或「另存为」查看完整原件。
+            {t("overlays.attNoInlinePreviewHint")}
           </div>
         </div>
       )}

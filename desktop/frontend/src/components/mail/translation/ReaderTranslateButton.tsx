@@ -1,11 +1,13 @@
 import { useCallback, useId, useRef, useState } from "react";
+import { useI18n } from "../../../i18n";
 import { AsyncStateGlyph } from "../../common/AsyncStateGlyph";
 import { Icon } from "../../common/Icon";
 import { useTranslation } from "./TranslationContext";
-import { languages } from "./translationLanguages";
+import { getLanguageLabel } from "./translationLanguages";
 import { TranslationPopover } from "./TranslationPopover";
 
 export function ReaderTranslateButton() {
+  const { lang, isEn, t: tr } = useI18n();
   const t = useTranslation();
   const anchor = useRef<HTMLDivElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
@@ -16,14 +18,21 @@ export function ReaderTranslateButton() {
     if (restoreFocus) toggle.current?.focus({ preventScroll: true });
   }, []);
   const active = t.hasTranslation && t.mode !== "original";
-  const lang = t.result?.content.target;
+  const target = t.result?.content.target;
+  const targetLabel = target
+    ? target.startsWith("zh-") && !isEn
+      ? tr("translation.translatedZhShort")
+      : getLanguageLabel(target, lang)
+    : "";
   const label = t.pending
-    ? "翻译中…"
+    ? tr("translation.translating")
     : active && t.partial
-      ? "部分已译"
-      : active && lang
-        ? `已译${lang.startsWith("zh-") ? "中文" : languages[lang]}`
-        : "翻译";
+      ? tr("translation.partialTranslated")
+      : active && target && !isEn
+        ? tr("translation.translatedLang", { lang: targetLabel })
+        : active
+          ? tr("translation.translated")
+          : tr("translation.translate");
 
   return (
     <div
@@ -56,7 +65,7 @@ export function ReaderTranslateButton() {
         type="button"
         ref={toggle}
         className="btn btn-secondary reader-act-btn translation-menu-action"
-        aria-label="翻译选项"
+        aria-label={tr("translation.optionsTitle")}
         aria-haspopup="dialog"
         aria-controls={open ? id : undefined}
         aria-expanded={open}

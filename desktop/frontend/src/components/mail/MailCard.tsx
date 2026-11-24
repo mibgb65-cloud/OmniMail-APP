@@ -1,4 +1,5 @@
 import { useEffect, useRef, type MouseEvent } from "react";
+import { useI18n } from "../../i18n";
 import type { MailItem } from "../../types/mail";
 import { Checkbox } from "../common/Checkbox";
 import { Icon } from "../common/Icon";
@@ -26,21 +27,26 @@ export function MailCard({
   onToggleCheck,
   onContextMenu,
 }: MailCardProps) {
+  const { t, formatTime, localizeText } = useI18n();
+  const displaySubject = mail.subject.trim()
+    ? localizeText(mail.subject)
+    : t("common.noSubject");
   const rightMeta = mail.statusBadge
     ? {
-        text: mail.statusBadge,
+        text: localizeText(mail.statusBadge),
         cls: mail.folder === "outbox" ? "pill-danger" : "pill-blue",
       }
     : !summarized && mail.attachments.length > 0
       ? {
           text:
             mail.attachments.length > 1
-              ? `${mail.attachments.length} 附件`
-              : mail.attachments[0].ext,
+              ? t("mailList.filesPill", { count: mail.attachments.length })
+              : mail.attachments[0].ext ||
+                t("mailList.filesPill", { count: 1 }),
           cls: "pill-neutral",
         }
       : !summarized && mail.starred
-        ? { text: "星标", cls: "pill-neutral" }
+        ? { text: t("mailList.starredPill"), cls: "pill-neutral" }
         : null;
 
   const showCheckbox = selectionMode || checked;
@@ -74,18 +80,27 @@ export function MailCard({
             <Checkbox
               size="sm"
               checked={checked}
-              ariaLabel={`选择邮件 ${mail.subject}`}
+              ariaLabel={t("mailList.selectMailAria", {
+                subject: displaySubject,
+              })}
               onChange={onToggleCheck}
             />
           )}
-          {mail.unread && <span className="unread-dot" aria-label="未读" />}
+          {mail.unread && (
+            <span
+              className="unread-dot"
+              aria-label={t("mailList.unreadDotAria")}
+            />
+          )}
           <span className="truncate">{mail.senderName}</span>
         </div>
-        <span className="mail-card-time">{mail.timeText}</span>
+        <span className="mail-card-time">{formatTime(mail.timeText)}</span>
       </div>
 
-      <div className="mail-card-subject">{mail.subject}</div>
-      {!compact && <div className="mail-card-snippet">{mail.snippet}</div>}
+      <div className="mail-card-subject">{displaySubject}</div>
+      {!compact && (
+        <div className="mail-card-snippet">{localizeText(mail.snippet)}</div>
+      )}
 
       <div className="mail-card-bottom">
         <span className="source-tag truncate" data-provider={mail.provider}>
@@ -100,7 +115,11 @@ export function MailCard({
               {rightMeta.text}
             </span>
           )}
-          {summarized && <span className="mail-summary-badge">AI 已摘要</span>}
+          {summarized && (
+            <span className="mail-summary-badge">
+              {t("mailList.aiSummaryBadge")}
+            </span>
+          )}
         </div>
       </div>
     </div>

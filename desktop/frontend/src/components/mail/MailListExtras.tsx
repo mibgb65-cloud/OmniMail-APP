@@ -1,7 +1,9 @@
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 
 export function MailListBatchBar() {
+  const { t } = useI18n();
   const { workspace, mailStore, toastStore } = useApp();
   const { checkedIds } = mailStore;
 
@@ -9,7 +11,9 @@ export function MailListBatchBar() {
 
   return (
     <div className="batch-bar">
-      <strong>已选 {checkedIds.length} 封</strong>
+      <strong>
+        {t("mailList.batchSelected", { count: checkedIds.length })}
+      </strong>
       <div style={{ display: "flex", gap: 4 }}>
         <button
           type="button"
@@ -18,21 +22,24 @@ export function MailListBatchBar() {
             mailStore.markRead(checkedIds, false);
             toastStore.pushToast({
               tone: "info",
-              title: `已将 ${checkedIds.length} 封邮件标为已读`,
+              title: t("toasts.markedReadCount", { count: checkedIds.length }),
             });
           }}
         >
-          已读
+          {t("mailList.batchMarkRead")}
         </button>
         <button
           type="button"
           className="btn btn-sm btn-secondary"
           onClick={() => {
             mailStore.moveMails(checkedIds, "archive");
-            toastStore.pushToast({ tone: "info", title: "已批量归档所选邮件" });
+            toastStore.pushToast({
+              tone: "info",
+              title: t("toasts.batchArchived"),
+            });
           }}
         >
-          归档
+          {t("mailList.batchArchive")}
         </button>
         <button
           type="button"
@@ -41,24 +48,27 @@ export function MailListBatchBar() {
             workspace.setOverlay({ type: "move-folder", mailIds: checkedIds })
           }
         >
-          移动
+          {t("mailList.batchMove")}
         </button>
         <button
           type="button"
           className="btn btn-sm btn-danger-soft"
           onClick={() => {
             mailStore.moveMails(checkedIds, "trash");
-            toastStore.pushToast({ tone: "info", title: "已批量移入回收站" });
+            toastStore.pushToast({
+              tone: "info",
+              title: t("toasts.batchMovedTrash"),
+            });
           }}
         >
-          删除
+          {t("mailList.batchDelete")}
         </button>
         <button
           type="button"
           className="icon-btn"
           style={{ width: 24, height: 24 }}
           onClick={mailStore.clearChecked}
-          aria-label="取消多选"
+          aria-label={t("mailList.batchClearAria")}
         >
           <Icon name="x" size={13} />
         </button>
@@ -72,6 +82,7 @@ export function MailListEmptyState({
 }: {
   noAccounts?: boolean;
 }) {
+  const { t } = useI18n();
   const { workspace, mailStore } = useApp();
   if (noAccounts || workspace.accounts.length === 0) {
     return (
@@ -82,10 +93,10 @@ export function MailListEmptyState({
         <div
           style={{ fontWeight: 700, fontSize: 14, color: "var(--text-ink)" }}
         >
-          尚未接入任何邮箱
+          {t("mailList.emptyNoAccountTitle")}
         </div>
         <div style={{ fontSize: 12, lineHeight: 1.55, maxWidth: 268 }}>
-          连接邮箱后，所有收件箱将在此统一汇总，并支持离线缓存与本地秒搜。
+          {t("mailList.emptyNoAccountDesc")}
         </div>
         <button
           type="button"
@@ -98,7 +109,7 @@ export function MailListEmptyState({
           }}
           onClick={() => workspace.setOverlay({ type: "add-account" })}
         >
-          <Icon name="plus" size={13} /> 添加第一个邮箱
+          <Icon name="plus" size={13} /> {t("sidebar.addFirstAccount")}
         </button>
       </div>
     );
@@ -113,12 +124,18 @@ export function MailListEmptyState({
     <div className="list-empty-state">
       <Icon name={searchQuery ? "search" : "inbox"} size={28} />
       <div style={{ fontWeight: 600, color: "var(--text-ink)" }}>
-        {searchQuery ? "未找到匹配的邮件" : "当前列表为空"}
+        {t(
+          searchQuery
+            ? "mailList.emptyNoMatchTitle"
+            : "mailList.emptyFolderTitle",
+        )}
       </div>
       <div style={{ fontSize: 12, maxWidth: 240 }}>
-        {searchQuery
-          ? "尝试更换关键词，或打开高级搜索按发件人、账户与附件范围重新筛选。"
-          : "所有新邮件均已处理完毕，保持清爽的工作空间。"}
+        {t(
+          searchQuery
+            ? "mailList.emptyNoMatchDesc"
+            : "mailList.emptyFolderDesc",
+        )}
       </div>
       {hasFilters && (
         <button
@@ -131,7 +148,7 @@ export function MailListEmptyState({
             mailStore.selectFolder("inbox");
           }}
         >
-          重置筛选条件
+          {t("mailList.resetFilters")}
         </button>
       )}
     </div>

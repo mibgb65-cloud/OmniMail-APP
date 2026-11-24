@@ -1,7 +1,24 @@
 export const MAIL_LIST_TOP_PILL_THRESHOLD = 240;
+export const MAIL_READER_TOP_PILL_THRESHOLD = 320;
 
 export function mailListScrollFlags(top: number) {
   return { scrolled: top > 0, showPill: top > MAIL_LIST_TOP_PILL_THRESHOLD };
+}
+
+export function mailReaderScrollFlags(top: number) {
+  return {
+    scrolled: top > 0,
+    showReturnTop: top > MAIL_READER_TOP_PILL_THRESHOLD,
+  };
+}
+
+export function scrollViewportToTop(el: HTMLElement | null) {
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  const reduceMotion =
+    typeof globalThis.matchMedia === "function" &&
+    globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
 }
 
 export function selectArrivalIds(

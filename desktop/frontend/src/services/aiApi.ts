@@ -9,6 +9,7 @@ import type {
   TestResult,
 } from "../../bindings/omnimail/internal/ai/models";
 import * as AiService from "../../bindings/omnimail/services/aiservice";
+import { t } from "../i18n";
 import { isWailsDesktop } from "../state/storageHelpers";
 import type { AppSettings } from "../types/settings";
 import type { AiChatTurn, AiMailInsight } from "../types/workspace";
@@ -23,8 +24,7 @@ export type {
 };
 
 function requireDesktop() {
-  if (!isWailsDesktop())
-    throw new Error("请在 OmniMail 桌面应用中配置 AI 服务");
+  if (!isWailsDesktop()) throw new Error(t("ai.desktopOnlyAiError"));
 }
 
 function mapInsight(ins: BackendInsight): AiMailInsight {

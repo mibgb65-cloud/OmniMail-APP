@@ -1,5 +1,6 @@
 import { Events } from "@wailsio/runtime";
 import { useEffect, useState } from "react";
+import { useI18n } from "../../../i18n";
 import { mailApi, parseBackendError } from "../../../services/backendClient";
 import { useApp } from "../../../state/AppContext";
 import { isWailsDesktop } from "../../../state/storageHelpers";
@@ -14,6 +15,7 @@ export function ReaderAttachmentsSection({
   attachments: AttachmentItem[];
   mailSubject: string;
 }) {
+  const { t } = useI18n();
   const { workspace, mailStore, toastStore } = useApp();
   const [phases, setPhases] = useState<Record<string, AttPhase>>({});
   const [progMap, setProgMap] = useState<Record<string, number>>({});
@@ -58,7 +60,7 @@ export function ReaderAttachmentsSection({
         setAttPhase(att.id, "error");
         toastStore.pushToast({
           tone: "danger",
-          title: "拉取附件失败",
+          title: t("toasts.fetchAttFailed"),
           detail: parseBackendError(err).message,
         });
         return;
@@ -83,7 +85,7 @@ export function ReaderAttachmentsSection({
       setAttPhase(att.id, "just-ready");
       toastStore.pushToast({
         tone: "success",
-        title: `已保存附件：${att.name}`,
+        title: t("toasts.savedAttTitle", { name: att.name }),
         detail: savedPath,
       });
       await waitSuccessHold(950);
@@ -92,7 +94,7 @@ export function ReaderAttachmentsSection({
       setAttPhase(att.id, "error");
       toastStore.pushToast({
         tone: "danger",
-        title: "保存附件失败",
+        title: t("toasts.saveAttFailed"),
         detail: parseBackendError(err).message,
       });
     }
@@ -103,7 +105,7 @@ export function ReaderAttachmentsSection({
       <div
         style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}
       >
-        附件 · {attachments.length} 个文件
+        {t("reader.attachmentsHeading", { count: attachments.length })}
       </div>
       <div className="attachment-grid">
         {attachments.map((att) => (

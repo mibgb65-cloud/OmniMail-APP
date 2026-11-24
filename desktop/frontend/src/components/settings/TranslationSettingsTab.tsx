@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { profileApi, parseBackendError } from "../../services/backendClient";
+import { useI18n } from "../../i18n";
+import { parseBackendError, profileApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import type { AppSettings } from "../../types/settings";
+import { CustomSelect, type CustomSelectOption } from "../common/CustomSelect";
 import { useTranslation } from "../mail/translation/TranslationContext";
 import {
+  getLanguages,
   isLanguage,
-  languages,
 } from "../mail/translation/translationLanguages";
+import { getTranslationModes } from "../mail/translation/translationTypes";
 import { SwitchRow } from "./SwitchRow";
 import { TranslationEngineFields } from "./translation/TranslationEngineFields";
 
@@ -22,10 +25,36 @@ export type TranslationSettingsPatch = Partial<
 
 export function TranslationSettingsTab({ onOpenAi }: { onOpenAi: () => void }) {
   const { workspace } = useApp();
+  const { lang, t } = useI18n();
   const { preferences, savePreferences } = useTranslation();
   const { settings } = workspace;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const targetLanguageOptions: CustomSelectOption[] = Object.entries(
+    getLanguages(lang),
+  ).map(([code, name]) => ({
+    value: code,
+    label: `${name} (${code})`,
+  }));
+
+  const displayModeOptions: CustomSelectOption[] = getTranslationModes(t)
+    .filter((m) => m.id !== "original")
+    .map((m) =>
+      m.id === "translated"
+        ? {
+            value: m.id,
+            label: m.option,
+            sublabel: t("settings.transModeInlineSub"),
+            hint: t("settings.defaultHint"),
+          }
+        : {
+            value: m.id,
+            label: m.option,
+            sublabel: t("settings.transModeBilingualSub"),
+          },
+    );
+
   const save = async (patch: TranslationSettingsPatch) => {
     setSaving(true);
     setError("");
@@ -36,7 +65,7 @@ export function TranslationSettingsTab({ onOpenAi }: { onOpenAi: () => void }) {
         persisted.translationEndpoint = next.translationEndpoint;
       workspace.applySettingsFromBackend(persisted);
     } catch (err) {
-      setError(parseBackendError(err).message || "翻译设置未能保存，请重试。");
+      setError(parseBackendError(err).message || t("settings.transSaveFailed"));
     } finally {
       setSaving(false);
     }
@@ -45,8 +74,8 @@ export function TranslationSettingsTab({ onOpenAi }: { onOpenAi: () => void }) {
     <div className="translation-settings">
       <div className="settings-card">
         <SwitchRow
-          heading="启用邮件翻译"
-          desc="按需翻译当前邮件，保留表格、按钮、字号和配色。"
+          heading={t("settings.transEnableTitle")}
+          desc={t("settings.transEnableDesc")}
           checked={settings.translationEnabled}
           disabled={saving}
           onChange={(translationEnabled) => void save({ translationEnabled })}
@@ -64,23 +93,27 @@ export function TranslationSettingsTab({ onOpenAi }: { onOpenAi: () => void }) {
         save={save}
         onOpenAi={onOpenAi}
       >
-        <label className="settings-row">
-          默认目标语言
-          <select
-            className="input"
+        <div className="settings-row">
+          <div className="translation-row-copy">
+            <div className="translation-row-title">
+              {t("settings.transDefaultTargetTitle")}
+            </div>
+            <div className="text-xs text-muted">
+              {t("settings.transDefaultTargetDesc")}
+            </div>
+          </div>
+          <CustomSelect
+            ariaLabel={t("settings.transDefaultTargetTitle")}
+            searchLabel={t("settings.transSearchLangLabel")}
+            minMenuWidth={236}
             value={preferences.target}
-            onChange={(e) => {
-              if (isLanguage(e.target.value))
-                savePreferences({ ...preferences, target: e.target.value });
+            options={targetLanguageOptions}
+            onChange={(value) => {
+              if (isLanguage(value))
+                savePreferences({ ...preferences, target: value });
             }}
-          >
-            {Object.entries(languages).map(([code, name]) => (
-              <option key={code} value={code}>
-                {name} ({code})
-              </option>
-            ))}
-          </select>
-        </label>
+          />
+        </div>
       </TranslationEngineFields>
       {error && (
         <p className="text-xs" role="alert">
@@ -88,27 +121,32 @@ export function TranslationSettingsTab({ onOpenAi }: { onOpenAi: () => void }) {
         </p>
       )}
       <div className="settings-card">
-        <strong>排版保真与翻译行为</strong>
-        <label className="settings-row">
-          默认显示模式
-          <select
-            className="input"
+        <strong>{t("settings.transLayoutBehaviorSection")}</strong>
+        <div className="settings-row">
+          <div className="translation-row-copy">
+            <div className="translation-row-title">
+              {t("settings.transDefaultModeTitle")}
+            </div>
+            <div className="text-xs text-muted">
+              {t("settings.transDefaultModeDesc")}
+            </div>
+          </div>
+          <CustomSelect
+            ariaLabel={t("settings.transDefaultModeTitle")}
+            minMenuWidth={248}
             value={preferences.mode}
-            onChange={(e) =>
+            options={displayModeOptions}
+            onChange={(value) =>
               savePreferences({
                 ...preferences,
-                mode:
-                  e.target.value === "bilingual" ? "bilingual" : "translated",
+                mode: value === "bilingual" ? "bilingual" : "translated",
               })
             }
-          >
-            <option value="translated">原地替换译文</option>
-            <option value="bilingual">双语对照</option>
-          </select>
-        </label>
+          />
+        </div>
         <SwitchRow
-          heading="同步翻译邮件主题"
-          desc="关闭时只翻译正文。可在邮件顶部翻译选项中按封调整。"
+          heading={t("settings.transSyncSubjectTitle")}
+          desc={t("settings.transSyncSubjectDesc")}
           checked={preferences.includeSubject}
           onChange={(includeSubject) =>
             savePreferences({ ...preferences, includeSubject })
@@ -116,10 +154,9 @@ export function TranslationSettingsTab({ onOpenAi }: { onOpenAi: () => void }) {
         />
       </div>
       <div className="settings-card">
-        <strong>本地译文缓存与隐私边界</strong>
+        <strong>{t("settings.transPrivacyCacheSection")}</strong>
         <span className="text-xs text-muted">
-          仅在点击「开始翻译」后发送可见文字和所选主题，不发送邮件头、图片或附件。
-          译文只在当前工作空间会话中缓存。
+          {t("settings.transPrivacyCacheDesc")}
         </span>
       </div>
     </div>

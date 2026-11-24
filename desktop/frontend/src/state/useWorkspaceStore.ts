@@ -1,5 +1,6 @@
 import { startTransition, useCallback, useEffect, useState } from "react";
 import { INITIAL_SETTINGS } from "../data/settingsDefaults";
+import { setCurrentLanguage, t } from "../i18n";
 import {
   accountApi,
   contactApi,
@@ -28,13 +29,16 @@ import { useWorkspaceCollections } from "./useWorkspaceCollections";
 export function useWorkspaceStore() {
   const collections = useWorkspaceCollections();
   const [screen, setScreen] = useState<WorkspaceScreen>("mail");
-  const [settings, setSettings] = useState<AppSettings>(() => ({
-    ...INITIAL_SETTINGS,
-    ...readInitialThemeState(),
-  }));
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    const initial = { ...INITIAL_SETTINGS, ...readInitialThemeState() };
+    setCurrentLanguage(initial.language);
+    return initial;
+  });
   const [overlay, setOverlay] = useState<OverlayModal>({ type: "none" });
   const [bannerMode, setBannerMode] = useState<RuntimeBannerMode>("none");
-  const [syncLabel, setSyncLabel] = useState("所有邮箱已同步");
+  const [syncLabel, setSyncLabel] = useState(() =>
+    t("topbar.allAccountsSynced"),
+  );
   const [compactView, setCompactView] = useState<"list" | "reader">("reader");
   const [leftNavOpen, setLeftNavOpen] = useState(false);
 
@@ -45,6 +49,10 @@ export function useWorkspaceStore() {
       root.style.colorScheme = settings.theme;
     }
   }, [settings.theme]);
+
+  useEffect(() => {
+    setCurrentLanguage(settings.language, true);
+  }, [settings.language]);
 
   useEffect(() => {
     if (settings.themePreference !== "system" || !window.matchMedia) return;
@@ -63,12 +71,14 @@ export function useWorkspaceStore() {
 
   const applySettingsFromBackend = useCallback(
     (patch: Partial<AppSettings>) => {
+      if (patch.language) setCurrentLanguage(patch.language, true);
       setSettings((prev) => ({ ...prev, ...patch }));
     },
     [],
   );
 
   const updateSettings = useCallback((patch: Partial<AppSettings>) => {
+    if (patch.language) setCurrentLanguage(patch.language, true);
     let nextPref: ThemePreference | undefined = patch.themePreference;
     if (!nextPref && patch.theme) nextPref = patch.theme;
     const nextResolved: ThemeMode | undefined = nextPref

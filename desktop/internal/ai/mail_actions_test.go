@@ -166,3 +166,17 @@ func TestMailSummaryCancellation(t *testing.T) {
 		t.Fatalf("取消的摘要不能写入缓存：%v", err)
 	}
 }
+
+func TestMailSummaryPromptAndDeadlineNormalization(t *testing.T) {
+	prompt := mailSummaryPrompt("en", "zh-CN")
+	if !strings.Contains(prompt, "不超过16字") || !strings.Contains(prompt, "勿塞入 timeText") {
+		t.Fatalf("摘要提示词未限制 timeText 长度与职责：%s", prompt)
+	}
+	got := normalizeDeadlines([]AiDeadlineItem{
+		{Label: "  ", TimeText: "\t", Urgent: true},
+		{Label: " 续订域名 ", TimeText: " 12月25日到期 ", Urgent: true},
+	})
+	if len(got) != 1 || got[0].Label != "续订域名" || got[0].TimeText != "12月25日到期" || !got[0].Urgent {
+		t.Fatalf("待办清洗结果不符合预期：%#v", got)
+	}
+}

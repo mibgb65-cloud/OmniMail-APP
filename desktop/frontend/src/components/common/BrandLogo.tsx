@@ -1,5 +1,6 @@
 import logoDarkSvg from "../../assets/brand/logo-dark.svg";
 import logoSvg from "../../assets/brand/logo.svg";
+import { useI18n } from "../../i18n";
 
 interface BrandLogoProps {
   size?: number;
@@ -7,6 +8,7 @@ interface BrandLogoProps {
 }
 
 export function BrandLogo({ size = 28, showWordmark = true }: BrandLogoProps) {
+  const { t } = useI18n();
   const radius = Math.max(6, Math.round(size * 0.22));
   return (
     <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -24,7 +26,7 @@ export function BrandLogo({ size = 28, showWordmark = true }: BrandLogoProps) {
       >
         <img
           src={logoSvg}
-          alt="OmniMail 品牌标志"
+          alt={t("common.brandLogoAlt")}
           width={size}
           height={size}
           className="brand-logo-img brand-logo-light"

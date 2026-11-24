@@ -5,6 +5,7 @@ export interface PopoverGeometry {
   top?: number;
   bottom?: number;
   width: number;
+  maxHeight?: number;
   side: "bottom" | "top";
 }
 
@@ -20,14 +21,26 @@ export function computePopoverGeometry(
       ?.querySelector(".modal-footer")
       ?.getBoundingClientRect().top ?? Infinity;
   const bottomLimit = Math.min(window.innerHeight - 14, footerTop - 6);
-  const flipUp =
-    r.bottom + estHeight + 6 > bottomLimit && r.top > estHeight + 16;
-  const width = Math.max(r.width, minWidth);
+  const spaceBelow = bottomLimit - r.bottom - 6;
+  const spaceAbove = r.top - 16;
+  const flipUp = spaceBelow < estHeight && spaceAbove > spaceBelow;
+  const maxWidth = Math.max(120, window.innerWidth - 20);
+  const width = Math.min(Math.max(r.width, minWidth), maxWidth);
   const left = Math.max(10, Math.min(r.left, window.innerWidth - width - 10));
+  const maxHeight = Math.max(
+    120,
+    Math.min(260, Math.floor(flipUp ? spaceAbove : spaceBelow)),
+  );
 
   return flipUp
-    ? { side: "top", left, width, bottom: window.innerHeight - r.top + 6 }
-    : { side: "bottom", left, width, top: r.bottom + 6 };
+    ? {
+        side: "top",
+        left,
+        width,
+        maxHeight,
+        bottom: window.innerHeight - r.top + 6,
+      }
+    : { side: "bottom", left, width, maxHeight, top: r.bottom + 6 };
 }
 
 export function buildCalendarCells(year: number, month: number) {
@@ -70,9 +83,10 @@ export function usePopoverDismiss(
     };
     const onKeyCapture = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        e.stopPropagation();
+        e.preventDefault();
+        e.stopImmediatePropagation();
         onClose();
-        triggerRef.current?.focus();
+        triggerRef.current?.focus({ preventScroll: true });
       }
     };
     const onScroll = (e: Event) => {

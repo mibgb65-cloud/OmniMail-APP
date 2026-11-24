@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "../../../i18n";
 import { aiApi, parseBackendError } from "../../../services/backendClient";
 import type { AppSettings } from "../../../types/settings";
 import type { AiProviderOption } from "./providerOptions";
@@ -10,6 +11,7 @@ export function useAiProviderForm(
   settings: AppSettings,
   applySettings: (patch: Partial<AppSettings>) => void,
 ) {
+  const { t } = useI18n();
   const preset = provider.mode === "preset";
   const saved = settings.aiProvider === provider.value ? settings : null;
   const [draftBase, setDraftBase] = useState<string | null>(null);
@@ -152,7 +154,10 @@ export function useAiProviderForm(
           if (action === "clear") resetDiscovery();
           setFeedback({
             error: false,
-            message: action === "save" ? "AI 配置已保存" : "已清除本地加密密钥",
+            message:
+              action === "save"
+                ? t("settings.aiConfigSavedMsg")
+                : t("settings.aiKeyClearedMsg"),
           });
           break;
         }

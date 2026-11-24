@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { t } from "../i18n";
 import { composeApi, parseBackendError } from "../services/backendClient";
 import type { EmailAccount } from "../types/account";
 import type { ComposeDraftState } from "../types/settings";
@@ -31,10 +32,17 @@ export function useSendMailAction(
           {
             tone: "success",
             title: payload.scheduledAt
-              ? `已加入定时队列（${payload.scheduledAt}）`
-              : `正在通过 ${account?.shortTag ?? "默认邮箱"} 发送…`,
-            detail: `${undoSendSeconds} 秒内可撤销发送`,
-            actionLabel: "撤销发送",
+              ? t("toasts.queuedScheduledPreview", {
+                  time: payload.scheduledAt,
+                })
+              : t("toasts.sendingViaPreview", {
+                  account:
+                    account?.shortTag ?? t("toasts.defaultMailboxFallback"),
+                }),
+            detail: t("toasts.undoSecondsDetail", {
+              seconds: undoSendSeconds,
+            }),
+            actionLabel: t("toasts.undoSendAction"),
             onAction: () => {
               mailStore.permanentDelete([created.id]);
               composeStore.openNewCompose(payload.to);
@@ -76,14 +84,25 @@ export function useSendMailAction(
               tone: "success",
               title:
                 job.state === "scheduled"
-                  ? `已加入定时发送队列（${payload.scheduledAt ?? "计划时间"}）`
-                  : `已加入发件队列（${account?.shortTag ?? "邮箱"}）`,
+                  ? t("toasts.queuedScheduled", {
+                      time:
+                        payload.scheduledAt ??
+                        t("toasts.scheduledFallbackTime"),
+                    })
+                  : t("toasts.queuedOutbox", {
+                      account:
+                        account?.shortTag ?? t("toasts.defaultMailboxFallback"),
+                    }),
               detail:
                 job.state === "scheduled"
-                  ? "重启应用也不会丢失定时任务"
-                  : `${undoSendSeconds} 秒内可零网络撤回`,
+                  ? t("toasts.scheduledPersistsDetail")
+                  : t("toasts.undoZeroNetDetail", {
+                      seconds: undoSendSeconds,
+                    }),
               actionLabel:
-                job.state === "undo_pending" ? "撤销发送" : undefined,
+                job.state === "undo_pending"
+                  ? t("toasts.undoSendAction")
+                  : undefined,
               onAction:
                 job.state === "undo_pending"
                   ? () => {
@@ -93,13 +112,13 @@ export function useSendMailAction(
                           if (restored) composeStore.setDraft(restored);
                           toastStore.pushToast({
                             tone: "info",
-                            title: "已撤回发送并恢复为草稿",
+                            title: t("toasts.undoRestoredDraft"),
                           });
                         })
                         .catch((err) =>
                           toastStore.pushToast({
                             tone: "warning",
-                            title: "无法撤回邮件",
+                            title: t("toasts.undoFailedTitle"),
                             detail: parseBackendError(err).message,
                           }),
                         );
@@ -111,7 +130,7 @@ export function useSendMailAction(
         } catch (err) {
           toastStore.pushToast({
             tone: "danger",
-            title: "提交发件队列失败",
+            title: t("toasts.submitOutboxFailed"),
             detail: parseBackendError(err).message,
           });
         }

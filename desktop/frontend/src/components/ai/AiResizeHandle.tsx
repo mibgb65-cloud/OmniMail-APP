@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { useI18n } from "../../i18n";
 
 export interface AiResizeHandleProps {
   width: number;
@@ -15,6 +16,7 @@ export function AiResizeHandle({
   onResize,
   onDragging,
 }: AiResizeHandleProps) {
+  const { t } = useI18n();
   const drag = useRef<{ pointer: number; x: number; width: number } | null>(
     null,
   );
@@ -24,14 +26,14 @@ export function AiResizeHandle({
       className="ai-resize-handle"
       role="separator"
       tabIndex={0}
-      aria-label="调整 Omni AI 侧栏宽度"
+      aria-label={t("ai.resizeAria")}
       aria-controls="mail-ai-pane"
       aria-orientation="vertical"
       aria-valuenow={width}
       aria-valuemin={min}
       aria-valuemax={max}
-      aria-valuetext={`${width} 像素`}
-      title="拖动或使用方向键调整宽度"
+      aria-valuetext={t("ai.resizeValueText", { width })}
+      title={t("ai.resizeTitle")}
       onPointerDown={(e) => {
         if (!e.isPrimary || e.button !== 0) return;
         drag.current = { pointer: e.pointerId, x: e.clientX, width };

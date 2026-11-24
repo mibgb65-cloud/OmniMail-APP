@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { useI18n } from "../../i18n";
 import type { ToastNotice } from "../../types/ui";
 import { Icon } from "./Icon";
 
@@ -22,6 +23,7 @@ export function ToastStack({
   onPause,
   onResume,
 }: ToastStackProps) {
+  const { t } = useI18n();
   if (toasts.length === 0) return null;
 
   return (
@@ -86,7 +88,7 @@ export function ToastStack({
                 className="icon-btn"
                 style={{ color: "#94a3b8", width: 24, height: 24 }}
                 onClick={() => onDismiss(toast.id)}
-                aria-label="关闭通知"
+                aria-label={t("common.dismissNotice")}
               >
                 <Icon name="x" size={13} />
               </button>

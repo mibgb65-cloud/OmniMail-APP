@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
@@ -11,6 +12,7 @@ export function AccountsTab({
   onSelectAccount: (id?: string) => void;
 }) {
   const { workspace } = useApp();
+  const { t, formatTime } = useI18n();
 
   if (
     selectedAccountId &&
@@ -29,18 +31,18 @@ export function AccountsTab({
       <div className="row-between">
         <div>
           <strong style={{ fontSize: 15 }}>
-            已连接邮箱账户（{workspace.accounts.length}）
+            {t("settings.accountsHeading", {
+              count: workspace.accounts.length,
+            })}
           </strong>
-          <div className="text-xs text-muted">
-            点击任意账户查看连接参数、签名或运行连接诊断
-          </div>
+          <div className="text-xs text-muted">{t("settings.accountsDesc")}</div>
         </div>
         <button
           type="button"
           className="btn btn-primary btn-sm"
           onClick={() => workspace.setOverlay({ type: "add-account" })}
         >
-          <Icon name="plus" size={14} /> 添加邮箱
+          <Icon name="plus" size={14} /> {t("settings.addAccountBtn")}
         </button>
       </div>
 
@@ -58,12 +60,17 @@ export function AccountsTab({
                 <div className="row" style={{ gap: 6 }}>
                   <strong style={{ fontSize: 14 }}>{acc.name}</strong>
                   {workspace.settings.defaultSendAccountId === acc.id && (
-                    <span className="pill pill-accent">默认发件</span>
+                    <span className="pill pill-accent">
+                      {t("settings.defaultSendBadge")}
+                    </span>
                   )}
                 </div>
                 <div className="text-xs text-muted">
-                  {acc.email} · 最近同步：{acc.lastSyncedAt} · 缓存{" "}
-                  {acc.storageMb} MB
+                  {t("settings.accountRowSub", {
+                    email: acc.email,
+                    lastSynced: formatTime(acc.lastSyncedAt),
+                    size: acc.storageMb,
+                  })}
                 </div>
               </div>
             </div>
@@ -79,7 +86,7 @@ export function AccountsTab({
                   });
                 }}
               >
-                诊断
+                {t("settings.diagnoseBtn")}
               </button>
               <Icon name="chevronRight" size={15} />
             </div>

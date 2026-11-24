@@ -5,6 +5,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
+import { isSyncLabelActive, t } from "../i18n";
 import { accountApi, parseBackendError } from "../services/backendClient";
 import type { MailAiAction } from "../types/mailAi";
 import { useAiStore } from "./useAiStore";
@@ -40,9 +41,13 @@ function useAppController() {
   }, [viewport, leftNavOpen, setLeftNavOpen]);
 
   const triggerSyncAll = useCallback(() => {
-    if (workspace.accounts.length === 0) return;
-    if (workspace.syncLabel.startsWith("正在同步")) return;
-    workspace.setSyncLabel(`正在同步 ${workspace.accounts.length} 个邮箱…`);
+    if (
+      workspace.accounts.length === 0 ||
+      isSyncLabelActive(workspace.syncLabel)
+    )
+      return;
+    const count = workspace.accounts.length;
+    workspace.setSyncLabel(t("topbar.syncingAccounts", { count }));
     const minSpin = new Promise((r) => window.setTimeout(r, 420));
     void Promise.all([
       accountApi
@@ -52,17 +57,17 @@ function useAppController() {
     ])
       .then(() => {
         refreshUnreadView();
-        workspace.setSyncLabel("所有邮箱已同步");
+        workspace.setSyncLabel(t("topbar.allAccountsSynced"));
         toastStore.pushToast({
           tone: "success",
-          title: `已完成 ${workspace.accounts.length} 个邮箱同步`,
+          title: t("toasts.syncAllDone", { count }),
         });
       })
       .catch((err) => {
-        workspace.setSyncLabel("同步部分受阻");
+        workspace.setSyncLabel(t("topbar.syncPartialFailed"));
         toastStore.pushToast({
           tone: "warning",
-          title: "同步邮箱时遇到问题",
+          title: t("toasts.syncProblem"),
           detail: parseBackendError(err).message,
         });
       });

@@ -1,19 +1,43 @@
+import {
+  getCurrentLanguage,
+  translateWithLang,
+  type TranslationKey,
+} from "../../i18n";
+import type { LanguageCode } from "../../types/settings";
 import type { InboxRule } from "../../types/workspace";
 
-export const CONDITION_FIELDS = [
-  { value: "sender", label: "发件人包含" },
-  { value: "subject", label: "邮件主题包含" },
-  { value: "body", label: "正文内容包含" },
-  { value: "attachment_ext", label: "附件扩展名等于" },
+const CONDITION_FIELD_KEYS: Array<readonly [string, TranslationKey]> = [
+  ["sender", "overlays.ruleCondSender"],
+  ["subject", "overlays.ruleCondSubject"],
+  ["body", "overlays.ruleCondBody"],
+  ["attachment_ext", "overlays.ruleCondAttExt"],
 ];
 
-export const ACTION_TYPES = [
-  { value: "archive", label: "自动归档" },
-  { value: "add_label", label: "添加自定义标签" },
-  { value: "star", label: "自动标星" },
-  { value: "mark_read", label: "标记为已读" },
-  { value: "delete", label: "移入回收站" },
+const ACTION_TYPE_KEYS: Array<readonly [string, TranslationKey]> = [
+  ["archive", "overlays.ruleActArchive"],
+  ["add_label", "overlays.ruleActAddLabel"],
+  ["star", "overlays.ruleActStar"],
+  ["mark_read", "overlays.ruleActMarkRead"],
+  ["delete", "overlays.ruleActDelete"],
 ];
+
+export function getConditionFieldOptions(
+  lang: LanguageCode = getCurrentLanguage(),
+) {
+  return CONDITION_FIELD_KEYS.map(([value, key]) => ({
+    value,
+    label: translateWithLang(lang, key),
+  }));
+}
+
+export function getActionTypeOptions(
+  lang: LanguageCode = getCurrentLanguage(),
+) {
+  return ACTION_TYPE_KEYS.map(([value, key]) => ({
+    value,
+    label: translateWithLang(lang, key),
+  }));
+}
 
 export function buildInboxRuleDraft(
   existing: InboxRule | undefined,
@@ -26,24 +50,32 @@ export function buildInboxRuleDraft(
     actionTarget: string;
     stopMatching: boolean;
   },
+  lang: LanguageCode = getCurrentLanguage(),
 ): InboxRule {
+  const condOptions = getConditionFieldOptions(lang);
+  const actOptions = getActionTypeOptions(lang);
   const fLabel =
-    CONDITION_FIELDS.find((f) => f.value === fields.conditionField)?.label ??
+    condOptions.find((f) => f.value === fields.conditionField)?.label ??
     fields.conditionField;
   const aLabel =
-    ACTION_TYPES.find((a) => a.value === fields.actionType)?.label ??
+    actOptions.find((a) => a.value === fields.actionType)?.label ??
     fields.actionType;
+  const val = fields.conditionValue.trim();
+  const condSummary =
+    lang === "en-US" ? `${fLabel} “${val}”` : `${fLabel}「${val}」`;
   return {
     id: existing?.id ?? "",
-    name: fields.name.trim() || "未命名规则",
+    name:
+      fields.name.trim() ||
+      translateWithLang(lang, "overlays.ruleUnnamedFallback"),
     enabled: existing?.enabled ?? true,
     matchMode: "AND",
     accountScope: fields.accountScope,
-    conditionSummary: `${fLabel}「${fields.conditionValue.trim()}」`,
+    conditionSummary: condSummary,
     actionSummary: `${aLabel}${fields.actionTarget ? ` (${fields.actionTarget})` : ""}`,
     conditionField: fields.conditionField,
     conditionOperator: "contains",
-    conditionValue: fields.conditionValue.trim(),
+    conditionValue: val,
     actionType: fields.actionType,
     actionTarget: fields.actionTarget.trim(),
     stopMatching: fields.stopMatching,

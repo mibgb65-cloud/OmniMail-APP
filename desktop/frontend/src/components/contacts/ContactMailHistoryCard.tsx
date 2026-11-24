@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ContactMailSummary } from "../../../bindings/omnimail/internal/contacts/models";
+import { useI18n } from "../../i18n";
 import { contactApi, mailApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import { isWailsDesktop } from "../../state/storageHelpers";
@@ -15,6 +16,7 @@ interface History {
 
 export function ContactMailHistoryCard({ contact }: { contact: ContactItem }) {
   const { workspace, mailStore, toastStore } = useApp();
+  const { t, formatTime, localizeText } = useI18n();
   const { activeProfileId: profileId } = workspace;
   const key = JSON.stringify([
     profileId,
@@ -93,7 +95,10 @@ export function ContactMailHistoryCard({ contact }: { contact: ContactItem }) {
       }
       workspace.setScreen("mail");
     } catch {
-      toastStore.pushToast({ tone: "warning", title: "无法打开这封往来邮件" });
+      toastStore.pushToast({
+        tone: "warning",
+        title: t("toasts.openHistoryMailFailed"),
+      });
     }
   };
 
@@ -101,10 +106,14 @@ export function ContactMailHistoryCard({ contact }: { contact: ContactItem }) {
     <>
       {Boolean(contact.alternateEmails?.length) && (
         <div className="settings-card">
-          <strong>备用邮箱 ({contact.alternateEmails?.length})</strong>
+          <strong>
+            {t("contacts.altEmailsHeading", {
+              count: contact.alternateEmails?.length ?? 0,
+            })}
+          </strong>
           <FadeScroll
             className="contact-alternate-addresses"
-            label="备用邮箱列表"
+            label={t("contacts.altEmailsScrollLabel")}
           >
             {contact.alternateEmails?.map((email) => (
               <div key={email} className="truncate" title={email}>
@@ -116,8 +125,12 @@ export function ContactMailHistoryCard({ contact }: { contact: ContactItem }) {
       )}
       <div className="settings-card">
         <div className="row-between">
-          <strong style={{ fontSize: 13 }}>往来邮件记录</strong>
-          <span className="text-xs text-muted">已显示 {related.length} 封</span>
+          <strong style={{ fontSize: 13 }}>
+            {t("contacts.historyHeading")}
+          </strong>
+          <span className="text-xs text-muted">
+            {t("contacts.historyShownCount", { count: related.length })}
+          </span>
         </div>
         {related.map((m) => (
           <button
@@ -127,20 +140,24 @@ export function ContactMailHistoryCard({ contact }: { contact: ContactItem }) {
             style={{ width: "100%", textAlign: "left" }}
             onClick={() => void openHistoryMail(m.id)}
           >
-            <span className="truncate">{m.subject}</span>
+            <span className="truncate">
+              {localizeText(m.subject) || t("common.noSubject")}
+            </span>
             <span className="text-xs text-muted" style={{ flexShrink: 0 }}>
-              {m.timeText}
+              {formatTime(m.timeText)}
             </span>
           </button>
         ))}
         {visible?.error ? (
-          <span className="text-xs text-muted">暂时无法加载往来邮件。</span>
+          <span className="text-xs text-muted">
+            {t("contacts.historyLoadError")}
+          </span>
         ) : (
           !related.length && (
             <span className="text-xs text-muted">
               {isWailsDesktop() && !visible
-                ? "正在读取往来邮件…"
-                : "本地数据库中暂无往来邮件。"}
+                ? t("contacts.historyLoading")
+                : t("contacts.historyEmpty")}
             </span>
           )
         )}
@@ -151,7 +168,9 @@ export function ContactMailHistoryCard({ contact }: { contact: ContactItem }) {
             disabled={fetching}
             onClick={() => void loadMore()}
           >
-            {fetching ? "正在加载…" : "加载更多往来邮件"}
+            {fetching
+              ? t("contacts.historyFetchingMore")
+              : t("contacts.historyLoadMore")}
           </button>
         )}
       </div>

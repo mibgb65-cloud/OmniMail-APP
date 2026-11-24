@@ -1,20 +1,26 @@
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 import { Tooltip } from "../common/Tooltip";
 
 export function ComposeDock() {
   const { workspace, composeStore } = useApp();
+  const { t, formatTime, localizeText } = useI18n();
   const draft = composeStore.draft;
   if (!draft || !draft.minimized) return null;
 
   return (
-    <div className="compose-dock" role="region" aria-label="最小化草稿栏">
+    <div
+      className="compose-dock"
+      role="region"
+      aria-label={t("compose.dockAria")}
+    >
       <div style={{ minWidth: 0 }}>
         <div className="truncate" style={{ fontSize: 13, fontWeight: 700 }}>
-          {draft.subject || "未命名邮件草稿"}
+          {localizeText(draft.subject) || t("compose.untitledDraft")}
         </div>
         <div className="text-xs" style={{ opacity: 0.78 }}>
-          已保存于 {draft.savedAt} · 点击恢复继续编辑
+          {t("compose.dockSavedSub", { time: formatTime(draft.savedAt) })}
         </div>
       </div>
       <div className="row" style={{ gap: 4 }}>
@@ -27,14 +33,14 @@ export function ComposeDock() {
           }}
           onClick={() => composeStore.updateDraft({ minimized: false })}
         >
-          展开
+          {t("compose.expandBtn")}
         </button>
-        <Tooltip label="删除草稿" placement="top">
+        <Tooltip label={t("compose.deleteDraftTip")} placement="top">
           <button
             type="button"
             className="btn-icon"
             style={{ color: "var(--brand-primary-ink)" }}
-            aria-label="删除草稿"
+            aria-label={t("compose.deleteDraftTip")}
             onClick={() =>
               workspace.setOverlay({
                 type: "danger-confirm",

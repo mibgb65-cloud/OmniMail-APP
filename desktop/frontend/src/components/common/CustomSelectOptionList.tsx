@@ -1,5 +1,6 @@
-import { Icon } from "./Icon";
+import { useI18n } from "../../i18n";
 import type { CustomSelectOption } from "./CustomSelect";
+import { Icon } from "./Icon";
 
 function CustomSelectOptionRow({
   option,
@@ -60,6 +61,8 @@ export function CustomSelectOptionList({
   onFocusIndex: (index: number) => void;
   onChoose: (option: CustomSelectOption) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div
       className="custom-select-options"
@@ -78,8 +81,8 @@ export function CustomSelectOptionList({
         />
       ))}
       {choices.length === 0 && (
-        <span className="text-xs text-muted" role="status">
-          没有匹配的选项
+        <span className="text-xs text-muted custom-select-empty" role="status">
+          {t("common.noMatchingOptions")}
         </span>
       )}
     </div>

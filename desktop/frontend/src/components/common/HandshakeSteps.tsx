@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ProbeStepResult } from "../../../bindings/omnimail/internal/mailproto/models";
+import { useI18n, type TranslationKey } from "../../i18n";
 import { AsyncStateGlyph } from "./AsyncStateGlyph";
 
 export interface HandshakeReportLike {
@@ -10,22 +11,27 @@ export interface HandshakeReportLike {
   steps?: ProbeStepResult[] | null;
 }
 
-const CANONICAL_STEPS = [
-  {
-    stage: "dns",
-    num: 1,
-    short: "1/4 DNS",
-    title: "1. DNS 解析与服务器可达性",
-  },
-  { stage: "tls", num: 2, short: "2/4 TLS", title: "2. TLS 安全证书握手" },
+const CANONICAL_STEPS: ReadonlyArray<{
+  stage: string;
+  num: number;
+  short: string;
+  titleKey: TranslationKey;
+}> = [
+  { stage: "dns", num: 1, short: "1/4 DNS", titleKey: "common.handshakeStep1" },
+  { stage: "tls", num: 2, short: "2/4 TLS", titleKey: "common.handshakeStep2" },
   {
     stage: "imap",
     num: 3,
     short: "3/4 IMAP",
-    title: "3. IMAP 登录认证与目录识别",
+    titleKey: "common.handshakeStep3",
   },
-  { stage: "smtp", num: 4, short: "4/4 SMTP", title: "4. SMTP 发件服务器认证" },
-] as const;
+  {
+    stage: "smtp",
+    num: 4,
+    short: "4/4 SMTP",
+    titleKey: "common.handshakeStep4",
+  },
+];
 
 export function HandshakeSteps({
   running,
@@ -38,23 +44,34 @@ export function HandshakeSteps({
   endpointHint?: string;
   onStepLabelChange?: (loadingText: string) => void;
 }) {
+  const { t } = useI18n();
   const [activeIdx, setActiveIdx] = useState(0);
   const cbRef = useRef(onStepLabelChange);
+  const tRef = useRef(t);
 
   useEffect(() => {
     cbRef.current = onStepLabelChange;
-  }, [onStepLabelChange]);
+    tRef.current = t;
+  }, [onStepLabelChange, t]);
 
   useEffect(() => {
     if (!running) return;
     const resetTimer = window.setTimeout(() => {
       setActiveIdx(0);
-      cbRef.current?.(`正在执行四步握手 (${CANONICAL_STEPS[0].short})…`);
+      cbRef.current?.(
+        tRef.current("common.handshakeRunning", {
+          step: CANONICAL_STEPS[0].short,
+        }),
+      );
     }, 0);
     const interval = window.setInterval(() => {
       setActiveIdx((prev) => {
         const next = Math.min(3, prev + 1);
-        cbRef.current?.(`正在执行四步握手 (${CANONICAL_STEPS[next].short})…`);
+        cbRef.current?.(
+          tRef.current("common.handshakeRunning", {
+            step: CANONICAL_STEPS[next].short,
+          }),
+        );
         return next;
       });
     }, 310);
@@ -78,17 +95,23 @@ export function HandshakeSteps({
 
   const badgeTone = running ? "running" : allOk ? "done" : "failed";
   const badgeText = running
-    ? `进行中 · ${activeIdx + 1} / 4`
+    ? t("common.handshakeBadgeRunning", { current: activeIdx + 1 })
     : allOk
-      ? `全部通过 · 4 / 4${report?.discoveredMailboxes ? ` (${report.discoveredMailboxes} 文件夹)` : ""}`
-      : `步骤 ${(failedIdx >= 0 ? failedIdx : 0) + 1} 受阻`;
+      ? report?.discoveredMailboxes
+        ? t("common.handshakeBadgePassedBoxes", {
+            count: report.discoveredMailboxes,
+          })
+        : t("common.handshakeBadgePassed")
+      : t("common.handshakeBadgeBlocked", {
+          step: (failedIdx >= 0 ? failedIdx : 0) + 1,
+        });
 
   const headerSummary = running
     ? endpointHint
-      ? `正在连接验证 ${endpointHint}…`
-      : "正在按顺序验证收发协议链路…"
+      ? t("common.handshakeConnecting", { endpoint: endpointHint })
+      : t("common.handshakeVerifyingChain")
     : [report?.proxyHint, report?.summary].filter(Boolean).join(" · ") ||
-      (allOk ? "四步安全握手全部通过" : "连接验证未通过，请核对下方提示");
+      (allOk ? t("common.handshakeAllOk") : t("common.handshakeFailedHint"));
 
   return (
     <div className="handshake-card" role="status" aria-live="polite">
@@ -116,9 +139,9 @@ export function HandshakeSteps({
 
           const rightMeta =
             phase === "active"
-              ? "校验中…"
+              ? t("common.handshakeChecking")
               : phase === "pending"
-                ? "等待前序完成"
+                ? t("common.handshakePending")
                 : phase === "done"
                   ? real
                     ? [
@@ -126,13 +149,13 @@ export function HandshakeSteps({
                         real.durationMs > 0 ? `${real.durationMs}ms` : "",
                       ]
                         .filter(Boolean)
-                        .join(" · ") || "已通过"
+                        .join(" · ") || t("common.handshakePassed")
                     : idx === 0 && endpointHint
                       ? endpointHint
-                      : "校验通过"
+                      : t("common.handshakeVerified")
                   : real?.durationMs
-                    ? `耗时 ${real.durationMs}ms`
-                    : "未通过";
+                    ? t("common.handshakeDuration", { ms: real.durationMs })
+                    : t("common.handshakeFailed");
 
           const errTip =
             phase === "failed"
@@ -155,7 +178,9 @@ export function HandshakeSteps({
                     )}
                   </span>
                   <span className="handshake-step-title truncate">
-                    {real?.label ? `${meta.num}. ${real.label}` : meta.title}
+                    {real?.label
+                      ? `${meta.num}. ${real.label}`
+                      : t(meta.titleKey)}
                   </span>
                 </div>
                 <span className="handshake-step-right truncate">

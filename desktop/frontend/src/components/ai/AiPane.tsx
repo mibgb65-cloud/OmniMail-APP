@@ -1,5 +1,6 @@
 import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 import { Tooltip } from "../common/Tooltip";
@@ -12,6 +13,9 @@ import { useTranslation } from "../mail/translation/TranslationContext";
 import { useAiChatScroll } from "./useAiChatScroll";
 import { useAiMailOnOpen } from "./useAiMailOnOpen";
 
+const hdrBtnStyle = { width: 26, height: 26 };
+const sendBtnStyle = { height: 26, padding: "0 10px", flexShrink: 0 };
+
 export function AiPane({
   isDrawer,
   open,
@@ -23,6 +27,7 @@ export function AiPane({
   onClose: () => void;
   resize: AiResizeHandleProps;
 }) {
+  const { isEn, t: tr } = useI18n();
   const { workspace, mailStore, aiStore, requestAiAction } = useApp();
   const mail = mailStore.selectedMail;
   const mailId = mail?.id;
@@ -41,9 +46,10 @@ export function AiPane({
   const busy = aiStore.result.status === "processing";
   const t = useTranslation();
   const source = t.confirmedSource;
-  const ui = workspace.settings.language === "en-US" ? "en" : "zh-CN";
   const crossLang =
-    Boolean(t.result) || (t.language !== "auto" && t.language !== ui);
+    Boolean(t.result) ||
+    (t.language !== "auto" &&
+      (isEn ? t.language !== "en" : !t.language.startsWith("zh")));
   const blocked =
     !!mail &&
     (mail.folder === "spam" ||
@@ -54,46 +60,67 @@ export function AiPane({
   useAiMailOnOpen(open, blocked);
 
   const handleSendPrompt = () => {
-    const trimmed = promptInput.trim();
-    if (!trimmed || busy || isDisabledForMail) return;
-    requestAiAction("自由提问", { kind: "chat", question: trimmed });
+    const question = promptInput.trim();
+    if (!question || busy || isDisabledForMail) return;
+    requestAiAction(tr("ai.freeQuestionLabel"), { kind: "chat", question });
     setPromptInput("");
+  };
+  const resummarizeTip = tr("ai.resummarizeTip");
+  const settingsTip = tr("ai.settingsTip");
+  const closeTip = tr("ai.closeSidebarTip");
+  const [disabledTitle, disabledDesc] = !workspace.settings.aiEnabled
+    ? [tr("ai.disabledTitle"), tr("ai.disabledDesc")]
+    : !mail
+      ? [tr("ai.noMailTitle"), tr("ai.noMailDesc")]
+      : [tr("ai.sensitiveSkippedTitle"), tr("ai.sensitiveSkippedDesc")];
+  const placeholder = tr(
+    isDisabledForMail
+      ? "ai.askDisabledPlaceholder"
+      : crossLang
+        ? "ai.askForeignPlaceholder"
+        : "ai.askPlaceholder",
+  );
+  const handleRetry = () => {
+    if (result?.run)
+      requestAiAction(tr("ai.retryCurrentAction"), result.run.action);
   };
 
   return (
     <aside
       id="mail-ai-pane"
       className="panel-card ai-pane ai-slide-panel"
-      aria-label="Omni AI 助手面板"
+      aria-label={tr("ai.paneAria")}
     >
       <AiResizeHandle {...resize} />
       <div className="ai-header">
         <div className="ai-title" style={{ minWidth: 0 }}>
           <Icon name="sparkle" size={15} />
           <span className="truncate">Omni AI</span>
-          {isDrawer && <span className="ai-drawer-badge">浮层抽屉</span>}
+          {isDrawer && (
+            <span className="ai-drawer-badge">{tr("ai.drawerBadge")}</span>
+          )}
         </div>
         <div className="row" style={{ gap: 4, flexShrink: 0 }}>
-          <Tooltip label="重新总结当前邮件">
+          <Tooltip label={resummarizeTip}>
             <button
               type="button"
               className="btn-icon"
-              style={{ width: 26, height: 26 }}
+              style={hdrBtnStyle}
               disabled={isDisabledForMail || busy}
-              aria-label="重新总结当前邮件"
+              aria-label={resummarizeTip}
               onClick={() =>
-                requestAiAction("重新总结当前邮件", summaryAction(source, true))
+                requestAiAction(resummarizeTip, summaryAction(source, true))
               }
             >
               <Icon name="refresh" size={13} />
             </button>
           </Tooltip>
-          <Tooltip label="AI 隐私与模型设置">
+          <Tooltip label={settingsTip}>
             <button
               type="button"
               className="btn-icon"
-              style={{ width: 26, height: 26 }}
-              aria-label="AI 隐私与模型设置"
+              style={hdrBtnStyle}
+              aria-label={settingsTip}
               onClick={() =>
                 workspace.setOverlay({ type: "settings", tab: "ai" })
               }
@@ -101,12 +128,12 @@ export function AiPane({
               <Icon name="sliders" size={13} />
             </button>
           </Tooltip>
-          <Tooltip label="收起 AI 侧栏" shortcut="Esc">
+          <Tooltip label={closeTip} shortcut="Esc">
             <button
               type="button"
               className="btn-icon"
-              style={{ width: 26, height: 26 }}
-              aria-label="收起 AI 侧栏"
+              style={hdrBtnStyle}
+              aria-label={closeTip}
               onClick={onClose}
             >
               <Icon name="x" size={13} />
@@ -120,35 +147,20 @@ export function AiPane({
       <FadeScroll
         className="ai-scroll"
         surface={isDrawer ? "--bg-ai-surface" : "--bg-card"}
-        label="AI 分析和对话"
+        label={tr("ai.scrollLabel")}
         viewportProps={chatViewport}
       >
         {isDisabledForMail ? (
           <div className="ai-status-box warning">
-            <strong>
-              {!workspace.settings.aiEnabled
-                ? "Omni AI 助手已停用"
-                : !mail
-                  ? "未选中任何邮件"
-                  : "敏感邮件已跳过"}
-            </strong>
-            <div style={{ lineHeight: 1.5 }}>
-              {!workspace.settings.aiEnabled
-                ? "你可以随时在「设置 → AI 助手」中重新开启。"
-                : !mail
-                  ? "打开邮件后可查看摘要、拟稿或追问。"
-                  : "未向模型发送此邮件。验证码、私钥、禁读邮件和高风险邮件均不可调用 AI。"}
-            </div>
+            <strong>{disabledTitle}</strong>
+            <div style={{ lineHeight: 1.5 }}>{disabledDesc}</div>
           </div>
         ) : (
           <>
             <AiStatusPanel
               status={result?.status ?? "idle"}
               detail={result?.detail ?? ""}
-              onRetry={() => {
-                if (result?.run)
-                  requestAiAction("重试当前操作", result.run.action);
-              }}
+              onRetry={handleRetry}
             />
             <AiInsightContent insight={insight} chats={chats} busy={busy} />
           </>
@@ -167,29 +179,19 @@ export function AiPane({
               if (e.key === "Enter" && !e.nativeEvent.isComposing)
                 handleSendPrompt();
             }}
-            placeholder={
-              isDisabledForMail
-                ? "当前邮件不可调用 AI"
-                : crossLang
-                  ? ui === "en"
-                    ? "Ask in English about the original…"
-                    : "用中文追问这封外文邮件的细节…"
-                  : "针对这封邮件，问点什么…"
-            }
+            placeholder={placeholder}
           />
           <button
             type="button"
             className="btn btn-primary btn-sm"
-            style={{ height: 26, padding: "0 10px", flexShrink: 0 }}
+            style={sendBtnStyle}
             disabled={isDisabledForMail || busy || !promptInput.trim()}
             onClick={handleSendPrompt}
           >
-            发送
+            {tr("ai.sendBtn")}
           </button>
         </div>
-        <div className="ai-footnote">
-          每封邮件在本地保留最近 10 轮对话 · AI 内容仅供参考
-        </div>
+        <div className="ai-footnote">{tr("ai.footnote")}</div>
       </div>
     </aside>
   );

@@ -1,4 +1,5 @@
-import type { Language, SourceLanguage } from "./translationLanguages";
+import { t as globalT, type TranslationKey } from "../../../i18n/index.ts";
+import type { Language, SourceLanguage } from "./translationLanguages.ts";
 
 export const translationModes = [
   { id: "original", label: "原文", option: "恢复原文" },
@@ -8,6 +9,28 @@ export const translationModes = [
 
 export type TranslationMode = (typeof translationModes)[number]["id"];
 export type TranslatedMode = Exclude<TranslationMode, "original">;
+
+export function getTranslationModes(
+  translate: (key: TranslationKey) => string = globalT,
+) {
+  return [
+    {
+      id: "original" as const,
+      label: translate("translation.modeOriginalLabel"),
+      option: translate("translation.modeOriginalOption"),
+    },
+    {
+      id: "translated" as const,
+      label: translate("translation.modeInlineLabel"),
+      option: translate("translation.modeInlineOption"),
+    },
+    {
+      id: "bilingual" as const,
+      label: translate("translation.modeBilingualLabel"),
+      option: translate("translation.modeBilingualOption"),
+    },
+  ];
+}
 
 export interface TranslationOptions {
   source: SourceLanguage;

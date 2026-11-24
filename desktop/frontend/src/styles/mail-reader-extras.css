@@ -1,4 +1,22 @@
 /* 正文扩展卡片：会议邀请 (.ics)、附件网格与固定底部回复栏 */
+.reader-badges-chips {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.reader-account-pill {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-ink);
+}
+
+.reader-thread-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .ics-card {
   display: flex;
   flex-direction: column;

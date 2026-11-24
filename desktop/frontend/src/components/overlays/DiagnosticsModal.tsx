@@ -1,5 +1,5 @@
-import { ScrollCodeBlock } from "../common/scroll-fade/FadeScroll";
 import { useEffect, useState } from "react";
+import { useI18n } from "../../i18n";
 import {
   diagnosticApi,
   parseBackendError,
@@ -14,16 +14,18 @@ import {
 import { HandshakeSteps } from "../common/HandshakeSteps";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
+import { ScrollCodeBlock } from "../common/scroll-fade/FadeScroll";
 
 export function DiagnosticsModal({ accountId }: { accountId: string }) {
   const { workspace, toastStore } = useApp();
+  const { t } = useI18n();
   const acc =
     workspace.accounts.find((a) => a.id === accountId) ?? workspace.accounts[0];
   const [report, setReport] = useState<DiagnosticReport | null>(null);
   const [logs, setLogs] = useState<SyncLogEntry[]>([]);
   const [probeStatus, setProbeStatus] = useState<AsyncActionStatus>("idle");
   const [bundleStatus, setBundleStatus] = useState<AsyncActionStatus>("idle");
-  const [stepLabel, setStepLabel] = useState("正在探测链路…");
+  const [stepLabel, setStepLabel] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -41,6 +43,7 @@ export function DiagnosticsModal({ accountId }: { accountId: string }) {
   const handleRunDiag = async () => {
     if (!acc) return;
     setProbeStatus("loading");
+    setStepLabel("");
     setReport(null);
     try {
       const rep = await diagnosticApi.runAccountDiagnostics(acc.id);
@@ -53,7 +56,7 @@ export function DiagnosticsModal({ accountId }: { accountId: string }) {
       setProbeStatus("error");
       toastStore.pushToast({
         tone: "danger",
-        title: "执行诊断失败",
+        title: t("toasts.runDiagFailed"),
         detail: parseBackendError(err).message,
       });
     }
@@ -70,14 +73,14 @@ export function DiagnosticsModal({ accountId }: { accountId: string }) {
       setBundleStatus("success");
       toastStore.pushToast({
         tone: "success",
-        title: "已导出脱敏诊断包 (.zip)",
+        title: t("toasts.exportedDiagBundle"),
         detail: saved,
       });
     } catch (err) {
       setBundleStatus("error");
       toastStore.pushToast({
         tone: "danger",
-        title: "导出诊断包失败",
+        title: t("toasts.exportDiagBundleFailed"),
         detail: parseBackendError(err).message,
       });
     }
@@ -85,7 +88,7 @@ export function DiagnosticsModal({ accountId }: { accountId: string }) {
 
   const logText =
     logs.length === 0
-      ? "暂无同步或协议运行日志记录。"
+      ? t("overlays.diagNoLogsText")
       : logs
           .map(
             (l) =>
@@ -95,8 +98,10 @@ export function DiagnosticsModal({ accountId }: { accountId: string }) {
 
   return (
     <ModalShell
-      heading="连接诊断与脱敏同步日志"
-      subtitle={`${acc?.name ?? "本地空间"} · 所有授权令牌与密码已强制脱敏 [REDACTED]`}
+      heading={t("overlays.diagHeading")}
+      subtitle={t("overlays.diagSubtitle", {
+        name: acc?.name ?? t("overlays.diagLocalSpaceFallback"),
+      })}
       maxWidth={680}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
@@ -108,10 +113,10 @@ export function DiagnosticsModal({ accountId }: { accountId: string }) {
                 variant="secondary"
                 status={probeStatus}
                 idleIcon="zap"
-                idleLabel="一键重新测连"
-                loadingLabel={stepLabel}
-                successLabel="四步链路正常"
-                errorLabel="链路异常 · 重测"
+                idleLabel={t("overlays.diagRetestIdle")}
+                loadingLabel={stepLabel || t("overlays.diagProbingStep")}
+                successLabel={t("overlays.diagRetestSuccess")}
+                errorLabel={t("overlays.diagRetestError")}
                 successHoldMs={1000}
                 onSuccessHoldEnd={() => setProbeStatus("idle")}
                 onClick={() => void handleRunDiag()}
@@ -122,10 +127,10 @@ export function DiagnosticsModal({ accountId }: { accountId: string }) {
               variant="secondary"
               status={bundleStatus}
               idleIcon="download"
-              idleLabel="导出脱敏诊断包"
-              loadingLabel="正在打包日志…"
-              successLabel="诊断包已导出"
-              errorLabel="导出失败 · 重试"
+              idleLabel={t("overlays.diagExportBundleIdle")}
+              loadingLabel={t("overlays.diagExportBundleLoading")}
+              successLabel={t("overlays.diagExportBundleSuccess")}
+              errorLabel={t("overlays.backupExportRetryError")}
               successHoldMs={1000}
               onSuccessHoldEnd={() => setBundleStatus("idle")}
               onClick={() => void handleExportBundle()}
@@ -139,18 +144,18 @@ export function DiagnosticsModal({ accountId }: { accountId: string }) {
                 void navigator.clipboard?.writeText(logText);
                 toastStore.pushToast({
                   tone: "success",
-                  title: "已复制脱敏诊断日志",
+                  title: t("toasts.copiedDiagLogs"),
                 });
               }}
             >
-              <Icon name="copy" size={14} /> 复制日志
+              <Icon name="copy" size={14} /> {t("overlays.diagCopyLogsBtn")}
             </button>
             <button
               type="button"
               className="btn btn-primary"
               onClick={() => workspace.setOverlay({ type: "none" })}
             >
-              关闭
+              {t("common.close")}
             </button>
           </div>
         </>
@@ -162,7 +167,7 @@ export function DiagnosticsModal({ accountId }: { accountId: string }) {
         endpointHint={acc ? `${acc.imap.host}:${acc.imap.port}` : undefined}
         onStepLabelChange={setStepLabel}
       />
-      <ScrollCodeBlock maxHeight={280} label="诊断日志">
+      <ScrollCodeBlock maxHeight={280} label={t("overlays.diagScrollLabel")}>
         {logText}
       </ScrollCodeBlock>
     </ModalShell>

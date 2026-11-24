@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { parseBackendError, profileApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
@@ -9,9 +10,10 @@ export function ProfileSwitcherCard({
   compact?: boolean;
 }) {
   const { viewport, workspace, toastStore } = useApp();
+  const { t, localizeText } = useI18n();
   const active = workspace.activeProfile;
-  const badge = active?.badge || "个";
-  const name = active?.name || "个人工作空间";
+  const badge = localizeText(active?.badge || t("common.personalBadge"));
+  const name = localizeText(active?.name || t("common.personalWorkspace"));
   const bg = active?.color || "#141E2E";
 
   const handleLock = async (e: React.MouseEvent) => {
@@ -27,12 +29,12 @@ export function ProfileSwitcherCard({
       });
       toastStore.pushToast({
         tone: "info",
-        title: `已锁定空间「${active.name}」`,
+        title: t("toasts.profileLocked", { name: localizeText(active.name) }),
       });
     } catch (err) {
       toastStore.pushToast({
         tone: "danger",
-        title: "锁定空间失败",
+        title: t("toasts.lockProfileFailed"),
         detail: parseBackendError(err).message,
       });
     }
@@ -52,7 +54,7 @@ export function ProfileSwitcherCard({
           workspace.setOverlay({ type: "profile-manage", mode: "switch" });
         }
       }}
-      aria-label="切换或管理本地工作空间"
+      aria-label={t("sidebar.manageProfilesAria")}
     >
       <div className="row" style={{ gap: 8, minWidth: 0 }}>
         <div
@@ -71,10 +73,12 @@ export function ProfileSwitcherCard({
           {!compact && viewport !== "laptop" && (
             <span className="profile-sub truncate">
               {workspace.profiles.length > 1
-                ? `${workspace.profiles.length} 个本地空间 · 点击切换`
+                ? t("sidebar.profilesCountSub", {
+                    count: workspace.profiles.length,
+                  })
                 : active?.pinEnabled
-                  ? "PIN 保护已启用"
-                  : "本地物理隔离空间"}
+                  ? t("sidebar.pinProtectedSub")
+                  : t("sidebar.isolatedProfileSub")}
             </span>
           )}
         </div>
@@ -82,13 +86,13 @@ export function ProfileSwitcherCard({
 
       <div className="row" style={{ gap: 2, flexShrink: 0 }}>
         {active?.pinEnabled && !compact && (
-          <Tooltip label="立即上锁当前空间">
+          <Tooltip label={t("sidebar.lockProfileNowTip")}>
             <button
               type="button"
               className="icon-btn"
               style={{ width: 26, height: 26 }}
               onClick={(e) => void handleLock(e)}
-              aria-label="锁定工作空间"
+              aria-label={t("sidebar.lockWorkspaceAria")}
             >
               <Icon name="lock" size={13} />
             </button>

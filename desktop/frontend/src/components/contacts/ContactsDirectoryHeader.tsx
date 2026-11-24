@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 import { CONTACT_GROUPS } from "./ContactsSidebar";
@@ -23,21 +24,20 @@ export function ContactsDirectoryHeader({
   onGroup: (value: string | null) => void;
 }) {
   const { workspace } = useApp();
+  const { t, localizeGroup } = useI18n();
   const center = useDuplicateCenter();
   return (
     <div className="contacts-dir-header">
       <div>
         <h1 className="modal-title truncate">{title}</h1>
-        <div className="modal-sub truncate">
-          本地汇总多邮箱往来记录 · VIP 邮件在统一收件箱优先高亮提醒
-        </div>
+        <div className="modal-sub truncate">{t("contacts.directorySub")}</div>
       </div>
       {!blacklist && (
         <>
           <div
             className="contacts-directory-toolbar"
             role="toolbar"
-            aria-label="通讯录操作"
+            aria-label={t("contacts.toolbarAria")}
           >
             <ContactsToolbarActions
               groupCount={center.groups.length}
@@ -54,18 +54,18 @@ export function ContactsDirectoryHeader({
                 className="input"
                 value={query}
                 onChange={(e) => onQuery(e.target.value)}
-                aria-label="搜索联系人"
-                placeholder="搜索姓名、邮箱或公司…"
+                aria-label={t("contacts.searchAria")}
+                placeholder={t("contacts.searchPlaceholder")}
               />
               <button
                 type="button"
                 className="btn btn-primary btn-sm"
-                title="新建联系人"
-                aria-label="新建联系人"
+                title={t("contacts.newContact")}
+                aria-label={t("contacts.newContact")}
                 onClick={() => workspace.setOverlay({ type: "contact-edit" })}
               >
                 <Icon name="plus" size={14} />
-                <span>新建联系人</span>
+                <span>{t("contacts.newContact")}</span>
               </button>
             </div>
           </div>
@@ -79,7 +79,7 @@ export function ContactsDirectoryHeader({
                   className={`btn btn-sm ${groupFilter === group ? "btn-primary" : "btn-secondary"}`}
                   onClick={() => onGroup(groupFilter === group ? null : group)}
                 >
-                  {group ?? "全部分组"}
+                  {group ? localizeGroup(group) : t("contacts.allGroups")}
                 </button>
               ))}
             </div>

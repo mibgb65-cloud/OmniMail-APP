@@ -1,0 +1,38 @@
+/* 全局无原生闪烁自定义 Tooltip 与快捷键徽标 */
+.custom-tooltip {
+  position: fixed;
+  z-index: 145;
+  pointer-events: none;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--tooltip-bg);
+  border: 1px solid var(--tooltip-border);
+  color: var(--tooltip-ink);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tooltip-badge {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--tooltip-badge-bg);
+  color: var(--tooltip-badge-ink);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.tooltip-kbd {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--tooltip-kbd-bg);
+  color: var(--tooltip-kbd-ink);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}

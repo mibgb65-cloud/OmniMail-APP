@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckConnection } from "../../bindings/omnimail/desktopservice";
+import { useI18n } from "../i18n";
 import { profileApi } from "../services/backendClient";
 import { resolveLaunchSplashOptions } from "./launchSplashOptions";
 import { isWailsDesktop } from "./storageHelpers";
@@ -46,6 +47,7 @@ async function runParallelBootInit(extraHoldMs: number): Promise<void> {
 }
 
 export function useLaunchSplash(accountCount: number) {
+  const { t } = useI18n();
   const [boot] = useState(() => resolveLaunchSplashOptions(isHmrReload));
   const [phase, setPhase] = useState<SplashPhase>(() =>
     boot.skip ? "done" : "waiting",
@@ -145,9 +147,9 @@ export function useLaunchSplash(accountCount: number) {
   }, [boot.extraHoldMs, boot.skip, waitingForWindow]);
 
   const statusMessages: [string, string, string] = [
-    `正在加载本地加密索引与 ${accountCount} 个邮箱账户…`,
-    "正在恢复本地邮件缓存…",
-    "正在校验本地密钥环与同步状态…",
+    t("topbar.splashLoadingAccounts", { count: accountCount }),
+    t("topbar.splashRestoringCache"),
+    t("topbar.splashCheckingKeyring"),
   ];
 
   const workspaceSplashState: "holding" | "revealing" | undefined =

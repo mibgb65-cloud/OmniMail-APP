@@ -1,18 +1,22 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { useI18n } from "../../../i18n";
 import { getReaderToolbarLayout } from "./readerToolbarLayout";
 
 export function useReaderToolbarLayout() {
+  const { lang } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
-  const [layout, setLayout] = useState(() => getReaderToolbarLayout(0));
+  const [width, setWidth] = useState(0);
 
   useLayoutEffect(() => {
-    if (!ref.current) return;
+    const el = ref.current;
+    if (!el) return;
     const observer = new ResizeObserver(([entry]) => {
-      if (entry) setLayout(getReaderToolbarLayout(entry.contentRect.width));
+      if (entry) setWidth(entry.contentRect.width);
     });
-    observer.observe(ref.current);
+    observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
+  const layout = getReaderToolbarLayout(width, lang);
   return { ref, layout };
 }

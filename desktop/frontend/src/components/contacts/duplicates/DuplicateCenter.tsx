@@ -10,11 +10,13 @@ import type {
   ContactMergeGroup,
   DuplicateGroupDTO,
 } from "../../../../bindings/omnimail/internal/contacts/models";
+import { t, useI18n } from "../../../i18n";
 import { contactApi, parseBackendError } from "../../../services/backendClient";
 import { useApp } from "../../../state/AppContext";
 
 function useDuplicateState() {
   const { workspace, toastStore } = useApp();
+  const { t: tr } = useI18n();
   const {
     activeProfileId: profileId,
     contacts,
@@ -24,7 +26,7 @@ function useDuplicateState() {
   const [snapshot, setSnapshot] = useState<{
     profileId: string;
     groups: DuplicateGroupDTO[];
-    error?: string;
+    failed?: boolean;
   }>();
   const [revision, setRevision] = useState(0);
   const [hiddenProfiles, setHiddenProfiles] = useState<ReadonlySet<string>>(
@@ -46,12 +48,7 @@ function useDuplicateState() {
           if (current) setSnapshot({ profileId, groups });
         },
         () => {
-          if (current)
-            setSnapshot({
-              profileId,
-              groups: [],
-              error: "无法检测重复联系人，请重试。",
-            });
+          if (current) setSnapshot({ profileId, groups: [], failed: true });
         },
       );
     }, 100);
@@ -95,8 +92,11 @@ function useDuplicateState() {
           : prev,
       );
       if (activeProfile.current === profileId)
-        toastStore.pushToast({ tone: "info", title: "已忽略此组重复联系人" });
-    }, "无法忽略重复联系人");
+        toastStore.pushToast({
+          tone: "info",
+          title: tr("toasts.ignoredDupGroup"),
+        });
+    }, tr("contacts.dupIgnoreFailed"));
 
   const merge = (plans: ContactMergeGroup[]) =>
     mutate(async () => {
@@ -113,8 +113,11 @@ function useDuplicateState() {
       if (activeProfile.current !== profileId) return;
       toastStore.pushToast({
         tone: "success",
-        title: `已合并 ${result.groups} 组，精简 ${result.removed} 条联系人记录`,
-        detail: "备用邮箱和历史往来邮件仍可在主联系人中查看。",
+        title: tr("toasts.mergedDupGroupsTitle", {
+          groups: result.groups,
+          removed: result.removed,
+        }),
+        detail: tr("toasts.mergedDupGroupsDetail"),
       });
       try {
         const fresh = await contactApi.listContactsForProfile(profileId);
@@ -123,15 +126,15 @@ function useDuplicateState() {
         if (activeProfile.current === profileId)
           toastStore.pushToast({
             tone: "warning",
-            title: "合并已完成，通讯录暂未刷新",
+            title: tr("toasts.mergedRefreshDelayed"),
           });
       }
-    }, "无法合并重复联系人");
+    }, tr("contacts.dupMergeFailed"));
 
   const current = snapshot?.profileId === profileId ? snapshot : undefined;
   return {
     groups: current?.groups ?? [],
-    error: current?.error,
+    error: current?.failed ? tr("contacts.dupDetectFailed") : undefined,
     loading: !current,
     hidden: hiddenProfiles.has(profileId),
     dismiss: () =>
@@ -158,6 +161,6 @@ export function DuplicateCenter({ children }: { children: ReactNode }) {
 
 export function useDuplicateCenter() {
   const center = useContext(DuplicateContext);
-  if (!center) throw new Error("重复联系人状态未初始化");
+  if (!center) throw new Error(t("contacts.dupUninitialized"));
   return center;
 }

@@ -6,6 +6,7 @@ import type {
 } from "../../bindings/omnimail/internal/profilemgr/models";
 import * as ProfileService from "../../bindings/omnimail/services/profileservice";
 import { INITIAL_SETTINGS } from "../data/settingsDefaults";
+import { readStoredLanguage, t } from "../i18n";
 import { isWailsDesktop, resolveThemeFromPref } from "../state/storageHelpers";
 import type {
   AppSettings,
@@ -38,6 +39,10 @@ let browserProfiles: ProfileSummary[] = [
   },
 ];
 let browserActiveId = "personal";
+let browserSettings: AppSettings = {
+  ...INITIAL_SETTINGS,
+  language: readStoredLanguage(),
+};
 
 export function mapBackendSettings(raw: Partial<AppSettings>): AppSettings {
   const pref = (
@@ -93,7 +98,7 @@ export const profileApi = {
       const item: ProfileSummary = {
         id: `prof-${Date.now()}`,
         name: req.name,
-        badge: req.badge || req.name.slice(0, 1) || "新",
+        badge: req.badge || req.name.slice(0, 1) || t("common.newBadge"),
         color: req.color || "#2563EB",
         profileDir: `%LOCALAPPDATA%\\OmniMail\\Data\\profiles\\${req.name}`,
         themePreference: req.themePreference || "system",
@@ -111,15 +116,12 @@ export const profileApi = {
 
   async updateProfile(req: UpdateProfileRequest): Promise<ProfileSummary> {
     if (!isWailsDesktop()) {
+      const patch: Partial<ProfileSummary> = {};
+      if (req.name) patch.name = req.name;
+      if (req.badge) patch.badge = req.badge;
+      if (req.color) patch.color = req.color;
       browserProfiles = browserProfiles.map((p) =>
-        p.id === req.id
-          ? {
-              ...p,
-              ...(req.name ? { name: req.name } : {}),
-              ...(req.badge ? { badge: req.badge } : {}),
-              ...(req.color ? { color: req.color } : {}),
-            }
-          : p,
+        p.id === req.id ? { ...p, ...patch } : p,
       );
       return browserProfiles.find((p) => p.id === req.id) ?? browserProfiles[0];
     }
@@ -134,7 +136,7 @@ export const profileApi = {
       browserActiveId = profileId;
       const found =
         browserProfiles.find((p) => p.id === profileId) ?? browserProfiles[0];
-      return { profile: found, settings: INITIAL_SETTINGS };
+      return { profile: found, settings: browserSettings };
     }
     const res = await ProfileService.SwitchProfile(profileId, pin);
     return {
@@ -179,13 +181,16 @@ export const profileApi = {
   },
 
   async getAppSettings(): Promise<AppSettings> {
-    if (!isWailsDesktop()) return INITIAL_SETTINGS;
+    if (!isWailsDesktop()) return browserSettings;
     const raw = await ProfileService.GetAppSettings();
     return mapBackendSettings(raw as unknown as Partial<AppSettings>);
   },
 
   async updateAppSettings(patch: Partial<AppSettings>): Promise<AppSettings> {
-    if (!isWailsDesktop()) return { ...INITIAL_SETTINGS, ...patch };
+    if (!isWailsDesktop()) {
+      browserSettings = { ...browserSettings, ...patch };
+      return browserSettings;
+    }
     const raw = await ProfileService.UpdateAppSettings(
       patch as unknown as AppSettingsPatch,
     );

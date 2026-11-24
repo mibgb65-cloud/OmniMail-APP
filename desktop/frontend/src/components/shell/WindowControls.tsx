@@ -1,5 +1,6 @@
 import { Window } from "@wailsio/runtime";
 import { type MouseEvent, useEffect, useState } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 import { Tooltip } from "../common/Tooltip";
@@ -17,6 +18,7 @@ export function handleDragRegionDoubleClick(e: MouseEvent<HTMLElement>) {
 
 export function WindowControls() {
   const { toastStore } = useApp();
+  const { t } = useI18n();
   const [isMaximised, setIsMaximised] = useState(false);
 
   useEffect(() => {
@@ -49,39 +51,41 @@ export function WindowControls() {
     } catch {
       toastStore.pushToast({
         tone: "info",
-        title: "当前为网页预览模式，桌面窗口控制需在客户端内生效",
+        title: t("topbar.webPreviewWindowToast"),
       });
     }
   };
 
+  const maxLabel = isMaximised ? t("topbar.restoreDown") : t("topbar.maximize");
+
   return (
     <div className="win-controls">
-      <Tooltip label="最小化">
+      <Tooltip label={t("topbar.minimize")}>
         <button
           type="button"
           className="icon-btn"
           onClick={() => void handleWindowAction("min")}
-          aria-label="最小化"
+          aria-label={t("topbar.minimize")}
         >
           <Icon name="minus" size={14} />
         </button>
       </Tooltip>
-      <Tooltip label={isMaximised ? "向下还原" : "最大化"}>
+      <Tooltip label={maxLabel}>
         <button
           type="button"
           className="icon-btn"
           onClick={() => void handleWindowAction("max")}
-          aria-label={isMaximised ? "向下还原" : "最大化"}
+          aria-label={maxLabel}
         >
           <Icon name="square" size={12} />
         </button>
       </Tooltip>
-      <Tooltip label="关闭窗口">
+      <Tooltip label={t("topbar.closeWindow")}>
         <button
           type="button"
           className="icon-btn win-close-btn"
           onClick={() => void handleWindowAction("close")}
-          aria-label="关闭窗口"
+          aria-label={t("topbar.closeWindow")}
         >
           <Icon name="x" size={14} />
         </button>

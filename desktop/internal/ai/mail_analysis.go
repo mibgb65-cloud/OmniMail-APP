@@ -66,9 +66,7 @@ func (g *Gateway) SummarizeMail(callCtx context.Context, sess *profilemgr.Sessio
 	if strings.TrimSpace(ins.Summary) == "" {
 		return AiMailInsight{}, errors.New("模型未返回邮件摘要，请重试")
 	}
-	if ins.Deadlines == nil {
-		ins.Deadlines = []AiDeadlineItem{}
-	}
+	ins.Deadlines = normalizeDeadlines(ins.Deadlines)
 	patch := map[string]any{
 		"summaryTitle": ins.SummaryTitle, "summary": ins.Summary,
 		"deadlines": ins.Deadlines, "summaryLanguage": target,

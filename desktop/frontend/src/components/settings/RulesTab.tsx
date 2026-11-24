@@ -1,9 +1,11 @@
+import { useI18n } from "../../i18n";
 import { parseBackendError, ruleApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 
 export function RulesTab() {
   const { workspace, mailStore, toastStore } = useApp();
+  const { t } = useI18n();
 
   const handleRunNow = (ruleId: string, ruleName: string) => {
     void ruleApi
@@ -14,14 +16,14 @@ export function RulesTab() {
         void mailStore.reloadMessages();
         toastStore.pushToast({
           tone: "success",
-          title: `规则「${ruleName}」执行完毕`,
-          detail: `本次对现有收件箱共命中并处理 ${hitCount} 封邮件`,
+          title: t("toasts.ruleExecutedTitle", { name: ruleName }),
+          detail: t("toasts.ruleExecutedDetail", { count: hitCount }),
         });
       })
       .catch((err) =>
         toastStore.pushToast({
           tone: "danger",
-          title: "执行规则失败",
+          title: t("toasts.runRuleFailed"),
           detail: parseBackendError(err).message,
         }),
       );
@@ -32,18 +34,16 @@ export function RulesTab() {
       <div className="row-between">
         <div>
           <strong style={{ fontSize: 15 }}>
-            收件规则与自动分拣（{workspace.rules.length}）
+            {t("settings.rulesHeading", { count: workspace.rules.length })}
           </strong>
-          <div className="text-xs text-muted">
-            按发件人、域名、主题或附件条件自动归类、贴标签、标星或转入归档
-          </div>
+          <div className="text-xs text-muted">{t("settings.rulesDesc")}</div>
         </div>
         <button
           type="button"
           className="btn btn-primary btn-sm"
           onClick={() => workspace.setOverlay({ type: "rule-editor" })}
         >
-          <Icon name="plus" size={14} /> 新建规则
+          <Icon name="plus" size={14} /> {t("settings.newRuleBtn")}
         </button>
       </div>
 
@@ -53,7 +53,9 @@ export function RulesTab() {
             <div className="row" style={{ gap: 8 }}>
               <strong style={{ fontSize: 14 }}>{rule.name}</strong>
               <span className="pill pill-neutral">
-                {rule.accountScope === "all" ? "全部邮箱" : rule.accountScope}
+                {rule.accountScope === "all"
+                  ? t("settings.allAccountsBadge")
+                  : rule.accountScope}
               </span>
             </div>
             <div className="row" style={{ gap: 8 }}>
@@ -62,7 +64,7 @@ export function RulesTab() {
                 className="btn btn-secondary btn-sm"
                 onClick={() => handleRunNow(rule.id, rule.name)}
               >
-                立即运行
+                {t("settings.runNowBtn")}
               </button>
               <button
                 type="button"
@@ -71,12 +73,13 @@ export function RulesTab() {
                   workspace.setOverlay({ type: "rule-editor", ruleId: rule.id })
                 }
               >
-                编辑
+                {t("common.edit")}
               </button>
               <button
                 type="button"
                 role="switch"
                 aria-checked={rule.enabled}
+                aria-label={rule.name}
                 className={`switch-btn${rule.enabled ? " on" : ""}`}
                 onClick={() => workspace.toggleRule(rule.id)}
               >
@@ -88,15 +91,19 @@ export function RulesTab() {
             className="text-xs"
             style={{ color: "var(--text-body)", lineHeight: 1.6 }}
           >
-            <strong>条件：</strong>
+            <strong>{t("settings.conditionLabel")}</strong>
             {rule.conditionSummary}
             <br />
-            <strong>动作：</strong>
+            <strong>{t("settings.actionLabel")}</strong>
             {rule.actionSummary}
           </div>
           <div className="text-xs text-muted">
-            近 7 天已命中 {rule.hitsLast7Days} 封邮件 ·{" "}
-            {rule.enabled ? "规则生效中" : "已暂停"}
+            {t("settings.ruleHitsRow", {
+              hits: rule.hitsLast7Days,
+              status: rule.enabled
+                ? t("settings.ruleStatusActive")
+                : t("settings.ruleStatusPaused"),
+            })}
           </div>
         </div>
       ))}

@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 import { useInlineComposeAi } from "./useInlineComposeAi";
 
 export function ComposeInlineAiBar() {
   const { workspace, composeStore, toastStore } = useApp();
+  const { t } = useI18n();
   const draft = composeStore.draft;
   const [prompt, setPrompt] = useState("");
   const { reqId, preview, setPreview, busy, runAssist, stopAssist } =
@@ -32,8 +34,7 @@ export function ComposeInlineAiBar() {
           className="row text-xs"
           style={{ color: "var(--brand-ai)", fontWeight: 700 }}
         >
-          <Icon name="sparkle" size={14} /> 写信内联 AI 助手 ·
-          仅处理当前草稿正文
+          <Icon name="sparkle" size={14} /> {t("compose.inlineAiBanner")}
         </span>
         <div className="row" style={{ gap: 6 }}>
           {busy && reqId && (
@@ -42,7 +43,7 @@ export function ComposeInlineAiBar() {
               className="btn btn-secondary btn-sm"
               onClick={stopAssist}
             >
-              停止
+              {t("compose.stopBtn")}
             </button>
           )}
           <button
@@ -50,7 +51,7 @@ export function ComposeInlineAiBar() {
             className="btn btn-ghost btn-sm"
             onClick={() => composeStore.updateDraft({ inlineAiOpen: false })}
           >
-            关闭
+            {t("common.close")}
           </button>
         </div>
       </div>
@@ -62,7 +63,7 @@ export function ComposeInlineAiBar() {
           className="btn btn-secondary btn-sm"
           onClick={() => runAssist("draft", "professional")}
         >
-          生成初稿
+          {t("compose.generateFirstDraft")}
         </button>
         <button
           type="button"
@@ -70,7 +71,7 @@ export function ComposeInlineAiBar() {
           className="btn btn-secondary btn-sm"
           onClick={() => runAssist("polish", "professional")}
         >
-          改为更正式
+          {t("compose.makeFormal")}
         </button>
         <button
           type="button"
@@ -78,7 +79,7 @@ export function ComposeInlineAiBar() {
           className="btn btn-secondary btn-sm"
           onClick={() => runAssist("polish", "concise")}
         >
-          精简提炼
+          {t("compose.makeConcise")}
         </button>
         <button
           type="button"
@@ -86,7 +87,7 @@ export function ComposeInlineAiBar() {
           className="btn btn-secondary btn-sm"
           onClick={() => runAssist("translate_en", "professional")}
         >
-          译为英文
+          {t("compose.translateToEn")}
         </button>
         <input
           type="text"
@@ -100,7 +101,7 @@ export function ComposeInlineAiBar() {
               setPrompt("");
             }
           }}
-          placeholder="输入自定义写作要求，回车生成…"
+          placeholder={t("compose.customPromptPlaceholder")}
         />
       </div>
 
@@ -126,18 +127,18 @@ export function ComposeInlineAiBar() {
                   setPreview("");
                   toastStore.pushToast({
                     tone: "success",
-                    title: "已采纳 AI 内容写入草稿正文",
+                    title: t("toasts.adoptedAiBody"),
                   });
                 }}
               >
-                采纳并覆盖正文
+                {t("compose.adoptAndReplace")}
               </button>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={() => setPreview("")}
               >
-                放弃
+                {t("compose.discardAiBtn")}
               </button>
             </div>
           )}

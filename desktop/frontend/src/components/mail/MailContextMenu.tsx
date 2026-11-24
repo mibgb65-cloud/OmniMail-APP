@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { useValuePresence } from "../../state/usePresence";
 import type { MailItem } from "../../types/mail";
@@ -9,6 +10,7 @@ interface MailContextMenuProps {
 }
 
 export function MailContextMenu({ state, onClose }: MailContextMenuProps) {
+  const { t, localizeText } = useI18n();
   const { workspace, mailStore, composeStore, toastStore } = useApp();
   const { rendered, closing } = useValuePresence(state, 100);
   if (!rendered) return null;
@@ -16,7 +18,7 @@ export function MailContextMenu({ state, onClose }: MailContextMenuProps) {
 
   const items: ActionMenuEntry[] = [
     {
-      label: "回复发件人",
+      label: t("mailList.ctxReplySender"),
       icon: "reply",
       shortcut: "R",
       onSelect: () =>
@@ -27,39 +29,41 @@ export function MailContextMenu({ state, onClose }: MailContextMenuProps) {
         ),
     },
     {
-      label: "转发邮件",
+      label: t("mailList.ctxForwardMail"),
       icon: "forward",
       shortcut: "F",
       onSelect: () => composeStore.openReplyCompose(mail, "forward", false),
     },
     { type: "divider" },
     {
-      label: mailStore.checkedIds.includes(mail.id)
-        ? "取消选中"
-        : "批量多选邮件",
+      label: t(
+        mailStore.checkedIds.includes(mail.id)
+          ? "mailList.ctxUnselect"
+          : "mailList.ctxBatchSelect",
+      ),
       icon: "check",
       onSelect: () => mailStore.toggleChecked(mail.id),
     },
     {
-      label: mail.unread ? "标为已读" : "标为未读",
+      label: t(mail.unread ? "mailList.ctxMarkRead" : "mailList.ctxMarkUnread"),
       icon: "mail",
       onSelect: () => mailStore.markRead([mail.id], !mail.unread),
     },
     {
-      label: mail.starred ? "取消星标" : "标记为星标",
+      label: t(mail.starred ? "mailList.ctxUnstar" : "mailList.ctxStar"),
       icon: "star",
       shortcut: "S",
       onSelect: () => mailStore.toggleStar([mail.id]),
     },
     {
-      label: "稍后处理…",
+      label: t("mailList.ctxSnooze"),
       icon: "clock",
       shortcut: "H",
       onSelect: () =>
         workspace.setOverlay({ type: "snooze", mailIds: [mail.id] }),
     },
     {
-      label: "管理标签…",
+      label: t("mailList.ctxManageLabels"),
       icon: "tag",
       shortcut: "L",
       onSelect: () =>
@@ -70,29 +74,33 @@ export function MailContextMenu({ state, onClose }: MailContextMenuProps) {
         }),
     },
     {
-      label: "归档会话",
+      label: t("mailList.ctxArchiveThread"),
       icon: "archive",
       shortcut: "E",
       onSelect: () => {
         mailStore.moveMails([mail.id], "archive");
-        toastStore.pushToast({ tone: "info", title: "邮件已归档" });
+        toastStore.pushToast({ tone: "info", title: t("toasts.mailArchived") });
       },
     },
     {
-      label: "移动到文件夹…",
+      label: t("mailList.ctxMoveToFolder"),
       icon: "folder",
       onSelect: () =>
         workspace.setOverlay({ type: "move-folder", mailIds: [mail.id] }),
     },
     { type: "divider" },
     {
-      label: "查看原始邮件头",
+      label: t("mailList.ctxViewRawHeaders"),
       icon: "code",
       onSelect: () =>
         workspace.setOverlay({ type: "mail-source", mailId: mail.id }),
     },
     {
-      label: mail.folder === "trash" ? "永久删除邮件" : "移至回收站",
+      label: t(
+        mail.folder === "trash"
+          ? "mailList.ctxPermanentDelete"
+          : "mailList.ctxMoveToTrash",
+      ),
       icon: "trash",
       shortcut: "Del",
       danger: true,
@@ -102,11 +110,16 @@ export function MailContextMenu({ state, onClose }: MailContextMenuProps) {
             type: "danger-confirm",
             kind: "permanent-delete",
             targetId: mail.id,
-            targetLabel: mail.subject,
+            targetLabel: mail.subject.trim()
+              ? localizeText(mail.subject)
+              : t("common.noSubject"),
           });
         } else {
           mailStore.moveMails([mail.id], "trash");
-          toastStore.pushToast({ tone: "info", title: "已移入回收站" });
+          toastStore.pushToast({
+            tone: "info",
+            title: t("toasts.movedToTrash"),
+          });
         }
       },
     },

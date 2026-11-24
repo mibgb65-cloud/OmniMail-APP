@@ -1,9 +1,10 @@
-import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { BrandLogo } from "../common/BrandLogo";
 import { Checkbox } from "../common/Checkbox";
 import { Icon } from "../common/Icon";
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import {
   WindowControls,
   handleDragRegionDoubleClick,
@@ -13,13 +14,15 @@ import { OnboardingInitCard } from "./OnboardingInitCard";
 
 export function OnboardingScreen() {
   const { workspace, desktopBridge, toastStore } = useApp();
+  const { t } = useI18n();
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [customDir, setCustomDir] = useState<string | null>(null);
-
   const effectiveDataDir = customDir ?? desktopBridge.storage.dataDir;
   const canStart = agreeTerms && agreePrivacy;
-
+  const isLight = workspace.settings.theme === "light";
+  const openDoc = (doc: "terms" | "privacy") =>
+    workspace.setOverlay({ type: "legal-doc", doc });
   const commitAndRun = async (nextAction: () => void) => {
     try {
       await desktopBridge.completeInitialSetup(effectiveDataDir);
@@ -27,17 +30,19 @@ export function OnboardingScreen() {
     } catch (err) {
       toastStore.pushToast({
         tone: "danger",
-        title: "保存初始化数据目录失败",
-        detail: err instanceof Error ? err.message : "请检查数据目录权限",
+        title: t("onboarding.saveDataDirFailed"),
+        detail:
+          err instanceof Error
+            ? err.message
+            : t("onboarding.checkDirPermFallback"),
       });
     }
   };
-
   return (
     <FadeScroll
       className="onboarding-page"
       surface="--bg-canvas"
-      label="首次使用引导"
+      label={t("onboarding.pageScrollLabel")}
     >
       <div
         className="row-between window-drag-region"
@@ -56,7 +61,7 @@ export function OnboardingScreen() {
               OmniMail
             </div>
             <div className="text-xs text-muted">
-              本地优先的多邮箱桌面工作空间
+              {t("onboarding.brandTagline")}
             </div>
           </div>
         </div>
@@ -66,18 +71,17 @@ export function OnboardingScreen() {
             className="btn btn-secondary btn-sm"
             onClick={workspace.toggleTheme}
           >
-            <Icon
-              name={workspace.settings.theme === "light" ? "moon" : "sun"}
-              size={14}
-            />
-            {workspace.settings.theme === "light" ? "深色模式" : "浅色模式"}
+            <Icon name={isLight ? "moon" : "sun"} size={14} />
+            {isLight
+              ? t("onboarding.switchToDark")
+              : t("onboarding.switchToLight")}
           </button>
           <button
             type="button"
             className="btn btn-ghost btn-sm"
             onClick={() => void commitAndRun(() => workspace.setScreen("mail"))}
           >
-            保存偏好并进入工作台
+            {t("onboarding.saveAndEnter")}
           </button>
           <WindowControls />
         </div>
@@ -96,14 +100,13 @@ export function OnboardingScreen() {
                 color: "var(--text-ink)",
               }}
             >
-              初始化偏好与首个邮箱接入
+              {t("onboarding.setupHeading")}
             </h2>
             <p
               className="text-muted"
               style={{ margin: "4px 0 0", fontSize: 12.5, lineHeight: 1.55 }}
             >
-              确认本地数据存储位置与常用偏好。同意基础条款不会自动开启 Omni AI，
-              AI 能力可在工作台内单独开关并按次确认。
+              {t("onboarding.setupDesc")}
             </p>
           </div>
 
@@ -119,33 +122,29 @@ export function OnboardingScreen() {
             <Checkbox
               checked={agreeTerms}
               onChange={setAgreeTerms}
-              ariaLabel="同意用户协议"
+              ariaLabel={t("onboarding.agreeTermsAria")}
             >
-              我已阅读并同意{" "}
+              {t("onboarding.readAndAgreePrefix")}
               <button
                 type="button"
                 style={{ color: "var(--brand-accent)", fontWeight: 600 }}
-                onClick={() =>
-                  workspace.setOverlay({ type: "legal-doc", doc: "terms" })
-                }
+                onClick={() => openDoc("terms")}
               >
-                《用户协议》
+                {t("onboarding.termsLink")}
               </button>
             </Checkbox>
             <Checkbox
               checked={agreePrivacy}
               onChange={setAgreePrivacy}
-              ariaLabel="同意隐私政策"
+              ariaLabel={t("onboarding.agreePrivacyAria")}
             >
-              我已阅读并同意{" "}
+              {t("onboarding.readAndAgreePrefix")}
               <button
                 type="button"
                 style={{ color: "var(--brand-accent)", fontWeight: 600 }}
-                onClick={() =>
-                  workspace.setOverlay({ type: "legal-doc", doc: "privacy" })
-                }
+                onClick={() => openDoc("privacy")}
               >
-                《隐私政策》
+                {t("onboarding.privacyLink")}
               </button>
             </Checkbox>
           </div>
@@ -162,7 +161,7 @@ export function OnboardingScreen() {
             }
           >
             <Icon name="plus" size={16} />
-            添加首个邮箱
+            {t("onboarding.addFirstMailboxBtn")}
           </button>
 
           <div
@@ -182,18 +181,17 @@ export function OnboardingScreen() {
               }
               disabled={!canStart}
             >
-              直接使用手动 IMAP / SMTP
+              {t("onboarding.manualImapDirectBtn")}
             </button>
             <span className="text-xs text-muted">
-              版本 0.1.0 · 本地加密存储
+              {t("onboarding.versionEncryptedBadge")}
             </span>
           </div>
         </div>
       </div>
 
       <div className="text-xs text-muted" style={{ textAlign: "center" }}>
-        支持浏览器 OAuth、客户端授权码与标准 IMAP/SMTP ·
-        可随时在设置中迁移数据目录或清理缓存
+        {t("onboarding.bottomFootnote")}
       </div>
     </FadeScroll>
   );

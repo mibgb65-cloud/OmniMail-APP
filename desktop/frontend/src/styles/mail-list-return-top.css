@@ -1,40 +1,44 @@
-.mail-list-pane {
-  --list-header-edge-shadow: 0 4px 12px rgb(15 23 42 / 6%);
-  --list-pill-bg: rgb(255 255 255 / 92%);
-  --list-pill-border: #cbd5e1;
-  --list-pill-text: #0f172a;
-  --list-pill-hover: #f8fafc;
-  --list-pill-hover-border: #94a3b8;
-  --list-pill-shadow: 0 6px 18px rgb(15 23 42 / 10%);
-  --list-pill-blue: #2563eb;
-  --list-pill-blue-hover: #1d4ed8;
-  --list-pill-blue-shadow: 0 6px 18px rgb(37 99 235 / 30%);
+/* 邮件列表与正文阅读区共享回到顶部轻胶囊（05 · Scroll-to-Top Pill） */
+:root {
+  --scroll-header-edge-shadow: 0 4px 12px rgb(15 23 42 / 6%);
+  --scroll-pill-bg: rgb(255 255 255 / 92%);
+  --scroll-pill-border: #cbd5e1;
+  --scroll-pill-text: #0f172a;
+  --scroll-pill-hover: #f8fafc;
+  --scroll-pill-hover-border: #94a3b8;
+  --scroll-pill-shadow: 0 6px 18px rgb(15 23 42 / 10%);
+  --scroll-pill-blue: #2563eb;
+  --scroll-pill-blue-hover: #1d4ed8;
+  --scroll-pill-blue-shadow: 0 6px 18px rgb(37 99 235 / 30%);
 }
 
-:root[data-theme="dark"] .mail-list-pane {
-  --list-header-edge-shadow: 0 4px 14px rgb(0 0 0 / 25%);
-  --list-pill-bg: rgb(30 41 59 / 92%);
-  --list-pill-border: #334155;
-  --list-pill-text: #f1f5f9;
-  --list-pill-hover: #273449;
-  --list-pill-hover-border: #475569;
-  --list-pill-shadow: 0 8px 22px rgb(0 0 0 / 45%);
-  --list-pill-blue: #3b82f6;
-  --list-pill-blue-hover: #2563eb;
-  --list-pill-blue-shadow: var(--list-pill-shadow);
+:root[data-theme="dark"] {
+  --scroll-header-edge-shadow: 0 4px 14px rgb(0 0 0 / 25%);
+  --scroll-pill-bg: rgb(30 41 59 / 92%);
+  --scroll-pill-border: #334155;
+  --scroll-pill-text: #f1f5f9;
+  --scroll-pill-hover: #273449;
+  --scroll-pill-hover-border: #475569;
+  --scroll-pill-shadow: 0 8px 22px rgb(0 0 0 / 45%);
+  --scroll-pill-blue: #3b82f6;
+  --scroll-pill-blue-hover: #2563eb;
+  --scroll-pill-blue-shadow: var(--scroll-pill-shadow);
 }
 
-.mail-list-pane > .list-header {
+.mail-list-pane > .list-header,
+.mail-reader-pane > .reader-toolbar {
   position: relative;
   z-index: 1;
   transition: box-shadow 180ms ease-out;
 }
 
-.mail-list-pane > .list-header[data-scrolled="true"] {
-  box-shadow: var(--list-header-edge-shadow);
+.mail-list-pane > .list-header[data-scrolled="true"],
+.mail-reader-pane > .reader-toolbar[data-scrolled="true"] {
+  box-shadow: var(--scroll-header-edge-shadow);
 }
 
-.mail-list-body {
+.mail-list-body,
+.reader-body {
   position: relative;
   isolation: isolate;
   flex: 1 1 auto;
@@ -44,7 +48,8 @@
   min-height: 0;
 }
 
-.mail-list-scroll[data-return-pill="true"]::after {
+.mail-list-scroll[data-return-pill="true"]::after,
+.reader-scroll[data-return-pill="true"]::after {
   height: min(48px, 100%);
   opacity: 1;
 }
@@ -53,26 +58,27 @@
   overflow-anchor: none;
 }
 
-.mail-list-scroll[data-return-pill="true"] .fade-scroll-content {
-  /* 留出最后一张卡片可完全移到胶囊上方的空间。 */
+.mail-list-scroll[data-return-pill="true"] .fade-scroll-content,
+.reader-scroll[data-return-pill="true"] .fade-scroll-content {
+  /* 留出底部卡片、落款与附件区可完全滚到胶囊上方的空间。 */
   padding-block-end: 56px;
 }
 
-.mail-list-return-top {
+.scroll-to-top-pill {
   position: absolute;
   z-index: 20;
-  inset: auto auto 16px 50%;
+  inset: auto auto var(--scroll-pill-bottom, 16px) 50%;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   height: 32px;
   padding-inline: 14px;
-  border: 1px solid var(--list-pill-border);
+  border: 1px solid var(--scroll-pill-border);
   border-radius: 999px;
-  background: var(--list-pill-bg);
+  background: var(--scroll-pill-bg);
   backdrop-filter: blur(12px);
-  box-shadow: var(--list-pill-shadow);
-  color: var(--list-pill-text);
+  box-shadow: var(--scroll-pill-shadow);
+  color: var(--scroll-pill-text);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
@@ -89,7 +95,15 @@
     border-color 180ms ease-out;
 }
 
-.mail-list-return-top[data-visible="true"] {
+.reader-return-top {
+  --scroll-pill-bottom: 14px;
+}
+
+.scroll-to-top-pill > svg {
+  stroke-width: 1.8;
+}
+
+.scroll-to-top-pill[data-visible="true"] {
   visibility: visible;
   opacity: 1;
   transform: translate(-50%, 0);
@@ -97,27 +111,44 @@
   transition-delay: 0s;
 }
 
-.mail-list-return-top[data-visible="true"]:hover {
+.scroll-to-top-pill[data-visible="true"]:hover {
   transform: translate(-50%, -2px);
-  background: var(--list-pill-hover);
-  border-color: var(--list-pill-hover-border);
+  background: var(--scroll-pill-hover);
+  border-color: var(--scroll-pill-hover-border);
 }
 
-.mail-list-return-top[data-new-mail="true"] {
-  background: var(--list-pill-blue);
-  border-color: var(--list-pill-blue);
+.scroll-to-top-pill[data-new-mail="true"] {
+  background: var(--scroll-pill-blue);
+  border-color: var(--scroll-pill-blue);
   color: #fff;
-  box-shadow: var(--list-pill-blue-shadow);
+  box-shadow: var(--scroll-pill-blue-shadow);
 }
 
-.mail-list-return-top[data-visible="true"][data-new-mail="true"]:hover {
-  background: var(--list-pill-blue-hover);
-  border-color: var(--list-pill-blue-hover);
+.scroll-to-top-pill[data-visible="true"][data-new-mail="true"]:hover {
+  background: var(--scroll-pill-blue-hover);
+  border-color: var(--scroll-pill-blue-hover);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .mail-list-pane > .list-header,
-  .mail-list-return-top {
+  .mail-reader-pane > .reader-toolbar,
+  .scroll-to-top-pill {
     transition: none;
+  }
+
+  .scroll-to-top-pill[data-visible="true"]:hover {
+    transform: translate(-50%, 0);
+  }
+}
+
+@media print {
+  .scroll-to-top-pill,
+  .reader-scroll::after,
+  .mail-list-scroll::after {
+    display: none !important;
+  }
+
+  .reader-scroll[data-return-pill="true"] .fade-scroll-content {
+    padding-block-end: 18px;
   }
 }

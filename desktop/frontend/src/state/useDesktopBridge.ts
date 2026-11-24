@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GetBootstrapState } from "../../bindings/omnimail/desktopservice";
+import { formatLocalizedTime, getCurrentLanguage, t } from "../i18n";
 import type { EmailAccount } from "../types/account";
 import type {
   AppSettings,
@@ -73,8 +74,8 @@ export function useDesktopBridge(deps: BridgeDeps) {
       deps.setScreen("mail");
       deps.pushToast({
         tone: "info",
-        title: `已接收关联文件：${fileName}`,
-        detail: "已载入本地安全只读视图",
+        title: t("toasts.externalFileReceived", { name: fileName }),
+        detail: t("toasts.externalFileReadonlyDetail"),
       });
     },
     [deps],
@@ -140,25 +141,30 @@ export function useDesktopBridge(deps: BridgeDeps) {
           p.status === "error"
             ? p.status
             : "connected";
-        deps.updateAccount(p.accountId, { status: st, lastSyncedAt: "刚刚" });
+        deps.updateAccount(p.accountId, {
+          status: st,
+          lastSyncedAt: formatLocalizedTime("刚刚", getCurrentLanguage()),
+        });
         if (st === "auth-expired") deps.setBannerMode("auth-expired");
         else if (st === "error") deps.setBannerMode("partial-sync");
-        else if (st === "connected") deps.setSyncLabel("所有邮箱已同步");
+        else if (st === "connected")
+          deps.setSyncLabel(t("topbar.allAccountsSynced"));
       },
       onSyncProgress: (p: LiveSyncProgress) => {
         setSyncProgressByAccount((prev) => new Map(prev).set(p.accountId, p));
-        if (p.status === "syncing") deps.setSyncLabel("正在同步…");
+        if (p.status === "syncing")
+          deps.setSyncLabel(t("topbar.syncingEllipsis"));
         else deps.setSyncLabel(p.stage);
       },
       onMailDelta: deps.onMailDelta,
       onOutboxUpdated: (p: { state: string; lastError?: string }) => {
         deps.onMailDelta();
         if (p.state === "sent") {
-          deps.pushToast({ tone: "success", title: "邮件已成功送达" });
+          deps.pushToast({ tone: "success", title: t("toasts.mailDelivered") });
         } else if (p.state === "failed") {
           deps.pushToast({
             tone: "danger",
-            title: "邮件发送失败，已移入待发送队列",
+            title: t("toasts.mailSendFailedOutbox"),
             detail: p.lastError,
           });
         }

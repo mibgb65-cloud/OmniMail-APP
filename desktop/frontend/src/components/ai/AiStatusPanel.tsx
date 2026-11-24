@@ -1,3 +1,4 @@
+import { useI18n, type TranslationKey } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import type { AiRunStatus } from "../../types/workspace";
 import { Icon } from "../common/Icon";
@@ -6,40 +7,40 @@ const STATUS_META: Record<
   Exclude<AiRunStatus, "idle" | "processing">,
   {
     tone: "warning" | "danger";
-    title: string;
-    detail: string;
-    actionLabel: string;
+    titleKey: TranslationKey;
+    detailKey: TranslationKey;
+    actionKey: TranslationKey;
   }
 > = {
   error: {
     tone: "danger",
-    title: "AI 请求未完成",
-    detail: "本次请求未成功完成。请检查模型服务状态后重试。",
-    actionLabel: "重试当前操作",
+    titleKey: "ai.errFailedTitle",
+    detailKey: "ai.errFailedDetail",
+    actionKey: "ai.retryCurrentAction",
   },
   "invalid-key": {
     tone: "danger",
-    title: "API 密钥无效或已过期",
-    detail: "请前往「设置 → AI 助手」检查模型服务地址与密钥配置。",
-    actionLabel: "打开 AI 设置",
+    titleKey: "ai.errInvalidKeyTitle",
+    detailKey: "ai.errInvalidKeyDetail",
+    actionKey: "ai.errInvalidKeyAction",
   },
   "quota-exceeded": {
     tone: "warning",
-    title: "模型额度已用尽",
-    detail: "当前模型账户配额已达上限，请更换密钥或稍后重试。",
-    actionLabel: "切换模型配置",
+    titleKey: "ai.errQuotaTitle",
+    detailKey: "ai.errQuotaDetail",
+    actionKey: "ai.errQuotaAction",
   },
   unavailable: {
     tone: "warning",
-    title: "AI 服务暂不可用",
-    detail: "离线模式或远端服务维护中，已保留已有本地邮件操作能力。",
-    actionLabel: "恢复默认状态",
+    titleKey: "ai.errUnavailableTitle",
+    detailKey: "ai.errUnavailableDetail",
+    actionKey: "ai.errUnavailableAction",
   },
   "disabled-sensitive": {
     tone: "warning",
-    title: "敏感邮件已禁止 AI 读取",
-    detail: "垃圾邮件、回收站与疑似钓鱼风险邮件默认不向 AI 发送任何内容。",
-    actionLabel: "了解隐私策略",
+    titleKey: "ai.errSensitiveTitle",
+    detailKey: "ai.errSensitiveDetail",
+    actionKey: "ai.errSensitiveAction",
   },
 };
 
@@ -52,6 +53,7 @@ export function AiStatusPanel({
   detail: string;
   onRetry: () => void;
 }) {
+  const { t } = useI18n();
   const { workspace, aiStore } = useApp();
 
   if (status === "processing") {
@@ -59,18 +61,18 @@ export function AiStatusPanel({
       <div className="ai-status-box">
         <div className="ai-card-head">
           <span className="row" style={{ color: "var(--brand-ai)" }}>
-            <Icon name="sparkle" size={14} /> 正在处理 AI 请求…
+            <Icon name="sparkle" size={14} /> {t("ai.processingTitle")}
           </span>
           <button
             type="button"
             className="btn btn-ghost btn-sm"
             onClick={() => aiStore.stopGeneration()}
           >
-            停止生成
+            {t("ai.stopGenerating")}
           </button>
         </div>
         <div className="text-muted text-xs">
-          不会发送附件文件、文件名或附件内容预览。
+          {t("ai.processingPrivacyHint")}
         </div>
       </div>
     );
@@ -82,11 +84,11 @@ export function AiStatusPanel({
   return (
     <div className={`ai-status-box ${meta.tone}`}>
       <div className="row-between">
-        <strong>{meta.title}</strong>
+        <strong>{t(meta.titleKey)}</strong>
         <Icon name="alertCircle" size={15} />
       </div>
       <div style={{ lineHeight: 1.5 }}>
-        {status === "error" && detail ? detail : meta.detail}
+        {status === "error" && detail ? detail : t(meta.detailKey)}
       </div>
       <div className="row">
         <button
@@ -104,14 +106,14 @@ export function AiStatusPanel({
             }
           }}
         >
-          {meta.actionLabel}
+          {t(meta.actionKey)}
         </button>
         <button
           type="button"
           className="btn btn-ghost btn-sm"
           onClick={aiStore.dismissStatus}
         >
-          忽略
+          {t("ai.dismissBtn")}
         </button>
       </div>
     </div>

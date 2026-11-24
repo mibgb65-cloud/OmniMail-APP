@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import type { DuplicateGroupDTO } from "../../../../bindings/omnimail/internal/contacts/models";
+import { useI18n } from "../../../i18n";
 import { Checkbox } from "../../common/Checkbox";
 import { Icon } from "../../common/Icon";
 import { FadeScroll } from "../../common/scroll-fade/FadeScroll";
@@ -25,6 +26,7 @@ export function DuplicateGroupCard({
   onIgnore: () => void;
   onMerge: () => void;
 }) {
+  const { t, localizeText } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const listId = useId();
   const members = sortedCandidates(group.candidates);
@@ -33,7 +35,9 @@ export function DuplicateGroupCard({
   if (!primary) return null;
   const plan = createMergePlan(group, selection);
   const name =
-    primary.name && !primary.name.includes("@") ? primary.name : "未命名联系人";
+    primary.name && !primary.name.includes("@")
+      ? primary.name
+      : t("contacts.dupUnnamedContact");
   const extra = members.length - 2;
   const addresses = visibleDuplicateCandidates(members, expanded).map(
     (member) => {
@@ -46,15 +50,17 @@ export function DuplicateGroupCard({
           data-excluded={excluded}
         >
           {expanded && (
-            <input
-              type="checkbox"
+            <Checkbox
+              size="sm"
               disabled={busy || isPrimary}
               checked={isPrimary || !excluded}
-              aria-label={`合并邮箱 ${member.email}`}
-              onChange={(e) =>
+              ariaLabel={t("contacts.dupMergeEmailAria", {
+                email: member.email,
+              })}
+              onChange={(checked) =>
                 onChange({
                   ...selection,
-                  excluded: e.target.checked
+                  excluded: checked
                     ? selection.excluded.filter((id) => id !== member.id)
                     : [...selection.excluded, member.id],
                 })
@@ -66,8 +72,14 @@ export function DuplicateGroupCard({
             className="contact-dup-primary"
             aria-pressed={isPrimary}
             disabled={busy}
-            aria-label={`将 ${member.email} 设为主邮箱`}
-            title={isPrimary ? "当前主邮箱" : "设为主邮箱"}
+            aria-label={t("contacts.dupSetPrimaryAria", {
+              email: member.email,
+            })}
+            title={
+              isPrimary
+                ? t("contacts.dupCurrentPrimaryTitle")
+                : t("contacts.dupSetPrimaryTitle")
+            }
             onClick={() =>
               onChange({
                 ...selection,
@@ -76,13 +88,18 @@ export function DuplicateGroupCard({
               })
             }
           >
-            {isPrimary ? "主邮箱" : excluded ? "保留" : "并入"}
+            {isPrimary
+              ? t("contacts.dupPrimaryTag")
+              : excluded
+                ? t("contacts.dupKeepTag")
+                : t("contacts.dupMergeTag")}
           </button>
           <span className="contact-dup-email truncate" title={member.email}>
             {member.email}
           </span>
           <span className="contact-dup-mail-count">
-            {member.mailCount} 封往来{member.vip ? " · VIP" : ""}
+            {t("contacts.dupMailCountRow", { count: member.mailCount })}
+            {member.vip ? " · VIP" : ""}
           </span>
         </div>
       );
@@ -93,11 +110,10 @@ export function DuplicateGroupCard({
       <header className="contact-dup-group-header">
         <Checkbox
           checked={selection.selected}
+          disabled={busy}
           size="sm"
-          ariaLabel={`选择 ${name} 重复组`}
-          onChange={(selected) => {
-            if (!busy) onChange({ ...selection, selected });
-          }}
+          ariaLabel={t("contacts.dupSelectGroupAria", { name })}
+          onChange={(selected) => onChange({ ...selection, selected })}
         />
         <span
           className={`avatar avatar-${primary.avatarTone} contact-dup-avatar`}
@@ -111,17 +127,19 @@ export function DuplicateGroupCard({
               {name}
             </strong>
             <span className="pill pill-neutral">
-              {members.length} 个重复邮箱
+              {t("contacts.dupEmailsCountPill", { count: members.length })}
             </span>
             {group.hasRelay && (
               <span className="pill pill-neutral contact-dup-relay">
-                含 noreply / 隐藏邮箱
+                {t("contacts.dupHasRelayPill")}
               </span>
             )}
           </div>
           <div className="truncate text-xs text-muted">
-            {group.reason} · 将精简 {plan?.duplicateIds.length ?? 0}{" "}
-            条联系人记录
+            {t("contacts.dupReasonSummary", {
+              reason: localizeText(group.reason),
+              count: plan?.duplicateIds.length ?? 0,
+            })}
           </div>
         </div>
         <div className="contact-dup-group-actions">
@@ -131,7 +149,7 @@ export function DuplicateGroupCard({
             disabled={busy}
             onClick={onIgnore}
           >
-            忽略
+            {t("contacts.dupIgnoreBtn")}
           </button>
           <button
             type="button"
@@ -139,7 +157,7 @@ export function DuplicateGroupCard({
             disabled={busy || !plan}
             onClick={onMerge}
           >
-            合并此组
+            {t("contacts.dupMergeGroupBtn")}
           </button>
         </div>
       </header>
@@ -148,7 +166,7 @@ export function DuplicateGroupCard({
           <FadeScroll
             className="contact-dup-address-scroll"
             surface="--bg-surface"
-            label={`${name}的重复邮箱`}
+            label={t("contacts.dupAddressesScrollLabel", { name })}
           >
             {addresses}
           </FadeScroll>
@@ -164,7 +182,9 @@ export function DuplicateGroupCard({
             onClick={() => setExpanded((value) => !value)}
           >
             <Icon name={expanded ? "chevronUp" : "chevronDown"} size={14} />
-            {expanded ? "收起重复邮箱" : `展开查看其余 ${extra} 个重复邮箱`}
+            {expanded
+              ? t("contacts.dupCollapseEmails")
+              : t("contacts.dupExpandEmails", { count: extra })}
           </button>
         )}
       </div>

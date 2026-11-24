@@ -3,6 +3,7 @@ import { summaryAction } from "../components/ai/aiAnalysisPrompt";
 import type { SourceLanguage } from "../components/mail/translation/translationLanguages";
 import { hasUsableSummary } from "../components/ai/autoMailSummary";
 import { AI_INSIGHTS_BY_MAIL } from "../data/mails";
+import { t } from "../i18n";
 import { aiApi, parseBackendError } from "../services/backendClient";
 import type { MailItem } from "../types/mail";
 import type { MailAiAction } from "../types/mailAi";
@@ -67,7 +68,8 @@ export function useAiStore() {
       };
       if (!isWailsDesktop()) {
         const timer = window.setTimeout(() => {
-          if (settle(run, "idle")) saveTurnPair(run, "已基于正文完成分析。");
+          if (settle(run, "idle"))
+            saveTurnPair(run, t("ai.previewAnalyzedReply"));
         }, 450);
         run.cancel = () => window.clearTimeout(timer);
       } else if (action.kind !== "chat") {

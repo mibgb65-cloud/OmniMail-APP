@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { GetAppBuildInfo } from "../../../bindings/omnimail/desktopservice";
 import type { AppBuildInfo } from "../../../bindings/omnimail/models";
-import { SHORTCUT_GROUPS } from "../../data/settingsDefaults";
+import { getShortcutGroups, useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { isWailsDesktop } from "../../state/storageHelpers";
 import type { RuntimeBannerMode } from "../../types/ui";
@@ -9,9 +9,12 @@ import { BrandLogo } from "../common/BrandLogo";
 import { Icon } from "../common/Icon";
 
 export function ShortcutsTab() {
+  const { lang } = useI18n();
+  const groups = getShortcutGroups(lang);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {SHORTCUT_GROUPS.map((group) => (
+      {groups.map((group) => (
         <div key={group.group} className="settings-card">
           <strong style={{ fontSize: 14 }}>{group.group}</strong>
           {group.items.map((item) => (
@@ -32,16 +35,9 @@ export function ShortcutsTab() {
   );
 }
 
-const BANNER_OPTIONS: Array<{ id: RuntimeBannerMode; label: string }> = [
-  { id: "none", label: "正常无横幅" },
-  { id: "offline", label: "离线模式" },
-  { id: "auth-expired", label: "授权失效" },
-  { id: "auto-reply", label: "休假自动回复中" },
-  { id: "partial-sync", label: "部分同步失败" },
-];
-
 export function AboutTab() {
   const { workspace, toastStore } = useApp();
+  const { t, formatTime } = useI18n();
   const [buildInfo, setBuildInfo] = useState<AppBuildInfo>({
     version: "v0.0.1",
     channel: "stable",
@@ -62,6 +58,21 @@ export function AboutTab() {
     };
   }, []);
 
+  const bannerOptions: Array<{ id: RuntimeBannerMode; label: string }> = [
+    { id: "none", label: t("settings.bannerNone") },
+    { id: "offline", label: t("settings.bannerOffline") },
+    { id: "auth-expired", label: t("settings.bannerAuthExpired") },
+    { id: "auto-reply", label: t("settings.bannerAutoReply") },
+    { id: "partial-sync", label: t("settings.bannerPartialSync") },
+  ];
+
+  const builtAt =
+    buildInfo.buildTime && buildInfo.buildTime !== "dev"
+      ? t("settings.aboutBuiltAtPart", {
+          time: formatTime(buildInfo.buildTime),
+        })
+      : "";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div className="settings-card">
@@ -76,15 +87,16 @@ export function AboutTab() {
                 <span
                   className={`pill ${buildInfo.isBeta ? "pill-warning" : "pill-accent"}`}
                 >
-                  {buildInfo.isBeta ? "Beta 测试版" : "Stable 正式版"}
+                  {buildInfo.isBeta
+                    ? t("settings.aboutBetaBadge")
+                    : t("settings.aboutStableBadge")}
                 </span>
               </div>
               <div className="text-xs text-muted">
-                版本 {buildInfo.version}
-                {buildInfo.buildTime && buildInfo.buildTime !== "dev"
-                  ? ` · 构建于 ${buildInfo.buildTime}`
-                  : ""}{" "}
-                · Wails v3 + Go + React + TypeScript
+                {t("settings.aboutVersionRow", {
+                  version: buildInfo.version,
+                  builtAt,
+                })}
               </div>
             </div>
           </div>
@@ -95,14 +107,14 @@ export function AboutTab() {
               workspace.setOverlay({ type: "update-flow", stage: "checking" })
             }
           >
-            <Icon name="refresh" size={14} /> 检查更新
+            <Icon name="refresh" size={14} />{" "}
+            {t("settings.aboutCheckUpdatesBtn")}
           </button>
         </div>
 
         <div className="settings-row">
           <span className="text-xs text-muted">
-            本地优先的多邮箱桌面客户端，支持亮暗双模式、原收件账户锁定与透明边界
-            AI 助手。
+            {t("settings.aboutSummary")}
           </span>
         </div>
 
@@ -114,7 +126,7 @@ export function AboutTab() {
               workspace.setOverlay({ type: "legal-doc", doc: "terms" })
             }
           >
-            查看《用户协议》草案
+            {t("settings.aboutViewTermsBtn")}
           </button>
           <button
             type="button"
@@ -123,7 +135,7 @@ export function AboutTab() {
               workspace.setOverlay({ type: "legal-doc", doc: "privacy" })
             }
           >
-            查看《隐私政策》草案
+            {t("settings.aboutViewPrivacyBtn")}
           </button>
           <button
             type="button"
@@ -135,20 +147,20 @@ export function AboutTab() {
               })
             }
           >
-            导出脱敏诊断日志
+            {t("settings.aboutExportDiagBtn")}
           </button>
         </div>
       </div>
 
       <div className="settings-card">
         <strong style={{ fontSize: 14 }}>
-          工作台运行态横幅预览（界面验收入口）
+          {t("settings.aboutBannerPreviewTitle")}
         </strong>
         <div className="text-xs text-muted">
-          一键切换工作台顶部横幅状态，快速校验离线、授权失效、自动回复与部分同步失败视图
+          {t("settings.aboutBannerPreviewDesc")}
         </div>
         <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
-          {BANNER_OPTIONS.map((opt) => (
+          {bannerOptions.map((opt) => (
             <button
               key={opt.id}
               type="button"
@@ -161,7 +173,7 @@ export function AboutTab() {
                 workspace.setBannerMode(opt.id);
                 toastStore.pushToast({
                   tone: "info",
-                  title: `已切换顶部横幅状态：${opt.label}`,
+                  title: t("toasts.switchedBannerMode", { label: opt.label }),
                 });
               }}
             >

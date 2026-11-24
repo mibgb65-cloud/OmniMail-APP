@@ -1,0 +1,89 @@
+/* 中英双语排版与防溢出加固（亮/暗主题通用，读信栏英文自适应槽位） */
+
+:root[lang="en-US"]
+  .reader-toolbar:not([data-tool-density="icons"])
+  .reader-toolbar-group
+  > .reader-act-btn {
+  inline-size: auto;
+  padding-inline: 8px;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+:root[lang="en-US"] .reader-toolbar .reader-ai-toggle {
+  inline-size: auto;
+  min-inline-size: var(--reader-ai-slot);
+  padding-inline: 8px;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+:root[lang="en-US"] .reader-toolbar[data-ai-label="icon"] .reader-ai-toggle {
+  inline-size: var(--reader-icon-width);
+  min-inline-size: var(--reader-icon-width);
+  padding-inline: 0;
+}
+
+:root[lang="en-US"] .reader-toolbar .translation-main-action {
+  padding-inline: 7px;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+/* 列表分段筛选 Tab（All / Unread / Starred / Files）防两行折行 */
+.filter-tab {
+  min-width: 0;
+  padding-inline: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Omni AI 卡片标题、语言切换胶囊与模式徽章防折行溢出 */
+.ai-card-head {
+  min-width: 0;
+  gap: 8px;
+}
+
+.ai-card-head > span:first-child {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-draft-language {
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.ai-draft-language .btn {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 底部快速回复框发件账号锁定胶囊防撑破 */
+.quick-reply-lock-pill {
+  min-width: 0;
+  max-width: min(260px, 58%);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 设置页左侧导航与主侧栏导航文字单行省略保护 */
+.settings-nav .nav-item,
+.sidebar .nav-item {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.settings-nav .nav-item-label,
+.sidebar .nav-item-label {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

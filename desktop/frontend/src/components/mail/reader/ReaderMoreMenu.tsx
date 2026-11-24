@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useI18n } from "../../../i18n";
 import { useApp } from "../../../state/AppContext";
 import { useValuePresence } from "../../../state/usePresence";
 import type { MailItem } from "../../../types/mail";
@@ -15,6 +16,7 @@ export function ReaderMoreMenu({
   onDelete: () => void;
   foldedItems: ActionMenuEntry[];
 }) {
+  const { t } = useI18n();
   const { workspace } = useApp();
   const [menuPos, setMenuPos] = useState<{ left: number; top: number } | null>(
     null,
@@ -26,32 +28,36 @@ export function ReaderMoreMenu({
     ...foldedItems,
     ...(foldedItems.length > 0 ? [{ type: "divider" as const }] : []),
     {
-      label: "移动到文件夹…",
+      label: t("mailList.ctxMoveToFolder"),
       icon: "folder",
       onSelect: () =>
         workspace.setOverlay({ type: "move-folder", mailIds: [mail.id] }),
     },
     {
-      label: "查看原始邮件头与源码",
+      label: t("reader.moreViewSource"),
       icon: "code",
       onSelect: () =>
         workspace.setOverlay({ type: "mail-source", mailId: mail.id }),
     },
     {
-      label: "打印与导出邮件 (.pdf / .eml)",
+      label: t("reader.morePrintExport"),
       icon: "printer",
       onSelect: () =>
         workspace.setOverlay({ type: "print-export", mailId: mail.id }),
     },
     {
-      label: "附件传输队列与失败恢复",
+      label: t("reader.moreAttachmentQueue"),
       icon: "upload",
       onSelect: () =>
         workspace.setOverlay({ type: "attachment-transfer", mode: "transfer" }),
     },
     { type: "divider" },
     {
-      label: mail.folder === "trash" ? "永久删除邮件" : "移至回收站",
+      label: t(
+        mail.folder === "trash"
+          ? "mailList.ctxPermanentDelete"
+          : "mailList.ctxMoveToTrash",
+      ),
       icon: "trash",
       shortcut: "Del",
       danger: true,
@@ -61,12 +67,12 @@ export function ReaderMoreMenu({
 
   return (
     <>
-      <Tooltip label="更多邮件操作">
+      <Tooltip label={t("reader.moreActionsTip")}>
         <button
           ref={btnRef}
           type="button"
           className="icon-btn icon-btn-bordered reader-icon-btn"
-          aria-label="更多邮件操作"
+          aria-label={t("reader.moreActionsTip")}
           aria-haspopup="menu"
           aria-expanded={menuPos !== null}
           onMouseDown={(e) => e.stopPropagation()}

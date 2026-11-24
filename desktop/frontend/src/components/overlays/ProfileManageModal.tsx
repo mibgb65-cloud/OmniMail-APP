@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import { parseBackendError, profileApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
@@ -18,6 +19,7 @@ export function ProfileManageModal({
   targetProfileId?: string;
 }) {
   const { workspace, desktopBridge, toastStore } = useApp();
+  const { t, localizeText } = useI18n();
   const [mode, setMode] = useState<"switch" | "create" | "unlock">(initialMode);
   const [unlockTargetId, setUnlockTargetId] = useState(
     targetProfileId || workspace.activeProfileId,
@@ -35,12 +37,21 @@ export function ProfileManageModal({
     pin: "",
     customDir: "",
   });
-
   const mustUnlock = Boolean(
     workspace.activeProfile?.locked && mode === "unlock",
   );
-  const closeModal = () => {
-    if (!mustUnlock) workspace.setOverlay({ type: "none" });
+  const closeModal = () =>
+    !mustUnlock && workspace.setOverlay({ type: "none" });
+  const finishWithToast = async (
+    name: string,
+    key: "toasts.switchedToProfile" | "toasts.createdProfile",
+  ) => {
+    await workspace.refreshProfilesAndAccounts();
+    workspace.setOverlay({ type: "none" });
+    toastStore.pushToast({
+      tone: "success",
+      title: t(key, { name: localizeText(name) }),
+    });
   };
 
   const doSwitch = async (id: string, pin = "") => {
@@ -49,12 +60,7 @@ export function ProfileManageModal({
     try {
       const res = await profileApi.switchProfile(id, pin);
       setPinInput("");
-      await workspace.refreshProfilesAndAccounts();
-      workspace.setOverlay({ type: "none" });
-      toastStore.pushToast({
-        tone: "success",
-        title: `已切换至「${res.profile.name}」`,
-      });
+      await finishWithToast(res.profile.name, "toasts.switchedToProfile");
     } catch (err) {
       const parsed = parseBackendError(err);
       if (parsed.code === "ERR_PIN_REQUIRED") {
@@ -80,12 +86,7 @@ export function ProfileManageModal({
         pin: form.pin.trim() || undefined,
       });
       await profileApi.switchProfile(created.id, form.pin.trim());
-      await workspace.refreshProfilesAndAccounts();
-      workspace.setOverlay({ type: "none" });
-      toastStore.pushToast({
-        tone: "success",
-        title: `已创建空间「${created.name}」`,
-      });
+      await finishWithToast(created.name, "toasts.createdProfile");
     } catch (err) {
       setErrorMsg(parseBackendError(err).message);
     } finally {
@@ -102,17 +103,25 @@ export function ProfileManageModal({
     busy ||
     (mode === "create" && !form.name.trim()) ||
     (mode === "unlock" && pinInput.trim().length < 4);
-
+  const heading =
+    mode === "unlock"
+      ? t("overlays.profUnlockHeading")
+      : mode === "create"
+        ? t("overlays.profCreateHeading")
+        : t("overlays.profManageHeading");
+  const primaryText =
+    mode === "create"
+      ? t("overlays.profCreateAndSwitchBtn")
+      : mode === "unlock"
+        ? t("overlays.profUnlockEnterBtn")
+        : t("overlays.profNewWorkspaceBtn");
+  const rawTargetName =
+    workspace.profiles.find((p) => p.id === unlockTargetId)?.name ??
+    unlockTargetId;
   return (
     <ModalShell
-      heading={
-        mode === "unlock"
-          ? "输入 PIN 解锁工作空间"
-          : mode === "create"
-            ? "新建本地隔离工作空间"
-            : "本地多工作空间管理"
-      }
-      subtitle="每个空间拥有物理隔离的 SQLite 数据库、缓存与 DPAPI 凭据盒"
+      heading={heading}
+      subtitle={t("overlays.profSubtitle")}
       maxWidth={540}
       onClose={closeModal}
       footer={
@@ -125,7 +134,9 @@ export function ProfileManageModal({
                 mode === "switch" ? closeModal() : setMode("switch")
               }
             >
-              {mode === "switch" ? "关闭" : "返回空间列表"}
+              {mode === "switch"
+                ? t("common.close")
+                : t("overlays.profBackToListBtn")}
             </button>
           )}
           <button
@@ -135,11 +146,7 @@ export function ProfileManageModal({
             onClick={onPrimary}
           >
             {mode === "switch" && <Icon name="plus" size={14} />}
-            {mode === "create"
-              ? "创建并切换"
-              : mode === "unlock"
-                ? "解锁进入"
-                : "新建本地空间"}
+            {primaryText}
           </button>
         </>
       }
@@ -152,15 +159,15 @@ export function ProfileManageModal({
       {mode === "unlock" && (
         <div className="settings-card" style={{ gap: 10 }}>
           <div style={{ fontSize: 13, fontWeight: 700 }}>
-            目标空间：
-            {workspace.profiles.find((p) => p.id === unlockTargetId)?.name ??
-              unlockTargetId}
+            {t("overlays.profTargetLabel", {
+              name: localizeText(rawTargetName),
+            })}
           </div>
           <PasswordInput
             value={pinInput}
             onChange={setPinInput}
-            placeholder="请输入 4~32 位空间 PIN 码"
-            ariaLabel="空间解锁 PIN 码"
+            placeholder={t("overlays.profPinPlaceholder")}
+            ariaLabel={t("overlays.profPinAria")}
           />
         </div>
       )}
@@ -169,9 +176,9 @@ export function ProfileManageModal({
           val={form}
           onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
           onPickDir={() =>
-            void desktopBridge
-              .pickDirectory()
-              .then((d) => d && setForm((f) => ({ ...f, customDir: d })))
+            void desktopBridge.pickDirectory().then((d) => {
+              if (d) setForm((f) => ({ ...f, customDir: d }));
+            })
           }
         />
       )}

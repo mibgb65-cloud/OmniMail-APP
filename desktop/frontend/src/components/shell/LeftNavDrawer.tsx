@@ -1,15 +1,18 @@
-import { FadeScroll } from "../common/scroll-fade/FadeScroll";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 import { Tooltip } from "../common/Tooltip";
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { ProfileSwitcherCard } from "./ProfileSwitcherCard";
 import { SidebarAccountsAndLabels } from "./SidebarAccountsAndLabels";
-import { MAIN_FOLDERS, countForFolder } from "./SidebarIconRail";
+import { countForFolder, getMainFolders } from "./SidebarIconRail";
 
 export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
   const { workspace, mailStore, composeStore } = useApp();
+  const { t } = useI18n();
   const { mails, folderCounts, activeFolder, activeLabelId, searchQuery } =
     mailStore;
+  const folders = getMainFolders(t);
 
   const close = () => workspace.setLeftNavOpen(false);
 
@@ -18,26 +21,30 @@ export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
       className="workspace-drawer-layer"
       data-closing={closing ? "true" : "false"}
       role="dialog"
-      aria-label="导航抽屉"
+      aria-label={t("sidebar.drawerAria")}
     >
       <div
         className="drawer-scrim"
         onClick={close}
-        aria-label="点击遮罩收起导航抽屉"
+        aria-label={t("sidebar.drawerScrimAria")}
       />
       <aside className="panel-card left-nav-drawer">
         <div className="sidebar-core-fixed">
           <div className="drawer-head-row">
             <div className="row" style={{ gap: 6, minWidth: 0 }}>
-              <strong className="drawer-head-title truncate">导航与邮箱</strong>
-              <span className="drawer-mode-chip">抽屉模式</span>
+              <strong className="drawer-head-title truncate">
+                {t("sidebar.drawerTitle")}
+              </strong>
+              <span className="drawer-mode-chip">
+                {t("sidebar.drawerModeChip")}
+              </span>
             </div>
-            <Tooltip label="收起导航抽屉" shortcut="Esc">
+            <Tooltip label={t("sidebar.closeDrawerTip")} shortcut="Esc">
               <button
                 type="button"
                 className="icon-btn icon-btn-bordered drawer-close-btn"
                 onClick={close}
-                aria-label="收起导航抽屉"
+                aria-label={t("sidebar.closeDrawerTip")}
               >
                 <Icon name="x" size={13} />
               </button>
@@ -53,11 +60,14 @@ export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
             }}
           >
             <Icon name="pen" size={14} />
-            <span>写邮件</span>
+            <span>{t("sidebar.compose")}</span>
           </button>
 
-          <nav className="nav-section" aria-label="邮件核心文件夹">
-            {MAIN_FOLDERS.map((item) => {
+          <nav
+            className="nav-section"
+            aria-label={t("sidebar.ariaCoreFolders")}
+          >
+            {folders.map((item) => {
               const isActive =
                 !activeLabelId && !searchQuery && activeFolder === item.id;
               const count = countForFolder(mails, item.id, folderCounts);
@@ -84,7 +94,7 @@ export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
           <div className="sidebar-divider" />
         </div>
 
-        <FadeScroll className="sidebar-scroll" label="邮箱和标签">
+        <FadeScroll className="sidebar-scroll" label={t("sidebar.ariaScroll")}>
           <SidebarAccountsAndLabels onNavigate={close} />
         </FadeScroll>
 
@@ -99,7 +109,7 @@ export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
               }}
             >
               <Icon name="spam" size={13} />
-              <span>垃圾邮件</span>
+              <span>{t("sidebar.spam")}</span>
             </button>
             <button
               type="button"
@@ -110,7 +120,7 @@ export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
               }}
             >
               <Icon name="trash" size={13} />
-              <span>回收站</span>
+              <span>{t("sidebar.trash")}</span>
             </button>
           </div>
 

@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import Markdown from "react-markdown";
@@ -9,6 +12,7 @@ import {
   clampAiWidth,
 } from "../src/components/ai/aiPanelWidth.ts";
 import { mailAiScope } from "../src/components/ai/aiPrivacyScope.ts";
+import { normalizeSummaryDeadlines } from "../src/components/ai/autoMailSummary.ts";
 
 test("AI 侧栏宽度被限制在工作区可用范围内", () => {
   assert.deepEqual(aiWidthRange(800), { min: 280, max: 640 });
@@ -45,4 +49,41 @@ test("主题开关只改变邮件主题范围，两种状态均不发送附件",
   assert.equal(mailAiScope(false).short, "当前邮件正文 · 附件不外传");
   assert.equal(mailAiScope(true).short, "当前邮件主题与正文 · 附件不外传");
   assert.equal(mailAiScope(false).notShared, mailAiScope(true).notShared);
+});
+
+test("关键时间与待办支持自适应折行并过滤空白项，长文本不撑破卡片", () => {
+  assert.deepEqual(
+    normalizeSummaryDeadlines([
+      { label: "  ", timeText: " ", urgent: true },
+      {
+        label: "  手动续订域名 snipxn.com ",
+        timeText: " 2026年12月25日到期；邮件称约一个月后续订 ",
+        urgent: true,
+      },
+      { label: "", timeText: "明天 12:00 前", urgent: false },
+    ]),
+    [
+      {
+        label: "手动续订域名 snipxn.com",
+        timeText: "2026年12月25日到期；邮件称约一个月后续订",
+        urgent: true,
+      },
+      { label: "", timeText: "明天 12:00 前", urgent: false },
+    ],
+  );
+
+  const stylesDir = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../src/styles",
+  );
+  const draftCss = readFileSync(path.join(stylesDir, "ai-draft.css"), "utf8");
+  assert.match(draftCss, /\.ai-summary-deadline\s*\{[^}]*flex-wrap:\s*wrap/s);
+  assert.match(
+    draftCss,
+    /\.ai-deadline-time\s*\{[^}]*max-width:\s*100%[^}]*overflow-wrap:\s*anywhere/s,
+  );
+  assert.doesNotMatch(
+    draftCss,
+    /\.ai-deadline-time\s*\{[^}]*flex-shrink:\s*0/s,
+  );
 });

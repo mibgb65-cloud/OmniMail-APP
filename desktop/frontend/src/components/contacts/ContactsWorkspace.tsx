@@ -1,11 +1,12 @@
-import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useEffect, useMemo, useState } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { useValuePresence } from "../../state/usePresence";
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { BlacklistManagerView } from "./BlacklistManagerView";
 import { ContactDetailPanel } from "./ContactDetailPanel";
-import type { ContactNavFilter } from "./ContactsSidebar";
 import { ContactsDirectoryHeader } from "./ContactsDirectoryHeader";
+import type { ContactNavFilter } from "./ContactsSidebar";
 import { ContactsTableRows } from "./ContactsTableRows";
 
 export function useContactsNavState() {
@@ -32,6 +33,7 @@ export function ContactsWorkspace({
   readOnlyExit?: boolean;
 }) {
   const { viewport, workspace } = useApp();
+  const { t, localizeGroup } = useI18n();
   const { navFilter, groupFilter, accountFilter, onSelectGroup } = nav;
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(() =>
@@ -93,15 +95,17 @@ export function ContactsWorkspace({
     <>
       <section
         className="panel-card contacts-directory-card"
-        aria-label="联系人目录"
+        aria-label={t("contacts.directoryAria")}
       >
         <ContactsDirectoryHeader
           title={
             navFilter === "blacklist"
-              ? "黑名单与发件人拦截"
+              ? t("contacts.headingBlacklist")
               : groupFilter
-                ? `分组：${groupFilter}`
-                : "联系人与通讯录"
+                ? t("contacts.headingGroup", {
+                    group: localizeGroup(groupFilter),
+                  })
+                : t("contacts.headingAll")
           }
           blacklist={navFilter === "blacklist"}
           compact={isCompact}
@@ -112,7 +116,10 @@ export function ContactsWorkspace({
         />
 
         {navFilter === "blacklist" ? (
-          <FadeScroll className="modal-body" label="发件人黑名单">
+          <FadeScroll
+            className="modal-body"
+            label={t("contacts.blacklistScrollLabel")}
+          >
             <BlacklistManagerView />
           </FadeScroll>
         ) : (
@@ -125,8 +132,10 @@ export function ContactsWorkspace({
 
         <div className="contacts-dir-footer">
           <span className="truncate">
-            显示第 1–{filteredContacts.length} 位，共{" "}
-            {workspace.contacts.length} 位联系人 · 仅保存在本地加密通讯录数据库
+            {t("contacts.footerSummary", {
+              shown: filteredContacts.length,
+              total: workspace.contacts.length,
+            })}
           </span>
         </div>
       </section>

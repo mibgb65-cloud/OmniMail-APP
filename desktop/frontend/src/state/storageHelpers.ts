@@ -3,6 +3,7 @@ import type {
   StorageInfo,
   TargetDirCheck,
 } from "../../bindings/omnimail/models";
+import { t } from "../i18n";
 import type { ThemeMode, ThemePreference } from "../types/settings";
 
 export const THEME_STORAGE_KEY = "omnimail:theme";
@@ -91,7 +92,7 @@ export function inspectDirectoryInBrowser(
       requiredBytes: 0,
       sufficientSpace: false,
       sameAsCurrent: false,
-      message: "请输入有效的本地绝对目录路径（如 D:\\OmniMailData）",
+      message: t("overlays.migrateInvalidAbsPath"),
     };
   }
   if (/^[a-zA-Z]:\\?$/.test(trimmed)) {
@@ -103,8 +104,7 @@ export function inspectDirectoryInBrowser(
       requiredBytes: 0,
       sufficientSpace: false,
       sameAsCurrent: false,
-      message:
-        "请勿直接选择磁盘根目录，请指定独立子文件夹（如 D:\\OmniMailData）",
+      message: t("overlays.migrateRootDirForbidden"),
     };
   }
   const same = trimmed.toLowerCase() === currentDir.toLowerCase();
@@ -117,8 +117,8 @@ export function inspectDirectoryInBrowser(
     sufficientSpace: true,
     sameAsCurrent: same,
     message: same
-      ? "所选路径与当前数据目录相同"
-      : "目录读写权限与磁盘空间校验通过（预览模式）",
+      ? t("overlays.migrateSameAsCurrentMsg")
+      : t("overlays.migrateCheckPassedPreview"),
   };
 }
 

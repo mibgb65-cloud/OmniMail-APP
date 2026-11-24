@@ -1,5 +1,38 @@
 import { useLayoutEffect, type RefObject } from "react";
 
+export const TRANSLATION_INITIAL_FOCUS_SELECTOR =
+  'button[role="combobox"], button, input';
+
+const NESTED_SELECT_SELECTOR =
+  '[data-omnimail-popover="select"], .custom-select-popover, .custom-select-menu, [role="listbox"]';
+
+export function isTranslationPopoverLayerEvent(
+  path: readonly EventTarget[],
+  panel: EventTarget,
+  trigger: EventTarget,
+): boolean {
+  return path.some((node) => {
+    if (node === panel || node === trigger) return true;
+    const candidate = node as { matches?: unknown };
+    return (
+      typeof candidate.matches === "function" &&
+      (node as Element).matches(NESTED_SELECT_SELECTOR)
+    );
+  });
+}
+
+export function hasOpenNestedSelect(
+  panel: ParentNode,
+  root: ParentNode = panel.ownerDocument ?? document,
+): boolean {
+  return Boolean(
+    panel.querySelector('[role="combobox"][aria-expanded="true"]') ||
+    root.querySelector(
+      '[data-omnimail-popover="select"]:not([data-closing="true"])',
+    ),
+  );
+}
+
 export function useTranslationAnchor(
   panel: RefObject<HTMLDivElement | null>,
   anchor: RefObject<HTMLDivElement | null>,
@@ -24,17 +57,20 @@ export function useTranslationAnchor(
       );
     };
     position();
-    el.querySelector<HTMLElement>("select")?.focus({ preventScroll: true });
+    el.querySelector<HTMLElement>(TRANSLATION_INITIAL_FOCUS_SELECTOR)?.focus({
+      preventScroll: true,
+    });
     const observer = new ResizeObserver(position);
     observer.observe(document.documentElement);
     const toolbar = trigger.closest(".reader-toolbar");
     if (toolbar) observer.observe(toolbar);
     const onPointerDown = (ev: PointerEvent) => {
-      const path = ev.composedPath();
-      if (!path.includes(el) && !path.includes(trigger)) onClose();
+      if (!isTranslationPopoverLayerEvent(ev.composedPath(), el, trigger)) {
+        onClose();
+      }
     };
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key !== "Escape") return;
+      if (ev.key !== "Escape" || hasOpenNestedSelect(el)) return;
       ev.preventDefault();
       ev.stopImmediatePropagation();
       onClose(true);

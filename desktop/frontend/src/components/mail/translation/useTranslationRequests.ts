@@ -1,6 +1,7 @@
 import { Events } from "@wailsio/runtime";
 import { useEffect, useRef } from "react";
 import { TranslateMail } from "../../../../bindings/omnimail/services/aiservice";
+import { useI18n } from "../../../i18n";
 import { parseBackendError } from "../../../services/backendClient";
 import { isWailsDesktop } from "../../../state/storageHelpers";
 import type { TranslationProvider } from "../../../types/settings";
@@ -78,6 +79,7 @@ export function useTranslationRequests({
   entry?: TranslationEntry;
   update: UpdateTranslationEntry;
 }) {
+  const { t } = useI18n();
   const running = useRef(new Map<object, Map<string, () => void>>());
   useEffect(() => {
     const requests = running.current;
@@ -104,8 +106,7 @@ export function useTranslationRequests({
       startTranslation(key, options, provider, previous, preserveMode),
     );
     try {
-      if (!isWailsDesktop())
-        throw new Error("请在 OmniMail 桌面应用中翻译邮件");
+      if (!isWailsDesktop()) throw new Error(t("translation.desktopOnlyError"));
       const snapshot = await runTranslationRequest(
         key,
         (listener) =>
@@ -131,7 +132,7 @@ export function useTranslationRequests({
         matchesTranslationRequest,
       );
       const result = readBatch(key, snapshot);
-      if (!result) throw new Error("翻译结果无效，请重试");
+      if (!result) throw new Error(t("translation.invalidResultError"));
       update((current) => finishTranslation(current, result));
     } catch (err) {
       const { code, message } = parseBackendError(err);
@@ -139,9 +140,7 @@ export function useTranslationRequests({
         failTranslation(
           current,
           key,
-          code
-            ? message
-            : "翻译未完成。请在「设置 → 邮件翻译」检查端点或切换引擎。",
+          code ? message : t("translation.failedCheckSettings"),
         ),
       );
     } finally {

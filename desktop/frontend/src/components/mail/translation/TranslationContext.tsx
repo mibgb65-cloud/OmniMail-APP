@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { t as globalT, useI18n } from "../../../i18n";
 import { useApp } from "../../../state/AppContext";
 import { detectMailLanguage } from "./translationLanguages";
 import {
@@ -30,6 +31,7 @@ type ProfileTranslationState = {
 };
 
 function useMailTranslations() {
+  const { isEn, t } = useI18n();
   const { workspace, mailStore } = useApp();
   const mail = mailStore.selectedMail;
   const profileId = workspace.activeProfileId;
@@ -40,6 +42,7 @@ function useMailTranslations() {
     settings.translationEnabled && (!usesAI || settings.aiEnabled);
   const scope = JSON.stringify([
     key,
+    isEn,
     providerEnabled,
     settings.translationProvider,
     ...(usesAI
@@ -50,10 +53,7 @@ function useMailTranslations() {
     scope,
     token: {},
     entries: {},
-    preferences: readTranslationPreferences(
-      key,
-      workspace.settings.language === "en-US",
-    ),
+    preferences: readTranslationPreferences(key, isEn),
   });
   const [saved, setSaved] = useState(initialState);
   const state = saved.scope === scope ? saved : initialState();
@@ -84,11 +84,11 @@ function useMailTranslations() {
     mail?.folder === "trash" ||
     mail?.securityWarning?.level === "danger";
   const disabledReason = !settings.translationEnabled
-    ? "邮件翻译已停用，可在翻译设置中开启。"
+    ? t("translation.disabledInSettings")
     : blocked
-      ? "此邮件受隐私保护，不发送给翻译引擎。"
+      ? t("translation.blockedByPrivacy")
       : !providerEnabled
-        ? "请启用并配置 AI 模型，或在翻译设置中切换引擎。"
+        ? t("translation.aiEngineNotReady")
         : "";
   const disabled = !id || Boolean(disabledReason);
 
@@ -123,7 +123,9 @@ function useMailTranslations() {
     confirmedSource: result?.content.source ?? "auto",
     disabled,
     disabledReason,
-    engineLabel: usesAI ? "AI 模型" : "内置免费翻译",
+    engineLabel: t(
+      usesAI ? "translation.aiModel" : "translation.builtInFreeEngine",
+    ),
     preferences,
     savePreferences,
     translate,
@@ -156,6 +158,6 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
 
 export function useTranslation() {
   const value = useContext(TranslationContext);
-  if (!value) throw new Error("邮件翻译状态未初始化");
+  if (!value) throw new Error(globalT("translation.uninitializedError"));
   return value;
 }

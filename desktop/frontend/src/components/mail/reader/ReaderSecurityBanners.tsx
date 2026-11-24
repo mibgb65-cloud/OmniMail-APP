@@ -1,99 +1,153 @@
+import { useState } from "react";
+import { localizeSecurityWarning, useI18n } from "../../../i18n";
 import { mailApi, parseBackendError } from "../../../services/backendClient";
 import { useApp } from "../../../state/AppContext";
 import type { MailItem } from "../../../types/mail";
 import { Icon } from "../../common/Icon";
 import { ReaderOutboxBanners } from "./ReaderOutboxBanners";
+import {
+  authStatusPillClass,
+  formatAuthBadgeValue,
+  isTrustedSecuritySender,
+  rememberTrustedSecuritySender,
+} from "./securityBannerPolicy";
 
 export function ReaderSecurityBanners({ mail }: { mail: MailItem }) {
+  const { lang, t, formatTime } = useI18n();
   const { workspace, mailStore, toastStore } = useApp();
+  const [, setTrustTick] = useState(0);
+  const warning = mail.securityWarning;
+  const localizedWarning = warning
+    ? localizeSecurityWarning(warning, lang)
+    : null;
+  const isDanger = warning?.level === "danger";
+  const trusted = Boolean(
+    warning &&
+    isTrustedSecuritySender(
+      workspace.activeProfileId,
+      mail.senderEmail,
+      mail.id,
+    ),
+  );
+  const showSecurityBanner = Boolean(warning && localizedWarning && !trusted);
   const showRemoteImageBanner =
     workspace.settings.blockRemoteImages &&
     mail.hasRemoteImages &&
     !mail.remoteImagesAllowed &&
-    mail.securityWarning?.level !== "danger";
+    warning?.level !== "danger";
+
+  const authBadges = warning
+    ? [
+        { name: "SPF", value: warning.spf },
+        { name: "DKIM", value: warning.dkim },
+        { name: "DMARC", value: warning.dmarc },
+      ]
+    : [];
 
   return (
     <>
       <ReaderOutboxBanners mail={mail} />
 
-      {mail.securityWarning && (
-        <div className="security-banner danger" role="alert">
-          <div style={{ display: "flex", gap: 10 }}>
-            <Icon name="shieldWarning" size={18} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <strong>{mail.securityWarning.title}</strong>
-              <span style={{ fontSize: 12, lineHeight: 1.5 }}>
-                {mail.securityWarning.detail}
-              </span>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 6,
-                  marginTop: 2,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span className="pill pill-danger">
-                  SPF: {mail.securityWarning.spf}
+      {showSecurityBanner && localizedWarning && (
+        <div
+          className={`phishing-banner ${isDanger ? "danger" : "warning"}`}
+          role={isDanger ? "alert" : "status"}
+        >
+          <div className="phishing-banner-header">
+            <div className="phishing-banner-title">
+              <Icon name="shieldWarning" size={18} />
+              <strong>{localizedWarning.title}</strong>
+            </div>
+            <div
+              className="phishing-auth-pills"
+              aria-label={t("security.authPillsAria")}
+            >
+              {authBadges.map(({ name, value }) => (
+                <span
+                  key={name}
+                  className={`pill phishing-auth-pill ${authStatusPillClass(value)}`}
+                >
+                  {name}: {formatAuthBadgeValue(value)}
                 </span>
-                <span className="pill pill-danger">
-                  DKIM: {mail.securityWarning.dkim}
-                </span>
-                <span className="pill pill-danger">
-                  DMARC: {mail.securityWarning.dmarc}
-                </span>
-              </div>
+              ))}
             </div>
           </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-              flexShrink: 0,
-            }}
-          >
+
+          <p className="phishing-banner-detail">{localizedWarning.detail}</p>
+
+          <div className="phishing-banner-actions">
+            <div className="phishing-banner-btn-group">
+              <button
+                type="button"
+                className={`btn btn-sm ${isDanger ? "btn-danger" : "btn-secondary"}`}
+                onClick={() => {
+                  mailStore.moveMails([mail.id], "spam");
+                  toastStore.pushToast({
+                    tone: "info",
+                    title: t("toasts.movedPhishingToSpam"),
+                  });
+                }}
+              >
+                {t("security.moveToSpam")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-secondary"
+                onClick={() => {
+                  workspace.addBlacklist({
+                    target: mail.senderEmail,
+                    kind: "address",
+                    reason: t(
+                      isDanger
+                        ? "security.blacklistReasonDanger"
+                        : "security.blacklistReasonWarning",
+                    ),
+                    blockedCount: 0,
+                    addedAt: formatTime("今天"),
+                  });
+                  mailStore.moveMails([mail.id], "spam");
+                  toastStore.pushToast({
+                    tone: "warning",
+                    title: t("toasts.blacklistedAndSpam", {
+                      email: mail.senderEmail,
+                    }),
+                  });
+                }}
+              >
+                {t("security.blockSender")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-secondary"
+                onClick={() =>
+                  workspace.setOverlay({ type: "mail-source", mailId: mail.id })
+                }
+              >
+                {t("security.viewRawHeaders")}
+              </button>
+            </div>
+
             <button
               type="button"
-              className="btn btn-sm btn-danger"
+              className="btn btn-sm btn-ghost phishing-trust-btn"
               onClick={() => {
-                mailStore.moveMails([mail.id], "spam");
+                rememberTrustedSecuritySender(
+                  workspace.activeProfileId,
+                  mail.senderEmail,
+                  mail.id,
+                );
+                setTrustTick((n) => n + 1);
                 toastStore.pushToast({
                   tone: "info",
-                  title: "已将可疑邮件移入垃圾邮件箱",
+                  title: mail.senderEmail
+                    ? t("toasts.trustedSenderSession", {
+                        email: mail.senderEmail,
+                      })
+                    : t("toasts.dismissedSecurityBanner"),
                 });
               }}
             >
-              移入垃圾邮件
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-secondary"
-              onClick={() => {
-                workspace.addBlacklist({
-                  target: mail.senderEmail,
-                  kind: "address",
-                  reason: "高危钓鱼邮件一键拉黑",
-                  blockedCount: 0,
-                  addedAt: "今天",
-                });
-                mailStore.moveMails([mail.id], "spam");
-                toastStore.pushToast({
-                  tone: "warning",
-                  title: `已拉黑 ${mail.senderEmail} 并移入垃圾箱`,
-                });
-              }}
-            >
-              拉黑发件人
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-secondary"
-              onClick={() =>
-                workspace.setOverlay({ type: "mail-source", mailId: mail.id })
-              }
-            >
-              查看原始邮件头
+              {t("security.trustSender")}
             </button>
           </div>
         </div>
@@ -104,8 +158,8 @@ export function ReaderSecurityBanners({ mail }: { mail: MailItem }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Icon name="image" size={16} />
             <span>
-              <strong>已拦截远程图片与外部追踪像素</strong> ·
-              默认不自动加载外部资源。
+              <strong>{t("security.remoteImagesBlockedTitle")}</strong> ·{" "}
+              {t("security.remoteImagesBlockedDesc")}
             </span>
           </div>
           <button
@@ -125,19 +179,19 @@ export function ReaderSecurityBanners({ mail }: { mail: MailItem }) {
                   });
                   toastStore.pushToast({
                     tone: "info",
-                    title: "已允许并加载此邮件的远程图片",
+                    title: t("toasts.allowedRemoteImages"),
                   });
                 })
                 .catch((err) =>
                   toastStore.pushToast({
                     tone: "danger",
-                    title: "无法加载外链图片",
+                    title: t("toasts.loadRemoteImagesFailed"),
                     detail: parseBackendError(err).message,
                   }),
                 );
             }}
           >
-            显示此邮件图片
+            {t("security.showRemoteImagesBtn")}
           </button>
         </div>
       )}

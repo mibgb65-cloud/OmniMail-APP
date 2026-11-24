@@ -1,5 +1,5 @@
-import { FadeTextarea } from "../common/scroll-fade/FadeTextarea";
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import { parseBackendError, ruleApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import {
@@ -9,10 +9,12 @@ import {
 import { CustomSelect } from "../common/CustomSelect";
 import { DateTimePicker } from "../common/DateTimePicker";
 import { ProviderIcon } from "../common/ProviderIcon";
+import { FadeTextarea } from "../common/scroll-fade/FadeTextarea";
 import { SwitchRow } from "./SwitchRow";
 
 export function AutoReplyTab() {
   const { workspace, toastStore } = useApp();
+  const { t } = useI18n();
   const ar = workspace.settings.autoReply;
   const [saveStatus, setSaveStatus] = useState<AsyncActionStatus>("idle");
 
@@ -29,8 +31,8 @@ export function AutoReplyTab() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div className="settings-card">
         <SwitchRow
-          heading="启用外出 / 休假自动回复"
-          desc="开启后工作台顶部将显示自动回复提示条，并按设定时间窗口响应来信"
+          heading={t("settings.autoReplyEnableTitle")}
+          desc={t("settings.autoReplyEnableDesc")}
           checked={ar.enabled}
           onChange={(v) => updateAutoReply({ enabled: v })}
         />
@@ -39,13 +41,15 @@ export function AutoReplyTab() {
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
         >
           <div>
-            <label className="text-xs text-muted">生效账户</label>
+            <label className="text-xs text-muted">
+              {t("settings.autoReplyAccountLabel")}
+            </label>
             <CustomSelect
               fullWidth
               minMenuWidth={220}
               style={{ marginTop: 4 }}
               value={ar.accountId}
-              ariaLabel="自动回复生效账户"
+              ariaLabel={t("settings.autoReplyAccountAria")}
               options={workspace.accounts.map((acc) => ({
                 value: acc.id,
                 label: acc.name,
@@ -56,7 +60,9 @@ export function AutoReplyTab() {
             />
           </div>
           <div>
-            <label className="text-xs text-muted">已自动回复计数</label>
+            <label className="text-xs text-muted">
+              {t("settings.autoReplyCountLabel")}
+            </label>
             <div
               className="input row"
               style={{
@@ -65,7 +71,7 @@ export function AutoReplyTab() {
                 background: "var(--bg-surface)",
               }}
             >
-              本次休假周期累计回复 {ar.repliedCount} 位发件人
+              {t("settings.autoReplyCountText", { count: ar.repliedCount })}
             </div>
           </div>
         </div>
@@ -74,49 +80,57 @@ export function AutoReplyTab() {
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
         >
           <div>
-            <label className="text-xs text-muted">开始时间</label>
+            <label className="text-xs text-muted">
+              {t("settings.autoReplyStartLabel")}
+            </label>
             <DateTimePicker
               style={{ marginTop: 4 }}
               value={ar.startTime}
               onChange={(val) => updateAutoReply({ startTime: val })}
-              ariaLabel="自动回复开始时间"
+              ariaLabel={t("settings.autoReplyStartAria")}
             />
           </div>
           <div>
-            <label className="text-xs text-muted">结束时间</label>
+            <label className="text-xs text-muted">
+              {t("settings.autoReplyEndLabel")}
+            </label>
             <DateTimePicker
               style={{ marginTop: 4 }}
               value={ar.endTime}
               onChange={(val) => updateAutoReply({ endTime: val })}
-              ariaLabel="自动回复结束时间"
+              ariaLabel={t("settings.autoReplyEndAria")}
             />
           </div>
         </div>
 
         <SwitchRow
-          heading="仅回复通讯录联系人与同域名同事"
-          desc="避免向群发订阅、自动通知与陌生推广地址泄露行程状态"
+          heading={t("settings.autoReplyContactsOnlyTitle")}
+          desc={t("settings.autoReplyContactsOnlyDesc")}
           checked={ar.contactsAndSameDomainOnly}
           onChange={(v) => updateAutoReply({ contactsAndSameDomainOnly: v })}
         />
         <SwitchRow
-          heading="同一发件人 4 天内最多回复一次（防循环）"
-          desc="自动跳过 List-Unsubscribe / Auto-Submitted 邮件头，防止回复死循环"
+          heading={t("settings.autoReplyLimit4dTitle")}
+          desc={t("settings.autoReplyLimit4dDesc")}
           checked={ar.limitOncePer4Days}
           onChange={(v) => updateAutoReply({ limitOncePer4Days: v })}
         />
       </div>
 
       <div className="settings-card">
-        <label className="text-xs text-muted">自动回复主题</label>
+        <label className="text-xs text-muted">
+          {t("settings.autoReplySubjectLabel")}
+        </label>
         <input
           className="input"
           value={ar.subject}
           onChange={(e) => updateAutoReply({ subject: e.target.value })}
         />
-        <label className="text-xs text-muted">自动回复正文</label>
+        <label className="text-xs text-muted">
+          {t("settings.autoReplyBodyLabel")}
+        </label>
         <FadeTextarea
-          aria-label="自动回复正文"
+          aria-label={t("settings.autoReplyBodyLabel")}
           className="textarea"
           rows={4}
           value={ar.body}
@@ -126,10 +140,10 @@ export function AutoReplyTab() {
           size="sm"
           status={saveStatus}
           style={{ alignSelf: "flex-end" }}
-          idleLabel="保存自动回复配置"
-          loadingLabel="正在保存配置…"
-          successLabel="自动回复已保存"
-          errorLabel="保存失败 · 重试"
+          idleLabel={t("settings.autoReplySaveIdle")}
+          loadingLabel={t("settings.autoReplySaveLoading")}
+          successLabel={t("settings.autoReplySaveSuccess")}
+          errorLabel={t("settings.saveIdentityError")}
           successHoldMs={900}
           onSuccessHoldEnd={() => setSaveStatus("idle")}
           onClick={() => {
@@ -140,17 +154,17 @@ export function AutoReplyTab() {
                 setSaveStatus("success");
                 toastStore.pushToast({
                   tone: "success",
-                  title: "自动回复设置已保存",
+                  title: t("toasts.autoReplySavedTitle"),
                   detail: ar.enabled
-                    ? "RFC3834 防循环与 4 天频控已同步激活"
-                    : "当前处于未启用状态",
+                    ? t("toasts.autoReplyActiveDetail")
+                    : t("toasts.autoReplyInactiveDetail"),
                 });
               })
               .catch((err) => {
                 setSaveStatus("error");
                 toastStore.pushToast({
                   tone: "danger",
-                  title: "保存失败",
+                  title: t("toasts.saveFailedGeneric"),
                   detail: parseBackendError(err).message,
                 });
               });

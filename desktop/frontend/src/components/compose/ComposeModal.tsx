@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { useValuePresence } from "../../state/usePresence";
 import { Icon } from "../common/Icon";
@@ -11,6 +12,7 @@ import { ComposeInlineAiBar } from "./ComposeInlineAiBar";
 export function ComposeModal() {
   const { viewport, workspace, composeStore, toastStore, sendMailWithUndo } =
     useApp();
+  const { t, formatTime } = useI18n();
   const activeDraft =
     composeStore.draft && !composeStore.draft.minimized
       ? composeStore.draft
@@ -25,7 +27,7 @@ export function ComposeModal() {
     if (draft.to.length + draft.cc.length + draft.bcc.length === 0) {
       toastStore.pushToast({
         tone: "warning",
-        title: "请先添加至少一位收件人",
+        title: t("toasts.addRecipientFirst"),
       });
       return;
     }
@@ -46,10 +48,10 @@ export function ComposeModal() {
 
   const modeTitle =
     draft.mode === "new"
-      ? "新邮件"
+      ? t("compose.newMailTitle")
       : draft.mode === "forward"
-        ? "转发邮件"
-        : "回复邮件";
+        ? t("compose.forwardMailTitle")
+        : t("compose.replyMailTitle");
 
   return (
     <div
@@ -66,32 +68,32 @@ export function ComposeModal() {
           className="modal-card compose-modal-card"
           role="dialog"
           aria-modal="true"
-          aria-label="写邮件"
+          aria-label={t("compose.modalAria")}
         >
           <div className="compose-top-fixed">
             <div className="modal-header compose-modal-header">
               <div className="row" style={{ gap: 8, minWidth: 0 }}>
                 <h2 className="modal-title truncate">{modeTitle}</h2>
                 <span className="pill pill-neutral truncate">
-                  已自动保存 {draft.savedAt}
+                  {t("compose.autoSaved", { time: formatTime(draft.savedAt) })}
                 </span>
               </div>
               <div className="row" style={{ gap: 6, flexShrink: 0 }}>
-                <Tooltip label="最小化到右下角草稿栏">
+                <Tooltip label={t("compose.minimizeTip")}>
                   <button
                     type="button"
                     className="btn btn-ghost btn-sm"
                     onClick={minimizeDraft}
                   >
-                    <Icon name="minus" size={14} /> 收起
+                    <Icon name="minus" size={14} /> {t("compose.minimizeBtn")}
                   </button>
                 </Tooltip>
-                <Tooltip label="关闭并保留草稿" shortcut="Esc">
+                <Tooltip label={t("compose.closeKeepDraftTip")} shortcut="Esc">
                   <button
                     type="button"
                     className="icon-btn icon-btn-bordered"
                     style={{ width: 28, height: 28 }}
-                    aria-label="关闭写信窗口"
+                    aria-label={t("compose.closeComposeAria")}
                     onClick={minimizeDraft}
                   >
                     <Icon name="x" size={14} />
@@ -104,12 +106,12 @@ export function ComposeModal() {
             <ComposeToolbar />
           </div>
 
-          <FadeScroll label="邮件正文编辑区">
+          <FadeScroll label={t("compose.bodyScrollLabel")}>
             <ComposeInlineAiBar />
             <FadeTextarea
               className="compose-editor"
               frameClassName="compose-editor-frame"
-              aria-label="邮件正文"
+              aria-label={t("compose.bodyAria")}
               value={draft.body}
               onChange={(e) =>
                 composeStore.updateDraft({ body: e.target.value })
@@ -120,7 +122,7 @@ export function ComposeModal() {
                   handleSend();
                 }
               }}
-              placeholder="输入邮件正文…支持插入 AI 改写建议与本地签名。"
+              placeholder={t("compose.bodyPlaceholder")}
             />
             <ComposeAttachmentsBar />
           </FadeScroll>
@@ -132,7 +134,11 @@ export function ComposeModal() {
                 className="btn btn-primary"
                 onClick={handleSend}
               >
-                <span>{draft.scheduledAt ? "确认定时发送" : "发送"}</span>
+                <span>
+                  {draft.scheduledAt
+                    ? t("compose.confirmScheduleSend")
+                    : t("compose.sendBtn")}
+                </span>
                 <Icon name="send" size={13} />
               </button>
               <button
@@ -145,16 +151,18 @@ export function ComposeModal() {
                   })
                 }
               >
-                <Icon name="clock" size={13} /> 定时发送
+                <Icon name="clock" size={13} /> {t("compose.scheduleSendBtn")}
               </button>
             </div>
 
             <div className="row" style={{ gap: 8 }}>
               <span className="kbd">Ctrl + Enter</span>
               {!isCompact && (
-                <span className="text-xs text-muted">快速发送</span>
+                <span className="text-xs text-muted">
+                  {t("compose.quickSendHint")}
+                </span>
               )}
-              <Tooltip label="删除草稿" placement="top">
+              <Tooltip label={t("compose.deleteDraftTip")} placement="top">
                 <button
                   type="button"
                   className="icon-btn icon-btn-bordered"
@@ -163,7 +171,7 @@ export function ComposeModal() {
                     height: 32,
                     color: "var(--status-danger)",
                   }}
-                  aria-label="删除草稿"
+                  aria-label={t("compose.deleteDraftTip")}
                   onClick={() =>
                     workspace.setOverlay({
                       type: "danger-confirm",

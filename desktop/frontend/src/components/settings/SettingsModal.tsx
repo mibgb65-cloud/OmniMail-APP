@@ -1,8 +1,9 @@
-import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import type { SettingsTabId } from "../../types/settings";
 import { Icon } from "../common/Icon";
+import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { AccountsTab } from "./AccountsTab";
 import { AiSettingsModeBadge, AiSettingsTab } from "./AiSettingsTab";
 import { AutoReplyTab } from "./AutoReplyTab";
@@ -14,7 +15,7 @@ import { AboutTab, ShortcutsTab } from "./ShortcutsAndAboutTabs";
 import { StorageTab } from "./StorageTab";
 import { SyncTab } from "./SyncTab";
 import { TranslationSettingsTab } from "./TranslationSettingsTab";
-import { settingsNav } from "./settingsNav";
+import { getSettingsNav } from "./settingsNav";
 
 export function SettingsModal({
   initialTab,
@@ -24,6 +25,7 @@ export function SettingsModal({
   initialAccountId?: string;
 }) {
   const { workspace } = useApp();
+  const { t } = useI18n();
   const [tab, setTab] = useState<SettingsTabId>(
     initialTab === "account-detail" ? "accounts" : initialTab,
   );
@@ -31,11 +33,11 @@ export function SettingsModal({
     initialAccountId,
   );
   const [query, setQuery] = useState("");
-  const visibleTabs = settingsNav.filter((item) =>
+  const navItems = getSettingsNav(t);
+  const visibleTabs = navItems.filter((item) =>
     item.label.toLowerCase().includes(query.trim().toLowerCase()),
   );
-  const activeMeta =
-    settingsNav.find((item) => item.id === tab) ?? settingsNav[0];
+  const activeMeta = navItems.find((item) => item.id === tab) ?? navItems[0];
   const renderTabBody = () => {
     switch (tab) {
       case "general":
@@ -82,24 +84,24 @@ export function SettingsModal({
         className="modal-card settings-shell"
         role="dialog"
         aria-modal="true"
-        aria-label="偏好设置"
+        aria-label={t("settings.modalAria")}
       >
-        <nav className="settings-nav" aria-label="设置分类导航">
+        <nav className="settings-nav" aria-label={t("settings.navAria")}>
           <div className="settings-nav-top">
-            <div className="settings-nav-title">设置</div>
+            <div className="settings-nav-title">{t("settings.navTitle")}</div>
             <input
               type="search"
               className="input"
               style={{ height: 32 }}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="搜索设置项…"
+              placeholder={t("settings.searchPlaceholder")}
             />
           </div>
           <FadeScroll
             className="settings-nav-scroll"
             surface="--bg-surface"
-            label="设置分类"
+            label={t("settings.navScrollLabel")}
           >
             {visibleTabs.map((item) => (
               <button
@@ -137,13 +139,13 @@ export function SettingsModal({
                 width: "100%",
               }}
             >
-              关于 OmniMail
+              {t("settings.footerAboutTitle")}
             </div>
             <div
               className="text-xs text-muted truncate"
               style={{ width: "100%" }}
             >
-              版本 0.1.0
+              {t("settings.footerVersion", { version: "0.1.0" })}
             </div>
           </button>
         </nav>
@@ -157,15 +159,15 @@ export function SettingsModal({
               </div>
               <div className="modal-sub truncate">
                 {tab === "ai"
-                  ? "连接模型服务，并控制邮件内容的使用范围"
-                  : "调整外观、语言、桌面窗口行为与本地存储偏好"}
+                  ? t("settings.headerSubAi")
+                  : t("settings.headerSubDefault")}
               </div>
             </div>
             <button
               type="button"
               className="icon-btn icon-btn-bordered"
               style={{ width: 30, height: 30, flexShrink: 0 }}
-              aria-label="关闭设置"
+              aria-label={t("settings.closeSettingsAria")}
               onClick={() => workspace.setOverlay({ type: "none" })}
             >
               <Icon name="x" size={14} />
@@ -179,13 +181,15 @@ export function SettingsModal({
           <div className="modal-footer settings-modal-footer">
             <span className="row" style={{ gap: 6, fontSize: 12 }}>
               <span className="status-dot" />
-              <span className="text-muted">更改即时生效</span>
+              <span className="text-muted">
+                {t("settings.changesApplyInstantly")}
+              </span>
             </span>
             <span
               className="text-xs text-muted"
               style={{ fontFamily: "var(--font-mono)" }}
             >
-              Esc 关闭
+              {t("settings.escToClose")}
             </span>
           </div>
         </section>

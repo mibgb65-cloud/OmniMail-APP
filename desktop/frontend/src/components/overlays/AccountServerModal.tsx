@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import {
   accountApi,
   parseBackendError,
@@ -16,6 +17,7 @@ import { PasswordInput } from "../common/PasswordInput";
 
 export function AccountServerModal({ accountId }: { accountId: string }) {
   const { workspace, toastStore } = useApp();
+  const { t } = useI18n();
   const acc =
     workspace.accounts.find((a) => a.id === accountId) ?? workspace.accounts[0];
   const [imapHost, setImapHost] = useState(acc?.imap.host ?? "");
@@ -24,19 +26,20 @@ export function AccountServerModal({ accountId }: { accountId: string }) {
   const [smtpPort, setSmtpPort] = useState(String(acc?.smtp.port ?? 465));
   const [newSecret, setNewSecret] = useState("");
   const [status, setStatus] = useState<AsyncActionStatus>("idle");
-  const [stepLabel, setStepLabel] = useState("正在执行四步握手…");
+  const [stepLabel, setStepLabel] = useState("");
   const [report, setReport] = useState<ConnectionTestReport | null>(null);
 
   const backToDetail = () =>
     workspace.setOverlay({ type: "settings", tab: "accounts", accountId });
-
-  const clearErr = () => {
+  const bind = (setter: (v: string) => void) => (v: string) => {
+    setter(v);
     if (status === "error") setStatus("idle");
   };
 
   const handleSave = async () => {
     if (!acc) return;
     setStatus("loading");
+    setStepLabel("");
     setReport(null);
     const iPort = Number(imapPort) || 993;
     const sPort = Number(smtpPort) || 465;
@@ -80,13 +83,13 @@ export function AccountServerModal({ accountId }: { accountId: string }) {
       backToDetail();
       toastStore.pushToast({
         tone: "success",
-        title: "服务器参数已验证并保存",
+        title: t("toasts.serverParamsSaved"),
       });
     } catch (err) {
       setStatus("error");
       toastStore.pushToast({
         tone: "danger",
-        title: "更新服务器参数失败",
+        title: t("toasts.updateServerParamsFailed"),
         detail: parseBackendError(err).message,
       });
     }
@@ -94,8 +97,8 @@ export function AccountServerModal({ accountId }: { accountId: string }) {
 
   return (
     <ModalShell
-      heading={`编辑服务器参数 · ${acc?.name ?? ""}`}
-      subtitle="留空密码则继续沿用 DPAPI 凭据盒中已保存的加密凭据"
+      heading={t("overlays.serverEditHeading", { name: acc?.name ?? "" })}
+      subtitle={t("overlays.serverEditSubtitle")}
       maxWidth={520}
       onClose={backToDetail}
       footer={
@@ -106,15 +109,15 @@ export function AccountServerModal({ accountId }: { accountId: string }) {
             disabled={status === "loading" || status === "success"}
             onClick={backToDetail}
           >
-            取消
+            {t("common.cancel")}
           </button>
           <AsyncActionButton
             status={status}
             disabled={!imapHost.trim() || !smtpHost.trim()}
-            idleLabel="测试并保存"
-            loadingLabel={stepLabel}
-            successLabel="握手成功 · 已保存"
-            errorLabel="验证失败 · 点击重试"
+            idleLabel={t("overlays.serverTestSaveIdle")}
+            loadingLabel={stepLabel || t("common.handshakeRunningIdle")}
+            successLabel={t("overlays.serverTestSaveSuccess")}
+            errorLabel={t("overlays.serverTestSaveError")}
             onClick={() => void handleSave()}
           />
         </div>
@@ -128,69 +131,62 @@ export function AccountServerModal({ accountId }: { accountId: string }) {
       />
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10 }}>
         <div>
-          <label className="text-xs text-muted">IMAP 主机</label>
+          <label className="text-xs text-muted">
+            {t("overlays.serverImapHostLabel")}
+          </label>
           <input
             className="input"
             style={{ marginTop: 4 }}
             value={imapHost}
-            onChange={(e) => {
-              setImapHost(e.target.value);
-              clearErr();
-            }}
+            onChange={(e) => bind(setImapHost)(e.target.value)}
           />
         </div>
         <div>
-          <label className="text-xs text-muted">IMAP 端口</label>
+          <label className="text-xs text-muted">
+            {t("overlays.serverImapPortLabel")}
+          </label>
           <input
             className="input"
             style={{ marginTop: 4 }}
             value={imapPort}
-            onChange={(e) => {
-              setImapPort(e.target.value);
-              clearErr();
-            }}
+            onChange={(e) => bind(setImapPort)(e.target.value)}
           />
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10 }}>
         <div>
-          <label className="text-xs text-muted">SMTP 主机</label>
+          <label className="text-xs text-muted">
+            {t("overlays.serverSmtpHostLabel")}
+          </label>
           <input
             className="input"
             style={{ marginTop: 4 }}
             value={smtpHost}
-            onChange={(e) => {
-              setSmtpHost(e.target.value);
-              clearErr();
-            }}
+            onChange={(e) => bind(setSmtpHost)(e.target.value)}
           />
         </div>
         <div>
-          <label className="text-xs text-muted">SMTP 端口</label>
+          <label className="text-xs text-muted">
+            {t("overlays.serverSmtpPortLabel")}
+          </label>
           <input
             className="input"
             style={{ marginTop: 4 }}
             value={smtpPort}
-            onChange={(e) => {
-              setSmtpPort(e.target.value);
-              clearErr();
-            }}
+            onChange={(e) => bind(setSmtpPort)(e.target.value)}
           />
         </div>
       </div>
       <div>
         <label className="text-xs text-muted">
-          更新授权码 / 应用密码（可选）
+          {t("overlays.serverUpdatePwdLabel")}
         </label>
         <PasswordInput
           style={{ marginTop: 4 }}
           value={newSecret}
-          onChange={(v) => {
-            setNewSecret(v);
-            clearErr();
-          }}
-          placeholder="不修改请留空"
-          ariaLabel="更新应用密码"
+          onChange={bind(setNewSecret)}
+          placeholder={t("overlays.serverKeepPwdPlaceholder")}
+          ariaLabel={t("overlays.serverUpdatePwdAria")}
         />
       </div>
     </ModalShell>

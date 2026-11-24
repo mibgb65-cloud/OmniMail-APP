@@ -58,7 +58,11 @@ export function CustomSelect({
   const [search, setSearch] = useState("");
   const query = search.trim().toLowerCase();
   const choices = query
-    ? options.filter((o) => o.label.toLowerCase().includes(query))
+    ? options.filter((o) =>
+        [o.label, o.sublabel, o.hint, String(o.value)].some((field) =>
+          field?.toLowerCase().includes(query),
+        ),
+      )
     : options;
 
   const selectedIndex = Math.max(

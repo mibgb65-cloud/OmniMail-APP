@@ -6,6 +6,7 @@ import type {
   SendDraftRequest,
 } from "../../bindings/omnimail/internal/outbox/models";
 import * as ComposeService from "../../bindings/omnimail/services/composeservice";
+import { formatLocalizedTime, getCurrentLanguage, t } from "../i18n";
 import { isWailsDesktop } from "../state/storageHelpers";
 import type { ComposeDraftState } from "../types/settings";
 
@@ -43,7 +44,7 @@ function mapDraftDTO(raw: BackendDraftDTO): ComposeDraftState {
         a.status === "uploading" || a.status === "failed" ? a.status : "ready",
       error: a.error,
     })),
-    savedAt: raw.savedAt || "刚刚",
+    savedAt: raw.savedAt || formatLocalizedTime("刚刚", getCurrentLanguage()),
     scheduledAt: raw.scheduledAt,
     scheduledAtUnixMs: raw.scheduledAtUnixMs,
     replyToMailId: raw.replyToMailId,
@@ -142,7 +143,10 @@ export const composeApi = {
 
   async pickAttachments(): Promise<ComposeDraftState["attachments"]> {
     if (!isWailsDesktop()) return [];
-    const files = await DesktopService.PickLocalFiles("选择邮件附件", true);
+    const files = await DesktopService.PickLocalFiles(
+      t("compose.pickAttachmentDialogTitle"),
+      true,
+    );
     return (files ?? []).map((f, idx) => ({
       id: `att-${Date.now()}-${idx}`,
       name: f.name,

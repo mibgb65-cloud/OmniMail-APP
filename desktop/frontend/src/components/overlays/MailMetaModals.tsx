@@ -1,5 +1,5 @@
-import { ScrollCodeBlock } from "../common/scroll-fade/FadeScroll";
 import { useEffect, useState } from "react";
+import { useI18n } from "../../i18n";
 import {
   diagnosticApi,
   mailApi,
@@ -9,11 +9,13 @@ import { useApp } from "../../state/AppContext";
 import { isWailsDesktop } from "../../state/storageHelpers";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
+import { ScrollCodeBlock } from "../common/scroll-fade/FadeScroll";
 
 export { PrintExportModal } from "./PrintExportModal";
 
 export function MailSourceModal({ mailId }: { mailId: string }) {
   const { workspace, mailStore, toastStore } = useApp();
+  const { t } = useI18n();
   const [sourceView, setSourceView] = useState<RawSourceView | null>(null);
   const mail =
     mailStore.mails.find((m) => m.id === mailId) ?? mailStore.selectedMail;
@@ -43,16 +45,16 @@ export function MailSourceModal({ mailId }: { mailId: string }) {
 
   return (
     <ModalShell
-      heading="查看原始邮件头与源码"
-      subtitle="从本地 CAS .eml.zst 解压真实 RFC5322 源码与路由跳数"
+      heading={t("overlays.sourceHeading")}
+      subtitle={t("overlays.sourceSubtitle")}
       maxWidth={680}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
         <>
           <span className="text-xs text-muted">
             {sourceView?.truncated
-              ? "已截断超长附件段，导出 .eml 可查看完整字节"
-              : "可用于核查 SPF / DKIM / Received 跳数"}
+              ? t("overlays.sourceTruncatedHint")
+              : t("overlays.sourceVerifyHint")}
           </span>
           <div className="row" style={{ gap: 8 }}>
             <button
@@ -64,13 +66,14 @@ export function MailSourceModal({ mailId }: { mailId: string }) {
                     p &&
                     toastStore.pushToast({
                       tone: "success",
-                      title: "已导出原始 .eml",
+                      title: t("toasts.exportedRawEml"),
                       detail: p,
                     }),
                 );
               }}
             >
-              <Icon name="download" size={14} /> 导出 .eml
+              <Icon name="download" size={14} />{" "}
+              {t("overlays.sourceExportEmlBtn")}
             </button>
             <button
               type="button"
@@ -79,18 +82,18 @@ export function MailSourceModal({ mailId }: { mailId: string }) {
                 void navigator.clipboard?.writeText(rawSource);
                 toastStore.pushToast({
                   tone: "success",
-                  title: "已复制邮件原始源码",
+                  title: t("toasts.copiedRawSource"),
                 });
               }}
             >
-              <Icon name="copy" size={14} /> 复制全文
+              <Icon name="copy" size={14} /> {t("overlays.sourceCopyAllBtn")}
             </button>
             <button
               type="button"
               className="btn btn-primary"
               onClick={() => workspace.setOverlay({ type: "none" })}
             >
-              关闭
+              {t("common.close")}
             </button>
           </div>
         </>
@@ -102,11 +105,13 @@ export function MailSourceModal({ mailId }: { mailId: string }) {
           <span className="pill pill-neutral">DKIM: {sourceView.dkim}</span>
           <span className="pill pill-neutral">DMARC: {sourceView.dmarc}</span>
           <span className="pill pill-neutral">
-            路由跳数: {sourceView.hops?.length ?? 0} 跳
+            {t("overlays.sourceHopsBadge", {
+              count: sourceView.hops?.length ?? 0,
+            })}
           </span>
         </div>
       )}
-      <ScrollCodeBlock maxHeight={360} label="邮件原始头">
+      <ScrollCodeBlock maxHeight={360} label={t("overlays.sourceScrollLabel")}>
         {rawSource}
       </ScrollCodeBlock>
     </ModalShell>

@@ -1,40 +1,50 @@
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { CustomSelect } from "../common/CustomSelect";
 import { Icon } from "../common/Icon";
 
 export function SyncTab() {
   const { workspace, triggerSyncAll } = useApp();
+  const { t } = useI18n();
   const s = workspace.settings;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div className="settings-card">
         <div className="row-between">
-          <strong style={{ fontSize: 14 }}>收信与增量同步策略</strong>
+          <strong style={{ fontSize: 14 }}>
+            {t("settings.syncStrategyHeading")}
+          </strong>
           <button
             type="button"
             className="btn btn-primary btn-sm"
             onClick={triggerSyncAll}
           >
-            <Icon name="refresh" size={13} /> 立即同步全部
+            <Icon name="refresh" size={13} /> {t("settings.syncAllNowBtn")}
           </button>
         </div>
 
         <div className="settings-row">
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>自动拉取周期</div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>
+              {t("settings.pollIntervalTitle")}
+            </div>
             <div className="text-xs text-muted">
-              对不支持 IMAP IDLE 的服务商定时增量拉取
+              {t("settings.pollIntervalDesc")}
             </div>
           </div>
           <CustomSelect
             value={s.syncIntervalMinutes}
-            ariaLabel="自动拉取周期"
+            ariaLabel={t("settings.pollIntervalTitle")}
             options={[
-              { value: 1, label: "每 1 分钟" },
-              { value: 5, label: "每 5 分钟", hint: "推荐" },
-              { value: 15, label: "每 15 分钟" },
-              { value: 30, label: "每 30 分钟" },
+              { value: 1, label: t("settings.every1Min") },
+              {
+                value: 5,
+                label: t("settings.every5Min"),
+                hint: t("settings.recommendedHint"),
+              },
+              { value: 15, label: t("settings.every15Min") },
+              { value: 30, label: t("settings.every30Min") },
             ]}
             onChange={(val) =>
               workspace.updateSettings({ syncIntervalMinutes: Number(val) })
@@ -45,19 +55,23 @@ export function SyncTab() {
         <div className="settings-row">
           <div>
             <div style={{ fontSize: 13, fontWeight: 600 }}>
-              本地离线缓存窗口
+              {t("settings.offlineWindowTitle")}
             </div>
             <div className="text-xs text-muted">
-              超出窗口的旧邮件在联网检索时按需拉取正文
+              {t("settings.offlineWindowDesc")}
             </div>
           </div>
           <CustomSelect
             value={s.offlineRetentionDays}
-            ariaLabel="本地离线缓存窗口"
+            ariaLabel={t("settings.offlineWindowTitle")}
             options={[
-              { value: 30, label: "最近 30 天" },
-              { value: 90, label: "最近 90 天", hint: "推荐" },
-              { value: 180, label: "最近 180 天" },
+              { value: 30, label: t("settings.last30Days") },
+              {
+                value: 90,
+                label: t("settings.last90Days"),
+                hint: t("settings.recommendedHint"),
+              },
+              { value: 180, label: t("settings.last180Days") },
             ]}
             onChange={(val) =>
               workspace.updateSettings({

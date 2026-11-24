@@ -1,15 +1,20 @@
-import { Icon } from "../../common/Icon";
+import { useI18n } from "../../../i18n";
 import { useApp } from "../../../state/AppContext";
-import { duplicatePreview } from "./duplicateSelection";
+import { Icon } from "../../common/Icon";
 import { useDuplicateCenter } from "./DuplicateCenter";
+import { duplicatePreview } from "./duplicateSelection";
 
 export function DuplicateNotice() {
   const { workspace } = useApp();
+  const { lang, t } = useI18n();
   const center = useDuplicateCenter();
   if (center.hidden || !center.groups.length) return null;
   const count = center.groups.length;
-  const { emailCount, preview } = duplicatePreview(center.groups);
-  const summary = `检测到 ${count} 组重复联系人（共 ${emailCount} 个关联邮箱）`;
+  const { emailCount, preview } = duplicatePreview(center.groups, lang);
+  const summary = t("contacts.dupNoticeSummary", {
+    count,
+    emails: emailCount,
+  });
   return (
     <div className="contacts-dup-notice" role="region" aria-label={summary}>
       <div className="contacts-dup-notice-copy">
@@ -32,7 +37,7 @@ export function DuplicateNotice() {
             workspace.setOverlay({ type: "contact-duplicates", mode: "review" })
           }
         >
-          查看并筛选 ({count} 组)
+          {t("contacts.dupReviewCountBtn", { count })}
         </button>
         <button
           type="button"
@@ -45,12 +50,12 @@ export function DuplicateNotice() {
             })
           }
         >
-          一键合并全部
+          {t("contacts.dupMergeAllBtn")}
         </button>
         <button
           type="button"
           className="icon-btn"
-          aria-label="本次隐藏重复联系人提示"
+          aria-label={t("contacts.dupDismissAria")}
           onClick={center.dismiss}
         >
           <Icon name="x" size={14} />

@@ -1,16 +1,42 @@
+import type { ReactNode } from "react";
+import { useI18n } from "../../i18n";
 import type { RulePreviewResult } from "../../services/backendClient";
 
+export function RuleFieldRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <label className="text-xs text-muted">{label}</label>
+      <div style={{ marginTop: 4 }}>{children}</div>
+    </div>
+  );
+}
+
 export function RulePreviewCard({ preview }: { preview: RulePreviewResult }) {
+  const { isEn, t, localizeText } = useI18n();
+
   return (
     <div className="settings-card" style={{ padding: "10px 12px" }}>
       <strong className="text-xs">
-        干跑预览：最近 30 天内预计命中 {preview.hitCount} 封邮件
+        {t("overlays.ruleDryRunTitle", { count: preview.hitCount })}
       </strong>
-      {(preview.samples ?? []).map((s) => (
-        <div key={s.id} className="text-xs text-muted truncate">
-          · {s.subject}（{s.senderEmail}）
-        </div>
-      ))}
+      {(preview.samples ?? []).map((s) => {
+        const subj =
+          s.subject === "示例命中邮件预览"
+            ? t("overlays.ruleSamplePreviewSubject")
+            : localizeText(s.subject);
+        return (
+          <div key={s.id} className="text-xs text-muted truncate">
+            · {subj}
+            {isEn ? ` (${s.senderEmail})` : `（${s.senderEmail}）`}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -34,6 +60,8 @@ export function RuleEditorFooter({
   onCancel,
   onSave,
 }: RuleEditorFooterProps) {
+  const { t } = useI18n();
+
   return (
     <>
       <div className="row" style={{ gap: 6 }}>
@@ -43,7 +71,7 @@ export function RuleEditorFooter({
             className="btn btn-danger btn-sm"
             onClick={onDelete}
           >
-            删除
+            {t("common.delete")}
           </button>
         )}
         <button
@@ -52,12 +80,12 @@ export function RuleEditorFooter({
           className="btn btn-secondary btn-sm"
           onClick={onPreview}
         >
-          测试命中预览
+          {t("overlays.ruleTestPreviewBtn")}
         </button>
       </div>
       <div className="row">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          取消
+          {t("common.cancel")}
         </button>
         <button
           type="button"
@@ -65,7 +93,7 @@ export function RuleEditorFooter({
           disabled={!canSave}
           onClick={onSave}
         >
-          保存规则
+          {t("overlays.ruleSaveBtn")}
         </button>
       </div>
     </>

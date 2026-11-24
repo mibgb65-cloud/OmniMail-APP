@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Checkbox } from "../common/Checkbox";
 import { CustomSelect } from "../common/CustomSelect";
@@ -7,6 +8,7 @@ import { ProviderIcon } from "../common/ProviderIcon";
 
 export function AdvancedSearchModal() {
   const { workspace, mailStore, toastStore } = useApp();
+  const { t } = useI18n();
   const [from, setFrom] = useState(mailStore.advSearch.from);
   const [subject, setSubject] = useState(mailStore.advSearch.subject);
   const [accountId, setAccountId] = useState(mailStore.advSearch.accountId);
@@ -28,8 +30,8 @@ export function AdvancedSearchModal() {
     workspace.setOverlay({ type: "none" });
     toastStore.pushToast({
       tone: "info",
-      title: "已应用高级搜索过滤条件",
-      detail: "可在搜索框清空或重新打开高级搜索重置条件",
+      title: t("toasts.advSearchAppliedTitle"),
+      detail: t("toasts.advSearchAppliedDetail"),
     });
   };
 
@@ -44,14 +46,14 @@ export function AdvancedSearchModal() {
 
   return (
     <ModalShell
-      heading="高级搜索"
-      subtitle="跨多邮箱本地全文检索，组合条件实时生效"
+      heading={t("overlays.advSearchHeading")}
+      subtitle={t("overlays.advSearchSubtitle")}
       maxWidth={520}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
         <>
           <button type="button" className="btn btn-ghost" onClick={reset}>
-            重置全部条件
+            {t("overlays.advResetAllBtn")}
           </button>
           <div className="row">
             <button
@@ -59,48 +61,54 @@ export function AdvancedSearchModal() {
               className="btn btn-secondary"
               onClick={() => workspace.setOverlay({ type: "none" })}
             >
-              取消
+              {t("common.cancel")}
             </button>
             <button type="button" className="btn btn-primary" onClick={apply}>
-              立即搜索
+              {t("overlays.advSearchNowBtn")}
             </button>
           </div>
         </>
       }
     >
       <div>
-        <label className="text-xs text-muted">发件人姓名或邮箱</label>
+        <label className="text-xs text-muted">
+          {t("overlays.advFromLabel")}
+        </label>
         <input
           className="input"
           style={{ marginTop: 4 }}
           value={from}
           onChange={(e) => setFrom(e.target.value)}
-          placeholder="例如 林知夏 或 studio.example"
+          placeholder={t("overlays.advFromPlaceholder")}
         />
       </div>
 
       <div>
-        <label className="text-xs text-muted">主题关键词</label>
+        <label className="text-xs text-muted">
+          {t("overlays.advSubjectLabel")}
+        </label>
         <input
           className="input"
           style={{ marginTop: 4 }}
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          placeholder="例如 OmniMail、评审、发票"
+          placeholder={t("overlays.advSubjectPlaceholder")}
         />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
-          <label className="text-xs text-muted">邮箱范围</label>
+          <label className="text-xs text-muted">
+            {t("overlays.advAccountScopeLabel")}
+          </label>
           <CustomSelect
             fullWidth
             minMenuWidth={220}
             style={{ marginTop: 4 }}
             value={accountId}
-            ariaLabel="搜索邮箱范围"
+            ariaLabel={t("overlays.advAccountScopeAria")}
             options={[
-              { value: "all", label: "全部已连接邮箱" },
+              { value: "all", label: t("overlays.advAllAccountsOpt") },
               ...workspace.accounts.map((acc) => ({
                 value: acc.id,
                 label: acc.name,
@@ -112,17 +120,19 @@ export function AdvancedSearchModal() {
           />
         </div>
         <div>
-          <label className="text-xs text-muted">时间范围</label>
+          <label className="text-xs text-muted">
+            {t("overlays.advDateRangeLabel")}
+          </label>
           <CustomSelect
             fullWidth
             style={{ marginTop: 4 }}
             value={dateRange}
-            ariaLabel="搜索时间范围"
+            ariaLabel={t("overlays.advDateRangeAria")}
             options={[
-              { value: "all", label: "不限时间" },
-              { value: "7d", label: "最近 7 天" },
-              { value: "30d", label: "最近 30 天" },
-              { value: "90d", label: "最近 90 天" },
+              { value: "all", label: t("overlays.advDateAllOpt") },
+              { value: "7d", label: t("overlays.advDate7dOpt") },
+              { value: "30d", label: t("overlays.advDate30dOpt") },
+              { value: "90d", label: t("overlays.advDate90dOpt") },
             ]}
             onChange={(val) =>
               setDateRange(val as "all" | "7d" | "30d" | "90d")
@@ -134,9 +144,9 @@ export function AdvancedSearchModal() {
       <Checkbox
         checked={hasAttachment}
         onChange={setHasAttachment}
-        ariaLabel="仅显示包含附件的邮件"
+        ariaLabel={t("overlays.advHasAttachmentLabel")}
       >
-        仅显示包含附件的邮件
+        {t("overlays.advHasAttachmentLabel")}
       </Checkbox>
     </ModalShell>
   );

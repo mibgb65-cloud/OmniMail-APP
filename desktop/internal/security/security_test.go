@@ -91,3 +91,45 @@ func TestRedactAndMasking(t *testing.T) {
 		t.Fatalf("邮箱脱敏异常: %s", got)
 	}
 }
+
+func TestEvaluatePhishingDMARCAlignment(t *testing.T) {
+	// 1. 正常转发/代发：spf=fail, dkim=pass, dmarc=pass -> 不应误报，返回 nil
+	forwarded := EvaluatePhishing(PhishingCheckInput{
+		SenderName:  "Cloudflare",
+		SenderEmail: "noreply@notify.cloudflare.com",
+		RawHeaders:  "Authentication-Results: mx.example.com; spf=fail; dkim=pass; dmarc=pass\r\n",
+	})
+	if forwarded != nil {
+		t.Fatalf("expected nil warning when dkim=pass and dmarc=pass, got %+v", forwarded)
+	}
+
+	// 1b. spf=softfail, dkim=pass, dmarc=pass 同样不应误报
+	softForwarded := EvaluatePhishing(PhishingCheckInput{
+		SenderName:  "GitHub",
+		SenderEmail: "noreply@github.com",
+		RawHeaders:  "Authentication-Results: mx.example.com; spf=softfail; dkim=pass; dmarc=pass\r\n",
+	})
+	if softForwarded != nil {
+		t.Fatalf("expected nil warning when spf=softfail, dkim=pass, dmarc=pass, got %+v", softForwarded)
+	}
+
+	// 2. 全面认证失败：spf=fail, dkim=fail, dmarc=fail -> 返回 danger
+	spoofed := EvaluatePhishing(PhishingCheckInput{
+		SenderName:  "Support",
+		SenderEmail: "support@bank-example.com",
+		RawHeaders:  "Authentication-Results: mx.example.com; spf=fail; dkim=fail; dmarc=fail\r\n",
+	})
+	if spoofed == nil || spoofed.Level != "danger" || spoofed.SPF != "fail" || spoofed.DKIM != "fail" || spoofed.DMARC != "fail" {
+		t.Fatalf("expected danger warning for spf=fail, dkim=fail, dmarc=fail, got %+v", spoofed)
+	}
+
+	// 3. 未通过 DMARC 对齐且 SPF 失败：spf=fail, dkim=unknown, dmarc=unknown -> 返回 warning
+	unaligned := EvaluatePhishing(PhishingCheckInput{
+		SenderName:  "Partner",
+		SenderEmail: "billing@partner-example.com",
+		RawHeaders:  "Received-SPF: fail (mx.example.com: domain of partner-example.com does not designate 198.51.100.2)\r\n",
+	})
+	if unaligned == nil || unaligned.Level != "warning" || unaligned.SPF != "fail" || unaligned.DKIM != "unknown" || unaligned.DMARC != "unknown" {
+		t.Fatalf("expected warning for spf=fail, dkim=unknown, dmarc=unknown, got %+v", unaligned)
+	}
+}

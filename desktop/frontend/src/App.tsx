@@ -26,6 +26,7 @@ import { LeftNavDrawer } from "./components/shell/LeftNavDrawer";
 import { Sidebar } from "./components/shell/Sidebar";
 import { StatusBanner } from "./components/shell/StatusBanner";
 import { TopBar } from "./components/shell/TopBar";
+import { useI18n } from "./i18n";
 import { AppProvider, useApp } from "./state/AppContext";
 import { useLaunchSplash } from "./state/useLaunchSplash";
 import { usePresence } from "./state/usePresence";
@@ -38,6 +39,7 @@ function blockChromeContextMenu(e: MouseEvent<HTMLElement>) {
 
 function OmniMailShell() {
   const { viewport, workspace, aiStore, toastStore } = useApp();
+  const { t } = useI18n();
   const contactsNav = useContactsNavState();
   const splash = useLaunchSplash(workspace.accounts.length);
 
@@ -91,7 +93,7 @@ function OmniMailShell() {
         data-ai-resizing={aiPanel.isResizing}
         style={{ "--ai-slide-width": `${aiPanel.width}px` } as CSSProperties}
       >
-        <main className="workspace-grid" aria-label="主工作空间">
+        <main className="workspace-grid" aria-label={t("common.mainWorkspace")}>
           {activeRoute === "contacts" ? (
             <ContactsSidebar {...contactsNav} />
           ) : (

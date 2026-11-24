@@ -1,8 +1,21 @@
-export function mailAiScope(includesSubject: boolean) {
-  const mailContent = includesSubject ? "当前邮件主题与正文" : "当前邮件正文";
+import { getCurrentLanguage, translateWithLang } from "../../i18n/index.ts";
+import type { LanguageCode } from "../../types/settings.ts";
+
+export function mailAiScope(
+  includesSubject: boolean,
+  lang: LanguageCode = getCurrentLanguage(),
+) {
   return {
-    short: `${mailContent} · 附件不外传`,
-    mailContent,
-    notShared: "邮件头、附件文件、文件名及附件内容预览",
+    short: translateWithLang(
+      lang,
+      includesSubject ? "ai.scopeSubjectAndBodyShort" : "ai.scopeBodyOnlyShort",
+    ),
+    mailContent: translateWithLang(
+      lang,
+      includesSubject
+        ? "ai.scopeSubjectAndBodyContent"
+        : "ai.scopeBodyOnlyContent",
+    ),
+    notShared: translateWithLang(lang, "ai.scopeNotShared"),
   };
 }

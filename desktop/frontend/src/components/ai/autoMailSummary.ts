@@ -1,6 +1,17 @@
-import type { AiMailInsight } from "../../types/workspace";
+import type { AiDeadlineItem, AiMailInsight } from "../../types/workspace";
 
 type SummaryFields = Pick<AiMailInsight, "summary" | "summaryLanguage">;
+
+export function normalizeSummaryDeadlines(
+  items: readonly AiDeadlineItem[] | null | undefined,
+): AiDeadlineItem[] {
+  if (!items?.length) return [];
+  return items.flatMap((item) => {
+    const label = item.label.trim();
+    const timeText = item.timeText.trim();
+    return label || timeText ? [{ label, timeText, urgent: item.urgent }] : [];
+  });
+}
 
 export function hasUsableSummary<T extends SummaryFields>(
   insight: T | null | undefined,

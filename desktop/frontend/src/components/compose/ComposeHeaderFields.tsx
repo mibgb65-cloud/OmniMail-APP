@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { composeApi, parseBackendError } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import { isWailsDesktop } from "../../state/storageHelpers";
@@ -9,49 +10,54 @@ import { RecipientInputRow } from "./RecipientInputRow";
 
 export function ComposeHeaderFields() {
   const { workspace, composeStore, toastStore } = useApp();
+  const { t, formatTime, localizeText } = useI18n();
   const draft = composeStore.draft;
   if (!draft) return null;
+
+  const senderOptions = workspace.accounts.length
+    ? workspace.accounts.map((acc) => ({
+        value: acc.id,
+        label: localizeText(acc.name) || t("topbar.accountFallback"),
+        sublabel: acc.email,
+        icon: <ProviderIcon provider={acc.provider} size={18} />,
+      }))
+    : [{ value: draft.accountId, label: t("toasts.defaultMailboxFallback") }];
+
+  const unlockSender = () => {
+    composeStore.updateDraft({ lockedAccount: false, unlockIdentity: true });
+    toastStore.pushToast({
+      tone: "info",
+      title: t("toasts.unlockedIdentityTemp"),
+    });
+  };
 
   return (
     <>
       <div className="compose-row">
-        <span className="compose-row-label">发件人</span>
+        <span className="compose-row-label">{t("compose.fromLabel")}</span>
         <div className="row" style={{ flex: 1, minWidth: 0, gap: 6 }}>
           <CustomSelect
             compact
             value={draft.accountId}
             disabled={draft.lockedAccount}
-            ariaLabel="选择发件账户"
+            ariaLabel={t("compose.selectSenderAria")}
             minMenuWidth={280}
             style={{ flex: 1, maxWidth: 340 }}
             onChange={(val) => composeStore.updateDraft({ accountId: val })}
-            options={workspace.accounts.map((acc) => ({
-              value: acc.id,
-              label: acc.name,
-              sublabel: acc.email,
-              icon: <ProviderIcon provider={acc.provider} size={18} />,
-            }))}
+            options={senderOptions}
           />
           {draft.lockedAccount && (
             <>
               <span className="pill pill-accent">
-                <Icon name="lock" size={12} /> 已锁定原收件账户
+                <Icon name="lock" size={12} />{" "}
+                {t("compose.lockedOriginalAccount")}
               </span>
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
-                onClick={() => {
-                  composeStore.updateDraft({
-                    lockedAccount: false,
-                    unlockIdentity: true,
-                  });
-                  toastStore.pushToast({
-                    tone: "info",
-                    title: "已临时解锁发件身份限制，请留意避免误发",
-                  });
-                }}
+                onClick={unlockSender}
               >
-                临时切换
+                {t("compose.unlockTemporarily")}
               </button>
             </>
           )}
@@ -63,43 +69,37 @@ export function ComposeHeaderFields() {
             composeStore.updateDraft({ showCcBcc: !draft.showCcBcc })
           }
         >
-          {draft.showCcBcc ? "隐藏抄送/密送" : "抄送 / 密送"}
+          {draft.showCcBcc ? t("compose.hideCcBcc") : t("compose.showCcBcc")}
         </button>
       </div>
 
       <RecipientInputRow
-        label="收件人"
+        label={t("compose.toLabel")}
         values={draft.to}
         contacts={workspace.contacts}
         onChange={(next) => composeStore.updateDraft({ to: next })}
       />
 
-      {draft.showCcBcc && (
-        <>
+      {draft.showCcBcc &&
+        (["cc", "bcc"] as const).map((field) => (
           <RecipientInputRow
-            label="抄送"
-            values={draft.cc}
+            key={field}
+            label={t(field === "cc" ? "compose.ccLabel" : "compose.bccLabel")}
+            values={draft[field]}
             contacts={workspace.contacts}
-            onChange={(next) => composeStore.updateDraft({ cc: next })}
+            onChange={(next) => composeStore.updateDraft({ [field]: next })}
           />
-          <RecipientInputRow
-            label="密送"
-            values={draft.bcc}
-            contacts={workspace.contacts}
-            onChange={(next) => composeStore.updateDraft({ bcc: next })}
-          />
-        </>
-      )}
+        ))}
 
       <div className="compose-row">
-        <span className="compose-row-label">主题</span>
+        <span className="compose-row-label">{t("compose.subjectLabel")}</span>
         <input
           type="text"
           value={draft.subject}
           onChange={(e) =>
             composeStore.updateDraft({ subject: e.target.value })
           }
-          placeholder="请输入邮件主题…"
+          placeholder={t("compose.subjectPlaceholder")}
           style={{
             flex: 1,
             border: "none",
@@ -111,7 +111,11 @@ export function ComposeHeaderFields() {
           }}
         />
         {draft.scheduledAt && (
-          <span className="pill pill-accent">定时 · {draft.scheduledAt}</span>
+          <span className="pill pill-accent">
+            {t("compose.scheduledBadge", {
+              time: formatTime(draft.scheduledAt),
+            })}
+          </span>
         )}
       </div>
     </>
@@ -120,27 +124,26 @@ export function ComposeHeaderFields() {
 
 export function ComposeToolbar() {
   const { workspace, composeStore, toastStore } = useApp();
+  const { t } = useI18n();
   const draft = composeStore.draft;
   if (!draft) return null;
 
   const handlePickAttachments = () => {
     if (!isWailsDesktop()) {
-      composeStore.updateDraft({
-        attachments: [...draft.attachments, buildDemoDraftAttachment(false)],
-      });
+      const next = [...draft.attachments, buildDemoDraftAttachment(false)];
+      composeStore.updateDraft({ attachments: next });
       return;
     }
     void composeApi
       .pickAttachments()
       .then((picked) => {
-        if (picked.length === 0) return;
+        if (!picked.length) return;
         const merged = [...draft.attachments, ...picked];
-        const totalBytes = merged.reduce((s, a) => s + (a.sizeBytes ?? 0), 0);
-        if (totalBytes > 25 * 1024 * 1024) {
+        if (merged.reduce((s, a) => s + (a.sizeBytes ?? 0), 0) > 26214400) {
           toastStore.pushToast({
             tone: "warning",
-            title: "附件总大小已超过 25 MB",
-            detail: "部分邮局 SMTP 可能拒收超大附件，建议压缩或分批发送",
+            title: t("toasts.attExceeds25MbTitle"),
+            detail: t("toasts.attExceeds25MbDetail"),
           });
         }
         composeStore.updateDraft({ attachments: merged });
@@ -148,11 +151,14 @@ export function ComposeToolbar() {
       .catch((err) =>
         toastStore.pushToast({
           tone: "danger",
-          title: "读取本地附件失败",
+          title: t("toasts.readLocalAttFailed"),
           detail: parseBackendError(err).message,
         }),
       );
   };
+
+  const openTransfers = () =>
+    workspace.setOverlay({ type: "attachment-transfer", mode: "transfer" });
 
   return (
     <div className="compose-toolbar">
@@ -162,19 +168,14 @@ export function ComposeToolbar() {
           className="btn btn-ghost btn-sm"
           onClick={handlePickAttachments}
         >
-          <Icon name="paperclip" size={13} /> 添加附件
+          <Icon name="paperclip" size={13} /> {t("compose.addAttachment")}
         </button>
         <button
           type="button"
           className="btn btn-ghost btn-sm"
-          onClick={() =>
-            workspace.setOverlay({
-              type: "attachment-transfer",
-              mode: "transfer",
-            })
-          }
+          onClick={openTransfers}
         >
-          传输队列
+          {t("compose.transferQueue")}
         </button>
       </div>
       <button
@@ -186,7 +187,7 @@ export function ComposeToolbar() {
         }
       >
         <Icon name="sparkle" size={13} />
-        {draft.inlineAiOpen ? "收起 AI" : "Omni AI 起草"}
+        {t(draft.inlineAiOpen ? "compose.hideInlineAi" : "compose.inlineAiCta")}
       </button>
     </div>
   );

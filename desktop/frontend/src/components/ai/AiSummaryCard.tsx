@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import type { AiMailInsight } from "../../types/workspace";
 import {
@@ -5,7 +6,7 @@ import {
   type SourceLanguage,
 } from "../mail/translation/translationLanguages";
 import { summaryAction } from "./aiAnalysisPrompt";
-import { hasUsableSummary } from "./autoMailSummary";
+import { hasUsableSummary, normalizeSummaryDeadlines } from "./autoMailSummary";
 
 export function AiSummaryCard({
   insight,
@@ -20,14 +21,21 @@ export function AiSummaryCard({
   foreignLanguage?: SourceLanguage;
   uiLanguage: "en" | "zh-CN";
 }) {
+  const { t } = useI18n();
   const { requestAiAction } = useApp();
   const ready = hasUsableSummary(insight, uiLanguage);
+  const deadlines = ready ? normalizeSummaryDeadlines(insight.deadlines) : [];
+  const summarizeLabel = t("ai.summarizeEmail");
 
   return (
-    <section className="ai-card" aria-label="邮件摘要">
+    <section className="ai-card" aria-label={t("ai.emailSummary")}>
       <div className="ai-card-head">
         <span>
-          {ready && foreignLanguage ? "外文邮件核心摘要" : "邮件摘要"}
+          {t(
+            ready && foreignLanguage
+              ? "ai.foreignEmailSummary"
+              : "ai.emailSummary",
+          )}
         </span>
         {foreignLanguage && (
           <span className="pill pill-ai">
@@ -41,42 +49,40 @@ export function AiSummaryCard({
             <strong className="ai-card-text">{insight.summaryTitle}</strong>
           )}
           <p className="ai-card-text">{insight.summary}</p>
-          {insight.deadlines.length > 0 && (
-            <div className="ai-card-head">关键时间与待办</div>
+          {deadlines.length > 0 && (
+            <div className="ai-card-head">{t("ai.keyDatesAndTasks")}</div>
           )}
-          {insight.deadlines.map((item, index) => (
-            <div key={index} className="ai-deadline-row">
-              <span className="truncate">{item.label}</span>
-              <strong
-                style={{
-                  color: item.urgent
-                    ? "var(--status-danger)"
-                    : "var(--brand-accent)",
-                  flexShrink: 0,
-                }}
-              >
-                {item.timeText}
-              </strong>
+          {deadlines.map((item, index) => (
+            <div key={index} className="ai-deadline-row ai-summary-deadline">
+              {item.label && (
+                <span className="ai-deadline-label">{item.label}</span>
+              )}
+              {item.timeText && (
+                <strong
+                  className="ai-deadline-time"
+                  data-urgent={item.urgent ? "true" : undefined}
+                >
+                  {item.timeText}
+                </strong>
+              )}
             </div>
           ))}
           {insight.cached && (
-            <span className="text-xs text-muted">本地缓存 · 零重复消耗</span>
+            <span className="text-xs text-muted">{t("ai.cachedZeroCost")}</span>
           )}
         </>
       ) : (
         <>
-          <p className="ai-card-text">
-            提炼核心主旨、关键时间与待办事项，外文邮件以界面语言输出。
-          </p>
+          <p className="ai-card-text">{t("ai.summaryIntro")}</p>
           <button
             type="button"
             className="btn btn-primary btn-sm"
             disabled={busy}
             onClick={() =>
-              requestAiAction("总结当前邮件", summaryAction(source))
+              requestAiAction(summarizeLabel, summaryAction(source))
             }
           >
-            总结当前邮件
+            {summarizeLabel}
           </button>
         </>
       )}

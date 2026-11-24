@@ -1,3 +1,4 @@
+import { useI18n } from "../../../i18n";
 import { mailApi, parseBackendError } from "../../../services/backendClient";
 import { useApp } from "../../../state/AppContext";
 import { isWailsDesktop } from "../../../state/storageHelpers";
@@ -11,36 +12,35 @@ export function MeetingInviteCard({
   mailId: string;
   invite: MeetingInvite;
 }) {
+  const { t } = useI18n();
   const { mailStore, toastStore } = useApp();
 
   const setRsvp = (next: MeetingInvite["rsvp"], label: string) => {
+    const statusBadge = t("reader.icsBadgePrefix", { label });
     mailStore.updateMail(mailId, {
       meetingInvite: { ...invite, rsvp: next },
-      statusBadge: `会议 · ${label}`,
+      statusBadge,
     });
     if (!isWailsDesktop()) {
       toastStore.pushToast({
         tone: "success",
-        title: `已将会议状态更新为「${label}」`,
+        title: t("toasts.meetingUpdatedPreview", { label }),
       });
       return;
     }
     void mailApi
       .respondMeetingInvite(mailId, next)
       .then((updated) => {
-        mailStore.updateMail(mailId, {
-          meetingInvite: updated,
-          statusBadge: `会议 · ${label}`,
-        });
+        mailStore.updateMail(mailId, { meetingInvite: updated, statusBadge });
         toastStore.pushToast({
           tone: "success",
-          title: `已回复会议组织者「${label}」并同步本地日程`,
+          title: t("toasts.meetingRsvpSynced", { label }),
         });
       })
       .catch((err) =>
         toastStore.pushToast({
           tone: "danger",
-          title: "回复日程邀请失败",
+          title: t("toasts.meetingRsvpFailed"),
           detail: parseBackendError(err).message,
         }),
       );
@@ -78,20 +78,20 @@ export function MeetingInviteCard({
         >
           ●{" "}
           {invite.conflictStatus === "free"
-            ? "日程无冲突"
-            : invite.conflictHint || "时间冲突"}
+            ? t("reader.icsNoConflict")
+            : invite.conflictHint || t("reader.icsConflictFallback")}
         </span>
       </div>
 
       <div className="row-between" style={{ flexWrap: "wrap", gap: 8 }}>
         <span className="text-xs text-muted">
-          参会人员（{invite.attendees.length} 人）
+          {t("reader.icsAttendeesCount", { count: invite.attendees.length })}
         </span>
         <span
           className="text-xs text-muted"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          附件：{invite.icsFileName}
+          {t("reader.icsAttachmentLabel", { name: invite.icsFileName })}
         </span>
       </div>
 
@@ -120,27 +120,27 @@ export function MeetingInviteCard({
         }}
       >
         <div className="row" style={{ gap: 6 }}>
-          <span className="text-xs text-muted">你的回复：</span>
+          <span className="text-xs text-muted">{t("reader.icsYourReply")}</span>
           <button
             type="button"
             className={`btn btn-sm ${invite.rsvp === "accepted" ? "btn-primary" : "btn-secondary"}`}
-            onClick={() => setRsvp("accepted", "已接受")}
+            onClick={() => setRsvp("accepted", t("reader.icsAcceptedLabel"))}
           >
-            <Icon name="check" size={13} /> 接受
+            <Icon name="check" size={13} /> {t("reader.icsAccept")}
           </button>
           <button
             type="button"
             className={`btn btn-sm ${invite.rsvp === "tentative" ? "btn-primary" : "btn-secondary"}`}
-            onClick={() => setRsvp("tentative", "暂定")}
+            onClick={() => setRsvp("tentative", t("reader.icsTentativeLabel"))}
           >
-            <Icon name="clock" size={13} /> 暂定
+            <Icon name="clock" size={13} /> {t("reader.icsTentative")}
           </button>
           <button
             type="button"
             className={`btn btn-sm ${invite.rsvp === "declined" ? "btn-danger" : "btn-danger-soft"}`}
-            onClick={() => setRsvp("declined", "已拒绝")}
+            onClick={() => setRsvp("declined", t("reader.icsDeclinedLabel"))}
           >
-            <Icon name="x" size={13} /> 拒绝
+            <Icon name="x" size={13} /> {t("reader.icsDecline")}
           </button>
         </div>
 
@@ -155,11 +155,11 @@ export function MeetingInviteCard({
                   .catch(() => undefined);
                 toastStore.pushToast({
                   tone: "success",
-                  title: "已复制会议链接至剪贴板",
+                  title: t("toasts.copiedMeetingLink"),
                 });
               }}
             >
-              <Icon name="copy" size={13} /> 复制会议链接
+              <Icon name="copy" size={13} /> {t("reader.icsCopyLink")}
             </button>
           )}
           <button
@@ -172,7 +172,7 @@ export function MeetingInviteCard({
                   if (savedPath) {
                     toastStore.pushToast({
                       tone: "info",
-                      title: "已导出 .ics 日程文件",
+                      title: t("toasts.exportedIcsTitle"),
                       detail: savedPath,
                     });
                   }
@@ -180,13 +180,13 @@ export function MeetingInviteCard({
                 .catch((err) =>
                   toastStore.pushToast({
                     tone: "danger",
-                    title: "导出 .ics 失败",
+                    title: t("toasts.exportIcsFailed"),
                     detail: parseBackendError(err).message,
                   }),
                 );
             }}
           >
-            <Icon name="download" size={13} /> 导出 .ics
+            <Icon name="download" size={13} /> {t("reader.icsExportBtn")}
           </button>
         </div>
       </div>

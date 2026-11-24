@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import type { AiChatTurn, AiMailInsight } from "../../types/workspace";
 import { useTranslation } from "../mail/translation/TranslationContext";
@@ -15,9 +16,10 @@ export function AiInsightContent({
   chats: AiChatTurn[];
   busy: boolean;
 }) {
+  const { isEn, t: tr } = useI18n();
   const { requestAiAction, workspace, mailStore } = useApp();
   const t = useTranslation();
-  const ui = workspace.settings.language === "en-US" ? "en" : "zh-CN";
+  const ui = isEn ? "en" : "zh-CN";
   const storedSource = insight?.sourceLanguage ?? "";
   const source =
     t.confirmedSource !== "auto"
@@ -25,28 +27,16 @@ export function AiInsightContent({
       : isLanguage(storedSource)
         ? storedSource
         : undefined;
-  const language = source ?? t.language;
+  const detected = source ?? t.language;
   const foreign =
-    language !== "auto" &&
-    language !== ui &&
-    !(language === "zh-TW" && ui === "zh-CN");
+    detected !== "auto" &&
+    (isEn ? detected !== "en" : !detected.startsWith("zh"));
   const questions = foreign
     ? [
-        [
-          "生成发布说明",
-          "请从原文提取版本、变更与风险；若与发布无关，请说明。",
-        ],
-        [
-          "解释专业术语",
-          "请用界面语言解释原文中的重要术语，并引用对应原文短语。",
-        ],
+        [tr("ai.quickReleaseNotesLabel"), tr("ai.quickReleaseNotesPrompt")],
+        [tr("ai.quickExplainTermsLabel"), tr("ai.quickExplainTermsPrompt")],
       ]
-    : [
-        [
-          "提炼待办事项",
-          "请从原文提炼待办事项、负责人和截止时间；未说明时请标明。",
-        ],
-      ];
+    : [[tr("ai.quickExtractTodosLabel"), tr("ai.quickExtractTodosPrompt")]];
 
   return (
     <>
@@ -55,14 +45,14 @@ export function AiInsightContent({
         busy={busy}
         uiLanguage={ui}
         source={source ?? "auto"}
-        foreignLanguage={foreign ? language : undefined}
+        foreignLanguage={foreign ? detected : undefined}
       />
       <AiReplyDraftCard
         key={`${workspace.activeProfileId}:${mailStore.selectedMail?.id}`}
         insight={insight}
         busy={busy}
         source={source ?? "auto"}
-        foreignLanguage={foreign ? language : undefined}
+        foreignLanguage={foreign ? detected : undefined}
       />
       <div className="ai-quick-actions">
         {questions.map(([label, question]) => (

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useI18n } from "../../../i18n";
 import { parseMailtoUrl } from "../../../state/storageHelpers";
 import { useApp } from "../../../state/AppContext";
 import type { MailItem, ThreadMessage } from "../../../types/mail";
@@ -8,6 +9,28 @@ import {
   type BodyTranslation,
 } from "../translation/translatedText";
 import { SafeMailHtmlView } from "./SafeMailHtmlView";
+
+const headLeftStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  minWidth: 0,
+  flex: 1,
+};
+const headRightStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  flexShrink: 0,
+};
+const emailMetaStyle = { fontSize: 12, color: "var(--text-muted)" };
+const toMetaStyle = { fontSize: 12, color: "var(--text-secondary)" };
+const detailBtnStyle = {
+  color: "var(--brand-accent)",
+  fontSize: 12,
+  flexShrink: 0,
+};
+const timeTextStyle = { fontSize: 12, color: "var(--text-muted)" };
 
 export function ReaderThreadCard({
   mail,
@@ -24,6 +47,7 @@ export function ReaderThreadCard({
   onExpand: () => void;
   translation?: BodyTranslation;
 }) {
+  const { t, formatTime, localizeText } = useI18n();
   const { mailStore, composeStore } = useApp();
   const [showDetailHeaders, setShowDetailHeaders] = useState(false);
   const { openNewCompose, updateDraft } = composeStore;
@@ -39,24 +63,23 @@ export function ReaderThreadCard({
     },
     [openNewCompose, updateDraft],
   );
+  const paragraphs =
+    msg.bodyParagraphs.length > 0
+      ? msg.bodyParagraphs
+      : [t("common.emptyMailBody")];
+  const toLine = t("reader.recipientsPrefix", { to: msg.recipients });
+  const detailLabel = t(
+    showDetailHeaders ? "reader.hideDetails" : "reader.showDetails",
+  );
+  const starAria = t(mail.starred ? "reader.unstarAria" : "reader.starAria");
 
   return (
     <article
       className={`thread-card ${isExpanded ? "" : "collapsed"}`}
-      onClick={() => {
-        if (!isExpanded) onExpand();
-      }}
+      onClick={() => !isExpanded && onExpand()}
     >
       <div className="thread-card-head">
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            minWidth: 0,
-            flex: 1,
-          }}
-        >
+        <div style={headLeftStyle}>
           <div className="avatar-circle" data-tone={mail.avatarTone}>
             {msg.senderName.slice(0, 1)}
           </div>
@@ -68,27 +91,13 @@ export function ReaderThreadCard({
               >
                 {msg.senderName}
               </strong>
-              <span
-                className="truncate"
-                style={{
-                  fontSize: 12,
-                  color: "var(--text-muted)",
-                  minWidth: 0,
-                }}
-              >
+              <span className="truncate" style={emailMetaStyle}>
                 &lt;{msg.senderEmail}&gt;
               </span>
             </div>
             <div className="row" style={{ gap: 6, minWidth: 0 }}>
-              <span
-                className="truncate"
-                style={{
-                  fontSize: 12,
-                  color: "var(--text-secondary)",
-                  minWidth: 0,
-                }}
-              >
-                收件人：{msg.recipients}
+              <span className="truncate" style={toMetaStyle}>
+                {toLine}
               </span>
               {isLatest && (
                 <button
@@ -97,35 +106,18 @@ export function ReaderThreadCard({
                     e.stopPropagation();
                     setShowDetailHeaders((v) => !v);
                   }}
-                  style={{
-                    color: "var(--brand-accent)",
-                    fontSize: 12,
-                    flexShrink: 0,
-                  }}
+                  style={detailBtnStyle}
                 >
-                  {showDetailHeaders ? "收起详情" : "详情"}
+                  {detailLabel}
                 </button>
               )}
             </div>
           </div>
         </div>
 
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            flexShrink: 0,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 12,
-              color: "var(--text-muted)",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {msg.timeText}
+        <div style={headRightStyle}>
+          <span style={{ ...timeTextStyle, whiteSpace: "nowrap" }}>
+            {formatTime(msg.timeText)}
           </span>
           {isLatest && (
             <button
@@ -136,7 +128,7 @@ export function ReaderThreadCard({
                 e.stopPropagation();
                 mailStore.toggleStar([mail.id]);
               }}
-              aria-label={mail.starred ? "取消星标" : "标记星标"}
+              aria-label={starAria}
             >
               <Icon name="star" size={15} />
             </button>
@@ -147,13 +139,18 @@ export function ReaderThreadCard({
       {isLatest && showDetailHeaders && (
         <div className="thread-detail-headers">
           <div className="truncate">
-            发件人：{msg.senderName} &lt;{msg.senderEmail}&gt;
+            {t("reader.senderPrefix", {
+              name: msg.senderName,
+              email: msg.senderEmail,
+            })}
           </div>
-          <div className="truncate">收件人：{msg.recipients}</div>
-          {msg.cc && <div className="truncate">抄送 Cc：{msg.cc}</div>}
-          <div className="truncate">
-            加密与验证：TLS 1.3 · SPF PASS · DKIM PASS · DMARC PASS
-          </div>
+          <div className="truncate">{toLine}</div>
+          {msg.cc && (
+            <div className="truncate">
+              {t("reader.ccPrefix", { cc: msg.cc })}
+            </div>
+          )}
+          <div className="truncate">{t("reader.tlsVerifiedRow")}</div>
         </div>
       )}
 
@@ -166,12 +163,15 @@ export function ReaderThreadCard({
               onMailto={onMailto}
             />
           ) : (
-            msg.bodyParagraphs.map((para, pIdx) => {
+            paragraphs.map((para, pIdx) => {
               const text =
                 translation && translatedSegment(para, translation.segments);
+              const displayPara = localizeText(para);
               return (
                 <p key={pIdx}>
-                  {translation?.mode === "translated" && text ? text : para}
+                  {translation?.mode === "translated" && text
+                    ? text
+                    : displayPara}
                   {translation?.mode === "bilingual" && text && (
                     <span
                       className="reader-translated-paragraph"

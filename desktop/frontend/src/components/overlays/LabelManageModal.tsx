@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Checkbox } from "../common/Checkbox";
 import { ModalShell } from "../common/ModalShell";
@@ -14,6 +15,7 @@ const PRESET_SWATCHES = [
 
 export function LabelManageModal({ mailIds }: { mailIds?: string[] }) {
   const { workspace, mailStore, toastStore } = useApp();
+  const { t } = useI18n();
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState("#2563EB");
   const targetMail =
@@ -26,28 +28,33 @@ export function LabelManageModal({ mailIds }: { mailIds?: string[] }) {
     if (!clean) return;
     mailStore.createLabel(clean, newColor);
     setNewName("");
-    toastStore.pushToast({ tone: "success", title: `已创建标签「${clean}」` });
+    toastStore.pushToast({
+      tone: "success",
+      title: t("toasts.createdLabel", { name: clean }),
+    });
   };
 
   return (
     <ModalShell
-      heading="管理邮件标签"
+      heading={t("overlays.labelHeading")}
       subtitle={
         mailIds && mailIds.length > 0
-          ? `为已选 ${mailIds.length} 封邮件勾选或新建标签`
-          : "新建或维护工作空间自定义标签"
+          ? t("overlays.labelSubtitleSelected", { count: mailIds.length })
+          : t("overlays.labelSubtitleWorkspace")
       }
       maxWidth={460}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
         <>
-          <span className="text-xs text-muted">标签在统一收件箱跨邮箱共享</span>
+          <span className="text-xs text-muted">
+            {t("overlays.labelFooterHint")}
+          </span>
           <button
             type="button"
             className="btn btn-primary"
             onClick={() => workspace.setOverlay({ type: "none" })}
           >
-            完成
+            {t("common.done")}
           </button>
         </>
       }
@@ -68,7 +75,7 @@ export function LabelManageModal({ mailIds }: { mailIds?: string[] }) {
                   checked={checked}
                   onChange={() => mailStore.toggleMailLabel(mailIds, lb.id)}
                   style={{ flex: 1 }}
-                  ariaLabel={`切换标签 ${lb.name}`}
+                  ariaLabel={t("overlays.labelToggleAria", { name: lb.name })}
                 >
                   <span className="row" style={{ gap: 8 }}>
                     <span
@@ -100,7 +107,7 @@ export function LabelManageModal({ mailIds }: { mailIds?: string[] }) {
                   })
                 }
               >
-                删除
+                {t("common.delete")}
               </button>
             </div>
           );
@@ -109,15 +116,21 @@ export function LabelManageModal({ mailIds }: { mailIds?: string[] }) {
 
       <div className="settings-card">
         <div className="row-between">
-          <span className="text-xs text-muted">新建自定义标签</span>
-          <div className="swatch-row" role="radiogroup" aria-label="标签颜色">
+          <span className="text-xs text-muted">
+            {t("overlays.labelNewHeading")}
+          </span>
+          <div
+            className="swatch-row"
+            role="radiogroup"
+            aria-label={t("overlays.labelColorGroupAria")}
+          >
             {PRESET_SWATCHES.map((hex) => (
               <button
                 key={hex}
                 type="button"
                 role="radio"
                 aria-checked={newColor === hex}
-                aria-label={`颜色 ${hex}`}
+                aria-label={t("overlays.labelColorSwatchAria", { hex })}
                 className={`swatch-btn${newColor === hex ? " active" : ""}`}
                 style={{ background: hex }}
                 onClick={() => setNewColor(hex)}
@@ -134,14 +147,14 @@ export function LabelManageModal({ mailIds }: { mailIds?: string[] }) {
             onKeyDown={(e) => {
               if (e.key === "Enter") createLabel();
             }}
-            placeholder="例如 客户跟进、发版审核"
+            placeholder={t("overlays.labelNewPlaceholder")}
           />
           <button
             type="button"
             className="btn btn-primary btn-sm"
             onClick={createLabel}
           >
-            添加
+            {t("common.add")}
           </button>
         </div>
       </div>

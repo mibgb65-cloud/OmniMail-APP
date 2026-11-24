@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ContactMergeGroup } from "../../../../bindings/omnimail/internal/contacts/models";
+import { useI18n } from "../../../i18n";
 import { useApp } from "../../../state/AppContext";
 import { Icon } from "../../common/Icon";
 import { ModalShell } from "../../common/ModalShell";
@@ -14,6 +15,7 @@ import {
 
 export function DuplicateModal({ mode }: { mode: "review" | "confirm-all" }) {
   const { workspace } = useApp();
+  const { t } = useI18n();
   const center = useDuplicateCenter();
   const [choices, setChoices] = useState<Record<string, GroupSelection>>({});
   const [confirmation, setConfirmation] = useState<ContactMergeGroup[] | null>(
@@ -44,10 +46,7 @@ export function DuplicateModal({ mode }: { mode: "review" | "confirm-all" }) {
   };
   const counts = (items: ContactMergeGroup[]) => ({
     groups: items.length,
-    removed: items.reduce(
-      (sum, plan) => sum + (plan.duplicateIds?.length ?? 0),
-      0,
-    ),
+    removed: items.reduce((sum, p) => sum + (p.duplicateIds?.length ?? 0), 0),
   });
   const { groups, removed } = counts(selected);
   const pending = counts(plans ?? []);
@@ -56,7 +55,9 @@ export function DuplicateModal({ mode }: { mode: "review" | "confirm-all" }) {
     return (
       <ModalShell
         heading={
-          mode === "confirm-all" ? "确认合并全部重复联系人" : "确认合并联系人"
+          mode === "confirm-all"
+            ? t("contacts.dupConfirmAllHeading")
+            : t("contacts.dupConfirmSelectedHeading")
         }
         maxWidth={470}
         onClose={cancelConfirmation}
@@ -69,7 +70,7 @@ export function DuplicateModal({ mode }: { mode: "review" | "confirm-all" }) {
                 disabled={center.busy}
                 onClick={toReview}
               >
-                先审阅
+                {t("contacts.dupReviewFirstBtn")}
               </button>
             )}
             <button
@@ -78,7 +79,7 @@ export function DuplicateModal({ mode }: { mode: "review" | "confirm-all" }) {
               disabled={center.busy}
               onClick={cancelConfirmation}
             >
-              取消
+              {t("common.cancel")}
             </button>
             <button
               type="button"
@@ -93,31 +94,30 @@ export function DuplicateModal({ mode }: { mode: "review" | "confirm-all" }) {
                 })
               }
             >
-              {center.busy ? "正在合并…" : "确认合并"}
+              {center.busy
+                ? t("contacts.dupMergingBtn")
+                : t("contacts.dupConfirmMergeBtn")}
             </button>
           </div>
         }
       >
-        <p>
-          将合并 {pending.groups} 组，精简 {pending.removed} 条联系人记录。
-        </p>
+        <p>{t("contacts.dupConfirmSummary", pending)}</p>
         <p className="text-sm text-muted">
           {mode === "confirm-all"
-            ? "每组默认保留往来邮件最多的联系人为主联系人。"
-            : "保留所选主联系人，未选地址不受影响。"}
-          其余地址归为备用邮箱，邮件不会被删除。
+            ? t("contacts.dupConfirmAllHint")
+            : t("contacts.dupConfirmSelectedHint")}
         </p>
       </ModalShell>
     );
 
   return (
     <ModalShell
-      heading="整理重复联系人"
-      subtitle="保留主联系人名称、VIP 和往来记录，选中的其他地址归入备用邮箱。"
+      heading={t("contacts.dupModalHeading")}
+      subtitle={t("contacts.dupModalSubtitle")}
       badge={
         rows.length > 0 && (
           <span className="pill contacts-dup-count">
-            {rows.length} 组待处理
+            {t("contacts.dupPendingBadge", { count: rows.length })}
           </span>
         )
       }
@@ -127,7 +127,7 @@ export function DuplicateModal({ mode }: { mode: "review" | "confirm-all" }) {
       footer={
         <div className="contact-dup-review-footer">
           <span className="text-xs text-muted">
-            已选 {groups} 组 · 合并后将精简 {removed} 条冗余联系人记录
+            {t("contacts.dupFooterSummary", { groups, removed })}
           </span>
           <div className="contact-dup-footer-actions">
             <button
@@ -136,7 +136,7 @@ export function DuplicateModal({ mode }: { mode: "review" | "confirm-all" }) {
               disabled={center.busy}
               onClick={close}
             >
-              取消
+              {t("common.cancel")}
             </button>
             <button
               type="button"
@@ -145,7 +145,7 @@ export function DuplicateModal({ mode }: { mode: "review" | "confirm-all" }) {
               onClick={() => setConfirmation(selected)}
             >
               <Icon name="check" size={15} />
-              合并已选 ({groups} 组)
+              {t("contacts.dupMergeSelectedBtn", { count: groups })}
             </button>
           </div>
         </div>
@@ -153,7 +153,7 @@ export function DuplicateModal({ mode }: { mode: "review" | "confirm-all" }) {
     >
       <FadeScroll
         className="contact-dup-review-scroll"
-        label="重复联系人审阅列表"
+        label={t("contacts.dupScrollLabel")}
       >
         {center.error ? (
           <div className="contact-dup-empty">
@@ -163,14 +163,14 @@ export function DuplicateModal({ mode }: { mode: "review" | "confirm-all" }) {
               className="btn btn-secondary"
               onClick={center.refresh}
             >
-              重新检测
+              {t("contacts.dupRedetectBtn")}
             </button>
           </div>
         ) : !rows.length ? (
           <p className="contact-dup-empty" role="status">
             {center.loading
-              ? "正在检测重复联系人…"
-              : "当前没有待整理的重复联系人"}
+              ? t("contacts.dupDetectingStatus")
+              : t("contacts.dupNoneStatus")}
           </p>
         ) : (
           rows.map(({ group, selection }) => (

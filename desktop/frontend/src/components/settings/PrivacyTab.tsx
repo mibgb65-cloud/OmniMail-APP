@@ -1,8 +1,12 @@
+import { useState } from "react";
+import { useI18n } from "../../i18n";
+import { profileApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import { SwitchRow } from "./SwitchRow";
 
 export function PrivacyTab() {
   const { workspace, toastStore } = useApp();
+  const { t } = useI18n();
   const s = workspace.settings;
   const [savingImagePolicy, setSavingImagePolicy] = useState(false);
 
@@ -15,7 +19,10 @@ export function PrivacyTab() {
         blockRemoteImages: saved.blockRemoteImages,
       });
     } catch {
-      toastStore.pushToast({ tone: "danger", title: "未能保存外部图片设置" });
+      toastStore.pushToast({
+        tone: "danger",
+        title: t("settings.privacySaveImageFailed"),
+      });
     } finally {
       setSavingImagePolicy(false);
     }
@@ -24,25 +31,25 @@ export function PrivacyTab() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div className="settings-card">
-        <strong style={{ fontSize: 14 }}>邮件读取隐私与反钓鱼</strong>
+        <strong style={{ fontSize: 14 }}>{t("settings.privacySection")}</strong>
         <SwitchRow
-          heading="默认拦截邮件远程图片与追踪像素"
-          desc="关闭后默认加载远程图片；高风险邮件仍会拦截"
+          heading={t("settings.privacyBlockRemoteTitle")}
+          desc={t("settings.privacyBlockRemoteDesc")}
           checked={s.blockRemoteImages}
           disabled={savingImagePolicy}
           onChange={(v) => void saveImagePolicy(v)}
         />
         <SwitchRow
-          heading="开启 SPF / DKIM / DMARC 钓鱼风险校验"
-          desc="检测到发件域伪造或异常链接时展示醒目风险警示，并自动禁用 AI 读取"
+          heading={t("settings.privacyPhishingTitle")}
+          desc={t("settings.privacyPhishingDesc")}
           checked={s.phishingCheckEnabled}
           onChange={(v) =>
             workspace.updateSettings({ phishingCheckEnabled: v })
           }
         />
         <SwitchRow
-          heading="本地缓存与凭据库加密保护"
-          desc="邮件正文索引与 OAuth / 授权码凭据均由本机密钥隔离保护"
+          heading={t("settings.privacyEncryptionTitle")}
+          desc={t("settings.privacyEncryptionDesc")}
           checked={s.localEncryptionEnabled}
           onChange={(v) =>
             workspace.updateSettings({ localEncryptionEnabled: v })
@@ -54,10 +61,10 @@ export function PrivacyTab() {
         <div className="row-between">
           <div>
             <strong style={{ fontSize: 14, color: "var(--status-danger)" }}>
-              清除全部本地数据并重置应用
+              {t("settings.privacyWipeTitle")}
             </strong>
             <div className="text-xs text-muted">
-              不可逆清除本地邮件缓存、规则、联系人与账户配置（不删除云端邮件）
+              {t("settings.privacyWipeDesc")}
             </div>
           </div>
           <button
@@ -70,12 +77,10 @@ export function PrivacyTab() {
               })
             }
           >
-            清除本地数据
+            {t("settings.privacyWipeBtn")}
           </button>
         </div>
       </div>
     </div>
   );
 }
-import { useState } from "react";
-import { profileApi } from "../../services/backendClient";

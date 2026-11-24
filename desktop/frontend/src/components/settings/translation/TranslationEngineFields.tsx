@@ -1,6 +1,11 @@
 import { useState, type ReactNode } from "react";
 import { INITIAL_SETTINGS } from "../../../data/settingsDefaults";
+import { useI18n } from "../../../i18n";
 import type { AppSettings } from "../../../types/settings";
+import {
+  CustomSelect,
+  type CustomSelectOption,
+} from "../../common/CustomSelect";
 import type { TranslationSettingsPatch } from "../TranslationSettingsTab";
 import { TranslationConnectionTest } from "./TranslationConnectionTest";
 
@@ -17,6 +22,7 @@ export function TranslationEngineFields({
   onOpenAi: () => void;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
   const [endpoint, setEndpoint] = useState(settings.translationEndpoint);
   const [timeout, setTimeoutSec] = useState(
     String(settings.translationTimeoutSec),
@@ -33,46 +39,69 @@ export function TranslationEngineFields({
     seconds <= 30;
   const initial = INITIAL_SETTINGS.translationEndpoint;
 
+  const providerOptions: CustomSelectOption[] = [
+    {
+      value: "bilibili",
+      label: t("settings.transBilibiliFreeOption"),
+      sublabel: t("settings.transNoApiKeySub"),
+      hint: t("settings.recommendedHint"),
+    },
+    {
+      value: "ai",
+      label: t("settings.transAiByokOption"),
+      sublabel: t("settings.transAiByokSub"),
+      hint: "BYOK",
+    },
+  ];
+
   return (
-    <section className="settings-card" aria-label="翻译引擎与接口配置">
+    <section
+      className="settings-card"
+      aria-label={t("settings.transEngineSection")}
+    >
       <div className="row translation-settings-heading">
-        <strong>翻译引擎与接口配置</strong>
+        <strong>{t("settings.transEngineSection")}</strong>
         {!usesAI && (
           <span className="pill pill-neutral">
-            哔哩哔哩免费接口 · 无需 API Key
+            {t("settings.transNoApiKeyBadge")}
           </span>
         )}
       </div>
-      <label className="settings-row">
-        翻译服务提供商
-        <select
-          className="input"
+      <div className="settings-row">
+        <div className="translation-row-copy">
+          <div className="translation-row-title">
+            {t("settings.transProviderTitle")}
+          </div>
+          <div className="text-xs text-muted">
+            {t("settings.transProviderDesc")}
+          </div>
+        </div>
+        <CustomSelect
+          ariaLabel={t("settings.transProviderTitle")}
           disabled={saving}
+          minMenuWidth={252}
           value={settings.translationProvider}
-          onChange={(e) => {
-            const value = e.target.value;
+          options={providerOptions}
+          onChange={(value) => {
             if (value === "ai" || value === "bilibili")
               void save({ translationProvider: value });
           }}
-        >
-          <option value="bilibili">哔哩哔哩免费翻译（默认推荐）</option>
-          <option value="ai">AI 助手模型（BYOK）</option>
-        </select>
-      </label>
+        />
+      </div>
       {children}
       {usesAI ? (
         <div className="settings-row">
           <span className="text-sm text-muted">
             {settings.aiEnabled
-              ? "使用 AI 助手中已配置的模型。"
-              : "需先启用并配置 AI 模型。"}
+              ? t("settings.transUsingAiHint")
+              : t("settings.transNeedAiHint")}
           </span>
           <button
             type="button"
             className="btn btn-secondary btn-sm"
             onClick={onOpenAi}
           >
-            配置模型
+            {t("settings.transConfigureModelBtn")}
           </button>
         </div>
       ) : (
@@ -88,7 +117,9 @@ export function TranslationEngineFields({
           }}
         >
           <div className="row-between">
-            <label htmlFor="translation-endpoint">接口端点地址</label>
+            <label htmlFor="translation-endpoint">
+              {t("settings.transEndpointUrl")}
+            </label>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
@@ -103,7 +134,7 @@ export function TranslationEngineFields({
                   void save({ translationEndpoint: initial });
               }}
             >
-              恢复默认端点
+              {t("settings.transResetDefaultEndpoint")}
             </button>
           </div>
           <input
@@ -117,14 +148,14 @@ export function TranslationEngineFields({
             onChange={(e) => setEndpoint(e.target.value)}
           />
           <p className="text-xs text-muted translation-setting-note">
-            默认地址为预设，实际直连官方接口
+            {t("settings.transEndpointNotePrefix")}
             <code>
               https://index-translate.bilibili.com/v1/chat/completions
             </code>
-            。 自定义地址须兼容该接口，不回退到其他服务器；建议使用 HTTPS。
+            {t("settings.transEndpointNoteSuffix")}
           </p>
           <label className="row-between">
-            <span>请求超时 / 失败回退</span>
+            <span>{t("settings.transTimeoutLabel")}</span>
             <span className="row">
               <input
                 className="input translation-timeout-input"
@@ -133,12 +164,14 @@ export function TranslationEngineFields({
                 max={30}
                 step={1}
                 required
-                aria-label="请求超时（秒）"
+                aria-label={t("settings.transTimeoutAria")}
                 value={timeout}
                 disabled={saving}
                 onChange={(e) => setTimeoutSec(e.target.value)}
               />
-              <span className="text-xs text-muted">秒 · 自动重试一次</span>
+              <span className="text-xs text-muted">
+                {t("settings.transTimeoutSuffix")}
+              </span>
             </span>
           </label>
           <button
@@ -146,18 +179,12 @@ export function TranslationEngineFields({
             className="btn btn-primary btn-sm translation-engine-save"
             disabled={!dirty || !canSave || saving}
           >
-            保存接口配置
+            {t("settings.transSaveEngineBtn")}
           </button>
         </form>
       )}
       <TranslationConnectionTest
-        key={JSON.stringify([
-          settings.translationEnabled,
-          settings.aiEnabled,
-          settings.aiProvider,
-          settings.aiModel,
-          settings.aiBaseUrl,
-        ])}
+        key={`${settings.translationEnabled}|${settings.aiEnabled}|${settings.aiProvider}|${settings.aiModel}|${settings.aiBaseUrl}`}
         disabled={
           saving ||
           !settings.translationEnabled ||

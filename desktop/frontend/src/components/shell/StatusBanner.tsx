@@ -1,12 +1,17 @@
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 
 export function StatusBanner() {
   const { workspace, toastStore, triggerSyncAll } = useApp();
+  const { t } = useI18n();
   const { bannerMode, settings, accounts } = workspace;
   const expiredAcc =
     accounts.find((a) => a.status === "auth-expired") ?? accounts[0];
   const failedAcc = accounts.find((a) => a.status === "error") ?? accounts[0];
+  const autoReplyAcc = accounts.find(
+    (a) => a.id === settings.autoReply.accountId,
+  );
 
   const autoReplyActive =
     settings.autoReply.enabled || bannerMode === "auto-reply";
@@ -18,10 +23,8 @@ export function StatusBanner() {
       <div className="runtime-banner warning" role="status">
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="wifiOff" size={16} />
-          <strong>当前处于离线模式 · 正在浏览本地加密缓存</strong>
-          <span style={{ opacity: 0.85 }}>
-            新撰写的回复将暂存于本地待发送队列，恢复联网后自动续传
-          </span>
+          <strong>{t("topbar.offlineBannerTitle")}</strong>
+          <span style={{ opacity: 0.85 }}>{t("topbar.offlineBannerDesc")}</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button
@@ -32,7 +35,7 @@ export function StatusBanner() {
               triggerSyncAll();
             }}
           >
-            立即重连
+            {t("topbar.reconnectNow")}
           </button>
         </div>
       </div>
@@ -44,10 +47,12 @@ export function StatusBanner() {
       <div className="runtime-banner danger" role="alert">
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="alertCircle" size={16} />
-          <strong>{expiredAcc?.name ?? "邮箱账户"} 认证凭据已失效</strong>
-          <span style={{ opacity: 0.85 }}>
-            仅暂停该账户的新邮件同步，本地历史缓存仍可正常阅读与搜索
-          </span>
+          <strong>
+            {t("topbar.authExpiredTitle", {
+              name: expiredAcc?.name ?? t("topbar.accountFallback"),
+            })}
+          </strong>
+          <span style={{ opacity: 0.85 }}>{t("topbar.authExpiredDesc")}</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button
@@ -66,14 +71,14 @@ export function StatusBanner() {
                   })
             }
           >
-            重新验证授权
+            {t("topbar.reauthorize")}
           </button>
           <button
             type="button"
             className="btn btn-sm btn-secondary"
             onClick={() => workspace.setBannerMode("none")}
           >
-            稍后处理
+            {t("topbar.handleLater")}
           </button>
         </div>
       </div>
@@ -85,10 +90,12 @@ export function StatusBanner() {
       <div className="runtime-banner warning" role="status">
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="alertCircle" size={16} />
-          <strong>部分账户同步受阻（{failedAcc?.name ?? "邮箱账户"}）</strong>
-          <span style={{ opacity: 0.85 }}>
-            其余账户已正常同步，可运行连接诊断查看具体阶段错误
-          </span>
+          <strong>
+            {t("topbar.partialSyncTitle", {
+              name: failedAcc?.name ?? t("topbar.accountFallback"),
+            })}
+          </strong>
+          <span style={{ opacity: 0.85 }}>{t("topbar.partialSyncDesc")}</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button
@@ -101,14 +108,14 @@ export function StatusBanner() {
               })
             }
           >
-            运行连接诊断
+            {t("topbar.runDiagnostics")}
           </button>
           <button
             type="button"
             className="btn btn-sm btn-ghost"
             onClick={() => workspace.setBannerMode("none")}
           >
-            关闭
+            {t("common.close")}
           </button>
         </div>
       </div>
@@ -126,11 +133,17 @@ export function StatusBanner() {
         }}
       >
         <Icon name="autoReply" size={16} />
-        <strong>休假自动回复生效中 · 工作邮箱（Gmail）</strong>
+        <strong>
+          {t("topbar.autoReplyActiveTitle", {
+            account: autoReplyAcc?.name ?? t("topbar.autoReplyDefaultAccount"),
+          })}
+        </strong>
         <span style={{ opacity: 0.88 }}>
-          · {settings.autoReply.startTime} 至 {settings.autoReply.endTime} ·
-          仅回复联系人与同域同事 · 已自动回复 {settings.autoReply.repliedCount}{" "}
-          位来信者
+          {t("topbar.autoReplyActiveDetail", {
+            start: settings.autoReply.startTime,
+            end: settings.autoReply.endTime,
+            count: settings.autoReply.repliedCount,
+          })}
         </span>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
@@ -141,7 +154,7 @@ export function StatusBanner() {
             workspace.setOverlay({ type: "settings", tab: "auto-reply" })
           }
         >
-          调整回复内容
+          {t("topbar.adjustReplyContent")}
         </button>
         <button
           type="button"
@@ -151,10 +164,13 @@ export function StatusBanner() {
               autoReply: { ...settings.autoReply, enabled: false },
             });
             workspace.setBannerMode("none");
-            toastStore.pushToast({ tone: "info", title: "已关闭休假自动回复" });
+            toastStore.pushToast({
+              tone: "info",
+              title: t("toasts.autoReplyDisabled"),
+            });
           }}
         >
-          立即关闭自动回复
+          {t("topbar.disableAutoReplyNow")}
         </button>
       </div>
     </div>

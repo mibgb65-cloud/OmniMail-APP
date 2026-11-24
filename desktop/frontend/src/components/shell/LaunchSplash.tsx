@@ -1,3 +1,5 @@
+import { useI18n } from "../../i18n";
+
 interface LaunchSplashProps {
   waiting: boolean;
   exiting: boolean;
@@ -13,6 +15,8 @@ export function LaunchSplash({
   isSlowLoad,
   statusText,
 }: LaunchSplashProps) {
+  const { t } = useI18n();
+
   return (
     <div
       className="launch-splash"
@@ -20,7 +24,7 @@ export function LaunchSplash({
       data-exiting={exiting ? "true" : "false"}
       role="status"
       aria-live="polite"
-      aria-label="OmniMail 启动加载中"
+      aria-label={t("topbar.splashAria")}
     >
       <div className="splash-center">
         <div className="splash-emblem">
@@ -78,9 +82,7 @@ export function LaunchSplash({
 
         <div className="splash-copy">
           <h1 className="splash-title">OmniMail</h1>
-          <p className="splash-subtitle">
-            多源统一收件箱 · 本地优先 · 边界清晰的 AI 邮件工作台
-          </p>
+          <p className="splash-subtitle">{t("topbar.splashSubtitle")}</p>
         </div>
 
         <div className="splash-progress-group">

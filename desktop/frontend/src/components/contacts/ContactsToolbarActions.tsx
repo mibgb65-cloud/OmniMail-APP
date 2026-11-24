@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { contactApi, parseBackendError } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
@@ -10,6 +11,7 @@ export function ContactsToolbarActions({
   onReview: () => void;
 }) {
   const { workspace, toastStore } = useApp();
+  const { t } = useI18n();
 
   const handleImportVCard = () => {
     void contactApi
@@ -20,13 +22,16 @@ export function ContactsToolbarActions({
         workspace.setContacts(fresh);
         toastStore.pushToast({
           tone: "success",
-          title: `vCard 导入完成：新增 ${res.imported} 人，补全 ${res.updated} 人`,
+          title: t("toasts.vcardImported", {
+            imported: res.imported,
+            updated: res.updated,
+          }),
         });
       })
       .catch((err) =>
         toastStore.pushToast({
           tone: "danger",
-          title: "导入 vCard 失败",
+          title: t("toasts.importVCardFailed"),
           detail: parseBackendError(err).message,
         }),
       );
@@ -39,7 +44,7 @@ export function ContactsToolbarActions({
         if (savedPath) {
           toastStore.pushToast({
             tone: "success",
-            title: "已导出 vCard 通讯录文件",
+            title: t("toasts.exportedVCard"),
             detail: savedPath,
           });
         }
@@ -47,43 +52,49 @@ export function ContactsToolbarActions({
       .catch((err) =>
         toastStore.pushToast({
           tone: "danger",
-          title: "导出 vCard 失败",
+          title: t("toasts.exportVCardFailed"),
           detail: parseBackendError(err).message,
         }),
       );
   };
+
+  const importLabel = t("contacts.importVCard");
+  const exportLabel = t("contacts.exportBtn");
+  const reviewLabel = t("contacts.reviewDuplicates");
 
   return (
     <div className="contacts-toolbar-actions">
       <button
         type="button"
         className="btn btn-secondary btn-sm"
-        aria-label="导入 vCard"
-        title="导入 vCard"
+        aria-label={importLabel}
+        title={importLabel}
         onClick={handleImportVCard}
       >
-        <Icon name="upload" size={14} /> <span>导入 vCard</span>
+        <Icon name="upload" size={14} /> <span>{importLabel}</span>
       </button>
       <button
         type="button"
         className="btn btn-secondary btn-sm"
-        aria-label="导出"
-        title="导出"
+        aria-label={exportLabel}
+        title={exportLabel}
         onClick={handleExportVCard}
       >
-        <Icon name="download" size={14} /> <span>导出</span>
+        <Icon name="download" size={14} /> <span>{exportLabel}</span>
       </button>
       <button
         type="button"
         className="btn btn-secondary btn-sm contacts-review-trigger"
         data-has-duplicates={groupCount > 0}
         aria-label={
-          groupCount ? `整理重复项（${groupCount} 组）` : "整理重复项"
+          groupCount
+            ? t("contacts.reviewDuplicatesCountAria", { count: groupCount })
+            : reviewLabel
         }
-        title="整理重复项"
+        title={reviewLabel}
         onClick={onReview}
       >
-        <Icon name="users" size={14} /> <span>整理重复项</span>
+        <Icon name="users" size={14} /> <span>{reviewLabel}</span>
         {groupCount > 0 && (
           <strong className="contacts-dup-count">{groupCount}</strong>
         )}

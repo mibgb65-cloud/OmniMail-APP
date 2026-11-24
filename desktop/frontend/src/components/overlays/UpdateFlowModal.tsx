@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckForUpdates } from "../../../bindings/omnimail/desktopservice";
 import type { UpdateCheckResult } from "../../../bindings/omnimail/models";
+import { formatUnixTimestamp, useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { openSafeExternalUrl } from "../../state/desktopActions";
 import { isWailsDesktop } from "../../state/storageHelpers";
@@ -24,6 +25,7 @@ export function UpdateFlowModal({
   stage: UpdateStage;
 }) {
   const { workspace } = useApp();
+  const { lang, isEn, t, formatTime } = useI18n();
   const [status, setStatus] = useState<AsyncActionStatus>("loading");
   const [result, setResult] = useState<UpdateCheckResult | null>(null);
 
@@ -37,8 +39,8 @@ export function UpdateFlowModal({
         channel: "stable",
         hasUpdate: false,
         releaseUrl: "https://github.com/omnimail-org/omnimail/releases",
-        releaseNotes: "当前运行的是 OmniMail 开源稳定版（v0.0.1）。",
-        checkedAt: "刚刚",
+        releaseNotes: t("overlays.updatePreviewNotes"),
+        checkedAt: formatUnixTimestamp(Date.now(), lang),
       });
       setStatus("success");
       return;
@@ -50,7 +52,7 @@ export function UpdateFlowModal({
     } catch {
       setStatus("error");
     }
-  }, []);
+  }, [lang, t]);
 
   useEffect(() => {
     void _initialStage;
@@ -61,11 +63,23 @@ export function UpdateFlowModal({
   }, [_initialStage, runCheck]);
 
   const checking = status === "loading";
+  const rawNotes = result?.releaseNotes ?? "";
+  const localizedNotes = !rawNotes
+    ? t("overlays.updateNoNotesFallback")
+    : isEn && rawNotes.startsWith("当前运行的是 OmniMail 开源")
+      ? t("overlays.updatePreviewNotes")
+      : rawNotes;
+  const checkedSuffix = result?.checkedAt
+    ? ` · ${formatTime(result.checkedAt)}`
+    : "";
 
   return (
     <ModalShell
-      heading="开源版本更新检查"
-      subtitle={`当前版本：${formatVersionTag(result?.currentVersion)}${result?.channel === "beta" ? " (Beta)" : ""} · 只读查询 GitHub Releases，不静默替换程序`}
+      heading={t("overlays.updateHeading")}
+      subtitle={`${t("overlays.updateSubtitle", {
+        version: formatVersionTag(result?.currentVersion),
+        beta: result?.channel === "beta" ? " (Beta)" : "",
+      })}${checkedSuffix}`}
       maxWidth={540}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
@@ -75,10 +89,14 @@ export function UpdateFlowModal({
             variant="secondary"
             status={status}
             idleIcon="refresh"
-            idleLabel="重新检查更新"
-            loadingLabel="正在比对版本…"
-            successLabel={result?.hasUpdate ? "发现新版本" : "已是最新版本"}
-            errorLabel="查询失败 · 重试"
+            idleLabel={t("overlays.updateRecheckIdle")}
+            loadingLabel={t("overlays.updateRecheckLoading")}
+            successLabel={
+              result?.hasUpdate
+                ? t("overlays.updateHasNewBtn")
+                : t("overlays.updateUpToDateBtn")
+            }
+            errorLabel={t("overlays.updateQueryError")}
             successHoldMs={1000}
             onSuccessHoldEnd={() => setStatus("idle")}
             onClick={() => void runCheck()}
@@ -90,7 +108,8 @@ export function UpdateFlowModal({
                 className="btn btn-secondary"
                 onClick={() => void openSafeExternalUrl(result.releaseUrl)}
               >
-                <Icon name="external" size={14} /> 前往 GitHub Releases
+                <Icon name="external" size={14} />{" "}
+                {t("overlays.updateOpenGithubBtn")}
               </button>
             )}
             <button
@@ -98,7 +117,7 @@ export function UpdateFlowModal({
               className="btn btn-primary"
               onClick={() => workspace.setOverlay({ type: "none" })}
             >
-              关闭
+              {t("common.close")}
             </button>
           </div>
         </>
@@ -108,24 +127,28 @@ export function UpdateFlowModal({
         <div className="row-between">
           <strong>
             {checking
-              ? "正在检查 GitHub 最新发行版…"
+              ? t("overlays.updateCheckingGithubTitle")
               : result?.hasUpdate
-                ? `发现新版本 ${formatVersionTag(result.latestVersion)}`
-                : "当前已是最新版本"}
+                ? t("overlays.updateFoundVersionTitle", {
+                    version: formatVersionTag(result.latestVersion),
+                  })
+                : t("overlays.updateCurrentLatestTitle")}
           </strong>
           <span
             className={`pill ${checking ? "pill-accent" : result?.hasUpdate ? "pill-warning" : "pill-success"}`}
           >
-            {checking ? "检查中" : result?.hasUpdate ? "有新版本" : "最新"}
+            {checking
+              ? t("overlays.updateBadgeChecking")
+              : result?.hasUpdate
+                ? t("overlays.updateBadgeHasUpdate")
+                : t("overlays.updateBadgeLatest")}
           </span>
         </div>
         <div
           className="text-xs text-muted"
           style={{ lineHeight: 1.65, whiteSpace: "pre-line" }}
         >
-          {checking
-            ? "正在通过只读 HTTPS 请求比对最新发行版标签…"
-            : result?.releaseNotes || "暂无更新说明。"}
+          {checking ? t("overlays.updateCheckingDesc") : localizedNotes}
         </div>
       </div>
     </ModalShell>

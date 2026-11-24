@@ -1,3 +1,5 @@
+import type { LanguageCode } from "../../../types/settings";
+
 export interface DuplicateCandidate {
   id: string;
   name: string;
@@ -58,7 +60,29 @@ export function createMergePlan(
     : null;
 }
 
-export function duplicatePreview(groups: readonly DuplicateGroupShape[]) {
+function getDefaultLanguage(): LanguageCode {
+  if (typeof window !== "undefined") {
+    try {
+      const saved = window.localStorage.getItem("omnimail:lang");
+      if (saved === "en-US" || saved === "zh-CN") return saved;
+    } catch {
+      // 忽略受限存储环境异常
+    }
+  }
+  if (
+    typeof document !== "undefined" &&
+    document.documentElement.lang === "en-US"
+  ) {
+    return "en-US";
+  }
+  return "zh-CN";
+}
+
+export function duplicatePreview(
+  groups: readonly DuplicateGroupShape[],
+  lang: LanguageCode = getDefaultLanguage(),
+) {
+  const isEn = lang === "en-US";
   const emailCount = groups.reduce(
     (total, group) => total + (group.candidates?.length ?? 0),
     0,
@@ -68,15 +92,23 @@ export function duplicatePreview(groups: readonly DuplicateGroupShape[]) {
     .map((group) => {
       const candidate = sortedCandidates(group.candidates)[0];
       const name = candidate?.name.trim();
+      const count = group.candidates?.length ?? 0;
       const safeName =
         name && !name.includes("@")
           ? Array.from(name).slice(0, 24).join("")
-          : "未命名联系人";
-      return `${safeName}（${group.candidates?.length ?? 0} 个邮箱）`;
+          : isEn
+            ? "Unnamed contact"
+            : "未命名联系人";
+      return isEn
+        ? `${safeName} (${count} ${count === 1 ? "email" : "emails"})`
+        : `${safeName}（${count} 个邮箱）`;
     })
-    .join("、");
+    .join(isEn ? ", " : "、");
+  const ellipsis = groups.length > 3 ? "…" : "";
   return {
     emailCount,
-    preview: `包含：${preview}${groups.length > 3 ? "…" : ""}`,
+    preview: isEn
+      ? `Includes: ${preview}${ellipsis}`
+      : `包含：${preview}${ellipsis}`,
   };
 }

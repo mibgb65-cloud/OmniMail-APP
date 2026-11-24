@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { formatLocalizedTime, getCurrentLanguage, t } from "../i18n";
 import { composeApi } from "../services/backendClient";
 import { isWailsDesktop } from "./storageHelpers";
 import type { EmailAccount } from "../types/account";
@@ -6,18 +7,10 @@ import type { MailItem } from "../types/mail";
 import type { ComposeDraftState } from "../types/settings";
 
 function draftContentFingerprint(d: ComposeDraftState): string {
-  return JSON.stringify([
-    d.id,
-    d.accountId,
-    d.unlockIdentity,
-    d.to,
-    d.cc,
-    d.bcc,
-    d.subject,
-    d.body,
-    d.scheduledAtUnixMs,
-    d.attachments.map((a) => `${a.id}:${a.status}:${a.filePath ?? ""}`),
-  ]);
+  const files = d.attachments
+    .map((a) => `${a.id}:${a.status}:${a.filePath ?? ""}`)
+    .join("|");
+  return `${d.id}|${d.accountId}|${d.unlockIdentity ?? ""}|${d.to.join(",")}|${d.cc.join(",")}|${d.bcc.join(",")}|${d.subject}|${d.scheduledAtUnixMs ?? 0}|${files}|${d.body}`;
 }
 
 export function useComposeStore(
@@ -114,7 +107,24 @@ export function useComposeStore(
       }
       const prefix = mode === "forward" ? "Fwd: " : "Re: ";
       const cleanSub = mail.subject.replace(/^(Re|Fwd):\s*/i, "");
-      const quoted = `\n\n--- 原始邮件 ---\n发件人：${mail.senderName} <${mail.senderEmail}>\n时间：${mail.fullTimeText}\n主题：${mail.subject}\n\n${mail.messages[mail.messages.length - 1]?.bodyParagraphs.join("\n") ?? mail.snippet}`;
+      const bodyLines =
+        mail.messages[mail.messages.length - 1]?.bodyParagraphs.join("\n") ??
+        mail.snippet;
+      const quoted = [
+        "",
+        "",
+        t("compose.quotedHeader"),
+        t("compose.quotedFrom", {
+          name: mail.senderName,
+          email: mail.senderEmail,
+        }),
+        t("compose.quotedDate", {
+          time: formatLocalizedTime(mail.fullTimeText, getCurrentLanguage()),
+        }),
+        t("compose.quotedSubject", { subject: mail.subject }),
+        "",
+        bodyLines,
+      ].join("\n");
       setDraft({
         id: `draft-${Date.now()}`,
         mode,
@@ -134,7 +144,7 @@ export function useComposeStore(
         subject: `${prefix}${cleanSub}`,
         body: mode === "forward" ? quoted : "",
         attachments: [],
-        savedAt: "刚刚",
+        savedAt: formatLocalizedTime("刚刚", getCurrentLanguage()),
         replyToMailId: mail.id,
       });
     },

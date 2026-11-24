@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import type { DraftTarget, DraftTone } from "../../types/mailAi";
 import type { AiMailInsight } from "../../types/workspace";
 import {
+  getLanguageLabel,
+  isLanguage,
   languageCode,
   type SourceLanguage,
 } from "../mail/translation/translationLanguages";
@@ -18,11 +21,17 @@ export function AiReplyDraftCard({
   source: SourceLanguage;
   foreignLanguage?: SourceLanguage;
 }) {
+  const { lang, isEn, t } = useI18n();
   const { composeStore, toastStore, requestAiAction } = useApp();
   const [choice, setChoice] = useState<DraftTarget>();
+  const uiTarget: DraftTarget = isEn ? "en" : "zh-CN";
+  const showDualLangs = Boolean(
+    foreignLanguage &&
+    (isEn ? foreignLanguage !== "en" : foreignLanguage !== "zh-CN"),
+  );
   const cachedTarget = insight?.draftTargetLanguage || "original";
-  const targetLanguage = foreignLanguage
-    ? (choice ?? (cachedTarget === "zh-CN" ? cachedTarget : "original"))
+  const targetLanguage: DraftTarget = showDualLangs
+    ? (choice ?? (cachedTarget === uiTarget ? cachedTarget : "original"))
     : "original";
   const draft =
     cachedTarget === targetLanguage ? (insight?.draftReply.trim() ?? "") : "";
@@ -37,22 +46,45 @@ export function AiReplyDraftCard({
     composeStore.setQuickReplyText(draft);
     toastStore.pushToast({
       tone: "success",
-      title: "已插入底部快速回复框",
-      detail: "请人工核对收件账户与正文内容后再发送",
+      title: t("toasts.insertedQuickReplyTitle"),
+      detail: t("toasts.insertedQuickReplyDetail"),
     });
   };
+  const draftLang =
+    foreignLanguage && isLanguage(insight?.draftLanguage)
+      ? insight.draftLanguage
+      : undefined;
+  const isForeignDraft = Boolean(
+    draftLang && (isEn ? draftLang !== "en" : !draftLang.startsWith("zh")),
+  );
+  const insertLabel =
+    isForeignDraft && draftLang
+      ? t("ai.insertLangDraft", { lang: getLanguageLabel(draftLang, lang) })
+      : t("ai.insertReply");
+  const headingLabel = t("ai.smartReplyDraft");
+  const changeToneLabel = t("ai.changeTone");
+  const generateDraftLabel = t("ai.generateReplyDraft");
 
   return (
-    <section className="ai-card ai-card-tinted" aria-label="智能拟稿回复">
+    <section className="ai-card ai-card-tinted" aria-label={headingLabel}>
       <div className="ai-card-head ai-draft-head">
-        <span>智能拟稿回复</span>
-        {foreignLanguage && (
-          <div className="ai-draft-language" role="group" aria-label="草稿语言">
+        <span>{headingLabel}</span>
+        {showDualLangs && foreignLanguage && (
+          <div
+            className="ai-draft-language"
+            role="group"
+            aria-label={t("ai.draftLanguageGroupAria")}
+          >
             {(
               [
-                ["original", `原文 (${languageCode(foreignLanguage)})`],
-                ["zh-CN", "用中文"],
-              ] as const
+                [
+                  "original",
+                  t("ai.originalWithCode", {
+                    code: languageCode(foreignLanguage),
+                  }),
+                ],
+                isEn ? ["en", t("ai.inEnglish")] : ["zh-CN", t("ai.inChinese")],
+              ] satisfies ReadonlyArray<readonly [DraftTarget, string]>
             ).map(([value, label]) => (
               <button
                 key={value}
@@ -78,9 +110,7 @@ export function AiReplyDraftCard({
               disabled={busy}
               onClick={insert}
             >
-              {insight?.draftLanguage === "en" && foreignLanguage
-                ? "插入英文草稿"
-                : "插入回复框"}
+              {insertLabel}
             </button>
             <button
               type="button"
@@ -88,27 +118,25 @@ export function AiReplyDraftCard({
               disabled={busy}
               onClick={() =>
                 generate(
-                  "换个语气",
+                  changeToneLabel,
                   insight?.draftTone === "formal" ? "friendly" : "formal",
                 )
               }
             >
-              换个语气
+              {changeToneLabel}
             </button>
           </div>
         </>
       ) : (
         <>
-          <p className="ai-card-text">
-            独立按需触发，绝不自动生成。需要回复时再点击起草。
-          </p>
+          <p className="ai-card-text">{t("ai.draftIntro")}</p>
           <button
             type="button"
             className="btn btn-secondary btn-sm"
             disabled={busy}
-            onClick={() => generate("生成回复草稿", "formal")}
+            onClick={() => generate(generateDraftLabel, "formal")}
           >
-            生成回复草稿
+            {generateDraftLabel}
           </button>
         </>
       )}

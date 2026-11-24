@@ -6,6 +6,7 @@ import {
   ArrowPathIcon,
   ArrowRightIcon,
   ArrowTopRightOnSquareIcon,
+  ArrowUpIcon,
   ArrowUpTrayIcon,
   ArrowUturnLeftIcon,
   ArrowUturnRightIcon,
@@ -139,4 +140,5 @@ export const appIcons = {
   alertCircle: ExclamationCircleIcon,
   arrowRight: ArrowRightIcon,
   arrowLeft: ArrowLeftIcon,
+  arrowUp: ArrowUpIcon,
 };
