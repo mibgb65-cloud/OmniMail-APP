@@ -42,14 +42,8 @@
   }
 
   .reader-toolbar {
-    min-height: 48px;
+    --reader-toolbar-height: 48px;
     padding-inline: 14px;
-  }
-
-  .reader-act-btn {
-    height: 30px;
-    padding: 0 9px;
-    font-size: 12px;
   }
 
   .reader-scroll {

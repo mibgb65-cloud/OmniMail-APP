@@ -5,7 +5,10 @@ import { Icon } from "../../common/Icon";
 import { Tooltip } from "../../common/Tooltip";
 import { ReaderTranslateButton } from "../translation/ReaderTranslateButton";
 import { ReaderMoreMenu } from "./ReaderMoreMenu";
-import type { ReaderActionId } from "./readerToolbarLayout";
+import {
+  readerToolbarSlotStyles,
+  type ReaderActionId,
+} from "./readerToolbarLayout";
 import { useReaderToolbarLayout } from "./useReaderToolbarLayout";
 
 interface ReaderToolbarProps {
@@ -24,7 +27,6 @@ export function ReaderToolbar({
   const { workspace, mailStore, composeStore, aiStore, toastStore } = useApp();
   const { ref, layout } = useReaderToolbarLayout();
   const aiLabel = aiStore.aiOpen ? "收起 AI" : "展开 AI";
-
   const actions: Array<
     Extract<ActionMenuEntry, { label: string }> & { id: ReaderActionId }
   > = [
@@ -95,7 +97,9 @@ export function ReaderToolbar({
     <div
       ref={ref}
       className="reader-toolbar"
-      data-tool-density={layout.shortAiLabel ? "tight" : undefined}
+      style={readerToolbarSlotStyles}
+      data-tool-density={layout.density}
+      data-ai-label={layout.aiLabel}
     >
       <div className="reader-toolbar-group">
         {actions
@@ -105,14 +109,16 @@ export function ReaderToolbar({
               key={act.id}
               type="button"
               className="btn btn-sm btn-secondary reader-act-btn"
+              aria-label={act.label}
+              title={layout.density === "icons" ? act.label : undefined}
               onClick={act.onSelect}
             >
-              {act.icon && <Icon name={act.icon} size={13} />} {act.label}
+              {act.icon && <Icon name={act.icon} size={13} />}
+              <span>{act.label}</span>
             </button>
           ))}
 
         <ReaderTranslateButton key={mail.id} />
-
         {layout.showDelete && (
           <Tooltip
             label={mail.folder === "trash" ? "永久删除" : "移入回收站"}
@@ -128,7 +134,6 @@ export function ReaderToolbar({
             </button>
           </Tooltip>
         )}
-
         <ReaderMoreMenu
           mail={mail}
           onDelete={handleDelete}
@@ -176,13 +181,16 @@ export function ReaderToolbar({
           aria-controls="mail-ai-pane"
           aria-expanded={aiStore.aiOpen}
           aria-label={aiLabel}
+          title={layout.aiLabel === "full" ? undefined : aiLabel}
           onClick={() => {
             workspace.setLeftNavOpen(false);
             aiStore.setAiOpen((v) => !v);
           }}
         >
           <Icon name="sparkle" size={13} />
-          <span>{layout.shortAiLabel ? "AI" : aiLabel}</span>
+          <span hidden={layout.aiLabel === "icon"}>
+            {layout.aiLabel === "short" ? "AI" : aiLabel}
+          </span>
         </button>
       </div>
     </div>

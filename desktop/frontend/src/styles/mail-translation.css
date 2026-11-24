@@ -11,35 +11,44 @@
 
 .reader-translate-button {
   display: inline-flex;
-  flex: 0 0 auto;
+  flex: none;
+  inline-size: var(--reader-translation-slot);
 }
 
-.reader-translate-button .reader-act-btn {
-  height: 32px;
-  gap: 5px;
-  align-items: center;
-  white-space: nowrap;
-}
-
-.reader-translate-button .translation-main-action {
+.reader-toolbar .translation-main-action {
+  flex: 1 1 0;
+  min-inline-size: 0;
+  inline-size: auto;
   border-radius: 8px 0 0 8px;
-  padding-inline: 8px;
+  gap: 5px;
+  padding-inline: 6px;
 }
 
-.reader-translate-button .translation-menu-action {
+.translation-main-action > svg {
+  flex: none;
+}
+
+.translation-main-action > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reader-toolbar:not([data-tool-density="labels"])
+  .translation-main-action
+  > span {
+  display: none;
+}
+
+.reader-toolbar .translation-menu-action {
+  inline-size: var(--reader-translation-caret-width);
   border-radius: 0 8px 8px 0;
   border-inline-start: 0;
-  padding-inline: 6px;
 }
 
 .reader-translate-button[data-active="true"] .reader-act-btn {
   color: var(--translation-active-text);
   border-color: var(--translation-active-border);
   background: var(--translation-active-bg);
-}
-
-.reader-toolbar[data-tool-density="tight"] .translation-main-action span {
-  display: none;
 }
 
 .translation-banner {

@@ -51,20 +51,13 @@
   }
 
   .reader-toolbar {
-    min-height: 46px;
+    --reader-toolbar-height: 46px;
     padding-inline: 12px;
   }
 
-  .reader-act-btn,
-  .reader-ai-toggle {
-    height: 28px;
-    padding: 0 8px;
+  .reader-toolbar .reader-act-btn,
+  .reader-toolbar .reader-ai-toggle {
     font-size: 11px;
-  }
-
-  .reader-icon-btn {
-    width: 28px;
-    height: 28px;
   }
 
   .reader-scroll {

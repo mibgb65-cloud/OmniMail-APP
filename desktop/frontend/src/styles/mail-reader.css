@@ -1,44 +1,72 @@
 /* 正文阅读面板、固定顶部工具栏、安全横幅与会话卡片 */
 .reader-toolbar {
-  min-height: 52px;
-  flex-shrink: 0;
+  --reader-toolbar-height: 52px;
+  --reader-action-slot: var(--reader-action-width);
+  --reader-ai-slot: var(--reader-ai-full-width);
+  --reader-translation-slot: var(--reader-translation-width);
+  flex: none;
+  block-size: var(--reader-toolbar-height);
+  min-inline-size: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  align-content: center;
-  justify-content: space-between;
-  gap: 6px 8px;
+  gap: var(--reader-group-gap);
   padding: 4px 18px;
   border-bottom: 1px solid var(--border-default);
+  /* 超出最小布局宽度时仍只使用一行，可横向滚动或用 Tab 访问操作。 */
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.reader-toolbar[data-tool-density="icons"] {
+  --reader-action-slot: var(--reader-icon-width);
+}
+
+.reader-toolbar:is([data-tool-density="icons"], [data-tool-density="compact"]) {
+  --reader-translation-slot: calc(
+    var(--reader-icon-width) + var(--reader-translation-caret-width)
+  );
+}
+
+.reader-toolbar[data-ai-label="icon"] {
+  --reader-ai-slot: var(--reader-icon-width);
+}
+
+.reader-toolbar[data-ai-label="short"] {
+  --reader-ai-slot: var(--reader-ai-short-width);
 }
 
 .reader-toolbar-group {
   display: flex;
-  flex: 0 0 auto;
+  flex: none;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  min-width: 0;
-  max-width: 100%;
+  gap: var(--reader-item-gap);
 }
 
 .reader-toolbar-nav {
   margin-inline-start: auto;
-  justify-content: flex-end;
 }
 
-.reader-act-btn {
+.reader-toolbar .reader-act-btn {
+  inline-size: var(--reader-action-slot);
   height: 32px;
-  padding: 0 10px;
+  padding-inline: 0;
   background: var(--bg-surface);
-  flex-shrink: 0;
+  flex: none;
 }
 
-.reader-icon-btn {
-  width: 30px;
-  height: 30px;
+.reader-toolbar[data-tool-density="icons"]
+  .reader-toolbar-group
+  > .reader-act-btn
+  > span {
+  display: none;
+}
+
+.reader-toolbar .reader-icon-btn {
+  inline-size: var(--reader-icon-width);
+  block-size: 30px;
   background: var(--bg-surface);
-  flex-shrink: 0;
+  flex: none;
 }
 
 .thread-star-btn {
@@ -57,17 +85,19 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  flex-shrink: 0;
-  max-width: 14ch;
+  text-align: end;
+  flex: none;
+  inline-size: var(--reader-count-width);
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.reader-ai-toggle {
+.reader-toolbar .reader-ai-toggle {
+  inline-size: var(--reader-ai-slot);
   height: 32px;
-  padding: 0 11px;
+  padding-inline: 0;
   font-weight: 600;
-  flex-shrink: 0;
+  flex: none;
 }
 
 .reader-scroll {
