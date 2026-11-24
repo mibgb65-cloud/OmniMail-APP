@@ -18,3 +18,4 @@
 - **源码行数核验**：所有新增与修改源码文件均严格控制在 `<= 200` 行内。
 - **验证结果**：新增单元测试 `desktop/frontend/tests/mail-list-loading-state.test.mjs`；全量 `task verify`（`bindings`、`gofmt`、`prettier --check`、`eslint`、`tsc --noEmit`、`vite build`、56 项前端单测、`go vet`、`go test ./...`、`go build`）与生产构建 `pnpm --dir desktop/frontend build` 均全部通过。
 - **未验证事项**：按协作规则未启动原生桌面窗口人工预览，未做发布包，未创建 Git 提交。
+- 实现已提交：`faaabeb353443b9607538110bb4f7e39ca1b2083`，纳入 [Beta 10 本地安装包](TASK-20261124-019-windows-beta-10-local-release.md)。

@@ -18,3 +18,4 @@
 4. **单元测试与验证**：
    - 新增 `worker_mailbox_resilience_test.go`、`worker_mailbox_fallback_test.go` 及 `diagnostics_test.go` 用例，覆盖 `UIDNext <= prevLastUID+1` 短路、UID 连续区间压缩、单文件夹断连后重连不拖垮后续文件夹、错误详情落库 `sync_logs` / `accounts.last_error`、批量拉取失败降级逐封与断点推进 `last_uid`、以及连接诊断最近同步故障展示。
    - 全部新增与修改源码文件均严格控制在 200 行以内；`task verify` 全量通过（含 `go test ./...`、`go vet`、`go build` 与前端全量校验）。
+- 实现已提交：`faaabeb353443b9607538110bb4f7e39ca1b2083`，纳入 [Beta 10 本地安装包](TASK-20261124-019-windows-beta-10-local-release.md)。

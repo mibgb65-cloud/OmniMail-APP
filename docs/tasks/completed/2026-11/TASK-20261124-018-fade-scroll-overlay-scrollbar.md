@@ -17,3 +17,4 @@
 5. **单元测试与验证**：
    - 新增 `desktop/frontend/tests/overlay-scrollbar.test.mjs`，覆盖未溢出隐藏边界、比例计算、超长列表 `28px` 最小高度钳制、拖动位移与轨道点击反算及 DOM 生命周期清理。
    - 所有新增与修改文件均控制在 200 行以内；`task verify` 全量通过（`tsc --noEmit`、`eslint` 0 error / 0 warning、`prettier --check`、`vite build`、`pnpm test` 77/77 通过、`go vet`、`go test ./...`、`go build`）。
+- 实现已提交：`faaabeb353443b9607538110bb4f7e39ca1b2083`，纳入 [Beta 10 本地安装包](TASK-20261124-019-windows-beta-10-local-release.md)。
