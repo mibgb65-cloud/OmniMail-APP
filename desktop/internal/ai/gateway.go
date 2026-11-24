@@ -30,11 +30,18 @@ func NewGateway(bus *events.Bus) *Gateway {
 func (g *Gateway) CancelRequest(requestID string) {
 	g.mu.Lock()
 	cancel := g.cancels[requestID]
-	delete(g.cancels, requestID)
 	g.mu.Unlock()
 	if cancel != nil {
 		cancel()
 	}
+}
+
+func (g *Gateway) finishRequest(requestID string) {
+	g.mu.Lock()
+	cancel := g.cancels[requestID]
+	delete(g.cancels, requestID)
+	g.mu.Unlock()
+	cancel()
 }
 
 func (g *Gateway) AskMailStream(sess *profilemgr.Session, req AskMailRequest) (string, error) {
@@ -44,7 +51,7 @@ func (g *Gateway) AskMailStream(sess *profilemgr.Session, req AskMailRequest) (s
 	}
 	reqID := req.RequestID
 	settings := config.LoadProfileSettings(sess.ProfileDir)
-	mailCtx, err := PrepareMailContext(sess.DB, settings, req.MailID, req.ConsentConfirmed)
+	mailCtx, err := PrepareMailContext(sess.Ctx, sess.DB, settings, req.MailID, req.ConsentConfirmed, false)
 	if err != nil {
 		return "", err
 	}
@@ -54,7 +61,7 @@ func (g *Gateway) AskMailStream(sess *profilemgr.Session, req AskMailRequest) (s
 	if err != nil {
 		return "", errors.New("无法读取本地 AI 对话")
 	}
-	msgs := buildAskMessages(mailCtx, history, req.Question, !strings.EqualFold(settings.AiProvider, "ollama"), mailUILanguage(settings.Language))
+	msgs := buildAskMessages(mailCtx, history, req.Question, requiresPromptRedaction(pCfg.Provider, pCfg.BaseURL), mailUILanguage(settings.Language))
 	ctx, cancel := context.WithTimeout(sess.Ctx, 90*time.Second)
 	if !g.registerCancel(reqID, cancel) {
 		cancel()
@@ -62,7 +69,7 @@ func (g *Gateway) AskMailStream(sess *profilemgr.Session, req AskMailRequest) (s
 	}
 
 	go func() {
-		defer g.CancelRequest(reqID)
+		defer g.finishRequest(reqID)
 		full, sErr := StreamChat(ctx, pCfg, msgs, func(delta string) {
 			if g.bus != nil {
 				g.bus.Emit(events.AiChunk, events.AiChunkPayload{RequestID: reqID, MailID: req.MailID, Delta: delta})
@@ -108,7 +115,7 @@ func (g *Gateway) AssistComposeStream(sess *profilemgr.Session, req ComposeAssis
 	}
 
 	go func() {
-		defer g.CancelRequest(reqID)
+		defer g.finishRequest(reqID)
 		full, sErr := StreamChat(ctx, pCfg, msgs, func(delta string) {
 			if g.bus != nil {
 				g.bus.Emit(events.AiChunk, events.AiChunkPayload{RequestID: reqID, Delta: delta})

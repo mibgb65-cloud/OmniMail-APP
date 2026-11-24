@@ -5,6 +5,22 @@ import type { AppSettings } from "../../types/settings";
 import { AiProviderCard } from "./ai/AiProviderCard";
 import { SwitchRow } from "./SwitchRow";
 
+export function AiSettingsModeBadge() {
+  const {
+    workspace: { settings },
+  } = useApp();
+  const automatic = settings.aiEnabled && settings.aiAutoSummarizeOnOpen;
+  return (
+    <span className={`pill ${automatic ? "pill-ai" : "pill-neutral"}`}>
+      {!settings.aiEnabled
+        ? "已停用"
+        : automatic
+          ? "阅读时自动摘要"
+          : "按需手动触发"}
+    </span>
+  );
+}
+
 export function AiSettingsTab() {
   const { workspace, toastStore } = useApp();
   const s = workspace.settings;
@@ -37,6 +53,17 @@ export function AiSettingsTab() {
           disabled={saving}
           onChange={(v) => void savePrivacy({ aiEnabled: v })}
         />
+        <SwitchRow
+          heading="打开邮件时自动生成摘要"
+          desc="仅在打开尚未摘要的邮件时自动总结（本地缓存，不重复消耗额度；高敏感与验证码邮件自动跳过；回复草稿仍需手动触发）"
+          checked={s.aiAutoSummarizeOnOpen}
+          disabled={saving || !s.aiEnabled}
+          onChange={(v) => void savePrivacy({ aiAutoSummarizeOnOpen: v })}
+        />
+        <div className="text-xs text-muted">
+          仅在 Omni AI
+          面板展开时生效。自动摘要会使用已配置的模型，不逐次弹出确认。
+        </div>
         <SwitchRow
           heading="每次显式触发前弹出数据范围确认"
           desc="在发送前说明这次会使用正文、可选主题和对话上下文，并等待确认"

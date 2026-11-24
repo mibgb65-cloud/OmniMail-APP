@@ -3,7 +3,6 @@ package ai
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -29,32 +28,6 @@ func resolveProviderConfig(sess *profilemgr.Session, settings config.AppSettings
 		Model:    settings.AiModel,
 		BaseURL:  base,
 		APIKey:   key,
-	}
-}
-
-func parseInsightFromRaw(raw string) AiMailInsight {
-	cleaned := strings.TrimSpace(raw)
-	cleaned = strings.TrimPrefix(cleaned, "```json")
-	cleaned = strings.TrimPrefix(cleaned, "```")
-	cleaned = strings.TrimSuffix(strings.TrimSpace(cleaned), "```")
-	if start, end := strings.IndexByte(cleaned, '{'), strings.LastIndexByte(cleaned, '}'); start >= 0 && end > start {
-		cleaned = cleaned[start : end+1]
-	}
-	var ins AiMailInsight
-	if json.Unmarshal([]byte(cleaned), &ins) == nil && ins.Summary != "" {
-		if ins.Deadlines == nil {
-			ins.Deadlines = []AiDeadlineItem{}
-		}
-		if ins.DraftTag == "" {
-			ins.DraftTag = "建议回复"
-		}
-		return ins
-	}
-	return AiMailInsight{
-		SummaryTitle: "邮件要点摘要",
-		Summary:      truncateRunes(strings.TrimSpace(raw), 400),
-		Deadlines:    []AiDeadlineItem{},
-		DraftTag:     "建议回复",
 	}
 }
 

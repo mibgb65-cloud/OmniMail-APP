@@ -15,6 +15,7 @@ const (
 	CodeAiDisabled         = "ERR_AI_DISABLED"
 	CodeAiConsentRequired  = "ERR_AI_CONSENT_REQUIRED"
 	CodeAiSensitiveBlocked = "ERR_AI_SENSITIVE_BLOCKED"
+	CodeTranslationFailed  = "ERR_TRANSLATION_FAILED"
 	CodeNetworkOffline     = "ERR_NETWORK_OFFLINE"
 	CodeDiskFull           = "ERR_DISK_FULL"
 	CodeInvalidInput       = "ERR_INVALID_INPUT"

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useApp } from "../../state/AppContext";
 import { profileApi } from "../../services/backendClient";
-import { parseAnalysisPrompt } from "./aiAnalysisPrompt";
+import type { MailAiAction } from "../../types/mailAi";
 import { mailAiScope } from "./aiPrivacyScope";
 import { Checkbox } from "../common/Checkbox";
 import { Icon } from "../common/Icon";
@@ -9,24 +9,30 @@ import { ModalShell } from "../common/ModalShell";
 
 export function AiConsentModal({
   actionLabel,
-  onConfirmPrompt,
+  action,
   mailId,
+  profileId,
 }: {
   actionLabel: string;
-  onConfirmPrompt: string;
+  action: MailAiAction;
   mailId: string;
+  profileId: string;
 }) {
   const { workspace, mailStore, aiStore, toastStore } = useApp();
   const [rememberChoice, setRememberChoice] = useState(false);
   const mail = mailStore.selectedMail;
   const scope = mailAiScope(workspace.settings.aiIncludeSenderAndAttachments);
-  const isChat = !parseAnalysisPrompt(onConfirmPrompt);
-  const canConfirm = mail?.id === mailId && workspace.settings.aiEnabled;
+  const isChat = action.kind === "chat";
+  const canConfirm =
+    mail?.id === mailId &&
+    workspace.activeProfileId === profileId &&
+    workspace.settings.aiEnabled &&
+    !aiStore.sensitive.has(mailId);
 
   const handleConfirm = () => {
     if (!mail || !canConfirm) return;
     workspace.setOverlay({ type: "none" });
-    aiStore.runPrompt(mail, onConfirmPrompt, true);
+    aiStore.runAction(mailId, action, true);
     if (rememberChoice) {
       const patch = { aiRequireConfirmEachTime: false };
       void profileApi

@@ -9,8 +9,10 @@ export function TranslationBanner() {
   const { workspace } = useApp();
   if (!t.result && !t.error && !t.pending) return null;
   const value = t.result?.content;
+  const detectedSource =
+    value && value.source !== "auto" ? value.source : t.language;
   const source =
-    value && value.source !== "auto" ? languages[value.source] : "自动检测";
+    detectedSource === "auto" ? "自动检测" : languages[detectedSource];
   const progress =
     t.totalBatches > 0
       ? `（${t.completedBatches} / ${t.totalBatches} 批）`
@@ -18,7 +20,7 @@ export function TranslationBanner() {
   const note = t.pending
     ? `正在翻译${progress}，仍可继续阅读`
     : t.partial
-      ? `部分翻译失败${progress}，已完成的译文已保留`
+      ? `部分翻译失败${progress}，已完成的译文已保留。${t.error ?? ""}`
       : t.error ||
         `${source} → ${value ? languages[value.target] : ""} · ${
           t.mode === "original"

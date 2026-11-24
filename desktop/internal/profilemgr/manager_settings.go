@@ -42,6 +42,9 @@ func (m *Manager) UpdateAppSettings(patch config.AppSettingsPatch) (config.AppSe
 }
 
 func (m *Manager) UpdateSessionSettings(sess *Session, patch config.AppSettingsPatch) (config.AppSettings, error) {
+	if err := config.ValidateTranslationSettingsPatch(patch); err != nil {
+		return config.AppSettings{}, err
+	}
 	m.mu.Lock()
 	if m.active != sess || sess == nil {
 		m.mu.Unlock()

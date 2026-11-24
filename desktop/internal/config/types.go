@@ -52,6 +52,11 @@ type AppSettings struct {
 	DefaultFontFamily          string `json:"defaultFontFamily"`
 	AutoAppendSignature        bool   `json:"autoAppendSignature"`
 	AiEnabled                  bool   `json:"aiEnabled"`
+	TranslationEnabled         bool   `json:"translationEnabled"`
+	TranslationProvider        string `json:"translationProvider"`
+	TranslationEndpoint        string `json:"translationEndpoint"`
+	TranslationTimeoutSec      int    `json:"translationTimeoutSec"`
+	AiAutoSummarizeOnOpen      bool   `json:"aiAutoSummarizeOnOpen"`
 	AiRequireConfirmEachTime   bool   `json:"aiRequireConfirmEachTime"`
 	AiProvider                 string `json:"aiProvider"`
 	AiModel                    string `json:"aiModel"`
@@ -88,6 +93,11 @@ type AppSettingsPatch struct {
 	DefaultFontFamily             *string          `json:"defaultFontFamily,omitempty"`
 	AutoAppendSignature           *bool            `json:"autoAppendSignature,omitempty"`
 	AiEnabled                     *bool            `json:"aiEnabled,omitempty"`
+	TranslationEnabled            *bool            `json:"translationEnabled,omitempty"`
+	TranslationProvider           *string          `json:"translationProvider,omitempty"`
+	TranslationEndpoint           *string          `json:"translationEndpoint,omitempty"`
+	TranslationTimeoutSec         *int             `json:"translationTimeoutSec,omitempty"`
+	AiAutoSummarizeOnOpen         *bool            `json:"aiAutoSummarizeOnOpen,omitempty"`
 	AiRequireConfirmEachTime      *bool            `json:"aiRequireConfirmEachTime,omitempty"`
 	AiProvider                    *string          `json:"aiProvider,omitempty"`
 	AiModel                       *string          `json:"aiModel,omitempty"`

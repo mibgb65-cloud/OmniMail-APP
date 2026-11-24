@@ -1,5 +1,6 @@
 import type { ProviderId } from "./account";
 import type { AttachmentItem } from "./mail";
+import type { MailAiAction } from "./mailAi";
 import type { SettingsTabId } from "./settings";
 
 export type WorkspaceScreen = "mail" | "contacts" | "onboarding";
@@ -47,8 +48,9 @@ export type OverlayModal =
   | {
       type: "ai-consent";
       actionLabel: string;
-      onConfirmPrompt: string;
+      action: MailAiAction;
       mailId: string;
+      profileId: string;
     }
   | { type: "snooze"; mailIds: string[] }
   | {

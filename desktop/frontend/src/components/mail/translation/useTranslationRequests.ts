@@ -1,8 +1,9 @@
 import { Events } from "@wailsio/runtime";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { TranslateMail } from "../../../../bindings/omnimail/services/aiservice";
 import { parseBackendError } from "../../../services/backendClient";
 import { isWailsDesktop } from "../../../state/storageHelpers";
+import type { TranslationProvider } from "../../../types/settings";
 import { isLanguage } from "./translationLanguages";
 import { runTranslationRequest } from "./translationRequest";
 import {
@@ -55,11 +56,14 @@ function readBatch(
     segments,
     source: isLanguage(data.source) ? data.source : "auto",
     subject: typeof data.subject === "string" ? data.subject : undefined,
+    failureMessage:
+      typeof data.failureMessage === "string" ? data.failureMessage : undefined,
   };
 }
 
 export function useTranslationRequests({
   profileId,
+  provider,
   mailId,
   token,
   disabled,
@@ -67,29 +71,37 @@ export function useTranslationRequests({
   update,
 }: {
   profileId: string;
+  provider: TranslationProvider;
   mailId: string;
   token: object;
   disabled: boolean;
   entry?: TranslationEntry;
   update: UpdateTranslationEntry;
 }) {
-  const running = useRef(new Map<object, Set<string>>());
+  const running = useRef(new Map<object, Map<string, () => void>>());
+  useEffect(() => {
+    const requests = running.current;
+    return () => {
+      for (const cancel of requests.get(token)?.values() ?? []) cancel();
+      requests.delete(token);
+    };
+  }, [token]);
 
   return async (options: TranslationOptions, preserveMode = false) => {
     if (!mailId || disabled || entry?.phase === "pending") return;
-    if (canReuseTranslation(entry, options)) {
+    if (canReuseTranslation(entry, options, provider)) {
       update(
         (current) => current && changeTranslationMode(current, options.mode),
       );
       return;
     }
-    const scope = running.current.get(token) ?? new Set<string>();
+    const scope = running.current.get(token) ?? new Map<string, () => void>();
     if (scope.has(mailId)) return;
-    scope.add(mailId);
+    scope.set(mailId, () => undefined);
     running.current.set(token, scope);
     const key = { profileId, mailId, requestId: crypto.randomUUID() };
     update((previous) =>
-      startTranslation(key, options, previous, preserveMode),
+      startTranslation(key, options, provider, previous, preserveMode),
     );
     try {
       if (!isWailsDesktop())
@@ -100,14 +112,18 @@ export function useTranslationRequests({
           Events.On("omnimail:mail:translation-batch", (event) =>
             listener(event.data),
           ),
-        () =>
-          TranslateMail({
+        () => {
+          const request = TranslateMail({
             ...key,
+            provider,
             source: options.source,
             target: options.target,
             includeSubject: options.includeSubject,
             consentConfirmed: true,
-          }),
+          });
+          scope.set(mailId, () => void request.cancel().catch(() => undefined));
+          return request;
+        },
         (payload) => {
           const batch = readBatch(key, payload);
           if (batch) update((current) => applyTranslationBatch(current, batch));
@@ -118,11 +134,14 @@ export function useTranslationRequests({
       if (!result) throw new Error("翻译结果无效，请重试");
       update((current) => finishTranslation(current, result));
     } catch (err) {
+      const { code, message } = parseBackendError(err);
       update((current) =>
         failTranslation(
           current,
           key,
-          parseBackendError(err).message || "翻译失败，请重试",
+          code
+            ? message
+            : "翻译未完成。请在「设置 → 邮件翻译」检查端点或切换引擎。",
         ),
       );
     } finally {

@@ -23,7 +23,7 @@ import {
 } from "./useTranslationRequests";
 
 type ProfileTranslationState = {
-  key: string;
+  scope: string;
   token: object;
   entries: Record<string, TranslationEntry>;
   preferences: TranslationPreferences;
@@ -34,8 +34,20 @@ function useMailTranslations() {
   const mail = mailStore.selectedMail;
   const profileId = workspace.activeProfileId;
   const key = `omnimail.translation.${profileId}`;
-  const initialState = (): ProfileTranslationState => ({
+  const { settings } = workspace;
+  const usesAI = settings.translationProvider === "ai";
+  const providerEnabled =
+    settings.translationEnabled && (!usesAI || settings.aiEnabled);
+  const scope = JSON.stringify([
     key,
+    providerEnabled,
+    settings.translationProvider,
+    ...(usesAI
+      ? [settings.aiProvider, settings.aiBaseUrl, settings.aiModel]
+      : [settings.translationEndpoint, settings.translationTimeoutSec]),
+  ]);
+  const initialState = (): ProfileTranslationState => ({
+    scope,
     token: {},
     entries: {},
     preferences: readTranslationPreferences(
@@ -44,7 +56,7 @@ function useMailTranslations() {
     ),
   });
   const [saved, setSaved] = useState(initialState);
-  const state = saved.key === key ? saved : initialState();
+  const state = saved.scope === scope ? saved : initialState();
   if (saved !== state) setSaved(state);
   const { entries, preferences, token } = state;
   const id = mail?.id ?? "";
@@ -67,11 +79,18 @@ function useMailTranslations() {
     result && result.content.source !== "auto"
       ? result.content.source
       : detectedLanguage;
-  const disabled =
-    !workspace.settings.aiEnabled ||
+  const blocked =
     mail?.folder === "spam" ||
     mail?.folder === "trash" ||
     mail?.securityWarning?.level === "danger";
+  const disabledReason = !settings.translationEnabled
+    ? "邮件翻译已停用，可在翻译设置中开启。"
+    : blocked
+      ? "此邮件受隐私保护，不发送给翻译引擎。"
+      : !providerEnabled
+        ? "请启用并配置 AI 模型，或在翻译设置中切换引擎。"
+        : "";
+  const disabled = !id || Boolean(disabledReason);
 
   const savePreferences = (next: TranslationPreferences) => {
     setSaved((prev) =>
@@ -90,6 +109,7 @@ function useMailTranslations() {
   };
   const translate = useTranslationRequests({
     profileId,
+    provider: settings.translationProvider,
     mailId: id,
     token,
     disabled,
@@ -102,6 +122,8 @@ function useMailTranslations() {
     language,
     confirmedSource: result?.content.source ?? "auto",
     disabled,
+    disabledReason,
+    engineLabel: usesAI ? "AI 模型" : "内置免费翻译",
     preferences,
     savePreferences,
     translate,

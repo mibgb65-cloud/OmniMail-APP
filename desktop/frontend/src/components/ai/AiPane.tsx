@@ -1,15 +1,16 @@
 import { FadeScroll } from "../common/scroll-fade/FadeScroll";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 import { Tooltip } from "../common/Tooltip";
 import { AiInsightContent } from "./AiInsightContent";
 import { AiResizeHandle, type AiResizeHandleProps } from "./AiResizeHandle";
 import { AiStatusPanel } from "./AiStatusPanel";
-import { analysisPrompt } from "./aiAnalysisPrompt";
+import { summaryAction } from "./aiAnalysisPrompt";
 import { AiPrivacyBadge } from "./AiPrivacyBadge";
 import { useTranslation } from "../mail/translation/TranslationContext";
 import { useAiChatScroll } from "./useAiChatScroll";
+import { useAiMailOnOpen } from "./useAiMailOnOpen";
 
 export function AiPane({
   isDrawer,
@@ -35,30 +36,27 @@ export function AiPane({
     aiStore.pendingMailId === mailId ? aiStore.pendingRequestId : undefined,
     chats.at(-1),
   );
-  const busy = aiStore.aiStatus === "processing";
+  const result =
+    aiStore.result.run?.mailId === mailId ? aiStore.result : undefined;
+  const busy = aiStore.result.status === "processing";
   const t = useTranslation();
   const source = t.confirmedSource;
   const ui = workspace.settings.language === "en-US" ? "en" : "zh-CN";
   const crossLang =
     Boolean(t.result) || (t.language !== "auto" && t.language !== ui);
-  const { loadCachedForMail } = aiStore;
-
-  useEffect(() => {
-    if (open && mailId && workspace.settings.aiEnabled)
-      loadCachedForMail(mailId);
-  }, [open, mailId, loadCachedForMail, workspace.settings.aiEnabled]);
-
-  const isDisabledForMail =
-    !workspace.settings.aiEnabled ||
-    !mail ||
-    mail.folder === "spam" ||
-    mail.folder === "trash" ||
-    mail.securityWarning?.level === "danger";
+  const blocked =
+    !!mail &&
+    (mail.folder === "spam" ||
+      mail.folder === "trash" ||
+      mail.securityWarning?.level === "danger" ||
+      aiStore.sensitive.has(mail.id));
+  const isDisabledForMail = !workspace.settings.aiEnabled || !mail || blocked;
+  useAiMailOnOpen(open, blocked);
 
   const handleSendPrompt = () => {
     const trimmed = promptInput.trim();
     if (!trimmed || busy || isDisabledForMail) return;
-    requestAiAction("自由提问", trimmed);
+    requestAiAction("自由提问", { kind: "chat", question: trimmed });
     setPromptInput("");
   };
 
@@ -76,18 +74,15 @@ export function AiPane({
           {isDrawer && <span className="ai-drawer-badge">浮层抽屉</span>}
         </div>
         <div className="row" style={{ gap: 4, flexShrink: 0 }}>
-          <Tooltip label="重新分析当前邮件">
+          <Tooltip label="重新总结当前邮件">
             <button
               type="button"
               className="btn-icon"
               style={{ width: 26, height: 26 }}
               disabled={isDisabledForMail || busy}
-              aria-label="重新分析当前邮件"
+              aria-label="重新总结当前邮件"
               onClick={() =>
-                requestAiAction(
-                  "重新分析邮件",
-                  analysisPrompt("formal", source),
-                )
+                requestAiAction("重新总结当前邮件", summaryAction(source, true))
               }
             >
               <Icon name="refresh" size={13} />
@@ -128,13 +123,6 @@ export function AiPane({
         label="AI 分析和对话"
         viewportProps={chatViewport}
       >
-        <AiStatusPanel
-          status={aiStore.aiStatus}
-          onRetry={() =>
-            requestAiAction("重试分析", analysisPrompt("formal", source))
-          }
-        />
-
         {isDisabledForMail ? (
           <div className="ai-status-box warning">
             <strong>
@@ -142,16 +130,28 @@ export function AiPane({
                 ? "Omni AI 助手已停用"
                 : !mail
                   ? "未选中任何邮件"
-                  : "已基于安全策略禁用 AI 读取"}
+                  : "敏感邮件已跳过"}
             </strong>
             <div style={{ lineHeight: 1.5 }}>
               {!workspace.settings.aiEnabled
                 ? "你可以随时在「设置 → AI 助手」中重新开启。"
-                : "垃圾邮件、回收站与疑似钓鱼风险邮件默认不向 AI 发送任何内容。"}
+                : !mail
+                  ? "打开邮件后可查看摘要、拟稿或追问。"
+                  : "未向模型发送此邮件。验证码、私钥、禁读邮件和高风险邮件均不可调用 AI。"}
             </div>
           </div>
         ) : (
-          <AiInsightContent insight={insight} chats={chats} busy={busy} />
+          <>
+            <AiStatusPanel
+              status={result?.status ?? "idle"}
+              detail={result?.detail ?? ""}
+              onRetry={() => {
+                if (result?.run)
+                  requestAiAction("重试当前操作", result.run.action);
+              }}
+            />
+            <AiInsightContent insight={insight} chats={chats} busy={busy} />
+          </>
         )}
       </FadeScroll>
 

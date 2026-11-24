@@ -175,6 +175,7 @@ export function useMailStore(blockRemoteImages: boolean) {
     resetMailState,
     filteredMails,
     selectedMail,
+    explicitlyOpened: selectedMail?.id === selectedMailId,
     activeFolder,
     activeAccountId,
     activeLabelId,

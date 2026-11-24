@@ -8,6 +8,7 @@ import (
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 	"omnimail/internal/apperr"
+	"omnimail/internal/config"
 )
 
 var hiddenMailText = regexp.MustCompile(`(?i)(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\b`)
@@ -65,10 +66,18 @@ func translationSizeError() error {
 }
 
 func batchTranslationSegments(segments []string) ([][]string, error) {
+	return batchTranslationSegmentsForProvider(segments, config.TranslationProviderAI)
+}
+
+func batchTranslationSegmentsForProvider(segments []string, provider string) ([][]string, error) {
 	if len(segments) > 400 {
 		return nil, translationSizeError()
 	}
 	const batchLimit = 4800
+	maxSegments, preferredSize := 45, batchLimit
+	if provider == config.TranslationProviderFree {
+		maxSegments, preferredSize = 12, 1600
+	}
 	var batches [][]string
 	var batch []string
 	total, size := 0, 0
@@ -78,7 +87,7 @@ func batchTranslationSegments(segments []string) ([][]string, error) {
 		if total > 40000 || length > batchLimit {
 			return nil, translationSizeError()
 		}
-		if len(batch) >= 45 || size+length > batchLimit {
+		if len(batch) > 0 && (len(batch) >= maxSegments || size+length > preferredSize) {
 			batches = append(batches, batch)
 			batch, size = nil, 0
 		}

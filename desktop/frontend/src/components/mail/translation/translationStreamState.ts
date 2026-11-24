@@ -4,6 +4,7 @@ import type {
   TranslationOptions,
   TranslationResult,
 } from "./translationTypes";
+import type { TranslationProvider } from "../../../types/settings";
 
 export interface TranslationRequestKey {
   profileId: string;
@@ -16,10 +17,12 @@ export type TranslationBatch = TranslationRequestKey &
     subject?: string;
     completedBatches: number;
     totalBatches: number;
+    failureMessage?: string;
   };
 
 export interface TranslationEntry {
   key: TranslationRequestKey;
+  provider: TranslationProvider;
   result: TranslationResult;
   mode: TranslationMode;
   phase: "pending" | "complete" | "partial" | "failed";
@@ -58,16 +61,19 @@ export function sameTranslationSettings(
 export function startTranslation(
   key: TranslationRequestKey,
   options: TranslationOptions,
+  provider: TranslationProvider,
   previous?: TranslationEntry,
   preserveMode = false,
 ): TranslationEntry {
+  const sameProvider = previous?.provider === provider ? previous : undefined;
   const retry =
-    previous?.phase === "partial" &&
-    sameTranslationSettings(previous.result.options, options)
-      ? previous
+    sameProvider?.phase === "partial" &&
+    sameTranslationSettings(sameProvider.result.options, options)
+      ? sameProvider
       : undefined;
   return {
     key,
+    provider,
     result: {
       options,
       content: retry?.result.content ?? {
@@ -78,7 +84,7 @@ export function startTranslation(
       },
     },
     phase: "pending",
-    mode: preserveMode && previous ? previous.mode : options.mode,
+    mode: preserveMode && sameProvider ? sameProvider.mode : options.mode,
     completedBatches: 0,
     totalBatches: 0,
   };
@@ -136,7 +142,11 @@ export function finishTranslation(
   if (!updated || updated === entry) return entry;
   // 仅最后的完整响应能写入完整缓存；收到最后一批事件不代表请求已成功结束。
   if (snapshot.completedBatches < snapshot.totalBatches)
-    return { ...updated, phase: "partial" } satisfies TranslationEntry;
+    return {
+      ...updated,
+      phase: "partial",
+      error: snapshot.failureMessage,
+    } satisfies TranslationEntry;
   return {
     ...updated,
     phase: "complete",
@@ -176,9 +186,11 @@ export function failTranslation(
 export function canReuseTranslation(
   entry: TranslationEntry | undefined,
   options: TranslationOptions,
+  provider: TranslationProvider,
 ) {
   return (
     entry?.phase === "complete" &&
+    entry.provider === provider &&
     sameTranslationSettings(entry.result.options, options)
   );
 }

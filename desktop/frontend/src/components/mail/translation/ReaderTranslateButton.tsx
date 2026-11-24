@@ -39,7 +39,7 @@ export function ReaderTranslateButton() {
         disabled={t.pending}
         title={label}
         onClick={() => {
-          if (t.hasTranslation) {
+          if (!t.disabled && t.hasTranslation) {
             t.setMode(active ? "original" : t.preferredMode);
             close();
           } else setOpen(true);
@@ -64,7 +64,14 @@ export function ReaderTranslateButton() {
       >
         <Icon name="chevronDown" size={11} />
       </button>
-      {open && <TranslationPopover id={id} anchor={anchor} onClose={close} />}
+      {open && (
+        <TranslationPopover
+          key={t.mailId}
+          id={id}
+          anchor={anchor}
+          onClose={close}
+        />
+      )}
     </div>
   );
 }

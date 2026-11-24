@@ -15,7 +15,7 @@ const STATUS_META: Record<
     tone: "danger",
     title: "AI 请求未完成",
     detail: "本次请求未成功完成。请检查模型服务状态后重试。",
-    actionLabel: "重新分析邮件",
+    actionLabel: "重试当前操作",
   },
   "invalid-key": {
     tone: "danger",
@@ -45,9 +45,11 @@ const STATUS_META: Record<
 
 export function AiStatusPanel({
   status,
+  detail,
   onRetry,
 }: {
   status: AiRunStatus;
+  detail: string;
   onRetry: () => void;
 }) {
   const { workspace, aiStore } = useApp();
@@ -59,15 +61,13 @@ export function AiStatusPanel({
           <span className="row" style={{ color: "var(--brand-ai)" }}>
             <Icon name="sparkle" size={14} /> 正在处理 AI 请求…
           </span>
-          {aiStore.canStop && (
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={aiStore.stopGeneration}
-            >
-              停止生成
-            </button>
-          )}
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => aiStore.stopGeneration()}
+          >
+            停止生成
+          </button>
         </div>
         <div className="text-muted text-xs">
           不会发送附件文件、文件名或附件内容预览。
@@ -86,9 +86,7 @@ export function AiStatusPanel({
         <Icon name="alertCircle" size={15} />
       </div>
       <div style={{ lineHeight: 1.5 }}>
-        {status === "error" && aiStore.errorDetail
-          ? aiStore.errorDetail
-          : meta.detail}
+        {status === "error" && detail ? detail : meta.detail}
       </div>
       <div className="row">
         <button
@@ -100,7 +98,7 @@ export function AiStatusPanel({
             } else if (status === "disabled-sensitive") {
               workspace.setOverlay({ type: "settings", tab: "privacy" });
             } else if (status === "unavailable") {
-              aiStore.setAiStatus("idle");
+              aiStore.dismissStatus();
             } else {
               onRetry();
             }
@@ -111,7 +109,7 @@ export function AiStatusPanel({
         <button
           type="button"
           className="btn btn-ghost btn-sm"
-          onClick={() => aiStore.setAiStatus("idle")}
+          onClick={aiStore.dismissStatus}
         >
           忽略
         </button>

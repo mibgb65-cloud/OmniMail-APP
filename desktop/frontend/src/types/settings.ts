@@ -30,6 +30,8 @@ export interface AutoReplyConfig {
   repliedCount: number;
 }
 
+export type TranslationProvider = "bilibili" | "ai";
+
 export interface AppSettings {
   theme: ThemeMode;
   themePreference: ThemePreference;
@@ -50,6 +52,11 @@ export interface AppSettings {
   defaultFontFamily: string;
   autoAppendSignature: boolean;
   aiEnabled: boolean;
+  translationEnabled: boolean;
+  translationProvider: TranslationProvider;
+  translationEndpoint: string;
+  translationTimeoutSec: number;
+  aiAutoSummarizeOnOpen: boolean;
   aiRequireConfirmEachTime: boolean;
   aiProvider: string;
   aiModel: string;

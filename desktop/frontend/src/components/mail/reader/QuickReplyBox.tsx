@@ -2,6 +2,7 @@ import { FadeTextarea } from "../../common/scroll-fade/FadeTextarea";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "../../../state/AppContext";
 import type { MailItem } from "../../../types/mail";
+import { originalReplyAction } from "../../ai/aiAnalysisPrompt";
 import { Icon } from "../../common/Icon";
 import { ProviderIcon } from "../../common/ProviderIcon";
 import { Tooltip } from "../../common/Tooltip";
@@ -49,7 +50,7 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
       workspace.settings.lockReplyToOriginalAccount,
     );
   const draftAiReply = () =>
-    requestAiAction("起草更正式回复", "请用更正式语气帮我起草一封回复");
+    requestAiAction("生成回复草稿", originalReplyAction());
   const headerStyle = {
     gap: 8,
     flex: 1,

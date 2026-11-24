@@ -7,14 +7,33 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"omnimail/internal/apperr"
+	"omnimail/internal/config"
+	"omnimail/internal/profilemgr"
 )
 
-func (g *Gateway) GetCachedInsight(db *sql.DB, mailID string) (*AiMailInsight, []AiChatTurn) {
+func (g *Gateway) ReadMailInsight(ctx context.Context, sess *profilemgr.Session, mailID string) (*AiMailInsight, []AiChatTurn, error) {
+	mailID = strings.TrimSpace(mailID)
+	if mailID == "" || len(mailID) > 512 {
+		return nil, nil, apperr.New(apperr.CodeInvalidInput, "邮件 ID 无效")
+	}
+	// 缓存只读不外发，无需确认，但不应展示后来被标记为禁读的邮件结果。
+	if _, err := loadGuardedMail(ctx, sess.DB, config.LoadProfileSettings(sess.ProfileDir), mailID, false); err != nil {
+		return nil, nil, err
+	}
+	return g.GetCachedInsight(ctx, sess.DB, mailID)
+}
+
+func (g *Gateway) GetCachedInsight(ctx context.Context, db *sql.DB, mailID string) (*AiMailInsight, []AiChatTurn, error) {
 	var modelName, insightJ, turnsJ string
-	err := db.QueryRow(`SELECT model_name, insight_json, chat_turns_json FROM ai_insights WHERE message_id = ?`,
+	err := db.QueryRowContext(ctx, `SELECT model_name, insight_json, chat_turns_json FROM ai_insights WHERE message_id = ?`,
 		strings.TrimSpace(mailID)).Scan(&modelName, &insightJ, &turnsJ)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil, nil
+	}
 	if err != nil {
-		return nil, nil
+		return nil, nil, errors.New("无法读取本地 AI 缓存")
 	}
 	var turns []AiChatTurn
 	_ = json.Unmarshal([]byte(turnsJ), &turns)
@@ -22,14 +41,14 @@ func (g *Gateway) GetCachedInsight(db *sql.DB, mailID string) (*AiMailInsight, [
 	// 只有聊天记录的行使用 {} 占位，不能误判为已生成过摘要。
 	if json.Unmarshal([]byte(insightJ), &ins) != nil ||
 		(ins.SummaryTitle == "" && ins.Summary == "" && ins.DraftReply == "" && len(ins.Deadlines) == 0) {
-		return nil, turns
+		return nil, turns, nil
 	}
 	ins.Cached = true
 	ins.ModelName = modelName
 	if ins.Deadlines == nil {
 		ins.Deadlines = []AiDeadlineItem{}
 	}
-	return &ins, turns
+	return &ins, turns, nil
 }
 
 type storedChatTurn struct {

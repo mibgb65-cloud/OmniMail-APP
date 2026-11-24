@@ -59,7 +59,7 @@ func TestAskStreamPersistsFinalAnswerBeforeDone(t *testing.T) {
 		switch name {
 		case events.AiDone:
 			done := payload.(events.AiDonePayload)
-			insight, turns := gw.GetCachedInsight(db, "mail-a")
+			insight, turns, _ := gw.GetCachedInsight(t.Context(), db, "mail-a")
 			if done.RequestID != id || done.FullText != answer || insight != nil ||
 				len(turns) != 2 || turns[0].ID != id+"-user" || turns[1].Content != answer {
 				result <- fmt.Errorf("流式完成事件与数据库问答不一致")
@@ -94,10 +94,10 @@ func TestAskStreamPersistsFinalAnswerBeforeDone(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer storage.CheckpointAndClose(db)
-	if _, turns := gw.GetCachedInsight(db, "mail-b"); len(turns) != 0 {
+	if _, turns, _ := gw.GetCachedInsight(t.Context(), db, "mail-b"); len(turns) != 0 {
 		t.Fatal("问答越过邮件边界")
 	}
-	insight, turns := gw.GetCachedInsight(db, "mail-a")
+	insight, turns, _ := gw.GetCachedInsight(t.Context(), db, "mail-a")
 	if insight != nil || len(turns) != 2 || turns[0].Content != "有什么要点？" || turns[1].Content != answer {
 		t.Fatal("重新打开数据库后问答内容未恢复")
 	}
@@ -126,7 +126,7 @@ func TestChatCacheKeepsRecentPairsAndSummary(t *testing.T) {
 	if history, err := loadChatHistory(db, "mail-a", false); err != nil || len(history) != 10 || history[0].ID != "aireq-3-user" {
 		t.Fatalf("不同隐私范围的问答不应自动外发：%v", err)
 	}
-	insight, turns := NewGateway(nil).GetCachedInsight(db, "mail-a")
+	insight, turns, _ := NewGateway(nil).GetCachedInsight(t.Context(), db, "mail-a")
 	if insight == nil || insight.Summary != "已有摘要" || len(turns) != 20 ||
 		turns[0].ID != "aireq-2-user" || turns[19].ID != "aireq-11-assistant" {
 		t.Fatalf("摘要或最近十轮问答顺序异常：摘要=%v，问答数=%d", insight != nil, len(turns))

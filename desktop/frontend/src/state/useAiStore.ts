@@ -1,24 +1,16 @@
 import { useCallback, useState } from "react";
-import { parseAnalysisPrompt } from "../components/ai/aiAnalysisPrompt";
-import { AI_INSIGHTS_BY_MAIL, DEFAULT_AI_INSIGHT } from "../data/mails";
+import { summaryAction } from "../components/ai/aiAnalysisPrompt";
+import type { SourceLanguage } from "../components/mail/translation/translationLanguages";
+import { hasUsableSummary } from "../components/ai/autoMailSummary";
+import { AI_INSIGHTS_BY_MAIL } from "../data/mails";
 import { aiApi, parseBackendError } from "../services/backendClient";
 import type { MailItem } from "../types/mail";
-import type {
-  AiChatTurn,
-  AiMailInsight,
-  AiRunStatus,
-} from "../types/workspace";
+import type { MailAiAction } from "../types/mailAi";
+import type { AiMailInsight, AiRunStatus } from "../types/workspace";
+import { chatTurnPair } from "./aiChatTurns";
 import { isWailsDesktop } from "./storageHelpers";
 import { useAiMailCache } from "./useAiMailCache";
 import { useAiMailRequest, type AiMailRun } from "./useAiMailRequest";
-
-const EMPTY_DESKTOP_INSIGHT: AiMailInsight = {
-  summaryTitle: "尚未生成本封邮件摘要",
-  summary: "点击「总结当前邮件」或右上角刷新按钮后才调用所选模型。",
-  deadlines: [],
-  draftTag: "待生成",
-  draftReply: "",
-};
 
 function mapErrorToAiStatus(code: string, message: string): AiRunStatus {
   const low = `${code} ${message}`.toLowerCase();
@@ -37,28 +29,16 @@ export function useAiStore() {
 
   const saveTurnPair = useCallback(
     (run: AiMailRun, answer: string) => {
-      addTurns(run.mailId, [
-        {
-          id: `${run.requestId}-user`,
-          role: "user",
-          content: run.question,
-          timestamp: "刚刚",
-        },
-        {
-          id: `${run.requestId}-assistant`,
-          role: "assistant",
-          content: answer,
-          timestamp: "刚刚",
-        },
-      ]);
+      addTurns(run.mailId, chatTurnPair(run, answer));
     },
     [addTurns],
   );
 
   const {
-    aiStatus,
-    setAiStatus,
-    errorDetail,
+    result,
+    dismissStatus,
+    sensitive,
+    markFailure,
     pending,
     getActive,
     begin,
@@ -67,11 +47,14 @@ export function useAiStore() {
     resetRequest,
   } = useAiMailRequest(saveTurnPair);
 
-  const runPrompt = useCallback(
-    (mail: MailItem, prompt: string, confirmed: boolean) => {
-      const options = parseAnalysisPrompt(prompt);
-      const kind = !isWailsDesktop() ? "demo" : options ? "analysis" : "chat";
-      const run = begin(mail.id, kind, prompt);
+  const dispatch = useCallback(
+    (
+      mailId: string,
+      action: MailAiAction,
+      confirmed: boolean,
+      auto = false,
+    ) => {
+      const run = begin(mailId, action, auto);
       if (!run) return;
 
       const fail = (err: unknown) => {
@@ -82,34 +65,73 @@ export function useAiStore() {
           parsed.message,
         );
       };
-      if (kind === "demo") {
-        window.setTimeout(() => {
-          if (settle(run, "idle"))
-            saveTurnPair(run, `已基于《${mail.subject}》正文分析完成。`);
+      if (!isWailsDesktop()) {
+        const timer = window.setTimeout(() => {
+          if (settle(run, "idle")) saveTurnPair(run, "已基于正文完成分析。");
         }, 450);
-      } else if (options) {
-        void aiApi
-          .analyzeMail(mail.id, confirmed, options)
+        run.cancel = () => window.clearTimeout(timer);
+      } else if (action.kind !== "chat") {
+        const base = {
+          requestId: run.requestId,
+          sourceLanguage: action.sourceLanguage,
+        };
+        const request =
+          action.kind === "summary"
+            ? aiApi.summarizeMail(
+                mailId,
+                confirmed,
+                Boolean(action.forceRefresh),
+                {
+                  ...base,
+                  autoTriggered: auto,
+                },
+              )
+            : aiApi.generateReplyDraft(mailId, confirmed, {
+                ...base,
+                targetLanguage: action.targetLanguage,
+                tone: action.tone,
+              });
+        run.cancel = () => void request.cancel().catch(() => undefined);
+        void request
           .then((insight) => {
-            if (settle(run, "idle")) saveInsight(mail.id, insight);
+            if (settle(run, "idle")) saveInsight(mailId, insight);
           })
           .catch(fail);
       } else {
+        run.cancel = () =>
+          void aiApi.cancelRequest(run.requestId).catch(() => undefined);
         void aiApi
           .askMailStream({
             requestId: run.requestId,
-            mailId: mail.id,
-            question: prompt,
+            mailId,
+            question: action.question,
             consentConfirmed: confirmed,
           })
           .then(() => {
-            if (!getActive(run.requestId, run.mailId))
-              void aiApi.cancelRequest(run.requestId).catch(() => undefined);
+            if (!getActive(run.requestId, mailId)) run.cancel?.();
           })
           .catch(fail);
       }
     },
     [begin, getActive, saveInsight, saveTurnPair, settle],
+  );
+
+  const runAction = useCallback(
+    (mailId: string, action: MailAiAction, confirmed: boolean) =>
+      dispatch(mailId, action, confirmed),
+    [dispatch],
+  );
+  const autoSummarize = useCallback(
+    (mailId: string, source: SourceLanguage) =>
+      dispatch(mailId, summaryAction(source), false, true),
+    [dispatch],
+  );
+  const onCacheReadFailure = useCallback(
+    (mailId: string, err: unknown) => {
+      const { code, message } = parseBackendError(err);
+      markFailure(mailId, mapErrorToAiStatus(code, message));
+    },
+    [markFailure],
   );
 
   const reset = useCallback(() => {
@@ -118,51 +140,36 @@ export function useAiStore() {
     setAiOpen(false);
   }, [clear, resetRequest]);
 
-  function getInsight(mail: MailItem | null) {
-    if (mail && insights[mail.id]) return insights[mail.id];
-    if (!isWailsDesktop())
-      return (mail && AI_INSIGHTS_BY_MAIL[mail.id]) || DEFAULT_AI_INSIGHT;
-    return EMPTY_DESKTOP_INSIGHT;
+  function getInsight(mail: MailItem | null): AiMailInsight | null {
+    if (!mail) return null;
+    if (!isWailsDesktop()) return AI_INSIGHTS_BY_MAIL[mail.id] ?? null;
+    return insights[mail.id] ?? null;
   }
 
-  function getChats(mailId?: string): AiChatTurn[] {
+  function getChats(mailId?: string) {
     if (!mailId) return [];
     const saved = chats[mailId] ?? [];
-    if (pending?.mailId !== mailId) return saved;
-    const turns: AiChatTurn[] = [
-      ...saved,
-      {
-        id: `${pending.requestId}-user`,
-        role: "user",
-        content: pending.question,
-        timestamp: "刚刚",
-      },
-    ];
-    if (pending.answer)
-      turns.push({
-        id: `${pending.requestId}-assistant`,
-        role: "assistant",
-        content: pending.answer,
-        timestamp: "刚刚",
-      });
-    return turns;
+    return pending?.mailId === mailId
+      ? [...saved, ...chatTurnPair(pending, pending.answer)]
+      : saved;
   }
 
   return {
     aiOpen,
     setAiOpen,
-    aiStatus,
-    setAiStatus,
-    errorDetail,
-    canStop: pending !== null,
+    result,
+    dismissStatus,
+    sensitive,
     pendingMailId: pending?.mailId,
     pendingRequestId: pending?.requestId,
     loadCachedForMail,
+    onCacheReadFailure,
     getInsight,
     hasMailSummary: (mail: Pick<MailItem, "id" | "aiSummarized">) =>
-      Boolean(mail.aiSummarized || insights[mail.id]?.summary.trim()),
+      Boolean(mail.aiSummarized || hasUsableSummary(insights[mail.id])),
     getChats,
-    runPrompt,
+    runAction,
+    autoSummarize,
     stopGeneration,
     reset,
   };

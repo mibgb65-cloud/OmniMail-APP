@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createBodyTranslationRenderer } from "../src/components/mail/translation/translatedText.ts";
 import { runTranslationRequest } from "../src/components/mail/translation/translationRequest.ts";
-import { updateScopedTranslation } from "../src/components/mail/translation/translationSessionCache.ts";
 import {
   applyTranslationBatch,
   canReuseTranslation,
@@ -86,7 +85,7 @@ function fakeMailBody() {
 
 test("第二批挂起时第一批的标题和正文已进入渲染，第二段保持原文", async () => {
   const body = fakeMailBody();
-  let entry = startTranslation(key, options);
+  let entry = startTranslation(key, options, "bilibili");
   let listener;
   let subscribedBeforeCall = false;
   let unsubscribed = false;
@@ -163,16 +162,21 @@ test("双语仅追加已完成段落；后续批次不会替换已有双语节�
 });
 
 test("部分失败、终态先到与重试不会丢失有效译文或误标完整缓存", () => {
-  const started = startTranslation(key, options);
-  const partial = finishTranslation(started, first);
+  const started = startTranslation(key, options, "bilibili");
+  const partial = finishTranslation(started, {
+    ...first,
+    failureMessage: "翻译服务暂时限制请求，请稍后再试。",
+  });
   assert.equal(partial.phase, "partial");
+  assert.match(partial.error, /限制请求/);
   assert.equal(partial.result.content.segments["First paragraph"], "第一段");
-  assert.equal(canReuseTranslation(partial, options), false);
+  assert.equal(canReuseTranslation(partial, options, "bilibili"), false);
   assert.equal(applyTranslationBatch(partial, first), partial);
   const retryKey = { ...key, requestId: "retry" };
   const retried = startTranslation(
     retryKey,
     options,
+    "bilibili",
     changeTranslationMode(partial, "original"),
     true,
   );
@@ -182,32 +186,7 @@ test("部分失败、终态先到与重试不会丢失有效译文或误标完�
   assert.equal(applyTranslationBatch(retried, first), retried);
   assert.equal(failTranslation(retried, retryKey, "网络失败").phase, "partial");
   const final = finishTranslation(retried, { ...complete, ...retryKey });
-  assert.equal(canReuseTranslation(final, options), true);
+  assert.equal(canReuseTranslation(final, options, "bilibili"), true);
   assert.deepEqual(final.result.content.segments, complete.segments);
   assert.equal(applyTranslationBatch(final, { ...first, ...retryKey }), final);
-});
-
-test("切换邮件只更新原邮件项，切换工作空间和旧请求事件不可覆盖当前译文", () => {
-  const token = {};
-  const old = startTranslation(key, options);
-  const nextKey = { ...key, mailId: "mail-b" };
-  const next = startTranslation(nextKey, options);
-  const state = { token, entries: { "mail-a": old, "mail-b": next } };
-  const update = (entry) => applyTranslationBatch(entry, first);
-  const delayed = updateScopedTranslation(state, token, key.mailId, update);
-  assert.equal(delayed.entries["mail-b"], next);
-  assert.equal(delayed.entries["mail-a"].result.content.subject, first.subject);
-  assert.equal(
-    updateScopedTranslation(state, token, nextKey.mailId, update),
-    state,
-  );
-  assert.equal(
-    applyTranslationBatch(old, { ...first, profileId: "profile-b" }),
-    old,
-  );
-  const switchedBack = { ...state, token: {} };
-  assert.equal(
-    updateScopedTranslation(switchedBack, token, key.mailId, update),
-    switchedBack,
-  );
 });

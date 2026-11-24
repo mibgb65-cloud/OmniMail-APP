@@ -1,0 +1,32 @@
+.ai-draft-actions,
+.ai-draft-head {
+  flex-wrap: wrap;
+}
+
+.ai-draft-actions > :first-child {
+  flex: 1;
+}
+
+.ai-draft-language {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-ai);
+  border-radius: 8px;
+  background: var(--bg-surface);
+}
+
+.ai-draft-language .btn {
+  height: 23px;
+  padding-inline: 7px;
+  font-size: 11px;
+}
+
+.ai-draft-language .btn[aria-pressed="true"] {
+  background: var(--bg-ai-subtle);
+  color: var(--brand-ai);
+}
+
+.ai-draft-text {
+  white-space: pre-wrap;
+}

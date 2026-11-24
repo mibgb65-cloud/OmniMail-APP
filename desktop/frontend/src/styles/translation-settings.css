@@ -1,0 +1,33 @@
+.translation-settings,
+.translation-engine-form {
+  display: grid;
+  gap: 12px;
+}
+
+.translation-settings-heading,
+.translation-test-result {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.translation-setting-note {
+  margin: 0;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.translation-settings .settings-row > select {
+  width: min(100%, 280px);
+}
+
+.translation-settings label.settings-row {
+  flex-wrap: wrap;
+}
+
+.translation-timeout-input {
+  width: 64px;
+}
+
+.translation-engine-save {
+  justify-self: end;
+}

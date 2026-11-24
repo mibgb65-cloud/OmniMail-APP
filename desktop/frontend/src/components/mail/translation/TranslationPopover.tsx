@@ -135,11 +135,12 @@ export function TranslationPopover({
         </label>
         <p className="text-xs text-muted">
           {t.disabled
-            ? "此邮件不可翻译，或尚未启用翻译所需的模型。"
+            ? t.disabledReason || "请先打开要翻译的邮件。"
             : options.source === options.target
               ? "请选择与源语言不同的目标语言。"
               : "开始后会向翻译引擎发送正文文字及所选主题，不发送邮件头、图片或附件。"}
         </p>
+        <span className="text-xs text-muted">翻译引擎：{t.engineLabel}</span>
         <footer className="row-between">
           <button
             type="button"
@@ -149,7 +150,7 @@ export function TranslationPopover({
               workspace.setOverlay({ type: "settings", tab: "translation" });
             }}
           >
-            翻译设置
+            前往翻译设置
           </button>
           <button
             type="button"

@@ -95,11 +95,13 @@ func LoadProfileSettings(profileDir string) AppSettings {
 		_ = SaveProfileSettings(profileDir, def)
 		return def
 	}
-	var loaded AppSettings
+	// 旧工作空间缺失的键继承默认值；JSON 中显式保存的 false 不会被覆盖。
+	loaded := def
 	if err := json.Unmarshal(raw, &loaded); err != nil {
 		return def
 	}
 	loaded.AiApiKeyMasked = ""
+	normalizeStoredTranslationSettings(&loaded)
 	if loaded.SyncIntervalMinutes <= 0 {
 		loaded.SyncIntervalMinutes = def.SyncIntervalMinutes
 	}

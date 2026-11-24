@@ -86,6 +86,7 @@ func runTwoTranslationBatches(t *testing.T, failSecond bool) {
 	defer server.Close()
 	defer release()
 	settings := config.DefaultAppSettings()
+	settings.TranslationProvider = config.TranslationProviderAI
 	settings.AiEnabled, settings.AiProvider, settings.AiBaseURL = true, "custom", server.URL
 	if err := config.SaveProfileSettings(dir, settings); err != nil {
 		t.Fatal(err)
@@ -113,7 +114,7 @@ func runTwoTranslationBatches(t *testing.T, failSecond bool) {
 	}
 	done := make(chan outcome, 1)
 	go func() {
-		result, err := NewGateway(bus).TranslateMail(session, req)
+		result, err := NewGateway(bus).TranslateMail(ctx, session, req)
 		done <- outcome{result, err}
 	}()
 	var first events.MailTranslationBatchPayload

@@ -50,6 +50,7 @@ func TestMailTranslationUsesVisibleTextAndExplicitConsent(t *testing.T) {
 	}))
 	defer server.Close()
 	settings := config.DefaultAppSettings()
+	settings.TranslationProvider = config.TranslationProviderAI
 	settings.AiEnabled, settings.AiProvider, settings.AiBaseURL = true, "custom", server.URL
 	if err := config.SaveProfileSettings(dir, settings); err != nil {
 		t.Fatal(err)
@@ -59,14 +60,14 @@ func TestMailTranslationUsesVisibleTextAndExplicitConsent(t *testing.T) {
 	request := TranslateMailRequest{MailID: "mail-a", RequestID: "00000000-0000-4000-8000-000000000001", Source: "auto", Target: "zh-CN", IncludeSubject: true}
 	mismatch := request
 	mismatch.ProfileID = "other-profile"
-	if _, err := gateway.TranslateMail(session, mismatch); apperr.CodeOf(err) != apperr.CodeInvalidInput {
+	if _, err := gateway.TranslateMail(t.Context(), session, mismatch); apperr.CodeOf(err) != apperr.CodeInvalidInput {
 		t.Fatalf("工作空间不匹配时不得翻译: %v", err)
 	}
-	if _, err := gateway.TranslateMail(session, request); apperr.CodeOf(err) != apperr.CodeAiConsentRequired {
+	if _, err := gateway.TranslateMail(t.Context(), session, request); apperr.CodeOf(err) != apperr.CodeAiConsentRequired {
 		t.Fatalf("未确认时不得翻译: %v", err)
 	}
 	request.ConsentConfirmed = true
-	result, err := gateway.TranslateMail(session, request)
+	result, err := gateway.TranslateMail(t.Context(), session, request)
 	if err != nil || result.Source != "en" || result.Subject != "构建说明" ||
 		result.Segments["Read more"] != "查看更多" || result.Segments["Build completed"] != "构建完成" {
 		t.Fatalf("邮件翻译映射错误: %v", err)
@@ -89,11 +90,13 @@ func TestTranslationBatchValidation(t *testing.T) {
 	}
 }
 
-func TestMailAnalysisUsesDifferentSummaryAndDraftLanguages(t *testing.T) {
-	prompt := mailAnalysisPrompt("en", mailUILanguage("zh-CN"), "friendly")
-	for _, expected := range []string{"用简体中文撰写", "draftReply 必须使用英语", "自然、友好"} {
-		if !strings.Contains(prompt, expected) {
-			t.Errorf("摘要提示缺少 %q", expected)
-		}
+func TestMailActionsUseDifferentSummaryAndDraftLanguages(t *testing.T) {
+	summary := mailSummaryPrompt("en", mailUILanguage("zh-CN"))
+	if !strings.Contains(summary, "用简体中文输出") || strings.Contains(summary, "draftReply") {
+		t.Fatal("摘要应使用界面语言，不请求回复草稿")
+	}
+	draft := mailDraftPrompt(MailDraftOptions{SourceLanguage: "en", TargetLanguage: "original", Tone: "friendly"})
+	if !strings.Contains(draft, "原邮件正文的主要语言（英语）与友好语气") || strings.Contains(draft, "summaryTitle") {
+		t.Fatal("拟稿应使用原文语言及指定语气，不请求摘要")
 	}
 }

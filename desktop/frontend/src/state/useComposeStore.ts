@@ -23,9 +23,14 @@ function draftContentFingerprint(d: ComposeDraftState): string {
 export function useComposeStore(
   accounts: EmailAccount[],
   defaultAccountId: string,
+  quickReplyScope: string,
 ) {
   const [draft, setDraft] = useState<ComposeDraftState | null>(null);
-  const [quickReplyText, setQuickReplyText] = useState("");
+  const [quickReply, setQuickReply] = useState({ scope: "", text: "" });
+  const quickReplyText =
+    quickReply.scope === quickReplyScope ? quickReply.text : "";
+  const setQuickReplyText = (text: string) =>
+    setQuickReply({ scope: quickReplyScope, text });
   const lastSavedFpRef = useRef("");
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { aiApi } from "../services/backendClient";
+import type { MailAiAction } from "../types/mailAi";
 import type { AiRunStatus } from "../types/workspace";
 import {
   useAiStreamEvents,
@@ -11,46 +11,60 @@ import {
 export interface AiMailRun {
   requestId: string;
   mailId: string;
-  kind: "analysis" | "chat" | "demo";
-  question: string;
+  action: MailAiAction;
+  autoTriggered: boolean;
+  cancel?: () => void;
 }
+
+const idle = { status: "idle" as const, detail: "" };
 
 export function useAiMailRequest(
   saveTurnPair: (run: AiMailRun, answer: string) => void,
 ) {
-  const [aiStatus, setAiStatus] = useState<AiRunStatus>("idle");
-  const [errorDetail, setErrorDetail] = useState("");
+  const [result, setResult] = useState<{
+    run?: AiMailRun;
+    status: AiRunStatus;
+    detail: string;
+  }>(idle);
+  const [sensitive, setSensitive] = useState<ReadonlySet<string>>(new Set());
+  const failed = useRef(new Set<string>());
   const [pending, setPending] = useState<
     (AiMailRun & { answer: string }) | null
   >(null);
   const active = useRef<AiMailRun | null>(null);
+
+  const markFailure = useCallback((mailId: string, status: AiRunStatus) => {
+    failed.current.add(mailId);
+    if (status === "disabled-sensitive")
+      setSensitive((prev) => new Set(prev).add(mailId));
+  }, []);
 
   const settle = useCallback(
     (run: AiMailRun, status: AiRunStatus, detail = "") => {
       if (active.current !== run) return false;
       active.current = null;
       setPending(null);
-      setAiStatus(status);
-      setErrorDetail(detail);
+      if (status !== "idle") markFailure(run.mailId, status);
+      setResult(status === "idle" ? idle : { run, status, detail });
       return true;
     },
-    [],
+    [markFailure],
   );
 
   const begin = useCallback(
-    (mailId: string, kind: AiMailRun["kind"], question: string) => {
-      if (active.current) return null;
+    (mailId: string, action: MailAiAction, autoTriggered: boolean) => {
+      if (active.current || (autoTriggered && failed.current.has(mailId)))
+        return null;
       // 在 IPC 调用前登记 ID，避免快速模型的第一段/完成事件先于 IPC 返回。
       const run: AiMailRun = {
         requestId: `aireq-${window.crypto.randomUUID()}`,
         mailId,
-        kind,
-        question,
+        action,
+        autoTriggered,
       };
       active.current = run;
-      setAiStatus("processing");
-      setErrorDetail("");
-      if (kind === "chat") setPending({ ...run, answer: "" });
+      setResult({ run, status: "processing", detail: "" });
+      if (action.kind === "chat") setPending({ ...run, answer: "" });
       return run;
     },
     [],
@@ -59,7 +73,11 @@ export function useAiMailRequest(
   const getActive = useCallback(
     (requestId: string, mailId: string | undefined) => {
       const run = active.current;
-      return run?.requestId === requestId && run.mailId === mailId ? run : null;
+      return run?.action.kind === "chat" &&
+        run.requestId === requestId &&
+        run.mailId === mailId
+        ? run
+        : null;
     },
     [],
   );
@@ -94,26 +112,33 @@ export function useAiMailRequest(
 
   useAiStreamEvents({ onChunk, onDone, onError });
 
-  const stopGeneration = useCallback(() => {
-    const run = active.current;
-    if (!run || run.kind === "analysis") return;
-    settle(run, "idle");
-    if (run.kind === "chat")
-      void aiApi.cancelRequest(run.requestId).catch(() => undefined);
-  }, [settle]);
+  const stopGeneration = useCallback(
+    (mailId?: string, onlyAuto = false) => {
+      const run = active.current;
+      if (
+        !run ||
+        (mailId && mailId !== run.mailId) ||
+        (onlyAuto && !run.autoTriggered)
+      )
+        return;
+      settle(run, "idle");
+      run.cancel?.();
+    },
+    [settle],
+  );
 
   const resetRequest = useCallback(() => {
     stopGeneration();
-    const run = active.current;
-    if (run) settle(run, "idle");
-    setAiStatus("idle");
-    setErrorDetail("");
-  }, [settle, stopGeneration]);
+    failed.current.clear();
+    setSensitive(new Set());
+    setResult(idle);
+  }, [stopGeneration]);
 
   return {
-    aiStatus,
-    setAiStatus,
-    errorDetail,
+    result,
+    dismissStatus: () => setResult(idle),
+    sensitive,
+    markFailure,
     pending,
     getActive,
     begin,

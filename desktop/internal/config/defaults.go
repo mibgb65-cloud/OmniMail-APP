@@ -23,6 +23,11 @@ func DefaultAppSettings() AppSettings {
 		DefaultFontFamily:             "Inter / Noto Sans SC",
 		AutoAppendSignature:           true,
 		AiEnabled:                     false,
+		TranslationEnabled:            true,
+		TranslationProvider:           TranslationProviderFree,
+		TranslationEndpoint:           DefaultTranslationEndpoint,
+		TranslationTimeoutSec:         DefaultTranslationTimeoutSec,
+		AiAutoSummarizeOnOpen:         false,
 		AiRequireConfirmEachTime:      true,
 		AiProvider:                    "openai",
 		AiModel:                       "gpt-4.1-mini",
@@ -105,6 +110,23 @@ func ApplySettingsPatch(cur AppSettings, p AppSettingsPatch) AppSettings {
 	}
 	if p.AiEnabled != nil {
 		out.AiEnabled = *p.AiEnabled
+	}
+	if p.TranslationEnabled != nil {
+		out.TranslationEnabled = *p.TranslationEnabled
+	}
+	if p.TranslationProvider != nil {
+		out.TranslationProvider = *p.TranslationProvider
+	}
+	if p.TranslationEndpoint != nil {
+		if endpoint, err := NormalizeTranslationEndpoint(*p.TranslationEndpoint); err == nil {
+			out.TranslationEndpoint = endpoint
+		}
+	}
+	if p.TranslationTimeoutSec != nil {
+		out.TranslationTimeoutSec = *p.TranslationTimeoutSec
+	}
+	if p.AiAutoSummarizeOnOpen != nil {
+		out.AiAutoSummarizeOnOpen = *p.AiAutoSummarizeOnOpen
 	}
 	if p.AiRequireConfirmEachTime != nil {
 		out.AiRequireConfirmEachTime = *p.AiRequireConfirmEachTime

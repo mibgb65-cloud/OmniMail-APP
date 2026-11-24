@@ -58,12 +58,3 @@ export const AI_INSIGHTS_BY_MAIL: Record<string, AiMailInsight> = {
       "财务同学好，11 月云服务账单明细已核对无误，同意归档报销，感谢！",
   },
 };
-
-export const DEFAULT_AI_INSIGHT: AiMailInsight = {
-  summaryTitle: "这封邮件讲了什么",
-  summary:
-    "发件人同步了最新协作进展并附带待确认事项；正文仅在你主动触发 Omni AI 时进行本地摘要，不包含发件人地址或附件。",
-  deadlines: [{ label: "查看并按需回复", timeText: "今日待办" }],
-  draftTag: "简洁 · 专业",
-  draftReply: "收到，感谢同步！我已查阅详细内容，稍后给出具体反馈。",
-};

@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { accountApi, parseBackendError } from "../services/backendClient";
+import type { MailAiAction } from "../types/mailAi";
 import { useAiStore } from "./useAiStore";
 import { useComposeStore } from "./useComposeStore";
 import { useDesktopBridge } from "./useDesktopBridge";
@@ -30,6 +31,7 @@ function useAppController() {
   const composeStore = useComposeStore(
     workspace.accounts,
     workspace.settings.defaultSendAccountId,
+    `${workspace.activeProfileId}:${mailStore.selectedMail?.id ?? ""}`,
   );
 
   const { leftNavOpen, setLeftNavOpen } = workspace;
@@ -102,37 +104,34 @@ function useAppController() {
   );
 
   const requestAiAction = useCallback(
-    (actionLabel: string, prompt: string) => {
+    (actionLabel: string, action: MailAiAction) => {
       const cur = mailStore.selectedMail;
       if (
         !cur ||
         !workspace.settings.aiEnabled ||
-        aiStore.aiStatus === "processing"
+        aiStore.result.status === "processing"
       )
         return;
+      workspace.setLeftNavOpen(false);
+      aiStore.setAiOpen(true);
       if (
         cur.folder === "spam" ||
         cur.folder === "trash" ||
-        cur.securityWarning?.level === "danger"
-      ) {
-        toastStore.pushToast({
-          tone: "warning",
-          title: "已按隐私规则拦截敏感邮件 AI 读取",
-        });
+        cur.securityWarning?.level === "danger" ||
+        aiStore.sensitive.has(cur.id)
+      )
         return;
-      }
-      workspace.setLeftNavOpen(false);
-      aiStore.setAiOpen(true);
       if (workspace.settings.aiRequireConfirmEachTime) {
         workspace.setOverlay({
           type: "ai-consent",
           actionLabel,
-          onConfirmPrompt: prompt,
+          action,
           mailId: cur.id,
+          profileId: workspace.activeProfileId,
         });
-      } else aiStore.runPrompt(cur, prompt, false);
+      } else aiStore.runAction(cur.id, action, false);
     },
-    [mailStore.selectedMail, workspace, aiStore, toastStore],
+    [mailStore.selectedMail, workspace, aiStore],
   );
 
   useGlobalShortcuts({

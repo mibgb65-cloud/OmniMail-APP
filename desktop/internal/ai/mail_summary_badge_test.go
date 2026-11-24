@@ -1,7 +1,6 @@
 package ai
 
 import (
-	"context"
 	"testing"
 
 	"omnimail/internal/search"
@@ -50,10 +49,10 @@ func TestSummaryAndListFlagWriteAtomically(t *testing.T) {
 		BEGIN SELECT RAISE(ABORT, 'test write rejection'); END`); err != nil {
 		t.Fatal(err)
 	}
-	if err := saveMailInsight(context.Background(), db, "mail-a", AiMailInsight{Summary: "测试摘要"}); err == nil {
+	if _, err := saveMailInsight(t.Context(), db, "mail-a", "test", "", map[string]any{"summary": "测试摘要"}, true); err == nil {
 		t.Fatal("列表标记写入失败应返回错误")
 	}
-	if insight, _ := NewGateway(nil).GetCachedInsight(db, "mail-a"); insight != nil {
+	if insight, _, err := NewGateway(nil).GetCachedInsight(t.Context(), db, "mail-a"); err != nil || insight != nil {
 		t.Fatal("标记写入失败时必须回滚摘要")
 	}
 }

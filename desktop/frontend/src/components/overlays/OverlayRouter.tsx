@@ -69,8 +69,9 @@ function renderModal(ov: Exclude<OverlayModal, { type: "none" }>) {
       return (
         <AiConsentModal
           actionLabel={ov.actionLabel}
-          onConfirmPrompt={ov.onConfirmPrompt}
+          action={ov.action}
           mailId={ov.mailId}
+          profileId={ov.profileId}
         />
       );
     case "snooze":

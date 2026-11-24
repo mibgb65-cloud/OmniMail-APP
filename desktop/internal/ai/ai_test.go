@@ -49,22 +49,22 @@ func TestPrivacyGuardFiveGatesAndGatewayCache(t *testing.T) {
 
 	settings := config.DefaultAppSettings()
 	settings.AiEnabled = false
-	if _, err := PrepareMailContext(db, settings, "m-ok", true); apperr.CodeOf(err) != apperr.CodeAiDisabled {
+	if _, err := PrepareMailContext(t.Context(), db, settings, "m-ok", true, false); apperr.CodeOf(err) != apperr.CodeAiDisabled {
 		t.Fatalf("Gate 1 failed: expected ERR_AI_DISABLED, got %v", err)
 	}
 
 	settings.AiEnabled = true
 	settings.AiRequireConfirmEachTime = true
-	if _, err := PrepareMailContext(db, settings, "m-otp", true); apperr.CodeOf(err) != apperr.CodeAiSensitiveBlocked {
+	if _, err := PrepareMailContext(t.Context(), db, settings, "m-otp", true, false); apperr.CodeOf(err) != apperr.CodeAiSensitiveBlocked {
 		t.Fatalf("Gate 3 failed: expected ERR_AI_SENSITIVE_BLOCKED on OTP mail, got %v", err)
 	}
-	if _, err := PrepareMailContext(db, settings, "m-ok", false); apperr.CodeOf(err) != apperr.CodeAiConsentRequired {
+	if _, err := PrepareMailContext(t.Context(), db, settings, "m-ok", false, false); apperr.CodeOf(err) != apperr.CodeAiConsentRequired {
 		t.Fatalf("Gate 2 failed: expected ERR_AI_CONSENT_REQUIRED, got %v", err)
 	}
 
 	settings.AiProvider = "custom"
 	settings.AiIncludeSenderAndAttachments = false
-	ctxText, err := PrepareMailContext(db, settings, "m-ok", true)
+	ctxText, err := PrepareMailContext(t.Context(), db, settings, "m-ok", true, false)
 	if err != nil {
 		t.Fatalf("PrepareMailContext valid failed: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestPrivacyGuardFiveGatesAndGatewayCache(t *testing.T) {
 		t.Fatal("strict mode included the mail subject")
 	}
 	settings.AiIncludeSenderAndAttachments = true
-	ctxText, err = PrepareMailContext(db, settings, "m-ok", true)
+	ctxText, err = PrepareMailContext(t.Context(), db, settings, "m-ok", true, false)
 	if err != nil || !strings.Contains(ctxText, "项目进度") || !strings.Contains(ctxText, "请于周五前反馈") {
 		t.Fatalf("subject mode did not include subject and body: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestPrivacyGuardFiveGatesAndGatewayCache(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		atomic.AddInt32(&httpCalls, 1)
 		w.Header().Set("Content-Type", "text/event-stream")
-		payload := `{"summaryTitle":"周五反馈进度","summary":"请在本周五前提交项目反馈。","deadlines":[{"label":"提交反馈","timeText":"本周五","urgent":true}],"draftTag":"建议回复","draftReply":"收到，周五前反馈。"}`
+		payload := `{"summaryTitle":"周五反馈进度","summary":"请在本周五前提交项目反馈。","deadlines":[{"label":"提交反馈","timeText":"本周五","urgent":true}],"sourceLanguage":"zh-CN"}`
 		_, _ = fmt.Fprintf(w, "data: {\"choices\":[{\"delta\":{\"content\":%q}}]}\n\ndata: [DONE]\n\n", payload)
 	}))
 	defer srv.Close()
@@ -108,9 +108,9 @@ func TestPrivacyGuardFiveGatesAndGatewayCache(t *testing.T) {
 	sess := &profilemgr.Session{ProfileDir: dir, DB: db, Vault: vault, Ctx: ctx, Cancel: cancel}
 	gw := NewGateway(events.NewBus())
 
-	ins1, err := gw.AnalyzeMail(sess, "m-ok", true, false)
+	ins1, err := gw.SummarizeMail(t.Context(), sess, "m-ok", true, false, MailSummaryOptions{})
 	if err != nil || ins1.SummaryTitle != "周五反馈进度" || atomic.LoadInt32(&httpCalls) != 1 {
-		t.Fatalf("AnalyzeMail 1 failed: %+v, calls=%d, err=%v", ins1, httpCalls, err)
+		t.Fatalf("首次摘要失败：calls=%d, err=%v", httpCalls, err)
 	}
 	page, err := search.ListMessages(db, search.MailSearchQuery{Folder: "inbox"}, true)
 	if err != nil || len(page.Items) != 2 {
@@ -121,8 +121,8 @@ func TestPrivacyGuardFiveGatesAndGatewayCache(t *testing.T) {
 			t.Fatal("邮件列表仅应为成功完成摘要的邮件返回标记")
 		}
 	}
-	ins2, err := gw.AnalyzeMail(sess, "m-ok", true, false)
+	ins2, err := gw.SummarizeMail(t.Context(), sess, "m-ok", true, false, MailSummaryOptions{})
 	if err != nil || !ins2.Cached || atomic.LoadInt32(&httpCalls) != 1 {
-		t.Fatalf("expected second AnalyzeMail to hit SQLite cache with 0 extra HTTP calls, got cached=%v calls=%d", ins2.Cached, httpCalls)
+		t.Fatalf("二次打开应命中 SQLite 且无新增请求：cached=%v calls=%d err=%v", ins2.Cached, httpCalls, err)
 	}
 }

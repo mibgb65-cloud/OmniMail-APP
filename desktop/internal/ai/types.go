@@ -27,16 +27,31 @@ type AiDeadlineItem struct {
 }
 
 type AiMailInsight struct {
-	SummaryTitle    string           `json:"summaryTitle"`
-	Summary         string           `json:"summary"`
-	Deadlines       []AiDeadlineItem `json:"deadlines"`
-	DraftTag        string           `json:"draftTag"`
-	DraftReply      string           `json:"draftReply"`
-	SummaryLanguage string           `json:"summaryLanguage,omitempty"`
-	DraftLanguage   string           `json:"draftLanguage,omitempty"`
-	DraftTone       string           `json:"draftTone,omitempty"`
-	Cached          bool             `json:"cached,omitempty"`
-	ModelName       string           `json:"modelName,omitempty"`
+	SummaryTitle        string           `json:"summaryTitle"`
+	Summary             string           `json:"summary"`
+	Deadlines           []AiDeadlineItem `json:"deadlines"`
+	DraftTag            string           `json:"draftTag"`
+	DraftReply          string           `json:"draftReply"`
+	SummaryLanguage     string           `json:"summaryLanguage,omitempty"`
+	SourceLanguage      string           `json:"sourceLanguage,omitempty"`
+	DraftLanguage       string           `json:"draftLanguage,omitempty"`
+	DraftTargetLanguage string           `json:"draftTargetLanguage,omitempty"`
+	DraftTone           string           `json:"draftTone,omitempty"`
+	Cached              bool             `json:"cached,omitempty"`
+	ModelName           string           `json:"modelName,omitempty"`
+}
+
+type MailSummaryOptions struct {
+	RequestID      string `json:"requestId"`
+	SourceLanguage string `json:"sourceLanguage"`
+	AutoTriggered  bool   `json:"autoTriggered"`
+}
+
+type MailDraftOptions struct {
+	RequestID      string `json:"requestId"`
+	SourceLanguage string `json:"sourceLanguage"`
+	TargetLanguage string `json:"targetLanguage"`
+	Tone           string `json:"tone"`
 }
 
 type AiChatTurn struct {

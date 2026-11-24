@@ -4,7 +4,7 @@ import { useApp } from "../../state/AppContext";
 import type { SettingsTabId } from "../../types/settings";
 import { Icon } from "../common/Icon";
 import { AccountsTab } from "./AccountsTab";
-import { AiSettingsTab } from "./AiSettingsTab";
+import { AiSettingsModeBadge, AiSettingsTab } from "./AiSettingsTab";
 import { AutoReplyTab } from "./AutoReplyTab";
 import { ComposeTab } from "./ComposeTab";
 import { GeneralTab } from "./GeneralTab";
@@ -151,9 +151,14 @@ export function SettingsModal({
         <section className="settings-content">
           <div className="modal-header">
             <div style={{ minWidth: 0 }}>
-              <h2 className="modal-title truncate">{activeMeta.label}</h2>
+              <div className="row" style={{ gap: 8 }}>
+                <h2 className="modal-title truncate">{activeMeta.label}</h2>
+                {tab === "ai" && <AiSettingsModeBadge />}
+              </div>
               <div className="modal-sub truncate">
-                调整外观、语言、桌面窗口行为与本地存储偏好
+                {tab === "ai"
+                  ? "连接模型服务，并控制邮件内容的使用范围"
+                  : "调整外观、语言、桌面窗口行为与本地存储偏好"}
               </div>
             </div>
             <button

@@ -20,8 +20,11 @@ export interface AiMailInsight {
   draftTag: string;
   draftReply: string;
   summaryLanguage?: string;
+  sourceLanguage?: string;
   draftLanguage?: string;
+  draftTargetLanguage?: string;
   draftTone?: string;
+  cached?: boolean;
 }
 
 export interface AiChatTurn {
