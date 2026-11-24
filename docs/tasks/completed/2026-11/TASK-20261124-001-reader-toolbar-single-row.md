@@ -11,4 +11,8 @@
 
 - 工具栏固定为单行。按阅读区实际内容宽度和前端样式共用的按钮占位决定收纳档位；优先缩短文案及将低频操作移入「更多」，翻译、上一封/下一封和 AI 始终保留。极窄视口下使用横向滚动兜底。
 - `task verify` 和 `git diff --check` 通过。前端 27 项测试通过，新用例覆盖截图附近宽度、收纳临界点和极窄兜底；开发 EXE 已构建。
-- 已更新[手工回归清单](../../../development/TESTING.md)。未启动 Windows 应用目视验收，未提交 Git，未打包 Beta。
+- 已更新[手工回归清单](../../../development/TESTING.md)。未启动 Windows 应用目视验收。
+
+## Beta 本地更新
+
+- 已随实现提交 `d1031a18bc8a0d8d751be77294a82204a514740c` 纳入 [v0.0.1.beta.7 Windows x64 本地更新包](TASK-20261124-002-windows-beta-7-local-release.md#构建结果)。本次打包未重跑测试。
