@@ -2,6 +2,10 @@ import { useState } from "react";
 import { useI18n } from "../../i18n";
 import { profileApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
+import {
+  clearTrustedDomains,
+  listTrustedDomains,
+} from "../mail/reader/externalLinkGuard";
 import { SwitchRow } from "./SwitchRow";
 
 export function PrivacyTab() {
@@ -9,6 +13,17 @@ export function PrivacyTab() {
   const { t } = useI18n();
   const s = workspace.settings;
   const [savingImagePolicy, setSavingImagePolicy] = useState(false);
+  const [, setTrustedVersion] = useState(0);
+  const trustedDomains = listTrustedDomains(workspace.activeProfileId);
+
+  const handleClearTrusted = () => {
+    clearTrustedDomains(workspace.activeProfileId);
+    setTrustedVersion((v) => v + 1);
+    toastStore.pushToast({
+      tone: "info",
+      title: t("externalLink.settingsClearedToast"),
+    });
+  };
 
   async function saveImagePolicy(blockRemoteImages: boolean) {
     setSavingImagePolicy(true);
@@ -55,6 +70,38 @@ export function PrivacyTab() {
             workspace.updateSettings({ localEncryptionEnabled: v })
           }
         />
+        <div className="settings-row">
+          <div>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "var(--text-ink)",
+              }}
+            >
+              {t("externalLink.settingsTitle")}
+            </div>
+            <div
+              className="text-xs text-muted"
+              style={{ marginTop: 2, lineHeight: 1.5 }}
+            >
+              {trustedDomains.length > 0
+                ? t("externalLink.settingsCountDesc", {
+                    count: trustedDomains.length,
+                  })
+                : t("externalLink.settingsEmptyDesc")}
+            </div>
+          </div>
+          {trustedDomains.length > 0 && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={handleClearTrusted}
+            >
+              {t("externalLink.settingsClearBtn")}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="settings-card">

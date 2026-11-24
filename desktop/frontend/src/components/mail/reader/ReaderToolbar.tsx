@@ -1,15 +1,14 @@
 import { useI18n } from "../../../i18n";
 import { useApp } from "../../../state/AppContext";
 import type { MailItem } from "../../../types/mail";
-import type { ActionMenuEntry } from "../../common/ActionMenu";
+import type { DarkHtmlMode } from "../../../types/settings";
 import { Icon } from "../../common/Icon";
 import { Tooltip } from "../../common/Tooltip";
 import { ReaderTranslateButton } from "../translation/ReaderTranslateButton";
+import { HtmlThemeModeToggle } from "./HtmlThemeModeToggle";
 import { ReaderMoreMenu } from "./ReaderMoreMenu";
-import {
-  getReaderToolbarSlotStyles,
-  type ReaderActionId,
-} from "./readerToolbarLayout";
+import { getReaderToolbarSlotStyles } from "./readerToolbarLayout";
+import { useReaderToolbarActions } from "./useReaderToolbarActions";
 import { useReaderToolbarLayout } from "./useReaderToolbarLayout";
 
 export function ReaderToolbar({
@@ -17,88 +16,35 @@ export function ReaderToolbar({
   currentIndex,
   totalCount,
   scrolled = false,
+  showHtmlThemeToggle = false,
+  htmlThemeMode = "adaptive",
+  onHtmlThemeModeChange,
   onNavigate,
 }: {
   mail: MailItem;
   currentIndex: number;
   totalCount: number;
   scrolled?: boolean;
+  showHtmlThemeToggle?: boolean;
+  htmlThemeMode?: DarkHtmlMode;
+  onHtmlThemeModeChange?: (mode: DarkHtmlMode) => void;
   onNavigate: (delta: -1 | 1) => void;
 }) {
-  const { lang, t, localizeText } = useI18n();
-  const { workspace, mailStore, composeStore, aiStore, toastStore } = useApp();
-  const { ref, layout } = useReaderToolbarLayout();
+  const { lang, t } = useI18n();
+  const { workspace, aiStore } = useApp();
+  const reservedToggleWidth = showHtmlThemeToggle
+    ? lang === "en-US"
+      ? 206
+      : 162
+    : 0;
+  const { ref, layout } = useReaderToolbarLayout(reservedToggleWidth);
+  const { actions, handleDelete } = useReaderToolbarActions(mail);
   const aiLabel = t(aiStore.aiOpen ? "reader.hideAi" : "reader.showAi");
   const deleteTip = t(
     mail.folder === "trash"
       ? "reader.permanentDeleteTip"
       : "reader.moveToTrashTip",
   );
-  const replyLock = workspace.settings.lockReplyToOriginalAccount;
-  const actions: Array<
-    Extract<ActionMenuEntry, { label: string }> & { id: ReaderActionId }
-  > = [
-    {
-      id: "reply",
-      icon: "reply",
-      label: t("reader.reply"),
-      onSelect: () => composeStore.openReplyCompose(mail, "reply", replyLock),
-    },
-    {
-      id: "forward",
-      icon: "forward",
-      label: t("reader.forward"),
-      shortcut: "F",
-      onSelect: () => composeStore.openReplyCompose(mail, "forward", false),
-    },
-    {
-      id: "archive",
-      icon: "archive",
-      label: t("reader.archive"),
-      onSelect: () => {
-        mailStore.moveMails([mail.id], "archive");
-        toastStore.pushToast({ tone: "info", title: t("toasts.mailArchived") });
-      },
-    },
-    {
-      id: "snooze",
-      icon: "clock",
-      label: t("reader.snooze"),
-      shortcut: "H",
-      onSelect: () =>
-        workspace.setOverlay({ type: "snooze", mailIds: [mail.id] }),
-    },
-    {
-      id: "label",
-      icon: "tag",
-      label: t("reader.label"),
-      shortcut: "L",
-      onSelect: () =>
-        workspace.setOverlay({
-          type: "label-manage",
-          mailIds: [mail.id],
-          mode: "assign",
-        }),
-    },
-  ];
-
-  const handleDelete = () => {
-    if (mail.folder === "trash") {
-      const targetLabel = mail.subject.trim()
-        ? localizeText(mail.subject)
-        : t("common.noSubject");
-      workspace.setOverlay({
-        type: "danger-confirm",
-        kind: "permanent-delete",
-        targetId: mail.id,
-        targetLabel,
-      });
-      return;
-    }
-    mailStore.moveMails([mail.id], "trash");
-    toastStore.pushToast({ tone: "info", title: t("toasts.movedToTrash") });
-  };
-
   const visibleActions = actions.filter((a) => layout.actions.includes(a.id));
   const foldedActions = actions.filter((a) => !layout.actions.includes(a.id));
   const navText = `${currentIndex + 1} / ${totalCount}`;
@@ -127,6 +73,13 @@ export function ReaderToolbar({
           </button>
         ))}
         <ReaderTranslateButton key={mail.id} />
+        {showHtmlThemeToggle && onHtmlThemeModeChange && (
+          <HtmlThemeModeToggle
+            mode={htmlThemeMode}
+            iconOnly={layout.density === "icons"}
+            onChange={onHtmlThemeModeChange}
+          />
+        )}
         {layout.showDelete && (
           <Tooltip label={deleteTip} shortcut="Del">
             <button

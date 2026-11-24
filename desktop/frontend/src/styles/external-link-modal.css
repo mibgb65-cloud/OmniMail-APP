@@ -1,0 +1,182 @@
+/* 外链跳转安全确认弹窗 · 内容区、风险对比框与底部操作栏 */
+.ext-link-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+}
+
+.ext-link-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 11px;
+  background: var(--el-surf);
+  border: 1px solid var(--el-div);
+}
+
+.ext-link-box.is-danger {
+  padding: 12px;
+  background: var(--el-err-box);
+  border-color: var(--el-err-div);
+}
+
+.ext-link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ext-link-host {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--brand-accent);
+}
+
+.ext-link-host-text {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-ink);
+  word-break: break-all;
+}
+
+.ext-link-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ext-link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ext-link-chip.is-https {
+  background: var(--el-https-bg);
+  border: 1px solid var(--el-https-bd);
+  color: var(--el-https-fg);
+}
+
+.ext-link-chip.is-warn {
+  background: var(--el-warn-bg);
+  border: 1px solid var(--el-warn-bd);
+  color: var(--el-warn-fg);
+}
+
+.ext-link-url {
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--el-bg);
+  border: 1px solid var(--el-div);
+  color: var(--text-body);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 17px;
+  word-break: break-all;
+  max-height: 88px;
+  overflow-y: auto;
+}
+
+.ext-link-box.is-danger .ext-link-url {
+  padding: 9px;
+  line-height: 16px;
+  border-color: var(--el-err-div);
+  color: var(--el-err-fg);
+}
+
+.ext-link-div {
+  height: 1px;
+  background: var(--el-err-div);
+}
+
+.ext-link-k {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.ext-link-v {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-body);
+  word-break: break-all;
+}
+
+.ext-link-k-err {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--el-err-fg);
+}
+
+.ext-link-host-err {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  word-break: break-all;
+  background: var(--el-err-chip);
+  border: 1px solid var(--el-err-bd);
+  color: var(--el-err-ink);
+}
+
+.ext-link-warn-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--el-warn-fg);
+}
+
+.ext-link-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ext-link-reason-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--el-err-chip);
+  color: var(--el-err-ink);
+}
+
+.ext-link-modal-card .modal-footer {
+  padding: 12px 18px;
+  background: var(--el-surf);
+  border-top-color: var(--el-div);
+}
+
+.ext-link-risk-btn {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--status-danger);
+}
+
+.ext-link-risk-btn:hover {
+  background: color-mix(in srgb, var(--status-danger) 10%, transparent);
+}
+
+.ext-link-btn {
+  height: 32px;
+  font-size: 12px;
+}

@@ -51,7 +51,7 @@ func IngestMessage(db *sql.DB, blobs *storage.BlobStore, hooks PipelineHooks, in
 	}
 
 	msgID = deriveMessageID(in.AccountID, in.RemoteMailboxID, in.RemoteUID, rfcClean)
-	attRows, attNames, cidMap := prepareAttachmentRows(blobs, msgID, in.Parsed.Attachments)
+	attRows, attNames, cidMap := prepareAttachmentRows(blobs, msgID, in.Parsed.BodyHTML, in.Parsed.Attachments)
 	nowMs := time.Now().UnixMilli()
 
 	sanitizedHTML, hasRemoteImg := security.SanitizeMailHTML(in.Parsed.BodyHTML, cidMap)

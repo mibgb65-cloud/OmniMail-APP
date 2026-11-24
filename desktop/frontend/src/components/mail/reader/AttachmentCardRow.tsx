@@ -32,7 +32,14 @@ export function AttachmentCardRow({
   return (
     <div className="attachment-card" data-att-phase={phase}>
       <div
-        style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          minWidth: 0,
+          cursor: att.kind === "image" ? "pointer" : undefined,
+        }}
+        onClick={att.kind === "image" ? onPreview : undefined}
       >
         <span
           style={{

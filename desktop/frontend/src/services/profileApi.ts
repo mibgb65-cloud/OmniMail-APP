@@ -7,12 +7,12 @@ import type {
 import * as ProfileService from "../../bindings/omnimail/services/profileservice";
 import { INITIAL_SETTINGS } from "../data/settingsDefaults";
 import { readStoredLanguage, t } from "../i18n";
-import { isWailsDesktop, resolveThemeFromPref } from "../state/storageHelpers";
-import type {
-  AppSettings,
-  ThemeMode,
-  ThemePreference,
-} from "../types/settings";
+import {
+  isWailsDesktop,
+  readStoredDarkHtmlMode,
+  resolveThemeFromPref,
+} from "../state/storageHelpers";
+import type { AppSettings, ThemePreference } from "../types/settings";
 
 export type { CreateProfileRequest, ProfileSummary, UpdateProfileRequest };
 
@@ -52,22 +52,20 @@ export function mapBackendSettings(raw: Partial<AppSettings>): AppSettings {
       ? raw.themePreference
       : "system"
   ) as ThemePreference;
-  const resolved: ThemeMode = resolveThemeFromPref(pref);
-  const retention =
-    raw.offlineRetentionDays === 30 || raw.offlineRetentionDays === 180
-      ? raw.offlineRetentionDays
-      : 90;
-  const undo =
-    raw.undoSendSeconds === 5 || raw.undoSendSeconds === 20
-      ? raw.undoSendSeconds
-      : 10;
   return {
     ...INITIAL_SETTINGS,
     ...raw,
     themePreference: pref,
-    theme: resolved,
-    offlineRetentionDays: retention,
-    undoSendSeconds: undo,
+    theme: resolveThemeFromPref(pref),
+    darkHtmlMode: raw.darkHtmlMode ?? readStoredDarkHtmlMode(),
+    offlineRetentionDays:
+      raw.offlineRetentionDays === 30 || raw.offlineRetentionDays === 180
+        ? raw.offlineRetentionDays
+        : 90,
+    undoSendSeconds:
+      raw.undoSendSeconds === 5 || raw.undoSendSeconds === 20
+        ? raw.undoSendSeconds
+        : 10,
   };
 }
 

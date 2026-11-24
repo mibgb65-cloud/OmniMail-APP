@@ -4,12 +4,29 @@ import type {
   TargetDirCheck,
 } from "../../bindings/omnimail/models";
 import { t } from "../i18n";
-import type { ThemeMode, ThemePreference } from "../types/settings";
+import type {
+  DarkHtmlMode,
+  ThemeMode,
+  ThemePreference,
+} from "../types/settings";
 
 export const THEME_STORAGE_KEY = "omnimail:theme";
 export const THEME_PREF_STORAGE_KEY = "omnimail:theme-pref";
+export const DARK_HTML_MODE_STORAGE_KEY = "omnimail:dark-html-mode";
 export const BROWSER_DATADIR_KEY = "omnimail:data-dir";
 export const BROWSER_INIT_KEY = "omnimail:initialized";
+
+export function readStoredDarkHtmlMode(): DarkHtmlMode {
+  if (typeof window !== "undefined") {
+    try {
+      const saved = window.localStorage.getItem(DARK_HTML_MODE_STORAGE_KEY);
+      if (saved === "adaptive" || saved === "paper") return saved;
+    } catch {
+      // 忽略受限存储环境
+    }
+  }
+  return "adaptive";
+}
 
 let bridgeReady = false;
 

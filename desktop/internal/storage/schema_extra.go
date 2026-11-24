@@ -33,6 +33,8 @@ var extraSchemaStatements = []string{
 		scheduled_at     INTEGER NOT NULL DEFAULT 0,
 		updated_at       INTEGER NOT NULL
 	);`,
+	draftInlineImagesDDL,
+	draftInlineImagesIdxDDL,
 
 	`CREATE TABLE IF NOT EXISTS outbox_jobs (
 		id              TEXT PRIMARY KEY,

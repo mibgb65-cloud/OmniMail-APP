@@ -30,16 +30,18 @@ var coreSchemaStatements = []string{
 	);`,
 
 	`CREATE TABLE IF NOT EXISTS remote_mailboxes (
-		id             TEXT PRIMARY KEY,
-		account_id     TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-		remote_name    TEXT NOT NULL,
-		local_folder   TEXT NOT NULL,
-		uid_validity   INTEGER NOT NULL DEFAULT 0,
-		last_uid       INTEGER NOT NULL DEFAULT 0,
-		highest_modseq INTEGER NOT NULL DEFAULT 0,
-		total_count    INTEGER NOT NULL DEFAULT 0,
-		unread_count   INTEGER NOT NULL DEFAULT 0,
-		updated_at     INTEGER NOT NULL
+		id                TEXT PRIMARY KEY,
+		account_id        TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+		remote_name       TEXT NOT NULL,
+		local_folder      TEXT NOT NULL,
+		uid_validity      INTEGER NOT NULL DEFAULT 0,
+		last_uid          INTEGER NOT NULL DEFAULT 0,
+		oldest_uid        INTEGER NOT NULL DEFAULT 0,
+		history_exhausted INTEGER NOT NULL DEFAULT 0,
+		highest_modseq    INTEGER NOT NULL DEFAULT 0,
+		total_count       INTEGER NOT NULL DEFAULT 0,
+		unread_count      INTEGER NOT NULL DEFAULT 0,
+		updated_at        INTEGER NOT NULL
 	);`,
 
 	`CREATE TABLE IF NOT EXISTS threads (

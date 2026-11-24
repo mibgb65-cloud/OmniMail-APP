@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type MouseEvent } from "react";
-import { useI18n, type TranslationKey } from "../../i18n";
+import { isSyncLabelActive, useI18n, type TranslationKey } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import type { FolderId, MailFilterTab, MailItem } from "../../types/mail";
 import { Icon } from "../common/Icon";
@@ -53,18 +53,25 @@ export function MailListPane({
     : activeLabel
       ? t("mailList.labelTitle", { name: activeLabel.name })
       : t(FOLDER_TITLE_KEYS[activeFolder]);
+  const syncing =
+    isSyncLabelActive(workspace.syncLabel) ||
+    workspace.accounts.some((a) => a.status === "syncing");
+  const isBusy =
+    mailStore.isInitialLoading || mailStore.isRefreshing || syncing;
   const unreadCount = filteredMails.filter((m) => m.unread).length;
   const badgeCount = mailStore.folderCounts[activeFolder] ?? unreadCount;
   const displayTotal = mailStore.totalCount || filteredMails.length;
-  const subtitle = activeAccount
-    ? t("mailList.accountSubtitle", {
-        tag: activeAccount.shortTag,
-        total: displayTotal,
-      })
-    : t("mailList.unifiedSubtitle", {
-        accounts: workspace.accounts.length,
-        unread: badgeCount,
-      });
+  const subtitle = mailStore.isInitialLoading
+    ? t("mailList.loadingEmailsSubtitle")
+    : activeAccount
+      ? t("mailList.accountSubtitle", {
+          tag: activeAccount.shortTag,
+          total: displayTotal,
+        })
+      : t("mailList.unifiedSubtitle", {
+          accounts: workspace.accounts.length,
+          unread: badgeCount,
+        });
   const tabs: Array<{ id: MailFilterTab; label: string }> = [
     { id: "all", label: t("mailList.tabAll") },
     {
@@ -126,7 +133,7 @@ export function MailListPane({
               <Tooltip label={t("mailList.refreshSyncTip")} shortcut="Ctrl+R">
                 <button
                   type="button"
-                  className="icon-btn icon-btn-bordered list-head-icon-btn"
+                  className={`icon-btn icon-btn-bordered list-head-icon-btn${isBusy ? " is-spinning" : ""}`}
                   onClick={triggerSyncAll}
                   aria-label={t("mailList.refreshSyncTip")}
                 >
@@ -167,6 +174,13 @@ export function MailListPane({
               {tab.label}
             </button>
           ))}
+        </div>
+        <div
+          className="list-refresh-bar"
+          data-active={isBusy}
+          aria-hidden="true"
+        >
+          <span className="list-refresh-bar-fill" />
         </div>
       </div>
 

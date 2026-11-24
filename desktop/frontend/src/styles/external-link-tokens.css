@@ -1,0 +1,140 @@
+/* 外链跳转安全确认弹窗 · 亮暗双色令牌与外框头部样式（20 · 邮件安全、源码与日程） */
+.ext-link-modal-card {
+  --el-bg: #ffffff;
+  --el-bd: #cbd5e1;
+  --el-div: #e2e8f0;
+  --el-surf: #f8fafc;
+  --el-badge-bg: #eff6ff;
+  --el-badge-bd: #bfdbfe;
+  --el-https-bg: #f0fdf4;
+  --el-https-bd: #bbf7d0;
+  --el-https-fg: #15803d;
+  --el-warn-bg: #fffbeb;
+  --el-warn-bd: #fde68a;
+  --el-warn-fg: #b45309;
+  --el-err-bd: #fca5a5;
+  --el-err-hdr: #fef2f2;
+  --el-err-box: #fef2f2;
+  --el-err-div: #fecaca;
+  --el-err-chip: #fee2e2;
+  --el-err-ink: #991b1b;
+  --el-err-fg: #b91c1c;
+  --el-err-x: #ffffff;
+  border-radius: 14px;
+  border-color: var(--el-bd);
+  background: var(--el-bg);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14);
+}
+
+[data-theme="dark"] .ext-link-modal-card {
+  --el-bg: #141a26;
+  --el-bd: #293548;
+  --el-div: #232b3a;
+  --el-surf: #0f141d;
+  --el-badge-bg: #17253d;
+  --el-badge-bd: #1e3a5f;
+  --el-https-bg: #14532d;
+  --el-https-bd: #166534;
+  --el-https-fg: #86efac;
+  --el-warn-bg: #451a03;
+  --el-warn-bd: #92400e;
+  --el-warn-fg: #fcd34d;
+  --el-err-bd: #991b1b;
+  --el-err-hdr: #3b1820;
+  --el-err-box: #2a1218;
+  --el-err-div: #7f1d1d;
+  --el-err-chip: #450a0a;
+  --el-err-ink: #fecaca;
+  --el-err-fg: #fca5a5;
+  --el-err-x: #450a0a;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+}
+
+.ext-link-modal-card.is-danger {
+  border-width: 1.5px;
+  border-color: var(--el-err-bd);
+  box-shadow: 0 16px 36px rgba(185, 28, 28, 0.13);
+}
+
+[data-theme="dark"] .ext-link-modal-card.is-danger {
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.56);
+}
+
+.ext-link-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px;
+  border-bottom: 1px solid var(--el-div);
+}
+
+.ext-link-modal-card.is-danger .ext-link-header {
+  background: var(--el-err-hdr);
+  border-bottom-color: var(--el-err-div);
+}
+
+.ext-link-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ext-link-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--el-badge-bg);
+  border: 1px solid var(--el-badge-bd);
+  color: var(--brand-accent);
+}
+
+.ext-link-modal-card.is-danger .ext-link-badge {
+  background: var(--el-err-chip);
+  border-color: var(--el-err-bd);
+  color: var(--el-err-fg);
+}
+
+.ext-link-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-ink);
+}
+
+.ext-link-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.ext-link-modal-card.is-danger .ext-link-title {
+  color: var(--el-err-ink);
+}
+
+.ext-link-modal-card.is-danger .ext-link-sub {
+  color: var(--el-err-fg);
+}
+
+.ext-link-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  background: var(--el-surf);
+  border: 1px solid var(--el-bd);
+  color: var(--text-secondary);
+}
+
+.ext-link-modal-card.is-danger .ext-link-close {
+  background: var(--el-err-x);
+  border-color: var(--el-err-div);
+  color: var(--el-err-fg);
+}

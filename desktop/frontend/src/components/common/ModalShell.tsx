@@ -14,6 +14,8 @@ interface ModalShellProps {
   children: ReactNode;
   headerRight?: ReactNode;
   noPadding?: boolean;
+  cardClassName?: string;
+  ariaLabel?: string;
 }
 
 export function ModalShell({
@@ -26,6 +28,8 @@ export function ModalShell({
   children,
   headerRight,
   noPadding = false,
+  cardClassName,
+  ariaLabel,
 }: ModalShellProps) {
   const { t } = useI18n();
 
@@ -34,13 +38,13 @@ export function ModalShell({
       className="modal-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label={heading}
+      aria-label={ariaLabel ?? heading}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="modal-card"
+        className={cardClassName ? `modal-card ${cardClassName}` : "modal-card"}
         style={{ "--modal-max-w": `${maxWidth}px` } as CSSProperties}
       >
         {heading && (

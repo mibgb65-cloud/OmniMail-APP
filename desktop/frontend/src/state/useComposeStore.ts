@@ -10,7 +10,7 @@ function draftContentFingerprint(d: ComposeDraftState): string {
   const files = d.attachments
     .map((a) => `${a.id}:${a.status}:${a.filePath ?? ""}`)
     .join("|");
-  return `${d.id}|${d.accountId}|${d.unlockIdentity ?? ""}|${d.to.join(",")}|${d.cc.join(",")}|${d.bcc.join(",")}|${d.subject}|${d.scheduledAtUnixMs ?? 0}|${files}|${d.body}`;
+  return `${d.id}|${d.accountId}|${d.unlockIdentity ?? ""}|${d.to.join(",")}|${d.cc.join(",")}|${d.bcc.join(",")}|${d.subject}|${d.scheduledAtUnixMs ?? 0}|${files}|${d.body}|${d.bodyHtml ?? ""}`;
 }
 
 export function useComposeStore(

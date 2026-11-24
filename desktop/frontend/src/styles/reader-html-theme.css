@@ -1,0 +1,78 @@
+/* 暗黑模式 HTML 邮件双模式切换胶囊与纯文本自动识别链接样式 */
+.reader-html-mode-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  flex-shrink: 0;
+}
+
+.reader-html-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition:
+    background-color 140ms var(--ease-standard),
+    color 140ms var(--ease-standard),
+    box-shadow 140ms var(--ease-standard);
+}
+
+.reader-html-mode-seg.is-icon-only .reader-html-mode-btn {
+  width: 24px;
+  padding: 0;
+}
+
+.reader-html-mode-btn:hover:not(.active) {
+  color: var(--text-ink);
+  background: color-mix(in srgb, var(--text-ink) 6%, transparent);
+}
+
+.reader-html-mode-btn.active {
+  background: var(--bg-selected);
+  color: var(--brand-accent);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--brand-accent) 34%, transparent);
+}
+
+.reader-plain-link {
+  display: inline;
+  color: var(--brand-accent);
+  text-decoration: none;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--brand-accent) 32%, transparent);
+  word-break: break-all;
+  transition:
+    color 140ms var(--ease-standard),
+    border-color 140ms var(--ease-standard);
+}
+
+.reader-plain-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  border-bottom-color: transparent;
+}
+
+.reader-plain-link-icon {
+  display: inline-block;
+  margin-inline-start: 3px;
+  vertical-align: -1px;
+  opacity: 0.72;
+  flex-shrink: 0;
+}
+
+.reader-plain-link:hover .reader-plain-link-icon {
+  opacity: 1;
+}

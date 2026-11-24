@@ -154,3 +154,29 @@ export function MailListEmptyState({
     </div>
   );
 }
+
+export function MailListLoadError({
+  detail,
+  onRetry,
+}: {
+  detail: string;
+  onRetry: () => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="list-empty-state" role="alert">
+      <Icon name="alertCircle" size={28} />
+      <div style={{ fontWeight: 600, color: "var(--text-ink)" }}>
+        {t("mailList.loadListFailedTitle")}
+      </div>
+      {detail && <div style={{ fontSize: 12, maxWidth: 260 }}>{detail}</div>}
+      <button
+        type="button"
+        className="btn btn-sm btn-secondary"
+        onClick={onRetry}
+      >
+        {t("mailList.retryLoadMoreBtn")}
+      </button>
+    </div>
+  );
+}

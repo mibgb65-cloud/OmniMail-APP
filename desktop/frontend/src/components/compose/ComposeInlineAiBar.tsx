@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
+import { plainTextToComposeHtml } from "./composeRichHtml";
 import { useInlineComposeAi } from "./useInlineComposeAi";
 
 export function ComposeInlineAiBar() {
@@ -123,7 +124,10 @@ export function ComposeInlineAiBar() {
                 type="button"
                 className="btn btn-primary btn-sm"
                 onClick={() => {
-                  composeStore.updateDraft({ body: preview });
+                  composeStore.updateDraft({
+                    body: preview,
+                    bodyHtml: plainTextToComposeHtml(preview),
+                  });
                   setPreview("");
                   toastStore.pushToast({
                     tone: "success",

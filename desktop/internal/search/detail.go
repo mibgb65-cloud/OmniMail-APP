@@ -89,7 +89,7 @@ func GetMessageItem(db *sql.DB, msgID string, includeThread bool, blockRemoteIma
 	highRisk := m.SecurityWarning != nil && m.SecurityWarning.Level == "danger"
 	m.RemoteImagesAllowed = (!blockRemoteImages || remAllowInt != 0) && !highRisk
 	if !includeThread {
-		m.Messages = []ThreadMessageDTO{buildSingleThreadMsg(m.ID, m.SenderName, m.SenderEmail, m.Recipients, m.Cc, m.FullTimeText, bodyText, bodyHTML, m.RemoteImagesAllowed, false)}
+		m.Messages = []ThreadMessageDTO{buildSingleThreadMsg(db, m.ID, m.SenderName, m.SenderEmail, m.Recipients, m.Cc, m.FullTimeText, bodyText, bodyHTML, m.RemoteImagesAllowed, false)}
 		m.RawHeaders = ""
 		return m, nil
 	}
@@ -99,7 +99,7 @@ func GetMessageItem(db *sql.DB, msgID string, includeThread bool, blockRemoteIma
 		FROM messages WHERE thread_id = ? ORDER BY sent_at ASC, received_at ASC
 	`, m.ThreadID)
 	if err != nil {
-		m.Messages = []ThreadMessageDTO{buildSingleThreadMsg(m.ID, m.SenderName, m.SenderEmail, m.Recipients, m.Cc, m.FullTimeText, bodyText, bodyHTML, m.RemoteImagesAllowed, false)}
+		m.Messages = []ThreadMessageDTO{buildSingleThreadMsg(db, m.ID, m.SenderName, m.SenderEmail, m.Recipients, m.Cc, m.FullTimeText, bodyText, bodyHTML, m.RemoteImagesAllowed, false)}
 		return m, nil
 	}
 	defer tRows.Close()
@@ -112,7 +112,7 @@ func GetMessageItem(db *sql.DB, msgID string, includeThread bool, blockRemoteIma
 			_, fullT := formatMailTimes(sentAt)
 			warning := decodeSecurityWarning(tSecurity)
 			msgAllow := (!blockRemoteImages || tAllow != 0) && !highRisk && (warning == nil || warning.Level != "danger")
-			list = append(list, buildSingleThreadMsg(tid, sName, sEmail, formatAddrJSON(tTo), formatAddrJSON(tCc), fullT, tTxt, tHTML, msgAllow, true))
+			list = append(list, buildSingleThreadMsg(db, tid, sName, sEmail, formatAddrJSON(tTo), formatAddrJSON(tCc), fullT, tTxt, tHTML, msgAllow, true))
 		}
 	}
 	if len(list) > 0 {
@@ -130,8 +130,8 @@ func decodeSecurityWarning(raw string) *SecurityWarningDTO {
 	return nil
 }
 
-func buildSingleThreadMsg(id, sName, sEmail, to, cc, timeTxt, bodyTxt, bodyHTML string, allowRemote, collapsed bool) ThreadMessageDTO {
-	renderedHTML := bodyHTML
+func buildSingleThreadMsg(db *sql.DB, id, sName, sEmail, to, cc, timeTxt, bodyTxt, bodyHTML string, allowRemote, collapsed bool) ThreadMessageDTO {
+	renderedHTML := repairLegacyInlineCIDHTML(db, id, bodyHTML)
 	if allowRemote && renderedHTML != "" {
 		renderedHTML = security.RestoreRemoteImages(renderedHTML)
 	}

@@ -185,7 +185,11 @@ func ListMessages(db *sql.DB, q MailSearchQuery, blockRemoteImages bool) (Messag
 			items = append(items, item)
 		}
 	}
-	return MessageListPage{Items: items, NextCursor: nextCursor, TotalCount: total}, nil
+	remote := computePageRemoteMore(db, q)
+	return MessageListPage{
+		Items: items, NextCursor: nextCursor, TotalCount: total,
+		HasRemoteMore: remote.HasRemoteMore, RemoteTotalCount: remote.RemoteTotalCount,
+	}, nil
 }
 
 func firstNonEmptyStr(a, b string) string {

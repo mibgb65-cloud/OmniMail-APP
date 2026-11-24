@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../../../i18n";
 import { useApp } from "../../../state/AppContext";
 import { mailReaderScrollFlags } from "../../../state/mailListArrivalPolicy";
-import { Icon } from "../../common/Icon";
+import type { DarkHtmlMode } from "../../../types/settings";
 import {
   ScrollToTopPill,
   scrollViewportToTop,
@@ -14,10 +14,10 @@ import { MeetingInviteCard } from "./MeetingInviteCard";
 import { QuickReplyBox } from "./QuickReplyBox";
 import { ReaderAttachmentsSection } from "./ReaderAttachmentsSection";
 import { ReaderSecurityBanners } from "./ReaderSecurityBanners";
+import { ReaderEmptyOrSkeleton } from "./ReaderSkeleton";
 import { ReaderSubjectSection } from "./ReaderSubjectSection";
 import { ReaderThreadCard } from "./ReaderThreadCard";
 import { ReaderToolbar } from "./ReaderToolbar";
-import { ReaderZeroAccountGuide } from "./ReaderZeroAccountGuide";
 
 const AT_TOP = { scrolled: false, showReturnTop: false };
 
@@ -27,6 +27,10 @@ export function MailReaderPane() {
   const t = useTranslation();
   const { filteredMails, selectedMail, labels } = mailStore;
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+  const [htmlModeOverride, setHtmlModeOverride] = useState<{
+    mailId: string;
+    mode: DarkHtmlMode;
+  }>();
   const [scrollState, setScrollState] = useState<{
     scope: string;
     scrolled: boolean;
@@ -39,6 +43,12 @@ export function MailReaderPane() {
     : "";
   const { scrolled, showReturnTop } =
     scrollScope && scrollState?.scope === scrollScope ? scrollState : AT_TOP;
+  const defaultHtmlMode: DarkHtmlMode =
+    workspace.settings.darkHtmlMode ?? "adaptive";
+  const htmlThemeMode: DarkHtmlMode =
+    selectedMailId && htmlModeOverride?.mailId === selectedMailId
+      ? htmlModeOverride.mode
+      : defaultHtmlMode;
   const content = t.result?.content;
   const translation = useMemo(
     () =>
@@ -54,22 +64,10 @@ export function MailReaderPane() {
 
   if (!selectedMail) {
     return (
-      <section
-        className="panel-card mail-reader-pane"
-        aria-label={tr("reader.ariaPane")}
-      >
-        {workspace.accounts.length === 0 ? (
-          <ReaderZeroAccountGuide />
-        ) : (
-          <div className="list-empty-state">
-            <Icon name="mail" size={32} />
-            <div style={{ fontWeight: 600, color: "var(--text-ink)" }}>
-              {tr("reader.noSelectionTitle")}
-            </div>
-            <div style={{ fontSize: 12 }}>{tr("reader.noSelectionDesc")}</div>
-          </div>
-        )}
-      </section>
+      <ReaderEmptyOrSkeleton
+        accountCount={workspace.accounts.length}
+        isInitialLoading={mailStore.isInitialLoading}
+      />
     );
   }
 
@@ -77,12 +75,13 @@ export function MailReaderPane() {
     0,
     filteredMails.findIndex((m) => m.id === selectedMail.id),
   );
-
   const navigate = (delta: -1 | 1) => {
     const next = filteredMails[currentIndex + delta];
     if (next) mailStore.openMail(next.id);
   };
-
+  const hasHtmlBody = selectedMail.messages.some((m) => Boolean(m.bodyHtml));
+  const showHtmlThemeToggle =
+    workspace.settings.theme === "dark" && hasHtmlBody;
   const mailLabels = labels.filter((l) => selectedMail.labels.includes(l.id));
   const translatedSubject = translation ? content?.subject : undefined;
 
@@ -96,6 +95,11 @@ export function MailReaderPane() {
         currentIndex={currentIndex}
         totalCount={filteredMails.length}
         scrolled={scrolled}
+        showHtmlThemeToggle={showHtmlThemeToggle}
+        htmlThemeMode={htmlThemeMode}
+        onHtmlThemeModeChange={(mode) =>
+          setHtmlModeOverride({ mailId: selectedMail.id, mode })
+        }
         onNavigate={navigate}
       />
       <TranslationBanner />
@@ -131,16 +135,13 @@ export function MailReaderPane() {
               translationMode={t.mode}
               targetLanguage={content?.target}
             />
-
             <ReaderSecurityBanners mail={selectedMail} />
-
             {selectedMail.meetingInvite && (
               <MeetingInviteCard
                 mailId={selectedMail.id}
                 invite={selectedMail.meetingInvite}
               />
             )}
-
             {selectedMail.messages.map((msg, idx) => {
               const isLatest = idx === selectedMail.messages.length - 1;
               const isExpanded =
@@ -154,6 +155,8 @@ export function MailReaderPane() {
                   key={msg.id}
                   mail={selectedMail}
                   msg={msg}
+                  theme={workspace.settings.theme}
+                  htmlThemeMode={htmlThemeMode}
                   translation={
                     msg.id === selectedMail.id ? translation : undefined
                   }
@@ -165,10 +168,10 @@ export function MailReaderPane() {
                 />
               );
             })}
-
             <ReaderAttachmentsSection
               attachments={selectedMail.attachments}
               mailSubject={selectedMail.subject}
+              bodyHtmlList={selectedMail.messages.map((m) => m.bodyHtml)}
             />
           </div>
         </FadeScroll>

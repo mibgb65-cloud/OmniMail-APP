@@ -1,7 +1,10 @@
 import { common, sidebar, topbar } from "./zh/commonAndShell.ts";
 import { compose } from "./zh/compose.ts";
 import { contacts } from "./zh/contacts.ts";
+import { externalLink } from "./zh/externalLink.ts";
+import { imageLightbox } from "./zh/imageLightbox.ts";
 import { mailList, reader, security } from "./zh/mailAndSecurity.ts";
+import { mailListBackfill } from "./zh/mailListBackfill.ts";
 import { onboarding } from "./zh/onboarding.ts";
 import { overlaysPrimary } from "./zh/overlaysPrimary.ts";
 import { overlaysSecondary } from "./zh/overlaysSecondary.ts";
@@ -14,9 +17,14 @@ export const zhCN = {
   common,
   topbar,
   sidebar,
-  mailList,
+  mailList: {
+    ...mailList,
+    ...mailListBackfill,
+  },
   reader,
   security,
+  externalLink,
+  imageLightbox,
   translation,
   ai,
   compose,

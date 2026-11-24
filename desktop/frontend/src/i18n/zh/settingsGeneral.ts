@@ -31,6 +31,9 @@ export const settingsGeneral = {
   themeLight: "亮色",
   themeDark: "深色",
   themeSystem: "跟随系统",
+  darkHtmlModeTitle: "暗黑模式下 HTML 邮件默认视图",
+  darkHtmlModeDesc:
+    "暗黑主题打开 HTML 邮件时默认使用护眼深色适配或原始白底纸面",
   languageTitle: "界面语言",
   languageDesc: "默认简体中文，同步切换顶部快捷语言菜单与本地化设置",
   languageAria: "选择界面语言",

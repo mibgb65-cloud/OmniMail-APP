@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/emersion/go-message"
 	"github.com/emersion/go-message/mail"
 
 	"omnimail/internal/apperr"
@@ -56,7 +57,7 @@ func buildMessageHeader(in BuildMessageInput, fromAddr, cleanMsgID string, toLis
 	return h
 }
 
-func writeAttachmentParts(mw *mail.Writer, attachments []OutgoingAttachment) error {
+func writeRawAttachmentParts(parent *message.Writer, attachments []OutgoingAttachment) error {
 	var totalAttBytes int64
 	for _, att := range attachments {
 		data := att.Data
@@ -82,15 +83,20 @@ func writeAttachmentParts(mw *mail.Writer, attachments []OutgoingAttachment) err
 		if mt == "" {
 			mt = "application/octet-stream"
 		}
-		var ah mail.AttachmentHeader
-		ah.SetContentType(mt, nil)
-		ah.SetFilename(fn)
-		aw, aErr := mw.CreateAttachment(ah)
+		var h message.Header
+		h.SetContentType(mt, map[string]string{"name": fn})
+		h.SetContentDisposition("attachment", map[string]string{"filename": fn})
+		h.Set("Content-Transfer-Encoding", "base64")
+		pw, aErr := parent.CreatePart(h)
 		if aErr != nil {
 			return aErr
 		}
-		_, _ = aw.Write(data)
-		_ = aw.Close()
+		if _, err := pw.Write(data); err != nil {
+			return err
+		}
+		if err := pw.Close(); err != nil {
+			return err
+		}
 	}
 	return nil
 }

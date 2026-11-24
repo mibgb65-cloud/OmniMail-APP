@@ -17,7 +17,6 @@ import (
 	"omnimail/internal/mailproto"
 	"omnimail/internal/oauth"
 	"omnimail/internal/profilemgr"
-	"omnimail/internal/security"
 )
 
 type TransportFunc func(ctx context.Context, cfg mailproto.EndpointConfig, from string, rcpts []string, raw []byte) error
@@ -140,7 +139,8 @@ func (s *Scheduler) SendDraft(sess *profilemgr.Session, req SendDraftRequest) (O
 		FromName: senderName, FromEmail: acc.Email, ReplyTo: acc.ReplyTo,
 		To: draft.To, Cc: draft.Cc, Bcc: draft.Bcc,
 		Subject: draft.Subject, BodyText: draft.Body, BodyHTML: draft.BodyHTML,
-		InReplyTo: inReplyTo, References: refs, Attachments: outAtts,
+		InReplyTo: inReplyTo, References: refs,
+		Attachments: outAtts, InlineImages: LoadDraftInlineImages(sess, draft.BodyHTML),
 	})
 	if err != nil {
 		return OutboxJobDTO{}, err
@@ -157,7 +157,7 @@ func (s *Scheduler) SendDraft(sess *profilemgr.Session, req SendDraftRequest) (O
 		state = "scheduled"
 		notBefore = req.ScheduledAtUnixMs
 	}
-	return s.persistJob(sess, draft.AccountID, draft.ID, draft.Subject, draft.Body, built, state, notBefore)
+	return s.persistJob(sess, draft.AccountID, draft.ID, draft.Subject, draft.Body, draft.BodyHTML, built, state, notBefore)
 }
 
 // EnqueueDirect 供日程 RSVP 与防循环休假自动回复直接入队投递（无需撤销窗口）。
@@ -167,7 +167,7 @@ func (s *Scheduler) EnqueueDirect(sess *profilemgr.Session, accountID string, in
 		return OutboxJobDTO{}, err
 	}
 	nowMs := time.Now().UnixMilli()
-	return s.persistJob(sess, accountID, "", in.Subject, in.BodyText, built, "undo_pending", nowMs)
+	return s.persistJob(sess, accountID, "", in.Subject, in.BodyText, in.BodyHTML, built, "undo_pending", nowMs)
 }
 
 func resolveReplyHeaders(db *sql.DB, origMailID string) (string, []string) {
@@ -190,8 +190,4 @@ func newRandomJobID(prefix string) string {
 	b := make([]byte, 5)
 	_, _ = rand.Read(b)
 	return fmt.Sprintf("%s-%d-%s", prefix, time.Now().UnixMilli(), hex.EncodeToString(b))
-}
-
-func sanitizeJobHTML(plain string) string {
-	return security.PlainTextToHTML(plain)
 }

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { INITIAL_MAILS } from "../data/mails";
 import type { FolderId, MailFilterTab, MailItem } from "../types/mail";
 import {
@@ -7,6 +7,7 @@ import {
   filterMailList,
   type AdvancedSearchCriteria,
 } from "./mailFilter";
+import { formatListScopeKey } from "./mailListLoadingPolicy";
 import { previewMail, shouldReloadOnMailDelta } from "./mailReadingPolicy";
 import { isWailsDesktop } from "./storageHelpers";
 import { useMailLabels } from "./useMailLabels";
@@ -56,17 +57,18 @@ export function useMailStore(blockRemoteImages: boolean) {
     ],
   );
 
+  const backfillCtx = useMemo(
+    () => ({ activeFolder, activeLabelId, filterTab, searchQuery, advSearch }),
+    [activeFolder, activeLabelId, advSearch, filterTab, searchQuery],
+  );
   const {
-    folderCounts,
-    totalCount,
+    listArrivals: { deferMailDelta, ...listScroll },
     loaded,
-    hasMore,
-    loadMore,
-    reloadMessages,
     refreshCounts,
     resetPages,
-    listArrivals: { deferMailDelta, ...listScroll },
-  } = useMailPages(buildQuery, activeAccountId, setMails);
+    ...pageFields
+  } = useMailPages(buildQuery, activeAccountId, backfillCtx, mails, setMails);
+  const { reloadMessages } = pageFields;
   const [demoRead, setDemoRead] = useState<{
     scope: typeof buildQuery;
     ids: Set<string>;
@@ -165,11 +167,8 @@ export function useMailStore(blockRemoteImages: boolean) {
   return {
     mails,
     setMails,
-    folderCounts,
-    totalCount,
-    hasMore,
-    loadMore,
-    reloadMessages,
+    ...pageFields,
+    listScopeKey: formatListScopeKey(activeAccountId, backfillCtx),
     refreshAfterMailDelta,
     refreshUnreadView,
     resetMailState,

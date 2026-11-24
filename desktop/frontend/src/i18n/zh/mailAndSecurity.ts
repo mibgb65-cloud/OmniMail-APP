@@ -145,6 +145,11 @@ export const reader = {
   zeroChipQq: "QQ 邮箱",
   zeroChipNetease: "网易 163 / 126",
   zeroChipImap: "通用 IMAP / SMTP",
+  htmlThemeToggleAria: "HTML 邮件深色视图模式",
+  htmlThemeAdaptive: "深色适配",
+  htmlThemePaper: "原始白底",
+  htmlThemeAdaptiveTip: "深色适配：护眼深底高对比阅读，不反色图片",
+  htmlThemePaperTip: "原始白底：按发件人原始白纸排版保真显示",
 };
 
 export const security = {

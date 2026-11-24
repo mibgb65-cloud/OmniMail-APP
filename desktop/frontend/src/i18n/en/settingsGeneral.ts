@@ -34,6 +34,9 @@ export const settingsGeneral = {
   themeLight: "Light",
   themeDark: "Dark",
   themeSystem: "System",
+  darkHtmlModeTitle: "Default HTML email view in dark mode",
+  darkHtmlModeDesc:
+    "Choose Dark Adaptive or Original Light paper rendering for HTML emails in dark mode",
   languageTitle: "Display Language",
   languageDesc: "Switch application UI language and sync with the top bar menu",
   languageAria: "Select display language",

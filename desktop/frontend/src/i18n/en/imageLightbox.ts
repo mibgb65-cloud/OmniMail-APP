@@ -1,0 +1,30 @@
+import type { imageLightbox as zhImageLightbox } from "../zh/imageLightbox.ts";
+
+export const imageLightbox = {
+  inlineImageFallbackText: "Inline image not cached or failed to load",
+  inlineImageRetryBtn: "Retry",
+  inlineImageRetrying: "Reloading…",
+  inlineImageDefaultName: "Inline image",
+  sourceInlineBody: "Email body image",
+  sourceAttachment: "Email attachment",
+  ariaDialog: "Image lightbox preview",
+  saveAsBtn: "Save as",
+  saveOriginalBtn: "Save original",
+  copyImageBtn: "Copy image",
+  copiedImageToast: "Image copied to clipboard",
+  copyImageFailedToast: "Failed to copy image",
+  savedImageToast: "Saved image {name}",
+  saveImageFailedToast: "Failed to save image",
+  zoomInTip: "Zoom in",
+  zoomOutTip: "Zoom out",
+  fitWindowTip: "Fit to window",
+  actualSizeTip: "Actual size 100%",
+  rotateRightTip: "Rotate 90° clockwise",
+  prevImageAria: "Previous image",
+  nextImageAria: "Next image",
+  closeAria: "Close image preview",
+  loadFailedTitle: "Failed to load image",
+  loadFailedDetail:
+    "This image could not be loaded. Try again or save it locally.",
+  thumbItemAria: "View image {index}: {name}",
+} satisfies typeof zhImageLightbox;

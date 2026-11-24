@@ -79,3 +79,35 @@ func TestPhishingHeuristicsAndDiagnosticBundleRedaction(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildRecentSyncErrorStepReflectsUnresolvedSyncFailure(t *testing.T) {
+	dir := t.TempDir()
+	db, err := storage.OpenProfileDB(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer storage.CheckpointAndClose(db)
+
+	now := time.Now().UnixMilli()
+	_, err = db.Exec(`INSERT INTO accounts(id,name,short_tag,email,provider,provider_label,auth_mode,imap_host,imap_port,imap_security,smtp_host,smtp_port,smtp_security,status,last_error,created_at)
+		VALUES ('acc-qq','QQ','QQ','u@qq.com','qq','QQ','password','imap.qq.com',993,'SSL/TLS','smtp.qq.com',465,'SSL/TLS','error','INBOX 同步失败: EOF',?)`, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _ = db.Exec(`INSERT INTO sync_logs(account_id, protocol, level, stage, duration_ms, message, detail, created_at)
+		VALUES ('acc-qq','IMAP','error','folder-sync',120,'文件夹 INBOX 同步失败','unexpected EOF',?)`, now+10)
+
+	step, summary, inErr := buildRecentSyncErrorStep(db, "acc-qq")
+	if step == nil || !inErr || !strings.Contains(summary, "INBOX") || !strings.Contains(step.Detail, "unexpected EOF") {
+		t.Fatalf("应返回最近同步故障步骤，实际 step=%+v summary=%q inErr=%v", step, summary, inErr)
+	}
+
+	_, _ = db.Exec(`UPDATE accounts SET status='connected', last_error='' WHERE id='acc-qq'`)
+	_, _ = db.Exec(`INSERT INTO sync_logs(account_id, protocol, level, stage, duration_ms, message, detail, created_at)
+		VALUES ('acc-qq','IMAP','info','imap',80,'邮箱增量同步完成','',?)`, now+500)
+
+	step2, _, inErr2 := buildRecentSyncErrorStep(db, "acc-qq")
+	if step2 != nil || inErr2 {
+		t.Fatalf("同步恢复后不应再报告未解决故障，实际 step=%+v inErr=%v", step2, inErr2)
+	}
+}

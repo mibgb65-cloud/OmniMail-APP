@@ -41,7 +41,8 @@ func (b *BlobStore) CleanOrphanBlobs(db *sql.DB) (int64, error) {
 	}
 
 	attRefs := make(map[string]struct{})
-	aRows, err := db.Query(`SELECT blob_sha256 FROM attachments WHERE blob_sha256 != '' AND status = 'ready'`)
+	aRows, err := db.Query(`SELECT blob_sha256 FROM attachments WHERE blob_sha256 != '' AND status = 'ready'
+		UNION SELECT blob_sha256 FROM draft_inline_images WHERE blob_sha256 != ''`)
 	if err == nil {
 		for aRows.Next() {
 			var h string

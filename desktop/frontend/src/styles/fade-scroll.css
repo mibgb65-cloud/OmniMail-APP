@@ -1,3 +1,13 @@
+:root {
+  --overlay-scrollbar-thumb: rgba(100, 116, 139, 0.36);
+  --overlay-scrollbar-thumb-hover: rgba(71, 85, 105, 0.62);
+}
+
+:root[data-theme="dark"] {
+  --overlay-scrollbar-thumb: rgba(148, 163, 184, 0.34);
+  --overlay-scrollbar-thumb-hover: rgba(203, 213, 225, 0.6);
+}
+
 .fade-scroll,
 .fade-textarea {
   position: relative;
@@ -63,6 +73,66 @@
   opacity: 1;
 }
 
+/* 自定义悬浮滚动条轨道：零占位覆盖于右侧，不遮挡弹窗与回到顶部胶囊 */
+.fade-scroll-track {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  bottom: 4px;
+  width: 10px;
+  z-index: 6;
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+  touch-action: none;
+  transition: opacity 280ms ease-out;
+}
+
+.fade-scroll[data-scrollable] > .fade-scroll-track {
+  display: block;
+  pointer-events: auto;
+}
+
+.fade-scroll[data-scrollable][data-scrollbar-visible="true"]
+  > .fade-scroll-track {
+  opacity: 1;
+  transition: opacity 120ms ease-out;
+}
+
+.fade-scroll-thumb {
+  position: absolute;
+  top: 0;
+  right: 1px;
+  width: 5px;
+  min-height: 0;
+  border-radius: 999px;
+  background: var(--overlay-scrollbar-thumb);
+  will-change: transform, height;
+  cursor: grab;
+  transition:
+    width 120ms ease-out,
+    background-color 120ms ease-out;
+}
+
+.fade-scroll-track:hover > .fade-scroll-thumb,
+.fade-scroll[data-scrollbar-dragging="true"]
+  > .fade-scroll-track
+  > .fade-scroll-thumb {
+  width: 7px;
+  background: var(--overlay-scrollbar-thumb-hover);
+}
+
+.fade-scroll[data-scrollbar-dragging="true"]
+  > .fade-scroll-track
+  > .fade-scroll-thumb {
+  cursor: grabbing;
+}
+
+html.fade-scroll-dragging,
+html.fade-scroll-dragging * {
+  user-select: none !important;
+}
+
 .fade-textarea > textarea {
   display: block;
 }
@@ -82,7 +152,17 @@
 
 @media (prefers-reduced-motion: reduce) {
   .fade-scroll::after,
-  .fade-textarea::after {
+  .fade-textarea::after,
+  .fade-scroll-track,
+  .fade-scroll[data-scrollable][data-scrollbar-visible="true"]
+    > .fade-scroll-track,
+  .fade-scroll-thumb {
     transition: none;
+  }
+}
+
+@media print {
+  .fade-scroll-track {
+    display: none !important;
   }
 }

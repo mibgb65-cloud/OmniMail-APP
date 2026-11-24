@@ -1,0 +1,67 @@
+/* 邮件列表触底续拉与历史回溯 · 亮暗双色令牌与骨架屏样式（27 · 06） */
+.mail-list-footer {
+  --mlf-sk-bg: #ffffff;
+  --mlf-sk-bd: #e2e8f0;
+  --mlf-sk-bar1: #e2e8f0;
+  --mlf-sk-bar2: #f1f5f9;
+  --mlf-local-bg: #f8fafc;
+  --mlf-local-bd: #e2e8f0;
+  --mlf-local-fg: #475569;
+  --mlf-spin-track: #cbd5e1;
+  --mlf-remote-bg: #eff6ff;
+  --mlf-remote-bd: #bfdbfe;
+  --mlf-remote-fg: #1d4ed8;
+  --mlf-remote-spin: #2563eb;
+  --mlf-manual-bg: #ffffff;
+  --mlf-manual-bd: #cbd5e1;
+  --mlf-manual-fg: #334155;
+  --mlf-btn-bg: #f1f5f9;
+  --mlf-btn-bd: #cbd5e1;
+  --mlf-btn-fg: #0f172a;
+  --mlf-err-bg: #fef2f2;
+  --mlf-err-bd: #fecaca;
+  --mlf-err-fg: #b91c1c;
+  --mlf-err-btn-bg: #ffffff;
+  --mlf-err-btn-bd: #fca5a5;
+  --mlf-end-line: #e2e8f0;
+  --mlf-end-fg: #94a3b8;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+[data-theme="dark"] .mail-list-footer {
+  --mlf-sk-bg: #181f2c;
+  --mlf-sk-bd: #232b3a;
+  --mlf-sk-bar1: #273245;
+  --mlf-sk-bar2: #1f293b;
+  --mlf-local-bg: #181f2c;
+  --mlf-local-bd: #232b3a;
+  --mlf-local-fg: #94a3b8;
+  --mlf-spin-track: #334155;
+  --mlf-remote-bg: #17253d;
+  --mlf-remote-bd: #1e3a5f;
+  --mlf-remote-fg: #93c5fd;
+  --mlf-remote-spin: #60a5fa;
+  --mlf-manual-bg: #181f2c;
+  --mlf-manual-bd: #293548;
+  --mlf-manual-fg: #cbd5e1;
+  --mlf-btn-bg: #232d3f;
+  --mlf-btn-bd: #334155;
+  --mlf-btn-fg: #f1f5f9;
+  --mlf-err-bg: #3b1820;
+  --mlf-err-bd: #7f1d1d;
+  --mlf-err-fg: #fca5a5;
+  --mlf-err-btn-bg: #450a0a;
+  --mlf-err-btn-bd: #991b1b;
+  --mlf-end-line: #232b3a;
+  --mlf-end-fg: #64748b;
+}
+
+.mail-list-sentinel {
+  width: 100%;
+  height: 1px;
+  flex-shrink: 0;
+  pointer-events: none;
+}

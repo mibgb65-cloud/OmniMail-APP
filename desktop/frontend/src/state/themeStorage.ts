@@ -4,21 +4,33 @@ import { persistLocalLanguage, readStoredLanguage } from "../i18n";
 import { profileApi } from "../services/backendClient";
 import type {
   AppSettings,
+  DarkHtmlMode,
   LanguageCode,
   ThemeMode,
   ThemePreference,
 } from "../types/settings";
 import { syncDesktopPreferences } from "./desktopActions";
 import {
+  DARK_HTML_MODE_STORAGE_KEY,
   THEME_PREF_STORAGE_KEY,
   THEME_STORAGE_KEY,
   isWailsDesktop,
+  readStoredDarkHtmlMode,
   resolveThemeFromPref,
 } from "./storageHelpers";
+
+export function persistLocalDarkHtmlMode(mode: DarkHtmlMode) {
+  try {
+    window.localStorage.setItem(DARK_HTML_MODE_STORAGE_KEY, mode);
+  } catch {
+    // 忽略受限存储环境异常
+  }
+}
 
 export function readInitialThemeState(): {
   theme: ThemeMode;
   themePreference: ThemePreference;
+  darkHtmlMode: DarkHtmlMode;
   language: LanguageCode;
 } {
   let pref: ThemePreference = INITIAL_SETTINGS.themePreference;
@@ -41,6 +53,7 @@ export function readInitialThemeState(): {
   return {
     theme: resolved,
     themePreference: pref,
+    darkHtmlMode: readStoredDarkHtmlMode(),
     language: readStoredLanguage(),
   };
 }
@@ -62,10 +75,12 @@ export function scheduleSettingsPersist(
   persistPatch: Partial<AppSettings>,
 ) {
   persistLocalLanguage(merged.language);
+  persistLocalDarkHtmlMode(merged.darkHtmlMode ?? "adaptive");
   window.clearTimeout(persistDebounceTimer);
   persistDebounceTimer = window.setTimeout(() => {
     persistLocalTheme(merged.themePreference, merged.theme);
     persistLocalLanguage(merged.language);
+    persistLocalDarkHtmlMode(merged.darkHtmlMode ?? "adaptive");
     void profileApi.updateAppSettings(persistPatch).catch(() => undefined);
     void syncDesktopPreferences(merged);
   }, 220);

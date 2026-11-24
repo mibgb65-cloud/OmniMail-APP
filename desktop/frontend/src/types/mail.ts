@@ -80,6 +80,7 @@ export interface MailItem {
   snippet: string;
   timeText: string;
   fullTimeText: string;
+  receivedAtUnixMs?: number;
   unread: boolean;
   starred: boolean;
   labels: string[];

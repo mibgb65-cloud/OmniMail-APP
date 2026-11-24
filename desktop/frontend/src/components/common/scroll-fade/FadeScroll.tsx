@@ -6,6 +6,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { attachOverlayScrollbarInteraction } from "./overlayScrollbar";
 import { attachScrollFade } from "./scrollFade";
 
 type FadeScrollProps = ComponentPropsWithRef<"div"> & {
@@ -27,6 +28,8 @@ export function FadeScroll({
   const host = useRef<HTMLDivElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
+  const track = useRef<HTMLDivElement>(null);
+  const thumb = useRef<HTMLDivElement>(null);
   const {
     ref: viewportRef,
     tabIndex,
@@ -38,11 +41,27 @@ export function FadeScroll({
   useImperativeHandle(ref, () => host.current!, []);
   useImperativeHandle(viewportRef, () => viewport.current!, []);
   useLayoutEffect(() => {
-    const scroll = attachScrollFade(host.current!, viewport.current!, {
+    const hostEl = host.current!;
+    const viewportEl = viewport.current!;
+    const trackEl = track.current!;
+    const thumbEl = thumb.current!;
+    const overlay = attachOverlayScrollbarInteraction(
+      hostEl,
+      viewportEl,
+      trackEl,
+      thumbEl,
+    );
+    const scroll = attachScrollFade(hostEl, viewportEl, {
       content: content.current!,
+      track: trackEl,
+      thumb: thumbEl,
       focusOnOverflow,
+      onScrollActivity: overlay.notifyScrollActivity,
     });
-    return scroll.dispose;
+    return () => {
+      scroll.dispose();
+      overlay.dispose();
+    };
   }, [focusOnOverflow]);
 
   return (
@@ -68,6 +87,9 @@ export function FadeScroll({
         <div className="fade-scroll-content" ref={content}>
           {children}
         </div>
+      </div>
+      <div className="fade-scroll-track" ref={track} aria-hidden="true">
+        <div className="fade-scroll-thumb" ref={thumb} />
       </div>
     </div>
   );

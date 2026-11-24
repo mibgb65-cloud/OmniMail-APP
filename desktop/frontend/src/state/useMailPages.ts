@@ -7,28 +7,62 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { mailApi, type MailSearchQuery } from "../services/backendClient";
+import {
+  mailApi,
+  parseBackendError,
+  type MailSearchQuery,
+} from "../services/backendClient";
 import type { MailItem } from "../types/mail";
+import {
+  canBackfillRemoteFolder,
+  type RemoteBackfillEligibility,
+} from "./mailListBackfillPolicy";
+import { getListReloadDelayMs } from "./mailListLoadingPolicy";
 import { isWailsDesktop } from "./storageHelpers";
 import { useMailListArrivals } from "./useMailListArrivals";
+import {
+  emptyScopeState,
+  useMailLoadMore,
+  type ScopedPageState,
+} from "./useMailLoadMore";
 
 export function useMailPages(
   buildQuery: (cursor?: string) => MailSearchQuery,
   accountId: string | null,
+  backfillCtx: RemoteBackfillEligibility,
+  mails: MailItem[],
   setMails: Dispatch<SetStateAction<MailItem[]>>,
 ) {
   const [folderCounts, setFolderCounts] = useState<Record<string, number>>({});
   const [totalCount, setTotalCount] = useState(0);
-  const [cursor, setCursor] = useState<{
-    scope: typeof buildQuery;
-    value: string;
-  }>();
-  const nextCursor = cursor?.scope === buildQuery ? cursor.value : "";
+  const [pageState, setPageState] = useState<ScopedPageState>();
   const [revision, setRevision] = useState(0);
   const listSeq = useRef(0);
   const countSeq = useRef(0);
   const paging = useRef<object | null>(null);
   const activeQuery = useRef<typeof buildQuery | null>(null);
+  const lastSearchRef = useRef(backfillCtx.searchQuery);
+  const mailsRef = useRef<MailItem[]>(mails);
+  useLayoutEffect(() => {
+    mailsRef.current = mails;
+  }, [mails]);
+
+  const current =
+    pageState?.scope === buildQuery ? pageState : emptyScopeState(buildQuery);
+  const isInitialLoading = isWailsDesktop() && !current.loaded;
+  const canAutoBackfill = canBackfillRemoteFolder(backfillCtx, false);
+  const canManualBackfill = canBackfillRemoteFolder(backfillCtx, true);
+
+  const patchScopeState = useCallback(
+    (patch: Partial<Omit<ScopedPageState, "scope">>) => {
+      setPageState((prev) => {
+        const base =
+          prev?.scope === buildQuery ? prev : emptyScopeState(buildQuery);
+        return { ...base, ...patch, scope: buildQuery };
+      });
+    },
+    [buildQuery],
+  );
 
   const invalidateRequests = useCallback(() => {
     listSeq.current++;
@@ -45,19 +79,43 @@ export function useMailPages(
     if (counts && seq === countSeq.current) setFolderCounts(counts);
   }, [accountId, buildQuery]);
 
-  const reloadMessages = useCallback(async () => {
-    if (!isWailsDesktop() || activeQuery.current !== buildQuery) return;
-    const seq = ++listSeq.current;
-    paging.current = null;
-    const [page] = await Promise.all([
-      mailApi.listMessages(buildQuery()).catch(() => null),
-      refreshCounts(),
-    ]);
-    if (!page || seq !== listSeq.current) return;
-    setMails(page.items);
-    setCursor({ scope: buildQuery, value: page.nextCursor });
-    setTotalCount(page.totalCount);
-  }, [buildQuery, refreshCounts, setMails]);
+  const reloadMessages = useCallback(
+    async (retryFromEmpty = false) => {
+      if (!isWailsDesktop() || activeQuery.current !== buildQuery) return;
+      const seq = ++listSeq.current;
+      paging.current = null;
+      setPageState((prev) => {
+        if (retryFromEmpty) return emptyScopeState(buildQuery);
+        if (prev?.scope === buildQuery && prev.loaded) {
+          return { ...prev, isRefreshing: true, listError: "" };
+        }
+        return prev;
+      });
+      void refreshCounts();
+      try {
+        const page = await mailApi.listMessages(buildQuery());
+        if (seq !== listSeq.current) return;
+        setMails(page.items);
+        setTotalCount(page.totalCount);
+        setPageState({
+          ...emptyScopeState(buildQuery),
+          loaded: true,
+          nextCursor: page.nextCursor,
+          hasRemoteMore: page.hasRemoteMore,
+          remoteTotalCount: page.remoteTotalCount,
+        });
+      } catch (err) {
+        if (seq !== listSeq.current) return;
+        patchScopeState({
+          loaded: true,
+          isRefreshing: false,
+          listError: parseBackendError(err).message,
+        });
+      }
+    },
+    [buildQuery, patchScopeState, refreshCounts, setMails],
+  );
+
   const listArrivals = useMailListArrivals(
     buildQuery,
     revision,
@@ -67,57 +125,70 @@ export function useMailPages(
   useLayoutEffect(() => {
     activeQuery.current = buildQuery;
     return () => {
-      // 取消上一筛选的列表、分页和计数回写，不让旧结果覆盖新账户。
       activeQuery.current = null;
       invalidateRequests();
     };
   }, [buildQuery, revision, invalidateRequests]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => void reloadMessages(), 60);
-    return () => window.clearTimeout(timer);
-  }, [reloadMessages, revision]);
-
-  const loadMore = useCallback(async () => {
-    if (
-      !isWailsDesktop() ||
-      activeQuery.current !== buildQuery ||
-      !nextCursor ||
-      paging.current
-    )
-      return;
-    const ticket = {};
-    const seq = listSeq.current;
-    paging.current = ticket;
-    try {
-      const page = await mailApi
-        .listMessages(buildQuery(nextCursor))
-        .catch(() => null);
-      if (!page || seq !== listSeq.current) return;
-      setMails((prev) => {
-        const ids = new Set(prev.map((item) => item.id));
-        return [...prev, ...page.items.filter((item) => !ids.has(item.id))];
-      });
-      setCursor({ scope: buildQuery, value: page.nextCursor });
-    } finally {
-      if (paging.current === ticket) paging.current = null;
+    const delay = getListReloadDelayMs(
+      lastSearchRef.current,
+      backfillCtx.searchQuery,
+    );
+    lastSearchRef.current = backfillCtx.searchQuery;
+    let cancelled = false;
+    const run = () => {
+      if (!cancelled) void reloadMessages();
+    };
+    if (delay > 0) {
+      const timer = window.setTimeout(run, delay);
+      return () => {
+        cancelled = true;
+        window.clearTimeout(timer);
+      };
     }
-  }, [buildQuery, nextCursor, setMails]);
+    void Promise.resolve().then(run);
+    return () => {
+      cancelled = true;
+    };
+  }, [backfillCtx.searchQuery, reloadMessages, revision]);
+
+  const loadMore = useMailLoadMore({
+    buildQuery,
+    accountId,
+    backfillCtx,
+    nextCursor: current.nextCursor,
+    hasRemoteMore: current.hasRemoteMore,
+    loadMoreError: current.loadMoreError,
+    listSeqRef: listSeq,
+    pagingRef: paging,
+    activeQueryRef: activeQuery,
+    mailsRef,
+    setMails,
+    setTotalCount,
+    patchScopeState,
+    refreshCounts,
+  });
 
   const resetPages = useCallback(() => {
     invalidateRequests();
     setFolderCounts({});
-    setCursor(undefined);
+    setPageState(undefined);
     setTotalCount(0);
     setRevision((value) => value + 1);
   }, [invalidateRequests]);
 
+  const { scope: _scope, ...scopedFields } = current;
+  void _scope;
   return {
     listArrivals,
     folderCounts,
     totalCount,
-    loaded: cursor?.scope === buildQuery,
-    hasMore: Boolean(nextCursor),
+    ...scopedFields,
+    isInitialLoading,
+    hasMore: Boolean(current.nextCursor),
+    canAutoBackfill,
+    canManualBackfill,
     loadMore,
     reloadMessages,
     refreshCounts,

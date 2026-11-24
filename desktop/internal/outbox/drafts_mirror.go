@@ -83,10 +83,7 @@ func upsertDraftPreviewMessage(db *sql.DB, draft ComposeDraftState, nowMs int64)
 		subj = "（无主题草稿）"
 	}
 	snippet := mailproto.MakeSnippet(draft.Body, draft.BodyHTML, 120)
-	htmlBody := draft.BodyHTML
-	if strings.TrimSpace(htmlBody) == "" {
-		htmlBody = security.PlainTextToHTML(draft.Body)
-	}
+	htmlBody := sanitizeJobHTML(draft.Body, draft.BodyHTML)
 	toAddrs := stringsToEmailAddrs(draft.To)
 	ccAddrs := stringsToEmailAddrs(draft.Cc)
 	toJ, _ := json.Marshal(toAddrs)
@@ -172,4 +169,14 @@ func formatBytes(sz int64) string {
 		return fmt.Sprintf("%d KB", (sz+512)/1024)
 	}
 	return fmt.Sprintf("%d B", sz)
+}
+
+func sanitizeJobHTML(plain, rawHTML string) string {
+	if strings.TrimSpace(rawHTML) != "" {
+		cleaned, _ := security.SanitizeMailHTML(rawHTML, nil)
+		if strings.TrimSpace(cleaned) != "" {
+			return cleaned
+		}
+	}
+	return security.PlainTextToHTML(plain)
 }

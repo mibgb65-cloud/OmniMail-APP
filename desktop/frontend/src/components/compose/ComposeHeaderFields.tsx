@@ -1,11 +1,8 @@
 import { useI18n } from "../../i18n";
-import { composeApi, parseBackendError } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
-import { isWailsDesktop } from "../../state/storageHelpers";
 import { CustomSelect } from "../common/CustomSelect";
 import { Icon } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
-import { buildDemoDraftAttachment } from "./ComposeAttachmentsBar";
 import { RecipientInputRow } from "./RecipientInputRow";
 
 export function ComposeHeaderFields() {
@@ -119,76 +116,5 @@ export function ComposeHeaderFields() {
         )}
       </div>
     </>
-  );
-}
-
-export function ComposeToolbar() {
-  const { workspace, composeStore, toastStore } = useApp();
-  const { t } = useI18n();
-  const draft = composeStore.draft;
-  if (!draft) return null;
-
-  const handlePickAttachments = () => {
-    if (!isWailsDesktop()) {
-      const next = [...draft.attachments, buildDemoDraftAttachment(false)];
-      composeStore.updateDraft({ attachments: next });
-      return;
-    }
-    void composeApi
-      .pickAttachments()
-      .then((picked) => {
-        if (!picked.length) return;
-        const merged = [...draft.attachments, ...picked];
-        if (merged.reduce((s, a) => s + (a.sizeBytes ?? 0), 0) > 26214400) {
-          toastStore.pushToast({
-            tone: "warning",
-            title: t("toasts.attExceeds25MbTitle"),
-            detail: t("toasts.attExceeds25MbDetail"),
-          });
-        }
-        composeStore.updateDraft({ attachments: merged });
-      })
-      .catch((err) =>
-        toastStore.pushToast({
-          tone: "danger",
-          title: t("toasts.readLocalAttFailed"),
-          detail: parseBackendError(err).message,
-        }),
-      );
-  };
-
-  const openTransfers = () =>
-    workspace.setOverlay({ type: "attachment-transfer", mode: "transfer" });
-
-  return (
-    <div className="compose-toolbar">
-      <div className="row" style={{ gap: 4, minWidth: 0 }}>
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          onClick={handlePickAttachments}
-        >
-          <Icon name="paperclip" size={13} /> {t("compose.addAttachment")}
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          onClick={openTransfers}
-        >
-          {t("compose.transferQueue")}
-        </button>
-      </div>
-      <button
-        type="button"
-        className="btn btn-ai btn-sm"
-        style={{ flexShrink: 0 }}
-        onClick={() =>
-          composeStore.updateDraft({ inlineAiOpen: !draft.inlineAiOpen })
-        }
-      >
-        <Icon name="sparkle" size={13} />
-        {t(draft.inlineAiOpen ? "compose.hideInlineAi" : "compose.inlineAiCta")}
-      </button>
-    </div>
   );
 }

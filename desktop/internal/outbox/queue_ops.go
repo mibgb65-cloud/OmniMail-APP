@@ -15,7 +15,7 @@ import (
 
 func (s *Scheduler) persistJob(
 	sess *profilemgr.Session,
-	accountID, draftID, subject, bodyText string,
+	accountID, draftID, subject, bodyText, bodyHTML string,
 	built *mailproto.BuiltMessage,
 	state string,
 	notBeforeMs int64,
@@ -32,7 +32,7 @@ func (s *Scheduler) persistJob(
 	if cleanSubj == "" {
 		cleanSubj = "（无主题）"
 	}
-	snippet := mailproto.MakeSnippet(bodyText, "", 120)
+	snippet := mailproto.MakeSnippet(bodyText, bodyHTML, 120)
 
 	var fromName, fromEmail string
 	_ = sess.DB.QueryRow(`SELECT COALESCE(NULLIF(sender_name,''), name), email FROM accounts WHERE id=?`,
@@ -63,7 +63,7 @@ func (s *Scheduler) persistJob(
 			raw_blob_sha256, sent_at, received_at, is_unread, scheduled_at, size_bytes
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
 	`, msgID, accountID, tid, built.RFCMessageID, folder, fromName, fromEmail,
-		string(toJ), string(ccJ), string(bccJ), cleanSubj, snippet, bodyText, sanitizeJobHTML(bodyText),
+		string(toJ), string(ccJ), string(bccJ), cleanSubj, snippet, bodyText, sanitizeJobHTML(bodyText, bodyHTML),
 		rawSHA, nowMs, nowMs, schedVal, int64(len(built.RawBytes)))
 
 	if draftID != "" {

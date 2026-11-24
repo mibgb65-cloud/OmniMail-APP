@@ -1,5 +1,6 @@
 /* 邮件列表栏头部（固定）、筛选分段、多选批量栏与独立卡片滚动区 */
 .list-header {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 9px;

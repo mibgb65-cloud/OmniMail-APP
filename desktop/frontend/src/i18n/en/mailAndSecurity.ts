@@ -159,6 +159,12 @@ export const reader = {
   zeroChipQq: "QQ Mail",
   zeroChipNetease: "NetEase 163 / 126",
   zeroChipImap: "Generic IMAP / SMTP",
+  htmlThemeToggleAria: "HTML email dark view mode",
+  htmlThemeAdaptive: "Dark Adaptive",
+  htmlThemePaper: "Original Light",
+  htmlThemeAdaptiveTip:
+    "Dark Adaptive: comfortable dark surface without inverting images",
+  htmlThemePaperTip: "Original Light: render original light paper email layout",
 } satisfies typeof zhReader;
 
 export const security = {

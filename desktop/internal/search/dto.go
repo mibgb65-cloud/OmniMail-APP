@@ -111,9 +111,11 @@ type MailSearchQuery struct {
 }
 
 type MessageListPage struct {
-	Items      []MailItemDTO `json:"items"`
-	NextCursor string        `json:"nextCursor,omitempty"`
-	TotalCount int           `json:"totalCount"`
+	Items            []MailItemDTO `json:"items"`
+	NextCursor       string        `json:"nextCursor,omitempty"`
+	TotalCount       int           `json:"totalCount"`
+	HasRemoteMore    bool          `json:"hasRemoteMore"`
+	RemoteTotalCount int           `json:"remoteTotalCount,omitempty"`
 }
 
 type FolderCounts struct {

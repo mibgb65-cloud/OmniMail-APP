@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/emersion/go-imap/v2/imapclient"
+
 	"omnimail/internal/accounts"
 	"omnimail/internal/apperr"
 	"omnimail/internal/events"
@@ -72,7 +74,6 @@ func (w *SyncWorker) syncLoop() {
 				continue
 			}
 			if apperr.CodeOf(err) == apperr.CodeAuthExpired {
-				// 认证已失效时暂停自动重试，等待用户重新授权
 				continue
 			}
 			delay := backoffSchedule[minInt(failures, len(backoffSchedule)-1)]
@@ -101,11 +102,15 @@ func (w *SyncWorker) runOneSyncCycle() error {
 	if err != nil {
 		w.reportStatus("auth-expired", err.Error(), 0)
 		w.emitSyncProgress("failed", "未能读取邮箱凭据")
+		AppendSyncLog(w.sess.DB, w.sess.ProfileDir, w.accountID, "IMAP", "error", "auth", time.Since(start).Milliseconds(), "读取邮箱凭据失败", err.Error())
 		return err
 	}
 	w.reportStatus("syncing", "", 0)
 
-	workConn, err := mailproto.ConnectIMAP(w.ctx, epCfg, nil)
+	reconnect := func() (*imapclient.Client, error) {
+		return mailproto.ConnectIMAP(w.ctx, epCfg, nil)
+	}
+	workConn, err := reconnect()
 	if err != nil {
 		st := "error"
 		if apperr.CodeOf(err) == apperr.CodeAuthExpired {
@@ -116,10 +121,7 @@ func (w *SyncWorker) runOneSyncCycle() error {
 		AppendSyncLog(w.sess.DB, w.sess.ProfileDir, w.accountID, "IMAP", "error", "auth", time.Since(start).Milliseconds(), "连接收件服务器失败", err.Error())
 		return err
 	}
-	defer func() {
-		_ = workConn.Logout().Wait()
-		_ = workConn.Close()
-	}()
+	defer func() { closeIMAPQuietly(workConn, false) }()
 
 	FlushOpQueue(w.sess.DB, workConn, w.accountID)
 
@@ -128,38 +130,20 @@ func (w *SyncWorker) runOneSyncCycle() error {
 	if err != nil {
 		w.reportStatus("error", err.Error(), 0)
 		w.emitSyncProgress("failed", "未能读取邮件文件夹")
+		AppendSyncLog(w.sess.DB, w.sess.ProfileDir, w.accountID, "IMAP", "error", "list", time.Since(start).Milliseconds(), "读取邮件文件夹列表失败", err.Error())
 		return err
 	}
 	sort.SliceStable(boxes, func(i, j int) bool {
 		return folderPriority(boxes[i].LocalFolder) < folderPriority(boxes[j].LocalFolder)
 	})
 
-	var allAdded []string
-	var syncedBox, failedBox bool
-	syncingOtherFolders := false
-	for _, mb := range boxes {
-		if mb.NoSelect || mb.LocalFolder == "custom" {
-			continue
-		}
-		select {
-		case <-w.ctx.Done():
-			return w.ctx.Err()
-		default:
-		}
-		if mb.LocalFolder != "inbox" && !syncingOtherFolders {
-			w.emitSyncProgress("syncing", "正在同步其他邮件文件夹…")
-			syncingOtherFolders = true
-		}
-		added, mbErr := syncSingleMailbox(workConn, w.sess.DB, w.sess.Blobs, w.hooks, w.bus, accDTO, mb)
-		allAdded = append(allAdded, added...)
-		if mbErr != nil {
-			failedBox = true
-		} else {
-			syncedBox = true
-		}
+	allAdded, syncedBox, failedBox, folderErrors, finalConn := w.syncBoxesWithReconnect(workConn, accDTO, boxes, reconnect)
+	workConn = finalConn
+	if w.ctx.Err() != nil {
+		return w.ctx.Err()
 	}
 
-	w.finishSyncProgress(syncedBox || len(allAdded) > 0, failedBox)
+	w.finishSyncProgress(syncedBox || len(allAdded) > 0, failedBox, summarizeFolderErrors(folderErrors))
 	if w.bus != nil {
 		counts, _ := search.GetFolderCounts(w.sess.DB, "")
 		w.bus.Emit(events.MailDelta, events.MailDeltaPayload{

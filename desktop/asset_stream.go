@@ -40,7 +40,16 @@ func serveControlledAttachment(w http.ResponseWriter, r *http.Request, mgr *prof
 	}
 
 	var sha, mimeType, filename string
+	fromDraftInline := false
 	err = sess.DB.QueryRow(`SELECT blob_sha256, mime_type, filename FROM attachments WHERE id = ?`, attID).Scan(&sha, &mimeType, &filename)
+	if err != nil || sha == "" {
+		normCID := strings.ToLower(strings.Trim(attID, "<>"))
+		err = sess.DB.QueryRow(`SELECT blob_sha256, mime_type, filename FROM attachments WHERE LOWER(TRIM(content_id, '<>')) = ? AND blob_sha256 != '' LIMIT 1`, normCID).Scan(&sha, &mimeType, &filename)
+	}
+	if err != nil || sha == "" {
+		err = sess.DB.QueryRow(`SELECT blob_sha256, mime_type, filename FROM draft_inline_images WHERE id = ?`, attID).Scan(&sha, &mimeType, &filename)
+		fromDraftInline = err == nil && sha != ""
+	}
 	if err != nil || sha == "" {
 		http.Error(w, "attachment not cached locally", http.StatusNotFound)
 		return
@@ -62,7 +71,9 @@ func serveControlledAttachment(w http.ResponseWriter, r *http.Request, mgr *prof
 		return
 	}
 
-	_, _ = sess.DB.Exec(`UPDATE attachments SET last_access_at = ? WHERE id = ?`, time.Now().UnixMilli(), attID)
+	if !fromDraftInline {
+		_, _ = sess.DB.Exec(`UPDATE attachments SET last_access_at = ? WHERE id = ?`, time.Now().UnixMilli(), attID)
+	}
 
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'")

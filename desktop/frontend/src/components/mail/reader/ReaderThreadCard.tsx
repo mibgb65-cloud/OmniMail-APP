@@ -1,14 +1,16 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useI18n } from "../../../i18n";
-import { parseMailtoUrl } from "../../../state/storageHelpers";
 import { useApp } from "../../../state/AppContext";
 import type { MailItem, ThreadMessage } from "../../../types/mail";
+import type { DarkHtmlMode, ThemeMode } from "../../../types/settings";
 import { Icon } from "../../common/Icon";
-import {
-  translatedSegment,
-  type BodyTranslation,
-} from "../translation/translatedText";
+import type { BodyTranslation } from "../translation/translatedText";
+import { PlainTextBody } from "./PlainTextParagraph";
 import { SafeMailHtmlView } from "./SafeMailHtmlView";
+import {
+  useReaderImageHandlers,
+  useReaderLinkHandlers,
+} from "./useReaderLinkHandlers";
 
 const headLeftStyle = {
   display: "flex",
@@ -23,55 +25,49 @@ const headRightStyle = {
   gap: 6,
   flexShrink: 0,
 };
-const emailMetaStyle = { fontSize: 12, color: "var(--text-muted)" };
+const mutedMetaStyle = { fontSize: 12, color: "var(--text-muted)" };
 const toMetaStyle = { fontSize: 12, color: "var(--text-secondary)" };
 const detailBtnStyle = {
   color: "var(--brand-accent)",
   fontSize: 12,
   flexShrink: 0,
 };
-const timeTextStyle = { fontSize: 12, color: "var(--text-muted)" };
 
-export function ReaderThreadCard({
-  mail,
-  msg,
-  isLatest,
-  isExpanded,
-  onExpand,
-  translation,
-}: {
+interface ReaderThreadCardProps {
   mail: MailItem;
   msg: ThreadMessage;
+  theme: ThemeMode;
+  htmlThemeMode: DarkHtmlMode;
   isLatest: boolean;
   isExpanded: boolean;
   onExpand: () => void;
   translation?: BodyTranslation;
-}) {
+}
+
+export function ReaderThreadCard({
+  mail,
+  msg,
+  theme,
+  htmlThemeMode,
+  isLatest,
+  isExpanded,
+  onExpand,
+  translation,
+}: ReaderThreadCardProps) {
   const { t, formatTime, localizeText } = useI18n();
-  const { mailStore, composeStore } = useApp();
+  const { mailStore } = useApp();
   const [showDetailHeaders, setShowDetailHeaders] = useState(false);
-  const { openNewCompose, updateDraft } = composeStore;
-  const onMailto = useCallback(
-    (url: string) => {
-      const p = parseMailtoUrl(url);
-      openNewCompose(p.to);
-      if (p.subject || p.body)
-        updateDraft({
-          ...(p.subject ? { subject: p.subject } : {}),
-          ...(p.body ? { body: p.body } : {}),
-        });
-    },
-    [openNewCompose, updateDraft],
+  const { onMailto, onExternalLink } = useReaderLinkHandlers(
+    mail.securityWarning?.level === "danger",
+  );
+  const { onOpenImage, onRetryInlineCid } = useReaderImageHandlers(
+    mail.attachments,
   );
   const paragraphs =
     msg.bodyParagraphs.length > 0
       ? msg.bodyParagraphs
       : [t("common.emptyMailBody")];
   const toLine = t("reader.recipientsPrefix", { to: msg.recipients });
-  const detailLabel = t(
-    showDetailHeaders ? "reader.hideDetails" : "reader.showDetails",
-  );
-  const starAria = t(mail.starred ? "reader.unstarAria" : "reader.starAria");
 
   return (
     <article
@@ -91,7 +87,7 @@ export function ReaderThreadCard({
               >
                 {msg.senderName}
               </strong>
-              <span className="truncate" style={emailMetaStyle}>
+              <span className="truncate" style={mutedMetaStyle}>
                 &lt;{msg.senderEmail}&gt;
               </span>
             </div>
@@ -108,7 +104,11 @@ export function ReaderThreadCard({
                   }}
                   style={detailBtnStyle}
                 >
-                  {detailLabel}
+                  {t(
+                    showDetailHeaders
+                      ? "reader.hideDetails"
+                      : "reader.showDetails",
+                  )}
                 </button>
               )}
             </div>
@@ -116,7 +116,7 @@ export function ReaderThreadCard({
         </div>
 
         <div style={headRightStyle}>
-          <span style={{ ...timeTextStyle, whiteSpace: "nowrap" }}>
+          <span style={{ ...mutedMetaStyle, whiteSpace: "nowrap" }}>
             {formatTime(msg.timeText)}
           </span>
           {isLatest && (
@@ -128,7 +128,9 @@ export function ReaderThreadCard({
                 e.stopPropagation();
                 mailStore.toggleStar([mail.id]);
               }}
-              aria-label={starAria}
+              aria-label={t(
+                mail.starred ? "reader.unstarAria" : "reader.starAria",
+              )}
             >
               <Icon name="star" size={15} />
             </button>
@@ -159,30 +161,22 @@ export function ReaderThreadCard({
           {msg.bodyHtml ? (
             <SafeMailHtmlView
               html={msg.bodyHtml}
+              theme={theme}
+              htmlThemeMode={htmlThemeMode}
               translation={translation}
               onMailto={onMailto}
+              onExternalLink={onExternalLink}
+              onOpenImage={onOpenImage}
+              onRetryInlineCid={onRetryInlineCid}
             />
           ) : (
-            paragraphs.map((para, pIdx) => {
-              const text =
-                translation && translatedSegment(para, translation.segments);
-              const displayPara = localizeText(para);
-              return (
-                <p key={pIdx}>
-                  {translation?.mode === "translated" && text
-                    ? text
-                    : displayPara}
-                  {translation?.mode === "bilingual" && text && (
-                    <span
-                      className="reader-translated-paragraph"
-                      lang={translation.target}
-                    >
-                      {text}
-                    </span>
-                  )}
-                </p>
-              );
-            })
+            <PlainTextBody
+              paragraphs={paragraphs}
+              localizeText={localizeText}
+              translation={translation}
+              onExternalLink={onExternalLink}
+              onMailto={onMailto}
+            />
           )}
         </div>
       )}

@@ -5,11 +5,9 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"html"
+	"net/url"
 	"strings"
 	"time"
-
-	"github.com/emersion/go-message/mail"
 
 	"omnimail/internal/apperr"
 )
@@ -37,6 +35,7 @@ type BuildMessageInput struct {
 	References     []string
 	ExtraHeaders   map[string]string
 	Attachments    []OutgoingAttachment
+	InlineImages   []InlineImage
 }
 
 type BuiltMessage struct {
@@ -69,17 +68,7 @@ func BuildRFC5322(in BuildMessageInput) (*BuiltMessage, error) {
 
 	h := buildMessageHeader(in, fromAddr, cleanMsgID, toList, ccList)
 	var buf bytes.Buffer
-	mw, err := mail.CreateWriter(&buf, h)
-	if err != nil {
-		return nil, err
-	}
-	if err := writeInlineBodyParts(mw, in); err != nil {
-		return nil, err
-	}
-	if err := writeAttachmentParts(mw, in.Attachments); err != nil {
-		return nil, err
-	}
-	if err := mw.Close(); err != nil {
+	if err := writeMimeBodyHierarchy(&buf, h, in); err != nil {
 		return nil, err
 	}
 
@@ -94,50 +83,53 @@ func BuildRFC5322(in BuildMessageInput) (*BuiltMessage, error) {
 	}, nil
 }
 
-func writeInlineBodyParts(mw *mail.Writer, in BuildMessageInput) error {
-	iw, err := mw.CreateInline()
-	if err != nil {
-		return err
-	}
-	plainText := in.BodyText
-	if strings.TrimSpace(plainText) == "" && in.BodyHTML != "" {
-		plainText = StripHTMLToText(in.BodyHTML)
-	}
-	var th mail.InlineHeader
-	th.SetContentType("text/plain", map[string]string{"charset": "utf-8"})
-	tw, err := iw.CreatePart(th)
-	if err != nil {
-		return err
-	}
-	_, _ = tw.Write([]byte(plainText))
-	_ = tw.Close()
+type InlineImage struct {
+	AttachmentID string
+	ContentID    string
+	Filename     string
+	MimeType     string
+	Data         []byte
+}
 
-	htmlText := in.BodyHTML
-	if strings.TrimSpace(htmlText) == "" {
-		escaped := html.EscapeString(plainText)
-		htmlText = "<div style=\"font-family:system-ui,sans-serif;font-size:14px;line-height:1.6\">" +
-			strings.ReplaceAll(strings.ReplaceAll(escaped, "\r\n", "\n"), "\n", "<br/>") + "</div>"
+// rewriteInlineImageSources 将草稿中的 /omnimail-cid/{id} 替换为标准 cid:{contentId}，并仅返回实际被引用的内嵌图。
+func rewriteInlineImageSources(bodyHTML string, images []InlineImage) (string, []InlineImage) {
+	if strings.TrimSpace(bodyHTML) == "" || len(images) == 0 {
+		return bodyHTML, nil
 	}
-	var hh mail.InlineHeader
-	hh.SetContentType("text/html", map[string]string{"charset": "utf-8"})
-	hw, err := iw.CreatePart(hh)
-	if err != nil {
-		return err
-	}
-	_, _ = hw.Write([]byte(htmlText))
-	_ = hw.Close()
-
-	if strings.TrimSpace(in.CalendarICS) != "" {
-		method := strings.ToUpper(strings.TrimSpace(in.CalendarMethod))
-		if method == "" {
-			method = "REPLY"
+	rewritten := bodyHTML
+	used := make([]InlineImage, 0, len(images))
+	seenCID := make(map[string]bool)
+	for _, img := range images {
+		if len(img.Data) == 0 {
+			continue
 		}
-		var ch mail.InlineHeader
-		ch.SetContentType("text/calendar", map[string]string{"charset": "utf-8", "method": method})
-		if cw, cErr := iw.CreatePart(ch); cErr == nil {
-			_, _ = cw.Write([]byte(in.CalendarICS))
-			_ = cw.Close()
+		cid := strings.Trim(strings.TrimSpace(img.ContentID), "<>")
+		if cid == "" {
+			continue
+		}
+		attID := strings.TrimSpace(img.AttachmentID)
+		matched := false
+		if attID != "" {
+			rawRef := "/omnimail-cid/" + attID
+			escRef := "/omnimail-cid/" + url.PathEscape(attID)
+			if strings.Contains(rewritten, rawRef) {
+				rewritten = strings.ReplaceAll(rewritten, rawRef, "cid:"+cid)
+				matched = true
+			}
+			if escRef != rawRef && strings.Contains(rewritten, escRef) {
+				rewritten = strings.ReplaceAll(rewritten, escRef, "cid:"+cid)
+				matched = true
+			}
+		}
+		if strings.Contains(rewritten, "cid:"+cid) {
+			matched = true
+		}
+		if matched && !seenCID[cid] {
+			seenCID[cid] = true
+			cp := img
+			cp.ContentID = cid
+			used = append(used, cp)
 		}
 	}
-	return iw.Close()
+	return rewritten, used
 }

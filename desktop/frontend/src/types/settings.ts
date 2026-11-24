@@ -1,5 +1,6 @@
 export type ThemeMode = "light" | "dark";
 export type ThemePreference = ThemeMode | "system";
+export type DarkHtmlMode = "adaptive" | "paper";
 export type LanguageCode = "zh-CN" | "en-US";
 export type DensityMode = "comfortable" | "compact";
 
@@ -35,6 +36,7 @@ export type TranslationProvider = "bilibili" | "ai";
 export interface AppSettings {
   theme: ThemeMode;
   themePreference: ThemePreference;
+  darkHtmlMode?: DarkHtmlMode;
   language: LanguageCode;
   density: DensityMode;
   fontSize: "small" | "standard" | "large";

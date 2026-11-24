@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"omnimail/internal/mailproto"
+	"omnimail/internal/security"
 	"omnimail/internal/storage"
 )
 
@@ -40,8 +41,9 @@ func findExistingIngestedMessage(db *sql.DB, in IngestInput, rfcClean string) (s
 	return "", false
 }
 
-func prepareAttachmentRows(blobs *storage.BlobStore, msgID string, items []mailproto.ParsedAttachment) ([]preparedAttachmentRow, []string, map[string]string) {
+func prepareAttachmentRows(blobs *storage.BlobStore, msgID, bodyHTML string, items []mailproto.ParsedAttachment) ([]preparedAttachmentRow, []string, map[string]string) {
 	cidMap := make(map[string]string)
+	referencedCIDs := security.ExtractHTMLReferencedCIDs(bodyHTML)
 	var rows []preparedAttachmentRow
 	var attNames []string
 	for idx, a := range items {
@@ -56,18 +58,20 @@ func prepareAttachmentRows(blobs *storage.BlobStore, msgID string, items []mailp
 				st, sha, sz, dstPath = "ready", s, n, p
 			}
 		}
+		normCID := security.NormalizeContentID(a.ContentID)
+		if normCID != "" {
+			cidMap[normCID] = aid
+		}
+		isInline := a.IsInline || (normCID != "" && referencedCIDs[normCID])
 		inl := 0
-		if a.IsInline {
+		if isInline {
 			inl = 1
-			if a.ContentID != "" {
-				cidMap[a.ContentID] = aid
-			}
 		} else {
 			attNames = append(attNames, a.Filename)
 		}
 		rows = append(rows, preparedAttachmentRow{
 			id: aid, partID: a.PartID, fn: a.Filename, ext: a.Ext, mime: a.MimeType,
-			cid: a.ContentID, kind: a.Kind, status: st, sha: sha, path: dstPath,
+			cid: normCID, kind: a.Kind, status: st, sha: sha, path: dstPath,
 			prev: a.PreviewText, inlineInt: inl, size: sz,
 		})
 	}

@@ -21,6 +21,16 @@ export type DangerConfirmKind =
 export type UpdateStage =
   "checking" | "available" | "downloading" | "failed" | "ready";
 
+export interface LightboxImageItem {
+  id: string;
+  src: string;
+  name: string;
+  sourceLabel?: string;
+  attachmentId?: string;
+  width?: number;
+  height?: number;
+}
+
 export type OverlayModal =
   | { type: "none" }
   | { type: "settings"; tab: SettingsTabId; accountId?: string }
@@ -66,9 +76,20 @@ export type OverlayModal =
       attachment: AttachmentItem;
       mailSubject: string;
     }
+  | {
+      type: "image-lightbox";
+      images: LightboxImageItem[];
+      initialIndex: number;
+    }
   | { type: "attachment-transfer"; mode: "transfer" | "oversized" }
   | { type: "mail-source"; mailId: string }
   | { type: "print-export"; mailId: string }
+  | {
+      type: "external-link";
+      url: string;
+      displayText?: string;
+      mailDanger?: boolean;
+    }
   | { type: "rule-editor"; ruleId?: string }
   | { type: "account-server"; accountId: string }
   | { type: "diagnostics"; accountId: string }

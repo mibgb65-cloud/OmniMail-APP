@@ -1,13 +1,23 @@
+import { useCallback, useRef, useState } from "react";
 import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { useValuePresence } from "../../state/usePresence";
-import { Icon } from "../common/Icon";
-import { Tooltip } from "../common/Tooltip";
 import { FadeScroll } from "../common/scroll-fade/FadeScroll";
-import { FadeTextarea } from "../common/scroll-fade/FadeTextarea";
 import { ComposeAttachmentsBar } from "./ComposeAttachmentsBar";
-import { ComposeHeaderFields, ComposeToolbar } from "./ComposeHeaderFields";
+import { ComposeDropOverlay } from "./ComposeDropOverlay";
+import { ComposeFooterBar, ComposeModalHeader } from "./ComposeFooterBar";
+import { ComposeHeaderFields } from "./ComposeHeaderFields";
 import { ComposeInlineAiBar } from "./ComposeInlineAiBar";
+import {
+  ComposeRichEditor,
+  type ComposeRichEditorHandle,
+} from "./ComposeRichEditor";
+import { ComposeToolbar } from "./ComposeToolbar";
+import {
+  EMPTY_ACTIVE_FORMATS,
+  type ComposeActiveFormats,
+} from "./composeEditorCommands";
+import { useComposeDropZone } from "./useComposeDropZone";
 
 export function ComposeModal() {
   const { viewport, workspace, composeStore, toastStore, sendMailWithUndo } =
@@ -18,6 +28,40 @@ export function ComposeModal() {
       ? composeStore.draft
       : null;
   const { rendered: draft, closing } = useValuePresence(activeDraft, 140);
+  const editorHandleRef = useRef<ComposeRichEditorHandle | null>(null);
+  const [activeFormats, setActiveFormats] =
+    useState<ComposeActiveFormats>(EMPTY_ACTIVE_FORMATS);
+  const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
+  const [linkInitialText, setLinkInitialText] = useState("");
+
+  const handleInsertInlineImage = useCallback(
+    (url: string, contentId: string, filename: string) => {
+      editorHandleRef.current?.insertInlineImage(url, contentId, filename);
+    },
+    [],
+  );
+
+  const { dragging, shiftInline, uploadInlineImageFile, dragHandlers } =
+    useComposeDropZone({
+      draft,
+      updateDraft: composeStore.updateDraft,
+      pushToast: toastStore.pushToast,
+      onInsertInlineImage: handleInsertInlineImage,
+    });
+
+  const handleEditorChange = useCallback(
+    (body: string, bodyHtml: string) => {
+      composeStore.updateDraft({ body, bodyHtml });
+    },
+    [composeStore],
+  );
+
+  const handleOpenLinkPopover = useCallback(() => {
+    editorHandleRef.current?.saveSelection();
+    setLinkInitialText(editorHandleRef.current?.getSelectedText() ?? "");
+    setLinkPopoverOpen(true);
+  }, []);
+
   if (!draft) return null;
 
   const isCompact = viewport === "compact";
@@ -69,121 +113,70 @@ export function ComposeModal() {
           role="dialog"
           aria-modal="true"
           aria-label={t("compose.modalAria")}
+          {...dragHandlers}
         >
-          <div className="compose-top-fixed">
-            <div className="modal-header compose-modal-header">
-              <div className="row" style={{ gap: 8, minWidth: 0 }}>
-                <h2 className="modal-title truncate">{modeTitle}</h2>
-                <span className="pill pill-neutral truncate">
-                  {t("compose.autoSaved", { time: formatTime(draft.savedAt) })}
-                </span>
-              </div>
-              <div className="row" style={{ gap: 6, flexShrink: 0 }}>
-                <Tooltip label={t("compose.minimizeTip")}>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={minimizeDraft}
-                  >
-                    <Icon name="minus" size={14} /> {t("compose.minimizeBtn")}
-                  </button>
-                </Tooltip>
-                <Tooltip label={t("compose.closeKeepDraftTip")} shortcut="Esc">
-                  <button
-                    type="button"
-                    className="icon-btn icon-btn-bordered"
-                    style={{ width: 28, height: 28 }}
-                    aria-label={t("compose.closeComposeAria")}
-                    onClick={minimizeDraft}
-                  >
-                    <Icon name="x" size={14} />
-                  </button>
-                </Tooltip>
-              </div>
-            </div>
+          <ComposeDropOverlay visible={dragging} inlineMode={shiftInline} />
 
+          <div className="compose-top-fixed">
+            <ComposeModalHeader
+              modeTitle={modeTitle}
+              savedAtText={t("compose.autoSaved", {
+                time: formatTime(draft.savedAt),
+              })}
+              onMinimize={minimizeDraft}
+            />
             <ComposeHeaderFields />
-            <ComposeToolbar />
+            <ComposeToolbar
+              activeFormats={activeFormats}
+              linkPopoverOpen={linkPopoverOpen}
+              linkInitialText={linkInitialText}
+              onFormat={(cmd) => editorHandleRef.current?.execFormat(cmd)}
+              onOpenLinkPopover={handleOpenLinkPopover}
+              onCloseLinkPopover={() => setLinkPopoverOpen(false)}
+              onConfirmLink={(url, text) => {
+                editorHandleRef.current?.insertLink(url, text);
+                setLinkPopoverOpen(false);
+              }}
+              onInsertInlineImage={handleInsertInlineImage}
+              onSaveSelection={() => editorHandleRef.current?.saveSelection()}
+            />
           </div>
 
           <FadeScroll label={t("compose.bodyScrollLabel")}>
             <ComposeInlineAiBar />
-            <FadeTextarea
-              className="compose-editor"
-              frameClassName="compose-editor-frame"
-              aria-label={t("compose.bodyAria")}
-              value={draft.body}
-              onChange={(e) =>
-                composeStore.updateDraft({ body: e.target.value })
-              }
-              onKeyDown={(e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
+            <ComposeRichEditor
+              draftId={draft.id}
+              body={draft.body}
+              bodyHtml={draft.bodyHtml}
+              ariaLabel={t("compose.bodyAria")}
               placeholder={t("compose.bodyPlaceholder")}
+              editorHandleRef={editorHandleRef}
+              onChange={handleEditorChange}
+              onActiveFormatsChange={setActiveFormats}
+              onRequestSend={handleSend}
+              onRequestLink={handleOpenLinkPopover}
+              onPasteImageFile={uploadInlineImageFile}
             />
             <ComposeAttachmentsBar />
           </FadeScroll>
 
-          <div className="modal-footer compose-footer-fixed">
-            <div className="row" style={{ gap: 8 }}>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleSend}
-              >
-                <span>
-                  {draft.scheduledAt
-                    ? t("compose.confirmScheduleSend")
-                    : t("compose.sendBtn")}
-                </span>
-                <Icon name="send" size={13} />
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() =>
-                  workspace.setOverlay({
-                    type: "schedule-send",
-                    draftId: draft.id,
-                  })
-                }
-              >
-                <Icon name="clock" size={13} /> {t("compose.scheduleSendBtn")}
-              </button>
-            </div>
-
-            <div className="row" style={{ gap: 8 }}>
-              <span className="kbd">Ctrl + Enter</span>
-              {!isCompact && (
-                <span className="text-xs text-muted">
-                  {t("compose.quickSendHint")}
-                </span>
-              )}
-              <Tooltip label={t("compose.deleteDraftTip")} placement="top">
-                <button
-                  type="button"
-                  className="icon-btn icon-btn-bordered"
-                  style={{
-                    width: 32,
-                    height: 32,
-                    color: "var(--status-danger)",
-                  }}
-                  aria-label={t("compose.deleteDraftTip")}
-                  onClick={() =>
-                    workspace.setOverlay({
-                      type: "danger-confirm",
-                      kind: "discard-draft",
-                    })
-                  }
-                >
-                  <Icon name="trash" size={14} />
-                </button>
-              </Tooltip>
-            </div>
-          </div>
+          <ComposeFooterBar
+            scheduledAt={draft.scheduledAt}
+            isCompact={isCompact}
+            onSend={handleSend}
+            onSchedule={() =>
+              workspace.setOverlay({
+                type: "schedule-send",
+                draftId: draft.id,
+              })
+            }
+            onDiscard={() =>
+              workspace.setOverlay({
+                type: "danger-confirm",
+                kind: "discard-draft",
+              })
+            }
+          />
         </div>
       </div>
     </div>

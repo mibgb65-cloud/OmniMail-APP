@@ -14,15 +14,16 @@ import (
 )
 
 type Manager struct {
-	mu           sync.Mutex
-	sess         *profilemgr.Session
-	tm           *oauth.TokenManager
-	bus          *events.Bus
-	hooks        PipelineHooks
-	workers      map[string]*SyncWorker
-	pollCancel   context.CancelFunc
-	pollMinutes  int
-	onUnreadSync func(unread int)
+	mu            sync.Mutex
+	sess          *profilemgr.Session
+	tm            *oauth.TokenManager
+	bus           *events.Bus
+	hooks         PipelineHooks
+	workers       map[string]*SyncWorker
+	backfillLocks map[string]*sync.Mutex
+	pollCancel    context.CancelFunc
+	pollMinutes   int
+	onUnreadSync  func(unread int)
 }
 
 func NewManager(tm *oauth.TokenManager, bus *events.Bus) *Manager {
@@ -30,10 +31,11 @@ func NewManager(tm *oauth.TokenManager, bus *events.Bus) *Manager {
 		tm = oauth.NewTokenManager()
 	}
 	return &Manager{
-		tm:          tm,
-		bus:         bus,
-		workers:     make(map[string]*SyncWorker),
-		pollMinutes: 5,
+		tm:            tm,
+		bus:           bus,
+		workers:       make(map[string]*SyncWorker),
+		backfillLocks: make(map[string]*sync.Mutex),
+		pollMinutes:   5,
 	}
 }
 

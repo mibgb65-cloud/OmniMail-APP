@@ -156,6 +156,7 @@ func DeleteDraft(db *sql.DB, draftID string) error {
 	_, _ = db.Exec(`DELETE FROM messages_fts WHERE message_id = ?`, msgID)
 	_, _ = db.Exec(`DELETE FROM messages WHERE id = ?`, msgID)
 	_, _ = db.Exec(`DELETE FROM threads WHERE id = ?`, "thr-"+msgID)
+	_, _ = db.Exec(`DELETE FROM draft_inline_images WHERE draft_id = ?`, cleanID)
 	_, err := db.Exec(`DELETE FROM drafts WHERE id = ?`, cleanID)
 	return err
 }

@@ -22,6 +22,8 @@ import { CommandPaletteModal } from "./CommandPaletteModal";
 import { DangerConfirmModal } from "./DangerConfirmModal";
 import { DataDirMigrateModal } from "./DataDirMigrateModal";
 import { DesktopExtrasModal } from "./DesktopExtrasModal";
+import { ExternalLinkConfirmModal } from "./ExternalLinkConfirmModal";
+import { ImageLightboxModal } from "./lightbox/ImageLightboxModal";
 import { LabelManageModal } from "./LabelManageModal";
 import { MailSourceModal, PrintExportModal } from "./MailMetaModals";
 import { MoveFolderModal } from "./MoveFolderModal";
@@ -89,12 +91,24 @@ function renderModal(ov: Exclude<OverlayModal, { type: "none" }>) {
           mailSubject={ov.mailSubject}
         />
       );
+    case "image-lightbox":
+      return (
+        <ImageLightboxModal images={ov.images} initialIndex={ov.initialIndex} />
+      );
     case "attachment-transfer":
       return <AttachmentTransferModal mode={ov.mode} />;
     case "mail-source":
       return <MailSourceModal mailId={ov.mailId} />;
     case "print-export":
       return <PrintExportModal mailId={ov.mailId} />;
+    case "external-link":
+      return (
+        <ExternalLinkConfirmModal
+          url={ov.url}
+          displayText={ov.displayText}
+          mailDanger={ov.mailDanger}
+        />
+      );
     case "rule-editor":
       return <RuleEditorModal ruleId={ov.ruleId} />;
     case "account-server":

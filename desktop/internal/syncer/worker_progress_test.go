@@ -108,7 +108,7 @@ func TestSyncCompletionDoesNotFabricateMessageCounts(t *testing.T) {
 		ok, failed bool
 		status     string
 	}{{false, false, "done"}, {true, true, "partial"}, {false, true, "failed"}} {
-		w.finishSyncProgress(tc.ok, tc.failed)
+		w.finishSyncProgress(tc.ok, tc.failed, "")
 		if last.AccountID != "acc" || last.Status != tc.status || last.Current != 0 || last.Total != 0 {
 			t.Fatalf("同步结束状态不符：%+v，应为 %s 且不附带虚构计数", last, tc.status)
 		}

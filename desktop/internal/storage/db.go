@@ -65,6 +65,11 @@ func CheckpointAndClose(db *sql.DB) error {
 	return db.Close()
 }
 
+func hasMigrationVersion(db *sql.DB, version int) bool {
+	var found int
+	return db.QueryRow(`SELECT 1 FROM schema_migrations WHERE version=?`, version).Scan(&found) == nil && found == 1
+}
+
 func RunMigrations(db *sql.DB) error {
 	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
 		version INTEGER PRIMARY KEY,
@@ -72,9 +77,7 @@ func RunMigrations(db *sql.DB) error {
 	);`); err != nil {
 		return err
 	}
-	var current int
-	_ = db.QueryRow(`SELECT COALESCE(MAX(version), 0) FROM schema_migrations`).Scan(&current)
-	if current < 1 {
+	if !hasMigrationVersion(db, 1) {
 		tx, err := db.Begin()
 		if err != nil {
 			return err
@@ -94,8 +97,18 @@ func RunMigrations(db *sql.DB) error {
 		}
 		seedDefaultLabels(db)
 	}
-	if current < 2 {
-		return migrateContactAliases(db)
+	if !hasMigrationVersion(db, 2) {
+		if err := migrateContactAliases(db); err != nil {
+			return err
+		}
+	}
+	if !hasMigrationVersion(db, 3) {
+		if err := migrateRemoteMailboxHistoryCursor(db); err != nil {
+			return err
+		}
+	}
+	if !hasMigrationVersion(db, 4) {
+		return migrateDraftInlineImages(db)
 	}
 	return nil
 }

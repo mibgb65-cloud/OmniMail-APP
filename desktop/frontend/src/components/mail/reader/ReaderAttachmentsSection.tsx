@@ -7,13 +7,20 @@ import { isWailsDesktop } from "../../../state/storageHelpers";
 import type { AttachmentItem } from "../../../types/mail";
 import { waitSuccessHold } from "../../common/AsyncStateGlyph";
 import { AttachmentCardRow, type AttPhase } from "./AttachmentCardRow";
+import {
+  extractBodyImagesFromHtml,
+  mergeMailLightboxGallery,
+  normalizeImageKey,
+} from "./mailImageGallery";
 
 export function ReaderAttachmentsSection({
   attachments,
   mailSubject,
+  bodyHtmlList = [],
 }: {
   attachments: AttachmentItem[];
   mailSubject: string;
+  bodyHtmlList?: Array<string | undefined>;
 }) {
   const { t } = useI18n();
   const { workspace, mailStore, toastStore } = useApp();
@@ -62,6 +69,39 @@ export function ReaderAttachmentsSection({
           tone: "danger",
           title: t("toasts.fetchAttFailed"),
           detail: parseBackendError(err).message,
+        });
+        return;
+      }
+    }
+    if (readyAtt.kind === "image") {
+      const updatedAtts = attachments.map((item) =>
+        item.id === readyAtt.id ? readyAtt : item,
+      );
+      const bodyImages = extractBodyImagesFromHtml(
+        bodyHtmlList,
+        t("imageLightbox.inlineImageDefaultName"),
+        t("imageLightbox.sourceInlineBody"),
+      );
+      const gallery = mergeMailLightboxGallery(bodyImages, updatedAtts, {
+        body: t("imageLightbox.sourceInlineBody"),
+        attachment: t("imageLightbox.sourceAttachment"),
+      });
+      const targetKey = normalizeImageKey(
+        readyAtt.previewUrl ?? "",
+        readyAtt.id,
+      );
+      const idx = Math.max(
+        0,
+        gallery.findIndex(
+          (item) =>
+            normalizeImageKey(item.src, item.attachmentId) === targetKey,
+        ),
+      );
+      if (gallery.length > 0) {
+        workspace.setOverlay({
+          type: "image-lightbox",
+          images: gallery,
+          initialIndex: idx,
         });
         return;
       }

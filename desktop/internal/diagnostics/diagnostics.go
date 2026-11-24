@@ -78,6 +78,27 @@ func RunAccountDiagnostics(ctx context.Context, sess *profilemgr.Session, tm *oa
 	probeCtx, cancel := context.WithTimeout(ctx, 25*time.Second)
 	defer cancel()
 	rep := mailproto.TestConnection(probeCtx, ep)
+	steps := append([]mailproto.ProbeStepResult{}, rep.Steps...)
+	overallOK := rep.OK
+	summary := security.RedactSensitive(rep.Summary)
+
+	if rep.OK {
+		inboxStep := probeInboxReadOnly(probeCtx, ep)
+		steps = append(steps, inboxStep)
+		if !inboxStep.OK {
+			overallOK = false
+			summary = inboxStep.Suggestion
+		}
+	}
+	if histStep, histSummary, inErrState := buildRecentSyncErrorStep(sess.DB, dto.ID); histStep != nil {
+		steps = append(steps, *histStep)
+		if overallOK && inErrState {
+			overallOK = false
+			summary = "基础通道连通，但最近同步受阻: " + histSummary
+		} else if overallOK && histSummary != "" {
+			summary = summary + "（注意：存在最近同步告警，详见诊断步骤）"
+		}
+	}
 
 	proxyHint := "直连（未检测到显式 HTTP_PROXY）"
 	if req, rErr := http.NewRequest(http.MethodGet, "https://example.com", nil); rErr == nil {
@@ -89,9 +110,9 @@ func RunAccountDiagnostics(ctx context.Context, sess *profilemgr.Session, tm *oa
 		AccountID: dto.ID,
 		Email:     dto.Email,
 		ProxyHint: proxyHint,
-		OK:        rep.OK,
-		Summary:   security.RedactSensitive(rep.Summary),
-		Steps:     rep.Steps,
+		OK:        overallOK,
+		Summary:   summary,
+		Steps:     steps,
 	}, nil
 }
 

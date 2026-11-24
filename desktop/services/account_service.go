@@ -14,12 +14,14 @@ import (
 	"omnimail/internal/mailproto"
 	"omnimail/internal/oauth"
 	"omnimail/internal/profilemgr"
+	"omnimail/internal/syncer"
 )
 
 type SyncDriver interface {
 	StartAccount(accountID string)
 	StopAccount(accountID string)
 	TriggerSync(accountID string) error
+	LoadOlderMessages(ctx context.Context, accountID string, folder string, limit int) (syncer.LoadOlderResult, error)
 }
 
 type AccountService struct {

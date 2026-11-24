@@ -1,4 +1,5 @@
 import type { MailSearchQuery } from "../../bindings/omnimail/internal/search/models";
+import type { LoadOlderResult } from "../../bindings/omnimail/internal/syncer/models";
 import * as MailService from "../../bindings/omnimail/services/mailservice";
 import { INITIAL_LABELS } from "../data/accounts";
 import { INITIAL_MAILS } from "../data/mails";
@@ -12,7 +13,12 @@ import type {
 } from "../types/mail";
 import { mapAttachment, mapMailDTO } from "./mailMapper";
 
-export { mapAttachment, mapMailDTO, type MailSearchQuery };
+export {
+  mapAttachment,
+  mapMailDTO,
+  type LoadOlderResult,
+  type MailSearchQuery,
+};
 
 export const mailApi = {
   async matchMailIds(query: MailSearchQuery, ids: string[]): Promise<string[]> {
@@ -36,14 +42,20 @@ export const mailApi = {
     return out;
   },
 
-  async listMessages(
-    query: MailSearchQuery,
-  ): Promise<{ items: MailItem[]; nextCursor: string; totalCount: number }> {
+  async listMessages(query: MailSearchQuery): Promise<{
+    items: MailItem[];
+    nextCursor: string;
+    totalCount: number;
+    hasRemoteMore: boolean;
+    remoteTotalCount: number;
+  }> {
     if (!isWailsDesktop()) {
       return {
         items: INITIAL_MAILS,
         nextCursor: "",
         totalCount: INITIAL_MAILS.length,
+        hasRemoteMore: false,
+        remoteTotalCount: INITIAL_MAILS.length,
       };
     }
     const page = await MailService.ListMessages(query);
@@ -51,6 +63,30 @@ export const mailApi = {
       items: (page.items ?? []).map(mapMailDTO),
       nextCursor: page.nextCursor ?? "",
       totalCount: page.totalCount ?? 0,
+      hasRemoteMore: Boolean(page.hasRemoteMore),
+      remoteTotalCount: page.remoteTotalCount ?? 0,
+    };
+  },
+
+  async loadOlderMessages(
+    accountId: string,
+    folder: FolderId,
+    limit = 50,
+  ): Promise<LoadOlderResult> {
+    if (!isWailsDesktop()) {
+      return {
+        fetchedCount: 0,
+        hasRemoteMore: false,
+        remoteTotal: 0,
+        localSynced: INITIAL_MAILS.length,
+      };
+    }
+    const res = await MailService.LoadOlderMessages(accountId, folder, limit);
+    return {
+      fetchedCount: res.fetchedCount ?? 0,
+      hasRemoteMore: Boolean(res.hasRemoteMore),
+      remoteTotal: res.remoteTotal ?? 0,
+      localSynced: res.localSynced ?? 0,
     };
   },
 
@@ -129,6 +165,14 @@ export const mailApi = {
   async saveAttachmentAs(attId: string): Promise<string> {
     if (!isWailsDesktop()) return "Downloads/attachment";
     return MailService.SaveAttachmentAs(attId);
+  },
+
+  async saveImageDataAs(
+    filename: string,
+    dataOrBase64: string,
+  ): Promise<string> {
+    if (!isWailsDesktop()) return "";
+    return MailService.SaveImageDataAs(filename, dataOrBase64);
   },
 
   async respondMeetingInvite(

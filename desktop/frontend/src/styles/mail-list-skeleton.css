@@ -1,0 +1,170 @@
+/* 邮件列表与阅读区切换骨架屏、顶部 2px 流光刷新条与丝滑入场动效 */
+:root {
+  --shimmer-base: #eef2f7;
+  --shimmer-peak: #f8fafc;
+}
+
+[data-theme="dark"] {
+  --shimmer-base: #1c2433;
+  --shimmer-peak: #263146;
+}
+
+.omni-shimmer-bar {
+  display: inline-block;
+  border-radius: 5px;
+  background: linear-gradient(
+    90deg,
+    var(--shimmer-base) 0%,
+    var(--shimmer-peak) 50%,
+    var(--shimmer-base) 100%
+  );
+  background-size: 200% 100%;
+  animation: omni-shimmer-sweep 1.35s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.mail-list-skeleton-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 9px 10px 10px;
+  overflow: hidden;
+}
+
+.mail-list-skel-card {
+  pointer-events: none;
+  cursor: default;
+}
+
+.mail-skel-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.mail-skel-line-row {
+  display: flex;
+  align-items: center;
+  min-height: 18px;
+}
+
+.mail-skel-pill {
+  width: 54px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+.mail-skel-badge {
+  height: 16px;
+  border-radius: 999px;
+}
+
+.list-refresh-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  background: color-mix(in srgb, var(--brand-accent) 14%, transparent);
+  transition: opacity 180ms ease;
+}
+
+.list-refresh-bar[data-active="true"] {
+  opacity: 1;
+}
+
+.list-refresh-bar-fill {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--brand-accent) 50%,
+    transparent 100%
+  );
+  animation: omni-refresh-bar-slide 1.15s ease-in-out infinite;
+}
+
+.list-head-icon-btn.is-spinning svg {
+  animation: omni-icon-spin 0.9s linear infinite;
+}
+
+.mail-list-cards-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.mail-list-cards-stage > .mail-card {
+  animation: omni-mail-card-enter 140ms ease-out both;
+}
+
+.mail-list-cards-stage > .mail-card:nth-child(2) {
+  animation-delay: 15ms;
+}
+.mail-list-cards-stage > .mail-card:nth-child(3) {
+  animation-delay: 30ms;
+}
+.mail-list-cards-stage > .mail-card:nth-child(4) {
+  animation-delay: 45ms;
+}
+.mail-list-cards-stage > .mail-card:nth-child(5) {
+  animation-delay: 60ms;
+}
+.mail-list-cards-stage > .mail-card:nth-child(6) {
+  animation-delay: 75ms;
+}
+
+@keyframes omni-shimmer-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes omni-refresh-bar-slide {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+@keyframes omni-icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes omni-mail-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .omni-shimmer-bar,
+  .list-refresh-bar-fill,
+  .list-head-icon-btn.is-spinning svg,
+  .mail-list-cards-stage > .mail-card {
+    animation: none;
+  }
+  .list-refresh-bar-fill {
+    width: 100%;
+    opacity: 0.5;
+  }
+}

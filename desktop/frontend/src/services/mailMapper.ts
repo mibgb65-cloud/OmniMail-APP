@@ -63,6 +63,7 @@ export function mapMailDTO(dto: MailItemDTO): MailItem {
     snippet: dto.snippet,
     timeText: dto.timeText,
     fullTimeText: dto.fullTimeText,
+    receivedAtUnixMs: dto.receivedAtUnixMs,
     unread: dto.unread,
     starred: dto.starred,
     labels: dto.labels ?? [],
