@@ -12,3 +12,4 @@
 - **亮暗双色样式与单文件行数规范**：新增 `styles/provider-connect-modal.css`、`styles/provider-connect-form.css`、`styles/provider-connect-extras.css` 并引入 `main.tsx`，`< 820px` 自动回退单列；全仓所有手写源码文件严格控制在 `<= 200` 行内。
 - **验证结果**：新增单测 `desktop/frontend/tests/provider-connect-modal.test.mjs`；执行 `npm run typecheck`、`npm test`、`npm run build` 与全量 `task verify` 全部通过（`gofmt` / `prettier --check` / `eslint` / `tsc --noEmit` / `vite build` / 80 项前端单测全部通过 / `go vet` / `go test` / `go build`）。
 - **未验证事项**：未启动桌面应用窗口人工点击预览，未推送远程仓库。
+- 实现已提交：`8d9cef87340d19bb81b1452eb4e27fd8fbd646c3`，纳入 [Beta 11 本地安装包](TASK-20261125-002-windows-beta-11-local-release.md)。
