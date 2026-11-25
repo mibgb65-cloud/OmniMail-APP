@@ -2,9 +2,9 @@
 
 | 层 | 当前选型 |
 | --- | --- |
-| 桌面壳与运行时 | Go 1.26（`CGO_ENABLED=0` 纯 Go 零 CGO），Wails v3.1.0，Windows WebView2 |
+| 桌面壳与运行时 | Go 1.26（`CGO_ENABLED=0` 纯 Go 零 CGO），Wails v3.1.0，Windows WebView2（含 `go-webview2/webviewloader` 独立登录宿主） |
 | 本地存储与加密 | `modernc.org/sqlite`（WAL + 外键 + FTS5 `trigram`），`klauspost/compress/zstd` CAS 归档，Windows DPAPI（`x/sys/windows`）凭据盒，`argon2id` PIN 锁 |
-| 邮件与日程协议 | `emersion/go-imap/v2`、`go-smtp`、`go-sasl`、`go-message`（含 `x/text` 多字符集解码）、`go-ical`、`microcosm-cc/bluemonday` HTML 净化、`x/oauth2` + `x/sync/singleflight` |
+| 邮件与日程协议 | `emersion/go-imap/v2`、`go-smtp`、`go-sasl`、`go-message`（含 `x/text` 多字符集解码）、`go-ical`、`microcosm-cc/bluemonday` HTML 净化、`x/oauth2` + `x/sync/singleflight`，以及 Muse Mail 只读网关所需的 `flynn/noise`（`Noise_XX_25519_AESGCM_SHA256`）、`coder/websocket`、`refraction-networking/utls` 与 `google.golang.org/protobuf`（`protowire`） |
 | 前端 | React 19、TypeScript 5.9、Vite 8、Shadow DOM 安全阅读隔离、普通模块化 CSS、Heroicons 24 Outline（`@heroicons/react`） |
 | 工具与验证 | Node.js 22.19.0、pnpm 12.6.0、Task 3.53.1、`gofmt`、`go vet`、`go test`、Prettier、ESLint、TypeScript |
 

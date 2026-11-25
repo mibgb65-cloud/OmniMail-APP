@@ -5,6 +5,7 @@ import { externalLink } from "./en/externalLink.ts";
 import { imageLightbox } from "./en/imageLightbox.ts";
 import { mailList, reader, security } from "./en/mailAndSecurity.ts";
 import { mailListBackfill } from "./en/mailListBackfill.ts";
+import { muse, museErrors } from "./en/museMail.ts";
 import { onboarding } from "./en/onboarding.ts";
 import { providerConnect } from "./en/providerConnect.ts";
 import { overlaysPrimary } from "./en/overlaysPrimary.ts";
@@ -43,6 +44,10 @@ export const enUS = {
     ...overlaysPrimary,
     ...overlaysSecondary,
   },
+  muse,
   toasts,
-  errors,
+  errors: {
+    ...errors,
+    ...museErrors,
+  },
 } satisfies typeof zhCN;

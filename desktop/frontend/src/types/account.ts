@@ -8,6 +8,7 @@ export type ProviderId =
   | "yandex"
   | "linuxdo"
   | "nevermail"
+  | "muse"
   | "imap";
 
 export type AuthMode = "oauth" | "authcode" | "app-password" | "token" | "imap";

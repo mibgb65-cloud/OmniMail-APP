@@ -20,11 +20,13 @@ export interface PreparationGuideCardProps {
   steps: string[];
   officialGuideUrl?: string;
   provider?: ProviderId;
+  footnoteText?: string;
 }
 
 export function PreparationGuideCard({
   steps,
   officialGuideUrl,
+  footnoteText,
 }: PreparationGuideCardProps) {
   const { t } = useI18n();
   const { workspace } = useApp();
@@ -78,7 +80,7 @@ export function PreparationGuideCard({
             </button>
           )}
           <p className="pcm-prep-footnote">
-            {t("onboarding.noAutoRedirectHint")}
+            {footnoteText ?? t("onboarding.noAutoRedirectHint")}
           </p>
         </div>
       </div>

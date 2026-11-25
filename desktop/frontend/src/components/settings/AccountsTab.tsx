@@ -11,7 +11,7 @@ export function AccountsTab({
   selectedAccountId?: string;
   onSelectAccount: (id?: string) => void;
 }) {
-  const { workspace } = useApp();
+  const { workspace, museStore } = useApp();
   const { t, formatTime } = useI18n();
 
   if (
@@ -93,6 +93,51 @@ export function AccountsTab({
           </div>
         </div>
       ))}
+
+      {museStore.status.bound && museStore.status.verifiedEmail && (
+        <div className="settings-card">
+          <div className="row-between">
+            <div className="row" style={{ gap: 12 }}>
+              <ProviderIcon provider="muse" size={30} />
+              <div>
+                <div className="row" style={{ gap: 6 }}>
+                  <strong style={{ fontSize: 14 }}>
+                    {museStore.status.accountName ||
+                      t("muse.settingsCardTitle")}
+                  </strong>
+                  <span className="pill pill-accent">
+                    {t("muse.addModalCardBadge")}
+                  </span>
+                </div>
+                <div className="text-xs text-muted">
+                  {t("muse.settingsCardSub", {
+                    email: museStore.status.verifiedEmail,
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="row" style={{ gap: 8 }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  workspace.setOverlay({ type: "none" });
+                  workspace.setScreen("muse");
+                }}
+              >
+                {t("muse.openViewBtn")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => void museStore.disconnect()}
+              >
+                {t("muse.disconnectBtn")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import gmailPng from "../../assets/providers/gmail.png";
 import icloudPng from "../../assets/providers/icloud.png";
 import linuxdoPng from "../../assets/providers/linuxdo.png";
+import museSvg from "../../assets/providers/muse.svg";
 import naverPng from "../../assets/providers/naver.png";
 import neteasePng from "../../assets/providers/netease.png";
 import outlookPng from "../../assets/providers/outlook.png";
@@ -20,6 +21,7 @@ const OFFICIAL_ICONS: Partial<Record<ProviderId, string>> = {
   yandex: yandexPng,
   linuxdo: linuxdoPng,
   nevermail: naverPng,
+  muse: museSvg,
 };
 
 interface ProviderIconProps {

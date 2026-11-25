@@ -1,0 +1,186 @@
+/* Muse Mail 连接弹窗右栏控件、侧栏独立行与只读会话视图布局 */
+.muse-login-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  background: var(--pcm-surf);
+  border: 1px solid var(--pcm-div);
+  flex-wrap: wrap;
+}
+
+.muse-login-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.muse-login-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.muse-login-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-ink);
+}
+
+.muse-login-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.muse-stage-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--pcm-card-bg);
+  border: 1px solid var(--pcm-div);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.muse-stage-pill.is-open,
+.muse-stage-pill.is-done {
+  background: var(--pcm-info-bg);
+  border-color: var(--pcm-info-bd);
+  color: var(--pcm-info-fg);
+}
+
+.muse-open-login-btn {
+  height: 36px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.muse-readonly-field {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 9px;
+  background: var(--pcm-surf);
+  border: 1px solid var(--pcm-div);
+  color: var(--text-body);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.muse-readonly-field.is-verified {
+  background: var(--pcm-card-bg);
+  border-color: var(--pcm-info-bd);
+}
+
+.muse-verified-addr {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-ink);
+}
+
+.muse-verified-pill {
+  height: 22px;
+  font-size: 11px;
+  padding: 0 9px;
+}
+
+.muse-inline-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: var(--status-danger-bg);
+  border: 1px solid color-mix(in srgb, var(--status-danger) 35%, transparent);
+  color: var(--status-danger);
+}
+
+.muse-inline-error-msg {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.muse-inline-error-code {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+/* 独立 Muse Mail 舞台顶栏与双栏容器 */
+.muse-view-root {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--workspace-column-gap);
+  overflow: hidden;
+}
+
+.muse-topbar-card {
+  flex-shrink: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  flex-wrap: wrap;
+}
+
+.muse-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.muse-topbar-name {
+  font-size: 14px;
+  color: var(--text-ink);
+}
+
+.muse-verified-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--bg-selected);
+  border: 1px solid var(--border-selected);
+  color: var(--brand-accent);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.muse-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.muse-columns {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  gap: var(--workspace-column-gap);
+  overflow: hidden;
+}

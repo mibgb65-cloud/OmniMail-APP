@@ -18,11 +18,13 @@ export function ProviderSummaryCard({
   name,
   domainHint,
   mode = "tls",
+  pillLabel,
 }: {
   provider: ProviderId;
   name: string;
   domainHint: string;
   mode?: "tls" | "oauth";
+  pillLabel?: string;
 }) {
   const { t } = useI18n();
 
@@ -41,11 +43,12 @@ export function ProviderSummaryCard({
       <span className="pcm-summary-pill">
         <span className="pcm-summary-dot" aria-hidden="true" />
         <span>
-          {t(
-            mode === "oauth"
-              ? "onboarding.summaryOAuthPill"
-              : "onboarding.summaryTlsPill",
-          )}
+          {pillLabel ??
+            t(
+              mode === "oauth"
+                ? "onboarding.summaryOAuthPill"
+                : "onboarding.summaryTlsPill",
+            )}
         </span>
       </span>
     </div>

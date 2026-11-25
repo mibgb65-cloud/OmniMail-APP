@@ -10,6 +10,7 @@ import (
 	"omnimail/internal/ai"
 	"omnimail/internal/contacts"
 	"omnimail/internal/events"
+	"omnimail/internal/musemail"
 	"omnimail/internal/oauth"
 	"omnimail/internal/outbox"
 	"omnimail/internal/profilemgr"
@@ -38,9 +39,12 @@ func main() {
 	syncMgr.SetPipelineHooks(pipeline)
 	calResponder := services.NewCalendarResponder(outboxSched)
 	aiGateway := ai.NewGateway(bus)
+	museMgr := musemail.NewManager()
+	defer museMgr.Close()
 
 	profMgr.RegisterHook(syncMgr)
 	profMgr.RegisterHook(outboxSched)
+	profMgr.RegisterHook(museMgr)
 
 	store.SetMigrationHooks(profMgr.PauseForMigration, profMgr.ResumeAfterMigration)
 	_ = profMgr.InitStartup()
@@ -55,6 +59,7 @@ func main() {
 	ruleSvc := services.NewRuleService(profMgr, bus)
 	aiSvc := services.NewAiService(profMgr, aiGateway)
 	diagSvc := services.NewDiagnosticService(profMgr, tokenMgr)
+	museMailSvc := services.NewMuseMailService(profMgr, museMgr)
 
 	var appRef *application.App
 	app := application.New(application.Options{
@@ -75,6 +80,7 @@ func main() {
 			application.NewService(ruleSvc),
 			application.NewService(aiSvc),
 			application.NewService(diagSvc),
+			application.NewService(museMailSvc),
 		},
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "com.omnimail.desktop.client",

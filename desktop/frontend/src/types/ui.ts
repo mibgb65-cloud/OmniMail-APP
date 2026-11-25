@@ -3,7 +3,7 @@ import type { AttachmentItem } from "./mail";
 import type { MailAiAction } from "./mailAi";
 import type { SettingsTabId } from "./settings";
 
-export type WorkspaceScreen = "mail" | "contacts" | "onboarding";
+export type WorkspaceScreen = "mail" | "contacts" | "onboarding" | "muse";
 
 export type RuntimeBannerMode =
   "none" | "offline" | "auth-expired" | "auto-reply" | "partial-sync";
@@ -44,6 +44,7 @@ export type OverlayModal =
       stage: "waiting" | "incomplete";
     }
   | { type: "manual-imap" }
+  | { type: "muse-connect" }
   | {
       type: "sync-progress";
       accountId: string;

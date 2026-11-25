@@ -8,6 +8,7 @@ import { DuplicateModal } from "../contacts/duplicates/DuplicateModal";
 import { AddAccountModal } from "../onboarding/AddAccountModal";
 import { LegalDocModal } from "../onboarding/LegalDocModal";
 import { ManualImapModal } from "../onboarding/ManualImapModal";
+import { MuseConnectModal } from "../onboarding/MuseConnectModal";
 import { OAuthFlowModal } from "../onboarding/OAuthFlowModal";
 import { ProviderGuideModal } from "../onboarding/ProviderGuideModal";
 import { SyncProgressModal } from "../onboarding/SyncProgressModal";
@@ -51,6 +52,8 @@ function renderModal(ov: Exclude<OverlayModal, { type: "none" }>) {
       return <OAuthFlowModal provider={ov.provider} stage={ov.stage} />;
     case "manual-imap":
       return <ManualImapModal />;
+    case "muse-connect":
+      return <MuseConnectModal />;
     case "sync-progress":
       return (
         <SyncProgressModal

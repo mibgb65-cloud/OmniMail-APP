@@ -110,6 +110,33 @@ export function AddAccountModal() {
             </button>
           );
         })}
+
+        <button
+          type="button"
+          className="provider-card"
+          onClick={() => workspace.setOverlay({ type: "muse-connect" })}
+        >
+          <div className="row" style={{ gap: 11, minWidth: 0 }}>
+            <ProviderIcon provider="muse" size={32} />
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 14,
+                  color: "var(--text-ink)",
+                }}
+              >
+                {t("muse.providerName")}
+              </div>
+              <div className="text-xs text-muted truncate">
+                {t("muse.addModalCardSub")}
+              </div>
+            </div>
+          </div>
+          <span className="pill pill-accent" style={{ flexShrink: 0 }}>
+            {t("muse.addModalCardBadge")}
+          </span>
+        </button>
       </div>
 
       <div className="settings-card">

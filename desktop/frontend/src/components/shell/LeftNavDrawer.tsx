@@ -69,7 +69,10 @@ export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
           >
             {folders.map((item) => {
               const isActive =
-                !activeLabelId && !searchQuery && activeFolder === item.id;
+                workspace.screen === "mail" &&
+                !activeLabelId &&
+                !searchQuery &&
+                activeFolder === item.id;
               const count = countForFolder(mails, item.id, folderCounts);
               return (
                 <button
@@ -77,6 +80,7 @@ export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
                   type="button"
                   className={`nav-item nav-item-drawer ${isActive ? "active" : ""}`}
                   onClick={() => {
+                    workspace.setScreen("mail");
                     mailStore.selectFolder(item.id);
                     close();
                   }}
@@ -102,8 +106,9 @@ export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
           <div className="sidebar-footer-pair">
             <button
               type="button"
-              className={`sidebar-mini-btn ${activeFolder === "spam" && !activeLabelId ? "active" : ""}`}
+              className={`sidebar-mini-btn ${workspace.screen === "mail" && activeFolder === "spam" && !activeLabelId ? "active" : ""}`}
               onClick={() => {
+                workspace.setScreen("mail");
                 mailStore.selectFolder("spam");
                 close();
               }}
@@ -113,8 +118,9 @@ export function LeftNavDrawer({ closing = false }: { closing?: boolean }) {
             </button>
             <button
               type="button"
-              className={`sidebar-mini-btn ${activeFolder === "trash" && !activeLabelId ? "active" : ""}`}
+              className={`sidebar-mini-btn ${workspace.screen === "mail" && activeFolder === "trash" && !activeLabelId ? "active" : ""}`}
               onClick={() => {
+                workspace.setScreen("mail");
                 mailStore.selectFolder("trash");
                 close();
               }}

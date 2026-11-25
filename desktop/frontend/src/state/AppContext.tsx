@@ -5,13 +5,12 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import { isSyncLabelActive, t } from "../i18n";
-import { accountApi, parseBackendError } from "../services/backendClient";
-import type { MailAiAction } from "../types/mailAi";
 import { useAiStore } from "./useAiStore";
+import { useAppActions } from "./useAppActions";
 import { useComposeStore } from "./useComposeStore";
 import { useDesktopBridge } from "./useDesktopBridge";
 import { useMailStore } from "./useMailStore";
+import { useMuseMailStore } from "./useMuseMailStore";
 import { useSendMailAction } from "./useSendMailAction";
 import { useGlobalShortcuts } from "./useShortcuts";
 import { useToasts } from "./useToasts";
@@ -26,59 +25,47 @@ function useAppController() {
   const viewport = useViewportMode();
   const workspace = useWorkspaceStore();
   const mailStore = useMailStore(workspace.settings.blockRemoteImages);
-  const { refreshAfterMailDelta, refreshUnreadView } = mailStore;
+  const { refreshAfterMailDelta } = mailStore;
   const aiStore = useAiStore();
   const toastStore = useToasts();
+  const museStore = useMuseMailStore(
+    workspace.activeProfileId,
+    workspace.screen,
+    workspace.setScreen,
+    toastStore.pushToast,
+  );
   const composeStore = useComposeStore(
     workspace.accounts,
     workspace.settings.defaultSendAccountId,
     `${workspace.activeProfileId}:${mailStore.selectedMail?.id ?? ""}`,
   );
 
-  const { leftNavOpen, setLeftNavOpen } = workspace;
+  const { leftNavOpen, setLeftNavOpen, overlay } = workspace;
+  const { resetForWorkspaceSwitch } = museStore;
   useEffect(() => {
     if (viewport !== "compact" && leftNavOpen) setLeftNavOpen(false);
   }, [viewport, leftNavOpen, setLeftNavOpen]);
 
-  const triggerSyncAll = useCallback(() => {
-    if (
-      workspace.accounts.length === 0 ||
-      isSyncLabelActive(workspace.syncLabel)
-    )
-      return;
-    const count = workspace.accounts.length;
-    workspace.setSyncLabel(t("topbar.syncingAccounts", { count }));
-    const minSpin = new Promise((r) => window.setTimeout(r, 420));
-    void Promise.all([
-      accountApi
-        .triggerSync("")
-        .then(() => workspace.refreshProfilesAndAccounts()),
-      minSpin,
-    ])
-      .then(() => {
-        refreshUnreadView();
-        workspace.setSyncLabel(t("topbar.allAccountsSynced"));
-        toastStore.pushToast({
-          tone: "success",
-          title: t("toasts.syncAllDone", { count }),
-        });
-      })
-      .catch((err) => {
-        workspace.setSyncLabel(t("topbar.syncPartialFailed"));
-        toastStore.pushToast({
-          tone: "warning",
-          title: t("toasts.syncProblem"),
-          detail: parseBackendError(err).message,
-        });
-      });
-  }, [workspace, toastStore, refreshUnreadView]);
+  useEffect(() => {
+    if (overlay.type === "profile-manage" && overlay.mode === "unlock") {
+      resetForWorkspaceSwitch();
+    }
+  }, [overlay, resetForWorkspaceSwitch]);
+
+  const { triggerSyncAll, requestAiAction } = useAppActions(
+    workspace,
+    mailStore,
+    aiStore,
+    toastStore,
+  );
 
   const onResetStoresForSwitch = useCallback(() => {
     workspace.clearCollections();
     mailStore.resetMailState();
     composeStore.closeDraft();
     aiStore.reset();
-  }, [aiStore, composeStore, mailStore, workspace]);
+    resetForWorkspaceSwitch();
+  }, [aiStore, composeStore, mailStore, resetForWorkspaceSwitch, workspace]);
 
   const desktopBridge = useDesktopBridge({
     settings: workspace.settings,
@@ -108,37 +95,6 @@ function useAppController() {
     toastStore,
   );
 
-  const requestAiAction = useCallback(
-    (actionLabel: string, action: MailAiAction) => {
-      const cur = mailStore.selectedMail;
-      if (
-        !cur ||
-        !workspace.settings.aiEnabled ||
-        aiStore.result.status === "processing"
-      )
-        return;
-      workspace.setLeftNavOpen(false);
-      aiStore.setAiOpen(true);
-      if (
-        cur.folder === "spam" ||
-        cur.folder === "trash" ||
-        cur.securityWarning?.level === "danger" ||
-        aiStore.sensitive.has(cur.id)
-      )
-        return;
-      if (workspace.settings.aiRequireConfirmEachTime) {
-        workspace.setOverlay({
-          type: "ai-consent",
-          actionLabel,
-          action,
-          mailId: cur.id,
-          profileId: workspace.activeProfileId,
-        });
-      } else aiStore.runAction(cur.id, action, false);
-    },
-    [mailStore.selectedMail, workspace, aiStore],
-  );
-
   useGlobalShortcuts({
     onOpenPalette: () => workspace.setOverlay({ type: "command-palette" }),
     onNewCompose: () => composeStore.openNewCompose(),
@@ -146,6 +102,7 @@ function useAppController() {
       workspace.setOverlay({ type: "settings", tab: "general" }),
     onToggleTheme: workspace.toggleTheme,
     onToggleAi: () => {
+      if (workspace.screen !== "mail") return;
       workspace.setLeftNavOpen(false);
       aiStore.setAiOpen((v) => !v);
     },
@@ -176,6 +133,7 @@ function useAppController() {
     workspace,
     desktopBridge,
     mailStore,
+    museStore,
     composeStore,
     aiStore,
     toastStore,

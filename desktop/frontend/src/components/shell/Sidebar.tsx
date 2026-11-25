@@ -11,9 +11,10 @@ import {
 } from "./SidebarIconRail";
 
 export function Sidebar() {
-  const { viewport, mailStore, composeStore } = useApp();
+  const { viewport, workspace, mailStore, composeStore } = useApp();
   const { t } = useI18n();
   const { mails, folderCounts, activeFolder, activeLabelId } = mailStore;
+  const inMail = workspace.screen === "mail";
 
   if (viewport === "compact") {
     return <SidebarIconRail />;
@@ -22,6 +23,10 @@ export function Sidebar() {
   const folders = getMainFolders(t);
   const outboxCount = countForFolder(mails, "outbox", folderCounts);
   const scheduledCount = countForFolder(mails, "scheduled", folderCounts);
+  const openFolder = (id: typeof activeFolder) => {
+    workspace.setScreen("mail");
+    mailStore.selectFolder(id);
+  };
 
   return (
     <aside
@@ -41,6 +46,7 @@ export function Sidebar() {
         <nav className="nav-section" aria-label={t("sidebar.ariaFolders")}>
           {folders.map((item) => {
             const isActive =
+              inMail &&
               !activeLabelId &&
               !mailStore.searchQuery &&
               activeFolder === item.id;
@@ -50,7 +56,7 @@ export function Sidebar() {
                 key={item.id}
                 type="button"
                 className={`nav-item ${isActive ? "active" : ""}`}
-                onClick={() => mailStore.selectFolder(item.id)}
+                onClick={() => openFolder(item.id)}
               >
                 <span className="nav-item-main">
                   <Icon name={item.icon} size={14} />
@@ -70,8 +76,8 @@ export function Sidebar() {
           <div className="nav-section">
             <button
               type="button"
-              className={`nav-item ${!activeLabelId && activeFolder === "outbox" ? "active" : ""}`}
-              onClick={() => mailStore.selectFolder("outbox")}
+              className={`nav-item ${inMail && !activeLabelId && activeFolder === "outbox" ? "active" : ""}`}
+              onClick={() => openFolder("outbox")}
             >
               <span className="nav-item-main">
                 <Icon name="upload" size={14} />
@@ -86,8 +92,8 @@ export function Sidebar() {
             </button>
             <button
               type="button"
-              className={`nav-item ${!activeLabelId && activeFolder === "scheduled" ? "active" : ""}`}
-              onClick={() => mailStore.selectFolder("scheduled")}
+              className={`nav-item ${inMail && !activeLabelId && activeFolder === "scheduled" ? "active" : ""}`}
+              onClick={() => openFolder("scheduled")}
             >
               <span className="nav-item-main">
                 <Icon name="calendar" size={14} />
@@ -105,16 +111,16 @@ export function Sidebar() {
         <div className="sidebar-footer-pair">
           <button
             type="button"
-            className={`sidebar-mini-btn ${activeFolder === "spam" && !activeLabelId ? "active" : ""}`}
-            onClick={() => mailStore.selectFolder("spam")}
+            className={`sidebar-mini-btn ${inMail && activeFolder === "spam" && !activeLabelId ? "active" : ""}`}
+            onClick={() => openFolder("spam")}
           >
             <Icon name="spam" size={13} />
             <span className="truncate">{t("sidebar.spam")}</span>
           </button>
           <button
             type="button"
-            className={`sidebar-mini-btn ${activeFolder === "trash" && !activeLabelId ? "active" : ""}`}
-            onClick={() => mailStore.selectFolder("trash")}
+            className={`sidebar-mini-btn ${inMail && activeFolder === "trash" && !activeLabelId ? "active" : ""}`}
+            onClick={() => openFolder("trash")}
           >
             <Icon name="trash" size={13} />
             <span className="truncate">{t("sidebar.trash")}</span>

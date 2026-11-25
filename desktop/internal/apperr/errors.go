@@ -23,6 +23,15 @@ const (
 	CodeConnFailed         = "ERR_CONN_FAILED"
 	CodeCertUntrusted      = "ERR_CERT_UNTRUSTED"
 	CodeInternal           = "ERR_INTERNAL"
+
+	CodeMuseNotLoggedIn     = "ERR_MUSE_NOT_LOGGED_IN"
+	CodeMuseAuthExpired     = "ERR_MUSE_AUTH_EXPIRED"
+	CodeMuseNotEnabled      = "ERR_MUSE_NOT_ENABLED"
+	CodeMuseIdentityChanged = "ERR_MUSE_IDENTITY_CHANGED"
+	CodeMuseGatewayTimeout  = "ERR_MUSE_GATEWAY_TIMEOUT"
+	CodeMuseGatewayFailed   = "ERR_MUSE_GATEWAY_FAILED"
+	CodeMuseUnsupported     = "ERR_MUSE_UNSUPPORTED"
+	CodeMuseCancelled       = "ERR_MUSE_CANCELLED"
 )
 
 // AppError 统一格式化为 "[ERR_CODE] 中文人类可读提示"，方便前端精准识别错误码。

@@ -108,7 +108,10 @@ export function SidebarIconRail() {
 
         {folders.map((item) => {
           const isActive =
-            !activeLabelId && !searchQuery && activeFolder === item.id;
+            workspace.screen === "mail" &&
+            !activeLabelId &&
+            !searchQuery &&
+            activeFolder === item.id;
           const count = countForFolder(mails, item.id, folderCounts);
           return (
             <Tooltip
@@ -121,7 +124,10 @@ export function SidebarIconRail() {
               <button
                 type="button"
                 className={`icon-rail-btn ${isActive ? "active" : ""}`}
-                onClick={() => mailStore.selectFolder(item.id)}
+                onClick={() => {
+                  workspace.setScreen("mail");
+                  mailStore.selectFolder(item.id);
+                }}
                 aria-label={item.label}
               >
                 <Icon name={item.icon} size={15} />

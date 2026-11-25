@@ -4,6 +4,7 @@ import type { EmailAccount } from "../../types/account";
 import { Icon } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
 import { Tooltip } from "../common/Tooltip";
+import { SidebarMuseSection } from "./SidebarMuseSection";
 
 const STATUS_KEYS: Record<EmailAccount["status"], TranslationKey> = {
   connected: "sidebar.statusConnected",
@@ -68,7 +69,8 @@ export function SidebarAccountsAndLabels({
           </button>
         ) : (
           accounts.map((acc) => {
-            const active = activeAccountId === acc.id;
+            const active =
+              workspace.screen === "mail" && activeAccountId === acc.id;
             const statusLabel = t(
               STATUS_KEYS[acc.status] ?? "sidebar.statusError",
             );
@@ -89,6 +91,7 @@ export function SidebarAccountsAndLabels({
                     count: acc.unreadCount,
                   })}
                   onClick={() => {
+                    workspace.setScreen("mail");
                     mailStore.selectAccount(acc.id);
                     onNavigate?.();
                   }}
@@ -149,8 +152,9 @@ export function SidebarAccountsAndLabels({
           <button
             key={lbl.id}
             type="button"
-            className={`nav-item ${activeLabelId === lbl.id ? "active" : ""}`}
+            className={`nav-item ${workspace.screen === "mail" && activeLabelId === lbl.id ? "active" : ""}`}
             onClick={() => {
+              workspace.setScreen("mail");
               mailStore.selectLabel(lbl.id);
               onNavigate?.();
             }}
@@ -181,6 +185,8 @@ export function SidebarAccountsAndLabels({
           <span className="nav-count">{workspace.contacts.length}</span>
         </button>
       </div>
+
+      <SidebarMuseSection onNavigate={onNavigate} />
     </>
   );
 }
