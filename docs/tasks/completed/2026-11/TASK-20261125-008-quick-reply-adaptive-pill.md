@@ -3,6 +3,7 @@
 - **状态**：Completed
 - **创建日期**：2026-11-25
 - **完成日期**：2026-11-25
+- **实现提交**：`72b975cf3bcfa8ac4fdbc90521b634363a109ff2`（`codex/reader-toolbar-overlap`）
 
 ## 原始需求与范围
 
