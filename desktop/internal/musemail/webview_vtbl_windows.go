@@ -42,6 +42,7 @@ type w2ControllerVtbl struct {
 
 type w2Controller struct{ vtbl *w2ControllerVtbl }
 
+// w2WebViewVtbl 严格对齐 ICoreWebView2 全部 61 个槽位（slot 0..60）。
 type w2WebViewVtbl struct {
 	iUnknownVtbl
 	GetSettings, GetSource, Navigate, NavigateToString                          uintptr
@@ -63,12 +64,22 @@ type w2WebViewVtbl struct {
 	GetCanGoBack, GetCanGoForward, GoBack, GoForward                            uintptr
 	GetDevToolsProtocolEventReceiver, Stop                                      uintptr
 	AddNewWindowRequested, RemoveNewWindowRequested                             uintptr
+	AddDocumentTitleChanged, RemoveDocumentTitleChanged                         uintptr
+	GetDocumentTitle                                                            uintptr
+	AddHostObjectToScript, RemoveHostObjectFromScript                           uintptr
+	OpenDevToolsWindow                                                          uintptr
+	AddContainsFullScreenElementChanged, RemoveContainsFullScreenElementChanged uintptr
+	GetContainsFullScreenElement                                                uintptr
+	AddWebResourceRequested, RemoveWebResourceRequested                         uintptr
+	AddWebResourceRequestedFilter, RemoveWebResourceRequestedFilter             uintptr
+	AddWindowCloseRequested, RemoveWindowCloseRequested                         uintptr
 }
 
 type w2WebView struct{ vtbl *w2WebViewVtbl }
 
+// w2WebView2Vtbl 嵌入完整 w2WebViewVtbl，确保 GetCookieManager 位于 slot 66、GetEnvironment 位于 slot 67。
 type w2WebView2Vtbl struct {
-	iUnknownVtbl
+	w2WebViewVtbl
 	AddWebResourceResponseReceived, RemoveWebResourceResponseReceived uintptr
 	NavigateWithWebResourceRequest                                    uintptr
 	AddDOMContentLoaded, RemoveDOMContentLoaded                       uintptr
@@ -86,6 +97,8 @@ type w2SettingsVtbl struct {
 	GetAreDevToolsEnabled, PutAreDevToolsEnabled                         uintptr
 	GetAreDefaultContextMenusEnabled, PutAreDefaultContextMenusEnabled   uintptr
 	GetAreHostObjectsAllowed, PutAreHostObjectsAllowed                   uintptr
+	GetIsZoomControlEnabled, PutIsZoomControlEnabled                     uintptr
+	GetIsBuiltInErrorPageEnabled, PutIsBuiltInErrorPageEnabled           uintptr
 }
 
 type w2Settings struct{ vtbl *w2SettingsVtbl }

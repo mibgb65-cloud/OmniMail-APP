@@ -6,7 +6,8 @@ export const SHADOW_BASE_CSS = `
   font-size: 13.5px;
   line-height: 1.72;
   color: inherit;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
   overflow-x: auto;
 }
 .mail-html-inner {
@@ -84,6 +85,7 @@ blockquote {
   opacity: 0.88;
 }
 table { max-width: 100%; border-collapse: collapse; }
+table, th, td { word-break: normal; overflow-wrap: normal; }
 pre, code { white-space: pre-wrap; word-break: break-all; }
 .omnimail-bilingual-text { opacity: .8; }
 :is(p,li,h1,h2,h3,h4,td,th) > .omnimail-bilingual-text { display: block; margin-block: .18em; }
@@ -98,11 +100,12 @@ export const SHADOW_DARK_ADAPTIVE_CSS = `
   color-scheme: dark;
 }
 .mail-html-inner {
-  background: transparent;
-  color: #E2E8F0;
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #E2E8F0 !important;
   color-scheme: dark;
 }
-.mail-html-inner :where(p, div, span, li, td, th, font, blockquote, h1, h2, h3, h4, h5, h6) {
+.mail-html-inner :where(table, tr, p, div, span, li, td, th, font, blockquote, h1, h2, h3, h4, h5, h6) {
   border-color: #293548;
 }
 .mail-html-inner :where([bgcolor], [style*="background:#fff" i], [style*="background: #fff" i], [style*="background-color:#fff" i], [style*="background-color: #fff" i], [style*="background:white" i], [style*="background: white" i], [style*="background-color:white" i], [style*="background-color: white" i], [style*="rgb(255" i], [style*="rgb(250" i], [style*="rgb(248" i], [style*="rgb(245" i], [style*="rgb(244" i], [style*="rgb(242" i], [style*="rgb(240" i], [style*="background:#f" i], [style*="background: #f" i], [style*="background-color:#f" i], [style*="background-color: #f" i]) {
@@ -113,8 +116,7 @@ export const SHADOW_DARK_ADAPTIVE_CSS = `
 .mail-html-inner :where([color], [style*="color:#0" i], [style*="color: #0" i], [style*="color:#1" i], [style*="color: #1" i], [style*="color:#2" i], [style*="color: #2" i], [style*="color:#3" i], [style*="color: #3" i], [style*="color:#4" i], [style*="color: #4" i], [style*="color:black" i], [style*="color: black" i], [style*="color:rgb(0" i], [style*="color: rgb(0" i], [style*="color:rgb(1" i], [style*="color: rgb(1" i], [style*="color:rgb(2" i], [style*="color: rgb(2" i], [style*="color:rgb(3" i], [style*="color: rgb(3" i], [style*="color:rgb(4" i], [style*="color: rgb(4" i], [style*="color:rgb(5" i], [style*="color: rgb(5" i]) {
   color: #E2E8F0 !important;
 }
-.mail-html-inner a,
-.mail-html-inner a[style] {
+.mail-html-inner a:not([style*="color:#fff" i]):not([style*="color: #fff" i]):not([style*="color:white" i]):not([style*="color: white" i]):not([style*="rgb(255" i]) {
   color: #60A5FA !important;
 }
 .mail-html-inner hr {

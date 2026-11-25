@@ -135,9 +135,12 @@ func TestLoginURLAllowlistAndCookieFilter(t *testing.T) {
 	allowed := []string{
 		"https://muse.ai/",
 		"https://www.muse.ai/login",
+		"https://sub.muse.ai/sso",
 		"https://auth.meta.com/oauth",
 		"https://accountscenter.meta.com/verify",
 		"https://www.facebook.com/login.php",
+		"https://accounts.google.com/o/oauth2/v2/auth",
+		"https://appleid.apple.com/auth/authorize",
 		"about:blank",
 	}
 	for _, u := range allowed {
@@ -151,7 +154,7 @@ func TestLoginURLAllowlistAndCookieFilter(t *testing.T) {
 		"http://muse.ai/",
 		"https://evil-muse.ai/",
 		"https://muse.ai.attacker.com/",
-		"https://sub.muse.ai/",
+		"https://sub.accounts.google.com/",
 		"javascript:alert(1)",
 		"file:///C:/Windows/System32/drivers/etc/hosts",
 		"https://user:pass@muse.ai/",

@@ -11,6 +11,7 @@ import (
 	"omnimail/internal/apperr"
 	"omnimail/internal/config"
 	"omnimail/internal/events"
+	"omnimail/internal/mailrepair"
 	"omnimail/internal/security"
 	"omnimail/internal/storage"
 )
@@ -94,11 +95,13 @@ func (m *Manager) openSessionUnlocked(rootDir string, meta config.ProfileMeta) e
 		_ = storage.CheckpointAndClose(db)
 		return err
 	}
+	blobs := storage.NewBlobStore(profDir)
+	_ = mailrepair.MigrateLegacyMailData(db, blobs)
 	migrateAiEndpointKey(vault, config.LoadProfileSettings(profDir))
 	ctx, cancel := context.WithCancel(context.Background())
 	sess := &Session{
 		Meta: meta, ProfileDir: profDir, DB: db, Vault: vault,
-		Blobs: storage.NewBlobStore(profDir), Ctx: ctx, Cancel: cancel,
+		Blobs: blobs, Ctx: ctx, Cancel: cancel,
 	}
 	m.active = sess
 	hooks := append([]SessionHook(nil), m.hooks...)
@@ -192,6 +195,4 @@ func (m *Manager) buildSummaryUnlocked(rootDir string, meta config.ProfileMeta) 
 	}
 }
 
-func nowISO() string {
-	return time.Now().UTC().Format(time.RFC3339)
-}
+func nowISO() string { return time.Now().UTC().Format(time.RFC3339) }

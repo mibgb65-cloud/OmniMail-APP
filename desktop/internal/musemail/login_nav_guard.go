@@ -8,25 +8,22 @@ import (
 
 const museLoginStartURL = "https://muse.ai/"
 
-// allowedLoginHosts 仅允许 Muse 与 Meta 官方登录认证必需的精确主机名，严禁泛域名匹配。
-var allowedLoginHosts = map[string]struct{}{
-	"muse.ai":                 {},
-	"www.muse.ai":             {},
-	"auth.muse.ai":            {},
-	"meta.ai":                 {},
-	"www.meta.ai":             {},
-	"auth.meta.com":           {},
-	"www.meta.com":            {},
-	"accountscenter.meta.com": {},
-	"facebook.com":            {},
-	"www.facebook.com":        {},
-	"m.facebook.com":          {},
-	"web.facebook.com":        {},
-	"instagram.com":           {},
-	"www.instagram.com":       {},
+// allowedLoginDomainSuffixes 允许精确主域及其官方认证子域。
+var allowedLoginDomainSuffixes = []string{
+	"muse.ai",
+	"meta.ai",
+	"meta.com",
+	"facebook.com",
+	"instagram.com",
 }
 
-// IsAllowedMuseLoginURL 校验独立登录窗口的顶层导航或弹窗地址是否在预先核验的白名单内。
+// allowedExactOAuthHosts 允许 Muse/Meta 第三方快捷登录的精确官方入口域名。
+var allowedExactOAuthHosts = map[string]struct{}{
+	"accounts.google.com": {},
+	"appleid.apple.com":   {},
+}
+
+// IsAllowedMuseLoginURL 校验独立登录窗口的顶层导航或弹窗地址是否在官方安全白名单内。
 func IsAllowedMuseLoginURL(raw string) bool {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
@@ -49,8 +46,15 @@ func IsAllowedMuseLoginURL(raw string) bool {
 	if host == "" {
 		return false
 	}
-	_, ok := allowedLoginHosts[host]
-	return ok
+	if _, ok := allowedExactOAuthHosts[host]; ok {
+		return true
+	}
+	for _, sfx := range allowedLoginDomainSuffixes {
+		if host == sfx || strings.HasSuffix(host, "."+sfx) {
+			return true
+		}
+	}
+	return false
 }
 
 // BuildMinimalMuseCookieHeader 仅筛选 muse.ai / .muse.ai 域未过期会话并校验 hatch_sess 存在。

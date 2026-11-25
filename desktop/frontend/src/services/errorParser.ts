@@ -78,7 +78,12 @@ export function parseBackendError(
     const detail = match[3]?.trim() ?? "";
     const mappedKey = ERROR_CODE_KEYS[code];
     if (mappedKey && (lang === "en-US" || !detail)) {
-      return { code, message: translateWithLang(lang, mappedKey) };
+      const baseMsg = translateWithLang(lang, mappedKey);
+      const hrMatch = /\b0x[0-9A-Fa-f]{8}\b/.exec(detail);
+      return {
+        code,
+        message: hrMatch ? `${baseMsg} (HRESULT ${hrMatch[0]})` : baseMsg,
+      };
     }
     return { code, message: detail || trimmed };
   }

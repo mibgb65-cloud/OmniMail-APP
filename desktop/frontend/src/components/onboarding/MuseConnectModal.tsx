@@ -56,6 +56,7 @@ export function MuseConnectModal() {
       setLoginStage(next.loginStage);
       setVerifiedEmail("");
     } catch (err) {
+      if (!museStore.status.bound) setLoginStage("idle");
       setError(parseBackendError(err));
     } finally {
       setOpeningLogin(false);

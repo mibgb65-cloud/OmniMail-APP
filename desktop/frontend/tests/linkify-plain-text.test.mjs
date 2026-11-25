@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { linkifyPlainText } from "../src/components/mail/reader/linkifyPlainText.ts";
-import { getMailHtmlThemeCss } from "../src/components/mail/reader/safeMailHtmlStyles.ts";
+import {
+  getMailHtmlThemeCss,
+  SHADOW_BASE_CSS,
+} from "../src/components/mail/reader/safeMailHtmlStyles.ts";
 
 test("精准识别 http/https 并剥离末尾中英文标点", () => {
   const segs = linkifyPlainText(
@@ -127,4 +130,14 @@ test("暗黑模式 Shadow DOM 双模式样式：护眼适配不反色媒体，�
   assert.match(paper, /color-scheme:\s*light/i);
   assert.match(paper, /border-radius:\s*12px/i);
   assert.match(paper, /padding:\s*20px/i);
+});
+
+test("Shadow DOM 基础样式：避免 word-break: break-word 压扁表格列头为单字母竖排", () => {
+  assert.doesNotMatch(SHADOW_BASE_CSS, /word-break:\s*break-word/i);
+  assert.match(SHADOW_BASE_CSS, /:host\s*\{[^}]*overflow-wrap:\s*break-word/is);
+  assert.match(SHADOW_BASE_CSS, /:host\s*\{[^}]*word-break:\s*normal/is);
+  assert.match(
+    SHADOW_BASE_CSS,
+    /table,\s*th,\s*td\s*\{\s*word-break:\s*normal;\s*overflow-wrap:\s*normal;\s*\}/i,
+  );
 });

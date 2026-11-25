@@ -9,12 +9,14 @@ import (
 
 	"omnimail/internal/apperr"
 	"omnimail/internal/mailproto"
+	"omnimail/internal/mailrepair"
 	"omnimail/internal/security"
 )
 
 var avatarTones = []string{"blue", "indigo", "emerald", "amber", "slate", "rose"}
 
 func GetThreadDetail(db *sql.DB, idOrThreadID string, blockRemoteImages bool) (MailItemDTO, error) {
+	mailrepair.EnsureLegacyMailRepaired(db)
 	var msgID string
 	err := db.QueryRow(`SELECT id FROM messages WHERE id = ? LIMIT 1`, idOrThreadID).Scan(&msgID)
 	if err != nil {
@@ -27,6 +29,7 @@ func GetThreadDetail(db *sql.DB, idOrThreadID string, blockRemoteImages bool) (M
 }
 
 func GetMessageItem(db *sql.DB, msgID string, includeThread bool, blockRemoteImages bool) (MailItemDTO, error) {
+	mailrepair.EnsureLegacyMailRepaired(db)
 	var m MailItemDTO
 	var toJ, ccJ, secJ, icsJ, bodyText, bodyHTML string
 	var unreadInt, starInt, remImgInt, remAllowInt, aiSumInt int

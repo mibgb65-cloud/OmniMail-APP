@@ -2,11 +2,17 @@ package mailproto
 
 import (
 	"bytes"
+	"errors"
 	"html"
+	"io"
+	"mime"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/emersion/go-message"
+	"github.com/emersion/go-message/mail"
 )
 
 var (
@@ -120,4 +126,32 @@ func extractFallbackBody(raw []byte) string {
 		return string(raw[idx+2:])
 	}
 	return string(raw)
+}
+
+// ExtractRawBodyHTML 仅流式读取原始 EML 中的内联 text/html 正文，跳过二进制附件（供存量样式修复使用）。
+func ExtractRawBodyHTML(raw []byte) string {
+	mr, err := mail.CreateReader(bytes.NewReader(raw))
+	if err != nil && !message.IsUnknownCharset(err) {
+		return ""
+	}
+	var out strings.Builder
+	for {
+		p, partErr := mr.NextPart()
+		if errors.Is(partErr, io.EOF) || (partErr != nil && !message.IsUnknownCharset(partErr)) {
+			break
+		}
+		if p == nil {
+			continue
+		}
+		if _, ok := p.Header.(*mail.InlineHeader); !ok {
+			continue
+		}
+		ct, _, _ := mime.ParseMediaType(p.Header.Get("Content-Type"))
+		cid := strings.Trim(strings.TrimSpace(p.Header.Get("Content-ID")), "<>")
+		if strings.EqualFold(strings.TrimSpace(ct), "text/html") && cid == "" {
+			data, _ := io.ReadAll(io.LimitReader(p.Body, 16*1024*1024))
+			out.Write(data)
+		}
+	}
+	return out.String()
 }

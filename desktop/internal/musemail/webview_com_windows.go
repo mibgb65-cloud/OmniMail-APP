@@ -3,10 +3,12 @@
 package musemail
 
 import (
+	"fmt"
 	"math"
 	"syscall"
 	"unsafe"
 
+	"github.com/wailsapp/go-webview2/pkg/combridge"
 	"golang.org/x/sys/windows"
 )
 
@@ -14,38 +16,55 @@ type winRect struct {
 	Left, Top, Right, Bottom int32
 }
 
-type comCallbackVtbl struct {
-	iUnknownVtbl
-	Invoke uintptr
+type w2ControllerCompletedHandler interface {
+	combridge.IUnknown
+	ControllerCompleted(errorCode int32, ctrl *w2Controller) uintptr
 }
 
-// comCallbackObj 构造仅含指针宽度参数的轻量级 COM 回调对象，兼容纯 Go 零 CGO Win64 ABI。
-type comCallbackObj struct {
-	vtbl   *comCallbackVtbl
-	invoke func(a1, a2 unsafe.Pointer) uintptr
+type w2NavStartingHandler interface {
+	combridge.IUnknown
+	NavigationStarting(sender *w2WebView, args *w2NavArgs) uintptr
 }
 
-var sharedComCallbackVtbl = comCallbackVtbl{
-	iUnknownVtbl: iUnknownVtbl{
-		QueryInterface: syscall.NewCallback(func(_, _ unsafe.Pointer, out **uintptr) uintptr {
-			if out != nil {
-				*out = nil
-			}
-			return uintptr(windows.E_NOINTERFACE)
-		}),
-		AddRef:  syscall.NewCallback(func(_ unsafe.Pointer) uintptr { return 1 }),
-		Release: syscall.NewCallback(func(_ unsafe.Pointer) uintptr { return 1 }),
-	},
-	Invoke: syscall.NewCallback(func(this *comCallbackObj, a1, a2 unsafe.Pointer) uintptr {
-		if this != nil && this.invoke != nil {
-			return this.invoke(a1, a2)
-		}
-		return uintptr(windows.S_OK)
-	}),
+type w2NewWindowRequestedHandler interface {
+	combridge.IUnknown
+	NewWindowRequested(sender *w2WebView, args *w2NewWinArgs) uintptr
 }
 
-func newComCallback(fn func(a1, a2 unsafe.Pointer) uintptr) *comCallbackObj {
-	return &comCallbackObj{vtbl: &sharedComCallbackVtbl, invoke: fn}
+type w2GetCookiesCompletedHandler interface {
+	combridge.IUnknown
+	CookiesCompleted(errorCode int32, list *w2CookieList) uintptr
+}
+
+func init() {
+	combridge.RegisterVTable[combridge.IUnknown, w2ControllerCompletedHandler](
+		"{6c4819f3-c9b7-4260-8127-c9f5bde7f68c}",
+		func(this uintptr, errorCode int32, ctrl *w2Controller) uintptr {
+			return combridge.Resolve[w2ControllerCompletedHandler](this).ControllerCompleted(errorCode, ctrl)
+		},
+	)
+	combridge.RegisterVTable[combridge.IUnknown, w2NavStartingHandler](
+		"{9adbe429-f36d-432b-9ddc-f8881fbd76e3}",
+		func(this uintptr, sender *w2WebView, args *w2NavArgs) uintptr {
+			return combridge.Resolve[w2NavStartingHandler](this).NavigationStarting(sender, args)
+		},
+	)
+	combridge.RegisterVTable[combridge.IUnknown, w2NewWindowRequestedHandler](
+		"{d4c185fe-c81c-4989-97af-2d3fa7ab5651}",
+		func(this uintptr, sender *w2WebView, args *w2NewWinArgs) uintptr {
+			return combridge.Resolve[w2NewWindowRequestedHandler](this).NewWindowRequested(sender, args)
+		},
+	)
+	combridge.RegisterVTable[combridge.IUnknown, w2GetCookiesCompletedHandler](
+		"{5a4f5069-5c15-47c3-8646-f3de1fe17011}",
+		func(this uintptr, errorCode int32, list *w2CookieList) uintptr {
+			return combridge.Resolve[w2GetCookiesCompletedHandler](this).CookiesCompleted(errorCode, list)
+		},
+	)
+}
+
+func formatHResult(hr uintptr) string {
+	return fmt.Sprintf("0x%08X", uint32(hr))
 }
 
 func comAddRef(ptr unsafe.Pointer) {
@@ -68,12 +87,9 @@ func comRelease(ptr unsafe.Pointer) {
 	}
 }
 
-func envCreateController(env *w2Environment, hwnd windows.Handle, cb *comCallbackObj) error {
-	hr, _, _ := syscall.SyscallN(env.vtbl.CreateCoreWebView2Controller, uintptr(unsafe.Pointer(env)), uintptr(hwnd), uintptr(unsafe.Pointer(cb)))
-	if windows.Handle(hr) != windows.S_OK {
-		return syscall.Errno(hr)
-	}
-	return nil
+func envCreateController(env *w2Environment, hwnd windows.Handle, cbRef uintptr) uintptr {
+	hr, _, _ := syscall.SyscallN(env.vtbl.CreateCoreWebView2Controller, uintptr(unsafe.Pointer(env)), uintptr(hwnd), cbRef)
+	return hr
 }
 
 func controllerPutBounds(ctrl *w2Controller, r winRect) {
@@ -98,31 +114,31 @@ func controllerClose(ctrl *w2Controller) {
 	}
 }
 
-func controllerGetWebView(ctrl *w2Controller) (*w2WebView, error) {
+func controllerGetWebView(ctrl *w2Controller) (*w2WebView, uintptr) {
 	var wv *w2WebView
 	hr, _, _ := syscall.SyscallN(ctrl.vtbl.GetCoreWebView2, uintptr(unsafe.Pointer(ctrl)), uintptr(unsafe.Pointer(&wv)))
-	if windows.Handle(hr) != windows.S_OK || wv == nil {
-		return nil, syscall.Errno(hr)
+	if int32(hr) < 0 || wv == nil {
+		return nil, hr
 	}
-	return wv, nil
+	return wv, uintptr(windows.S_OK)
 }
 
-func queryWebView2(wv *w2WebView) *w2WebView2 {
+func queryWebView2(wv *w2WebView) (*w2WebView2, uintptr) {
 	if wv == nil {
-		return nil
+		return nil, uintptr(windows.E_POINTER)
 	}
 	var res *w2WebView2
 	hr, _, _ := syscall.SyscallN(wv.vtbl.QueryInterface, uintptr(unsafe.Pointer(wv)), uintptr(unsafe.Pointer(&iidICoreWebView2_2)), uintptr(unsafe.Pointer(&res)))
-	if windows.Handle(hr) != windows.S_OK {
-		return nil
+	if int32(hr) < 0 || res == nil {
+		return nil, hr
 	}
-	return res
+	return res, uintptr(windows.S_OK)
 }
 
 func lockDownWebViewSettings(wv *w2WebView) {
 	var s *w2Settings
 	hr, _, _ := syscall.SyscallN(wv.vtbl.GetSettings, uintptr(unsafe.Pointer(wv)), uintptr(unsafe.Pointer(&s)))
-	if windows.Handle(hr) != windows.S_OK || s == nil {
+	if int32(hr) < 0 || s == nil {
 		return
 	}
 	defer comRelease(unsafe.Pointer(s))
@@ -133,22 +149,19 @@ func lockDownWebViewSettings(wv *w2WebView) {
 	_, _, _ = syscall.SyscallN(s.vtbl.PutIsStatusBarEnabled, uintptr(unsafe.Pointer(s)), 0)
 }
 
-func webViewNavigate(wv *w2WebView, rawURL string) error {
+func webViewNavigate(wv *w2WebView, rawURL string) uintptr {
 	u16, err := windows.UTF16PtrFromString(rawURL)
 	if err != nil {
-		return err
+		return uintptr(windows.E_INVALIDARG)
 	}
 	hr, _, _ := syscall.SyscallN(wv.vtbl.Navigate, uintptr(unsafe.Pointer(wv)), uintptr(unsafe.Pointer(u16)))
-	if windows.Handle(hr) != windows.S_OK {
-		return syscall.Errno(hr)
-	}
-	return nil
+	return hr
 }
 
 func readComLPWSTR(fn uintptr, self unsafe.Pointer) string {
 	var raw *uint16
 	hr, _, _ := syscall.SyscallN(fn, uintptr(self), uintptr(unsafe.Pointer(&raw)))
-	if windows.Handle(hr) != windows.S_OK || raw == nil {
+	if int32(hr) < 0 || raw == nil {
 		return ""
 	}
 	defer windows.CoTaskMemFree(unsafe.Pointer(raw))
@@ -156,22 +169,18 @@ func readComLPWSTR(fn uintptr, self unsafe.Pointer) string {
 }
 
 func extractCookieList(list *w2CookieList) []RawCookie {
+	var count uint32
 	if list == nil {
 		return nil
 	}
-	var count uint32
-	hr, _, _ := syscall.SyscallN(list.vtbl.GetCount, uintptr(unsafe.Pointer(list)), uintptr(unsafe.Pointer(&count)))
-	if windows.Handle(hr) != windows.S_OK || count == 0 {
+	if hr, _, _ := syscall.SyscallN(list.vtbl.GetCount, uintptr(unsafe.Pointer(list)), uintptr(unsafe.Pointer(&count))); int32(hr) < 0 || count == 0 {
 		return nil
 	}
-	if count > 256 {
-		count = 256
-	}
+	count = min(count, 256)
 	out := make([]RawCookie, 0, count)
 	for idx := uint32(0); idx < count; idx++ {
 		var c *w2Cookie
-		hr, _, _ := syscall.SyscallN(list.vtbl.GetValueAtIndex, uintptr(unsafe.Pointer(list)), uintptr(idx), uintptr(unsafe.Pointer(&c)))
-		if windows.Handle(hr) != windows.S_OK || c == nil {
+		if hr, _, _ := syscall.SyscallN(list.vtbl.GetValueAtIndex, uintptr(unsafe.Pointer(list)), uintptr(idx), uintptr(unsafe.Pointer(&c))); int32(hr) < 0 || c == nil {
 			continue
 		}
 		var expBits uint64
@@ -180,11 +189,8 @@ func extractCookieList(list *w2CookieList) []RawCookie {
 		_, _, _ = syscall.SyscallN(c.vtbl.GetExpires, uintptr(selfPtr), uintptr(unsafe.Pointer(&expBits)))
 		_, _, _ = syscall.SyscallN(c.vtbl.GetIsSession, uintptr(selfPtr), uintptr(unsafe.Pointer(&isSess)))
 		out = append(out, RawCookie{
-			Name:      readComLPWSTR(c.vtbl.GetName, selfPtr),
-			Value:     readComLPWSTR(c.vtbl.GetValue, selfPtr),
-			Domain:    readComLPWSTR(c.vtbl.GetDomain, selfPtr),
-			ExpiresAt: math.Float64frombits(expBits),
-			IsSession: isSess != 0,
+			Name: readComLPWSTR(c.vtbl.GetName, selfPtr), Value: readComLPWSTR(c.vtbl.GetValue, selfPtr),
+			Domain: readComLPWSTR(c.vtbl.GetDomain, selfPtr), ExpiresAt: math.Float64frombits(expBits), IsSession: isSess != 0,
 		})
 		comRelease(selfPtr)
 	}

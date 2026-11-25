@@ -49,25 +49,25 @@ type ParsedEmail struct {
 }
 
 func ParseRawMessage(raw []byte) (*ParsedEmail, error) {
+	rawHdr := ExtractRawHeaderBlock(raw)
+	hint := DetectHeaderCharsetHint(rawHdr)
 	out := &ParsedEmail{
-		RawHeaders: ExtractRawHeaderBlock(raw),
+		RawHeaders: EnsureUTF8HeaderBytes(rawHdr, hint),
 		SentAt:     time.Now(),
 	}
 	mr, err := mail.CreateReader(bytes.NewReader(raw))
 	if err != nil && !message.IsUnknownCharset(err) {
-		// 极端非标准邮件头降级为纯文本读取，绝不因一封畸形头中断整箱同步
-		out.BodyText = strings.TrimSpace(extractFallbackBody(raw))
+		// 极端非标准邮件头降级为纯文本读取，仍尽可能从原始头块恢复主题与发/收件人
+		parseEnvelopeHeaders(nil, rawHdr, hint, out)
+		out.BodyText = EnsureUTF8HeaderBytes(strings.TrimSpace(extractFallbackBody(raw)), hint)
 		return out, nil
 	}
-	parseEnvelopeHeaders(&mr.Header, out)
+	parseEnvelopeHeaders(&mr.Header, rawHdr, hint, out)
 
 	partIndex := 0
 	for {
 		p, partErr := mr.NextPart()
-		if errors.Is(partErr, io.EOF) {
-			break
-		}
-		if partErr != nil && !message.IsUnknownCharset(partErr) {
+		if errors.Is(partErr, io.EOF) || (partErr != nil && !message.IsUnknownCharset(partErr)) {
 			break
 		}
 		if p == nil {
@@ -82,57 +82,64 @@ func ParseRawMessage(raw []byte) (*ParsedEmail, error) {
 	return out, nil
 }
 
-func parseEnvelopeHeaders(h *mail.Header, out *ParsedEmail) {
-	if id, err := h.MessageID(); err == nil {
-		out.RFCMessageID = strings.TrimSpace(id)
+func parseEnvelopeHeaders(h *mail.Header, rawHdr, hint string, out *ParsedEmail) {
+	if h != nil {
+		if id, err := h.MessageID(); err == nil {
+			out.RFCMessageID = EnsureUTF8HeaderBytes(strings.TrimSpace(id), hint)
+		}
+		if dt, err := h.Date(); err == nil && !dt.IsZero() {
+			out.SentAt = dt
+		}
+		if refs, err := h.MsgIDList("References"); err == nil {
+			out.References = refs
+		}
+		if irt, err := h.MsgIDList("In-Reply-To"); err == nil && len(irt) > 0 {
+			out.InReplyTo = EnsureUTF8HeaderBytes(irt[0], hint)
+		}
 	}
-	if sub, err := h.Subject(); err == nil && strings.TrimSpace(sub) != "" {
-		out.Subject = strings.TrimSpace(sub)
-	} else {
-		out.Subject = strings.TrimSpace(DecodeHeaderText(h.Get("Subject")))
+	sub, sender, replyTo, to, cc := ParseHeaderBlockEnvelope(rawHdr)
+	if sub == "" && h != nil {
+		if s, err := h.Subject(); err == nil && strings.TrimSpace(s) != "" {
+			sub = EnsureUTF8HeaderBytes(strings.TrimSpace(s), hint)
+		} else {
+			sub = strings.TrimSpace(DecodeHeaderTextWithHint(h.Get("Subject"), hint))
+		}
 	}
-	if out.Subject == "" {
-		out.Subject = "（无主题）"
+	if sub == "" {
+		sub = "（无主题）"
 	}
-	if dt, err := h.Date(); err == nil && !dt.IsZero() {
-		out.SentAt = dt
+	out.Subject = sub
+	if sender.Email == "" && sender.Name == "" && h != nil {
+		if list := readAddressList(h, "From", hint); len(list) > 0 {
+			sender = list[0]
+		}
 	}
-	if refs, err := h.MsgIDList("References"); err == nil {
-		out.References = refs
-	}
-	if irt, err := h.MsgIDList("In-Reply-To"); err == nil && len(irt) > 0 {
-		out.InReplyTo = irt[0]
-	}
-	froms := readAddressList(h, "From")
-	if len(froms) > 0 {
-		out.Sender = froms[0]
-	}
-	out.ReplyTo = readAddressList(h, "Reply-To")
-	out.To = readAddressList(h, "To")
-	out.Cc = readAddressList(h, "Cc")
+	out.Sender = sender
+	out.ReplyTo = fallbackAddrList(replyTo, h, "Reply-To", hint)
+	out.To = fallbackAddrList(to, h, "To", hint)
+	out.Cc = fallbackAddrList(cc, h, "Cc", hint)
 }
 
-func readAddressList(h *mail.Header, key string) []EmailAddress {
+func fallbackAddrList(cur []EmailAddress, h *mail.Header, key, hint string) []EmailAddress {
+	if len(cur) > 0 || h == nil {
+		return cur
+	}
+	return readAddressList(h, key, hint)
+}
+
+func readAddressList(h *mail.Header, key, hint string) []EmailAddress {
+	if raw := h.Get(key); strings.TrimSpace(raw) != "" {
+		if parsed := ParseAddressHeader(raw, hint); len(parsed) > 0 {
+			return parsed
+		}
+	}
 	list, err := h.AddressList(key)
 	if err != nil || len(list) == 0 {
-		raw := strings.TrimSpace(DecodeHeaderText(h.Get(key)))
-		if raw == "" {
-			return nil
-		}
-		return []EmailAddress{{Name: raw, Email: raw}}
+		return nil
 	}
 	out := make([]EmailAddress, 0, len(list))
 	for _, a := range list {
-		name := DecodeHeaderText(strings.TrimSpace(a.Name))
-		addr := strings.ToLower(strings.TrimSpace(a.Address))
-		if name == "" && addr != "" {
-			if at := strings.IndexByte(addr, '@'); at > 0 {
-				name = addr[:at]
-			} else {
-				name = addr
-			}
-		}
-		out = append(out, EmailAddress{Name: name, Email: addr})
+		out = append(out, finalizeEmailAddress(cleanDisplayName(a.Name, hint), cleanEmailAddr(a.Address)))
 	}
 	return out
 }
@@ -180,11 +187,7 @@ func consumePart(p *mail.Part, idx int, out *ParsedEmail) {
 		}
 		preview := ""
 		if strings.HasPrefix(ctLower, "text/") || ext == "txt" || ext == "csv" || ext == "md" || ext == "json" {
-			limit := len(data)
-			if limit > 2048 {
-				limit = 2048
-			}
-			preview = string(data[:limit])
+			preview = string(data[:min(len(data), 2048)])
 		}
 		out.Attachments = append(out.Attachments, ParsedAttachment{
 			PartID: strconv.Itoa(idx), Filename: fn, Ext: ext, MimeType: ctLower,

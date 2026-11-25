@@ -1,7 +1,6 @@
 package security
 
 import (
-	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -27,7 +26,6 @@ type PhishingCheckInput struct {
 }
 
 var (
-	reAuthMech   = regexp.MustCompile(`(?i)\b(spf|dkim|dmarc)\s*=\s*(pass|fail|softfail|neutral|none|temperror|permerror)\b`)
 	reAnchorPair = regexp.MustCompile(`(?is)<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>(.*?)</a>`)
 	reEmailInTxt = regexp.MustCompile(`[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})`)
 	reStripTag   = regexp.MustCompile(`(?s)<[^>]+>`)
@@ -58,11 +56,13 @@ func EvaluatePhishing(in PhishingCheckInput) *SecurityWarningResult {
 		elevate("warning", "部分发件服务器签名校验未通过，请谨慎核实对方身份")
 	}
 
-	// 2. 显示名伪装（Display Name Spoofing）
-	if m := reEmailInTxt.FindStringSubmatch(in.SenderName); len(m) == 2 {
-		spoofDom := strings.ToLower(m[1])
-		if fromDom != "" && !sameRegistrableDomain(spoofDom, fromDom) {
-			elevate("danger", "发件人显示名伪装为其他域名邮箱（"+spoofDom+"），与真实发件域不一致")
+	// 2. 显示名伪装（Display Name Spoofing）：仅在真实发件域与显示名域名均为合法纯域名时比较
+	if isValidMailDomain(fromDom) {
+		if m := reEmailInTxt.FindStringSubmatch(in.SenderName); len(m) == 2 {
+			spoofDom := strings.ToLower(strings.Trim(m[1], ". "))
+			if isValidMailDomain(spoofDom) && !sameRegistrableDomain(spoofDom, fromDom) {
+				elevate("danger", "发件人显示名伪装为其他域名邮箱（"+spoofDom+"），与真实发件域不一致")
+			}
 		}
 	}
 
@@ -74,7 +74,7 @@ func EvaluatePhishing(in PhishingCheckInput) *SecurityWarningResult {
 	// 4. Reply-To 跨域名劫持
 	for _, rt := range in.ReplyToEmails {
 		rtDom := emailDomain(rt)
-		if rtDom != "" && fromDom != "" && !sameRegistrableDomain(rtDom, fromDom) && dkim != "pass" {
+		if isValidMailDomain(rtDom) && isValidMailDomain(fromDom) && !sameRegistrableDomain(rtDom, fromDom) && dkim != "pass" {
 			elevate("warning", "回复地址域名（"+rtDom+"）与发件人域名不一致")
 			break
 		}
@@ -130,63 +130,4 @@ func EvaluatePhishing(in PhishingCheckInput) *SecurityWarningResult {
 		DKIM:   dkim,
 		DMARC:  dmarc,
 	}
-}
-
-func ParseAuthResults(rawHeaders string) (spf, dkim, dmarc string) {
-	spf, dkim, dmarc = "unknown", "unknown", "unknown"
-	unfolded := strings.ReplaceAll(strings.ReplaceAll(rawHeaders, "\r\n ", " "), "\n ", " ")
-	unfolded = strings.ReplaceAll(strings.ReplaceAll(unfolded, "\r\n\t", " "), "\n\t", " ")
-	for _, line := range strings.Split(strings.ReplaceAll(unfolded, "\r\n", "\n"), "\n") {
-		low := strings.ToLower(strings.TrimSpace(line))
-		if strings.HasPrefix(low, "authentication-results:") || strings.HasPrefix(low, "arc-authentication-results:") {
-			for _, m := range reAuthMech.FindAllStringSubmatch(low, -1) {
-				switch m[1] {
-				case "spf":
-					if spf == "unknown" {
-						spf = m[2]
-					}
-				case "dkim":
-					if dkim == "unknown" {
-						dkim = m[2]
-					}
-				case "dmarc":
-					if dmarc == "unknown" {
-						dmarc = m[2]
-					}
-				}
-			}
-		} else if strings.HasPrefix(low, "received-spf:") && spf == "unknown" {
-			rest := strings.TrimSpace(strings.TrimPrefix(low, "received-spf:"))
-			for _, st := range []string{"pass", "softfail", "fail", "neutral", "none"} {
-				if strings.HasPrefix(rest, st) {
-					spf = st
-					break
-				}
-			}
-		}
-	}
-	return spf, dkim, dmarc
-}
-
-func emailDomain(addr string) string {
-	s := strings.ToLower(strings.TrimSpace(addr))
-	if at := strings.LastIndexByte(s, '@'); at >= 0 && at < len(s)-1 {
-		return s[at+1:]
-	}
-	return ""
-}
-
-func urlDomain(raw string) string {
-	u, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil {
-		return ""
-	}
-	return strings.ToLower(u.Hostname())
-}
-
-func sameRegistrableDomain(a, b string) bool {
-	if a == b {
-		return true
-	}
-	return strings.HasSuffix(a, "."+b) || strings.HasSuffix(b, "."+a)
 }

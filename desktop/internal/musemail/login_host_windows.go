@@ -4,13 +4,17 @@ package musemail
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 	"unsafe"
 
+	"github.com/wailsapp/go-webview2/pkg/combridge"
 	"github.com/wailsapp/go-webview2/webviewloader"
 	"golang.org/x/sys/windows"
 )
@@ -21,21 +25,24 @@ type cookieReply struct {
 }
 
 type isolatedLoginHost struct {
-	hwnd       windows.Handle
+	hwnd       atomic.Uintptr
 	tempDir    string
 	alive      atomic.Bool
 	closedOnce sync.Once
 	doneCh     chan struct{}
 	cookieReq  chan chan cookieReply
+	staTasks   chan func()
 
-	// 仅在独立 STA 线程内访问的 WebView2 COM 引用与固定回调（防止 GC 回收回调结构体）
+	// 仅在独立 STA 线程内访问的 WebView2 COM 引用与标准 combridge 回调对象
 	env        *w2Environment
 	ctrl       *w2Controller
 	wv         *w2WebView
-	ctrlCb     *comCallbackObj
-	navCb      *comCallbackObj
-	newWinCb   *comCallbackObj
-	cookieCb   *comCallbackObj
+	ctrlCb     *combridge.ComObject[w2ControllerCompletedHandler]
+	navCb      *combridge.ComObject[w2NavStartingHandler]
+	newWinCb   *combridge.ComObject[w2NewWindowRequestedHandler]
+	cookieCb   *combridge.ComObject[w2GetCookiesCompletedHandler]
+	navToken   int64
+	winToken   int64
 	activeReq  chan cookieReply
 	browserPID uint32
 }
@@ -52,6 +59,7 @@ func newDefaultLoginWindow() (LoginWindow, error) {
 		tempDir:   tempDir,
 		doneCh:    make(chan struct{}),
 		cookieReq: make(chan chan cookieReply, 1),
+		staTasks:  make(chan func(), 4),
 	}
 	readyCh := make(chan error, 1)
 	go host.runSTAThread(readyCh)
@@ -71,8 +79,22 @@ func newDefaultLoginWindow() (LoginWindow, error) {
 
 func (h *isolatedLoginHost) IsAlive() bool { return h.alive.Load() }
 
+func (h *isolatedLoginHost) drainSTATasks() {
+	for {
+		select {
+		case fn := <-h.staTasks:
+			if fn != nil {
+				fn()
+			}
+		default:
+			return
+		}
+	}
+}
+
 func (h *isolatedLoginHost) ExtractMuseCookies(ctx context.Context) ([]RawCookie, error) {
-	if !h.alive.Load() {
+	hwnd := h.hwnd.Load()
+	if !h.alive.Load() || hwnd == 0 {
 		return nil, errNotLoggedIn()
 	}
 	replyCh := make(chan cookieReply, 1)
@@ -81,7 +103,7 @@ func (h *isolatedLoginHost) ExtractMuseCookies(ctx context.Context) ([]RawCookie
 	default:
 		return nil, errGatewayFailed("正在核验登录状态，请稍候")
 	}
-	_, _, _ = procPostMessageW.Call(uintptr(h.hwnd), wmAppExtractCookies, 0, 0)
+	_, _, _ = procPostMessageW.Call(hwnd, wmAppExtractCookies, 0, 0)
 
 	select {
 	case res := <-replyCh:
@@ -95,8 +117,8 @@ func (h *isolatedLoginHost) ExtractMuseCookies(ctx context.Context) ([]RawCookie
 
 func (h *isolatedLoginHost) Close() error {
 	h.closedOnce.Do(func() {
-		if h.alive.Load() && h.hwnd != 0 {
-			_, _, _ = procPostMessageW.Call(uintptr(h.hwnd), wmAppShutdown, 0, 0)
+		if hwnd := h.hwnd.Load(); hwnd != 0 {
+			_, _, _ = procPostMessageW.Call(hwnd, wmAppShutdown, 0, 0)
 		}
 		select {
 		case <-h.doneCh:
@@ -106,14 +128,34 @@ func (h *isolatedLoginHost) Close() error {
 	return nil
 }
 
+func isCoInitSucceeded(err error) bool {
+	if err == nil {
+		return true
+	}
+	var errno syscall.Errno
+	if errors.As(err, &errno) {
+		return errno == 0 || errno == 1 || int32(errno) >= 0
+	}
+	return false
+}
+
+func formatLoaderErrCode(err error) string {
+	var errno syscall.Errno
+	if errors.As(err, &errno) && errno != 0 {
+		return formatHResult(uintptr(errno))
+	}
+	return ""
+}
+
 func (h *isolatedLoginHost) runSTAThread(readyCh chan<- error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	defer close(h.doneCh)
 
-	if err := windows.CoInitializeEx(0, windows.COINIT_APARTMENTTHREADED); err != nil {
+	coErr := windows.CoInitializeEx(0, windows.COINIT_APARTMENTTHREADED)
+	if !isCoInitSucceeded(coErr) {
 		removeTempDirWithRetry(h.tempDir, 0)
-		readyCh <- errUnsupported("无法初始化 Windows 独立登录宿主环境")
+		readyCh <- errUnsupported(fmt.Sprintf("无法初始化 Windows 独立登录宿主环境（HRESULT %s）", formatLoaderErrCode(coErr)))
 		return
 	}
 	defer func() {
@@ -121,26 +163,26 @@ func (h *isolatedLoginHost) runSTAThread(readyCh chan<- error) {
 		windows.CoUninitialize()
 		removeTempDirWithRetry(h.tempDir, h.browserPID)
 	}()
-
 	hwnd, err := createCenteredLoginHWND("Muse Mail · 官方安全登录", 540, 720)
 	if err != nil {
 		readyCh <- errUnsupported("无法创建独立 Muse 登录窗口")
 		return
 	}
-	h.hwnd = hwnd
+	h.hwnd.Store(uintptr(hwnd))
 	hwndRegistry.Store(hwnd, h)
-	_, _, _ = procShowWindow.Call(uintptr(hwnd), swShow)
-	_, _, _ = procUpdateWindow.Call(uintptr(hwnd))
-
+	activateLoginWindowForeground(hwnd)
 	err = webviewloader.CreateCoreWebView2EnvironmentWithOptions(
 		&envCompletedBridge{host: h, readyCh: readyCh},
 		webviewloader.WithUserDataFolder(h.tempDir),
-		webviewloader.WithExclusiveUserDataFolderAccess(true),
 		webviewloader.WithAdditionalBrowserArguments("--disable-features=msWebOOUI,msPdfOOUI --no-first-run --no-default-browser-check"),
 	)
 	if err != nil {
 		_, _, _ = procDestroyWindow.Call(uintptr(hwnd))
-		readyCh <- errUnsupported("当前系统未检测到可用的 Microsoft Edge WebView2 运行时")
+		msgTxt := "当前系统未检测到可用的 Microsoft Edge WebView2 运行时"
+		if code := formatLoaderErrCode(err); code != "" {
+			msgTxt = fmt.Sprintf("无法启动 Microsoft Edge WebView2 运行时（HRESULT %s）", code)
+		}
+		readyCh <- errUnsupported(msgTxt)
 		return
 	}
 

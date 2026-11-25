@@ -134,9 +134,24 @@ test("Muse Mail 只读视图 6 种状态分流、脱敏错误码双语解析与�
     );
     assert.equal(parsed.code, "ERR_MUSE_NOT_ENABLED");
     assert.doesNotMatch(parsed.message, /[\u4e00-\u9fff]/);
+    const hrEn = parseBackendError(
+      new Error(
+        "[ERR_MUSE_UNSUPPORTED] 初始化独立 WebView2 登录环境失败（HRESULT 0x80070005）",
+      ),
+    );
+    assert.equal(hrEn.code, "ERR_MUSE_UNSUPPORTED");
+    assert.match(hrEn.message, /0x80070005/);
   } finally {
     setCurrentLanguage("zh-CN");
   }
+
+  const hrZh = parseBackendError(
+    new Error(
+      "[ERR_MUSE_UNSUPPORTED] 初始化独立 WebView2 登录环境失败（HRESULT 0x80070005）",
+    ),
+  );
+  assert.equal(hrZh.code, "ERR_MUSE_UNSUPPORTED");
+  assert.match(hrZh.message, /0x80070005/);
 
   assert.deepEqual(splitMuseBodyParagraphs("Hello\r\n\r\nWorld\n\n!"), [
     "Hello",

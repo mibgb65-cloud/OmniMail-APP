@@ -17,17 +17,21 @@ var (
 	sanitizerOnce sync.Once
 	mailPolicy    *bluemonday.Policy
 
+	reSafeClassOrID  = regexp.MustCompile(`^[A-Za-z0-9_\-\s]+$`)
 	reImgTag         = regexp.MustCompile(`(?is)<img\b(?:"[^"]*"|'[^']*'|[^>"'])*>`)
 	reImgSrcAttr     = regexp.MustCompile(`(?is)\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))`)
 	reDataOmniSrc    = regexp.MustCompile(`(?is)\bdata-omnimail-src\s*=\s*"([^"]*)"`)
 	reCssExternalURL = regexp.MustCompile(`(?is)url\s*\(\s*['"]?\s*(?:https?:|//)[^)]*\)`)
+	reInlineFixedPos = regexp.MustCompile(`(?i)\bposition\s*:\s*fixed\b`)
 	reSafeDataImg    = regexp.MustCompile(`(?i)^data:image/(png|jpeg|jpg|gif|webp);base64,([a-z0-9+/=\r\n\s]+)$`)
 )
 
 func getMailPolicy() *bluemonday.Policy {
 	sanitizerOnce.Do(func() {
 		p := bluemonday.UGCPolicy()
+		p.AllowAttrs("class", "id").Matching(reSafeClassOrID).Globally()
 		p.AllowAttrs("style", "align", "valign", "width", "height", "bgcolor", "cellpadding", "cellspacing", "border").Globally()
+		p.AllowAttrs("scope", "colspan", "rowspan", "headers").OnElements("th", "td")
 		p.AllowAttrs("src", "alt", "title", "width", "height", "data-omnimail-src", "data-omnimail-cid", "data-omnimail-cid-missing").OnElements("img")
 		p.AllowURLSchemes("http", "https", "mailto", "cid")
 		p.AllowDataURIImages()
@@ -45,8 +49,7 @@ func NormalizeContentID(raw string) string {
 	if unesc, err := url.PathUnescape(s); err == nil {
 		s = unesc
 	}
-	s = strings.TrimSpace(s)
-	s = strings.Trim(s, "<>")
+	s = strings.Trim(strings.TrimSpace(s), "<>")
 	return strings.ToLower(strings.TrimSpace(s))
 }
 
@@ -96,7 +99,7 @@ func normalizeSafeRasterDataURI(raw string) (string, bool) {
 	return "data:image/" + sub + ";base64," + compact, true
 }
 
-// SanitizeMailHTML 对入库邮件 HTML 做严格白名单清洗，支持 cid 内嵌图全兼容与安全栅格 data URI 放行。
+// SanitizeMailHTML 对入库邮件 HTML 做严格白名单清洗，支持安全 style/class 保留、cid 内嵌图与栅格 data URI。
 func SanitizeMailHTML(rawHTML string, cidMap map[string]string) (sanitized string, hasRemoteImages bool) {
 	if strings.TrimSpace(rawHTML) == "" {
 		return "", false
@@ -107,9 +110,10 @@ func SanitizeMailHTML(rawHTML string, cidMap map[string]string) (sanitized strin
 			normMap[nk] = v
 		}
 	}
-	remoteFound := false
+	withoutStyles, cleanCSS, styleRemote := extractAndSanitizeStyleBlocks(rawHTML)
+	remoteFound := styleRemote
 
-	rewritten := reImgTag.ReplaceAllStringFunc(rawHTML, func(tag string) string {
+	rewritten := reImgTag.ReplaceAllStringFunc(withoutStyles, func(tag string) string {
 		m := reImgSrcAttr.FindStringSubmatch(tag)
 		if len(m) == 0 {
 			return tag
@@ -124,8 +128,7 @@ func SanitizeMailHTML(rawHTML string, cidMap map[string]string) (sanitized strin
 			return reImgSrcAttr.ReplaceAllString(tag, `src="`+html.EscapeString(src)+`" data-omnimail-cid="`+html.EscapeString(attID)+`"`)
 		}
 		if strings.HasPrefix(lower, "cid:") {
-			cidKey := NormalizeContentID(src[4:])
-			if attID, ok := normMap[cidKey]; ok && attID != "" {
+			if attID, ok := normMap[NormalizeContentID(src[4:])]; ok && attID != "" {
 				safePath := "/omnimail-cid/" + url.PathEscape(attID)
 				return reImgSrcAttr.ReplaceAllString(tag, `src="`+safePath+`" data-omnimail-cid="`+html.EscapeString(attID)+`"`)
 			}
@@ -142,8 +145,7 @@ func SanitizeMailHTML(rawHTML string, cidMap map[string]string) (sanitized strin
 			if strings.HasPrefix(lower, "//") {
 				src = "https:" + src
 			}
-			escaped := html.EscapeString(src)
-			return reImgSrcAttr.ReplaceAllString(tag, `data-omnimail-src="`+escaped+`"`)
+			return reImgSrcAttr.ReplaceAllString(tag, `data-omnimail-src="`+html.EscapeString(src)+`"`)
 		}
 		return reImgSrcAttr.ReplaceAllString(tag, "")
 	})
@@ -152,8 +154,12 @@ func SanitizeMailHTML(rawHTML string, cidMap map[string]string) (sanitized strin
 		remoteFound = true
 		rewritten = reCssExternalURL.ReplaceAllString(rewritten, "none")
 	}
+	rewritten = reInlineFixedPos.ReplaceAllString(rewritten, "position: static")
 
 	cleaned := getMailPolicy().Sanitize(rewritten)
+	if cleanCSS != "" {
+		cleaned = "<style>" + cleanCSS + "</style>" + cleaned
+	}
 	return cleaned, remoteFound
 }
 
@@ -180,8 +186,7 @@ func PlainTextToHTML(plain string) string {
 	if strings.TrimSpace(plain) == "" {
 		return ""
 	}
-	escaped := html.EscapeString(plain)
-	lines := strings.Split(strings.ReplaceAll(escaped, "\r\n", "\n"), "\n")
+	lines := strings.Split(strings.ReplaceAll(html.EscapeString(plain), "\r\n", "\n"), "\n")
 	return "<p>" + strings.Join(lines, "<br/>") + "</p>"
 }
 

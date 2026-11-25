@@ -40,7 +40,7 @@ export function SafeMailHtmlView({
     const host = hostRef.current;
     if (!host) return;
     const root = host.shadowRoot ?? host.attachShadow({ mode: "open" });
-    root.innerHTML = `<style>${scrollbarReset}\n${SHADOW_BASE_CSS}</style><style class="omnimail-theme-style"></style><div class="mail-html-inner">${html}</div>`;
+    root.innerHTML = `<style>${scrollbarReset}\n${SHADOW_BASE_CSS}</style><div class="mail-html-inner">${html}</div><style class="omnimail-theme-style"></style>`;
     renderTranslation.current = null;
   }, [html]);
 

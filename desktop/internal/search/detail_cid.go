@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"omnimail/internal/mailrepair"
 	"omnimail/internal/security"
 )
 
@@ -16,12 +17,17 @@ var (
 	reHasOmniCidAttr = regexp.MustCompile(`(?i)\bdata-omnimail-cid\s*=`)
 )
 
-// repairLegacyInlineCIDHTML 兼容存量邮件：补齐旧版入库缺失的 cid 映射与 data-omnimail-cid 属性，便于前端按需重载。
+// repairLegacyInlineCIDHTML 兼容存量邮件：补齐旧版缺失的 <style>/class 以及 cid 映射与 data-omnimail-cid 属性。
 func repairLegacyInlineCIDHTML(db *sql.DB, msgID, htmlBody string) string {
 	if db == nil || strings.TrimSpace(htmlBody) == "" {
 		return htmlBody
 	}
 	out := htmlBody
+	if !strings.Contains(strings.ToLower(out), "<style") {
+		if rebuilt := mailrepair.TryLazyRebuildHTML(db, msgID); rebuilt != "" {
+			out = rebuilt
+		}
+	}
 	if reLegacyCidSrc.MatchString(out) {
 		cidMap := loadMessageCIDMap(db, msgID)
 		if len(cidMap) > 0 {
