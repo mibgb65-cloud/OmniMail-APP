@@ -18,10 +18,12 @@ export function ExternalLinkConfirmModal({
   url,
   displayText,
   mailDanger,
+  onDismiss,
 }: {
   url: string;
   displayText?: string;
   mailDanger?: boolean;
+  onDismiss?: () => void;
 }) {
   const { workspace, toastStore } = useApp();
   const { t } = useI18n();
@@ -34,8 +36,23 @@ export function ExternalLinkConfirmModal({
   const isDanger = info?.risk === "danger";
 
   useEffect(() => {
-    if (!info) workspace.setOverlay({ type: "none" });
-  }, [info, workspace]);
+    if (!info) {
+      if (onDismiss) onDismiss();
+      else workspace.setOverlay({ type: "none" });
+    }
+  }, [info, onDismiss, workspace]);
+
+  useEffect(() => {
+    if (!onDismiss) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onDismiss();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [onDismiss]);
 
   useEffect(() => {
     if (isDanger) safeBackRef.current?.focus();
@@ -43,7 +60,10 @@ export function ExternalLinkConfirmModal({
 
   if (!info) return null;
 
-  const close = () => workspace.setOverlay({ type: "none" });
+  const close = () => {
+    if (onDismiss) onDismiss();
+    else workspace.setOverlay({ type: "none" });
+  };
   const [titleKey, subKey] = getExternalLinkHeaderKeys(info);
 
   const handleCopy = () => {
@@ -140,6 +160,7 @@ export function ExternalLinkConfirmModal({
       maxWidth={520}
       noPadding
       ariaLabel={t(titleKey)}
+      backdropClassName={onDismiss ? "is-stacked" : undefined}
       cardClassName={`ext-link-modal-card${isDanger ? " is-danger" : ""}`}
       onClose={close}
       footer={footer}

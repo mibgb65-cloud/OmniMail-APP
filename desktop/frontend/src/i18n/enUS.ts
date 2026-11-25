@@ -6,6 +6,7 @@ import { imageLightbox } from "./en/imageLightbox.ts";
 import { mailList, reader, security } from "./en/mailAndSecurity.ts";
 import { mailListBackfill } from "./en/mailListBackfill.ts";
 import { onboarding } from "./en/onboarding.ts";
+import { providerConnect } from "./en/providerConnect.ts";
 import { overlaysPrimary } from "./en/overlaysPrimary.ts";
 import { overlaysSecondary } from "./en/overlaysSecondary.ts";
 import { settingsAdvanced } from "./en/settingsAdvanced.ts";
@@ -34,7 +35,10 @@ export const enUS = {
     ...settingsGeneral,
     ...settingsAdvanced,
   },
-  onboarding,
+  onboarding: {
+    ...onboarding,
+    ...providerConnect,
+  },
   overlays: {
     ...overlaysPrimary,
     ...overlaysSecondary,

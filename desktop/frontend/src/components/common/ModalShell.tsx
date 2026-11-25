@@ -15,6 +15,7 @@ interface ModalShellProps {
   headerRight?: ReactNode;
   noPadding?: boolean;
   cardClassName?: string;
+  backdropClassName?: string;
   ariaLabel?: string;
 }
 
@@ -29,13 +30,18 @@ export function ModalShell({
   headerRight,
   noPadding = false,
   cardClassName,
+  backdropClassName,
   ariaLabel,
 }: ModalShellProps) {
   const { t } = useI18n();
 
   return (
     <div
-      className="modal-backdrop"
+      className={
+        backdropClassName
+          ? `modal-backdrop ${backdropClassName}`
+          : "modal-backdrop"
+      }
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel ?? heading}

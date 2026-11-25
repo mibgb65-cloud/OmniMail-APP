@@ -10,7 +10,7 @@ import type {
 import type { FlowStartResult } from "../../bindings/omnimail/internal/oauth/models";
 import * as AccountService from "../../bindings/omnimail/services/accountservice";
 import { INITIAL_ACCOUNTS } from "../data/accounts";
-import { PROVIDER_CATALOG } from "../data/providers";
+import { findProviderCatalogItem, PROVIDER_CATALOG } from "../data/providers";
 import { getCurrentLanguage } from "../i18n";
 import { isWailsDesktop } from "../state/storageHelpers";
 import type {
@@ -67,6 +67,7 @@ export function mapAccountDTO(dto: EmailAccountDTO): EmailAccount {
 }
 
 function mapPresetToCatalog(p: ProviderPreset): ProviderCatalogItem {
+  const base = findProviderCatalogItem(p.id as ProviderId);
   const tone =
     p.badgeTone === "blue" ||
     p.badgeTone === "amber" ||
@@ -74,6 +75,7 @@ function mapPresetToCatalog(p: ProviderPreset): ProviderCatalogItem {
       ? p.badgeTone
       : "neutral";
   return {
+    ...base,
     id: p.id as ProviderId,
     name: p.name,
     subtitle: p.subtitle,
@@ -83,7 +85,7 @@ function mapPresetToCatalog(p: ProviderPreset): ProviderCatalogItem {
     officialIcon: p.officialIcon,
     guideTitle: p.guideTitle,
     guideSummary: p.guideSummary,
-    steps: p.steps ?? [],
+    steps: p.steps ?? base.steps,
     defaultImapHost: p.defaultImapHost,
     defaultImapPort: p.defaultImapPort,
     defaultSmtpHost: p.defaultSmtpHost,

@@ -11,6 +11,7 @@ interface PasswordInputProps {
   ariaLabel?: string;
   disabled?: boolean;
   maxLength?: number;
+  badgeText?: string;
 }
 
 export function PasswordInput({
@@ -21,6 +22,7 @@ export function PasswordInput({
   ariaLabel,
   disabled = false,
   maxLength,
+  badgeText,
 }: PasswordInputProps) {
   const { t } = useI18n();
   const [visible, setVisible] = useState(false);
@@ -28,11 +30,28 @@ export function PasswordInput({
     ? t("common.hidePlaintext")
     : t("common.showPlaintext");
 
+  const eyeBtn = (
+    <Tooltip label={toggleLabel} placement="top">
+      <button
+        type="button"
+        className="password-eye-btn"
+        aria-label={toggleLabel}
+        disabled={disabled}
+        onClick={() => setVisible((v) => !v)}
+      >
+        <Icon name={visible ? "eyeOff" : "eye"} size={14} />
+      </button>
+    </Tooltip>
+  );
+
   return (
-    <div className="password-field-wrap" style={style}>
+    <div
+      className={`password-field-wrap${badgeText ? " pcm-password-wrap" : ""}`}
+      style={style}
+    >
       <input
         type={visible ? "text" : "password"}
-        className="input"
+        className={`input${badgeText ? " has-adornment" : ""}`}
         style={{ fontFamily: "var(--font-mono)" }}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -41,17 +60,14 @@ export function PasswordInput({
         disabled={disabled}
         maxLength={maxLength}
       />
-      <Tooltip label={toggleLabel} placement="top">
-        <button
-          type="button"
-          className="password-eye-btn"
-          aria-label={toggleLabel}
-          disabled={disabled}
-          onClick={() => setVisible((v) => !v)}
-        >
-          <Icon name={visible ? "eyeOff" : "eye"} size={14} />
-        </button>
-      </Tooltip>
+      {badgeText ? (
+        <div className="pcm-password-actions">
+          <span className="pcm-encrypted-pill">{badgeText}</span>
+          {eyeBtn}
+        </div>
+      ) : (
+        eyeBtn
+      )}
     </div>
   );
 }

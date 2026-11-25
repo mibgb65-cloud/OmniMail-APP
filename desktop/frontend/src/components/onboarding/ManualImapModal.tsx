@@ -13,14 +13,20 @@ import {
 } from "../common/AsyncActionButton";
 import { Checkbox } from "../common/Checkbox";
 import { HandshakeSteps } from "../common/HandshakeSteps";
-import { ModalShell } from "../common/ModalShell";
 import { ManualImapFields, type ManualImapFormState } from "./ManualImapFields";
+import { PreparationGuideCard } from "./ProbeReportList";
+import {
+  ProviderConnectInfoBanner,
+  ProviderConnectShell,
+  ProviderSummaryCard,
+  resolveAccountName,
+} from "./ProviderConnectShell";
 
 export function ManualImapModal() {
   const { workspace, toastStore } = useApp();
   const { isEn, t } = useI18n();
-  const [form, setForm] = useState<ManualImapFormState>(() => ({
-    displayName: t("onboarding.manualDefaultName"),
+  const [form, setForm] = useState<ManualImapFormState>({
+    displayName: "",
     email: "",
     password: "",
     imapHost: "",
@@ -28,7 +34,7 @@ export function ManualImapModal() {
     smtpHost: "",
     smtpPort: "465",
     security: "SSL/TLS",
-  }));
+  });
   const [pinCert, setPinCert] = useState(false);
   const [detectedCert, setDetectedCert] = useState("");
   const [status, setStatus] = useState<AsyncActionStatus>("idle");
@@ -37,32 +43,35 @@ export function ManualImapModal() {
 
   const autoPrefill = async (val: string) => {
     if (!val.includes("@") || form.imapHost.trim()) return;
-    const preset = await accountApi
-      .resolveProviderByEmail(val)
-      .catch(() => null);
-    if (preset) {
-      setForm((prev) => ({
-        ...prev,
-        imapHost: preset.defaultImapHost || prev.imapHost,
-        smtpHost: preset.defaultSmtpHost || prev.smtpHost,
-        imapPort: String(preset.defaultImapPort || 993),
-        smtpPort: String(preset.defaultSmtpPort || 465),
-      }));
-    }
+    const p = await accountApi.resolveProviderByEmail(val).catch(() => null);
+    if (!p) return;
+    setForm((prev) => ({
+      ...prev,
+      imapHost: p.defaultImapHost || prev.imapHost,
+      smtpHost: p.defaultSmtpHost || prev.smtpHost,
+      imapPort: String(p.defaultImapPort || 993),
+      smtpPort: String(p.defaultSmtpPort || 465),
+    }));
   };
 
   const handleSave = async () => {
     setStatus("loading");
     setStepLabel("");
     setReport(null);
+    const email = form.email.trim();
+    const display = form.displayName.trim();
     const req = {
-      name: form.displayName.trim() || form.email.trim(),
-      shortTag: form.displayName.trim().slice(0, 10) || "IMAP",
-      email: form.email.trim(),
+      name: resolveAccountName(
+        form.displayName,
+        t("onboarding.manualSummaryName"),
+        email,
+      ),
+      shortTag: display.slice(0, 10) || "IMAP",
+      email,
       provider: "imap",
       authMode: "imap",
       secret: form.password,
-      senderName: form.displayName.trim(),
+      senderName: display || email.split("@")[0],
       imapHost: form.imapHost.trim(),
       imapPort: Number(form.imapPort) || 993,
       imapSecurity: form.security,
@@ -75,9 +84,8 @@ export function ManualImapModal() {
       const probe = await accountApi.testConnection(req);
       setReport(probe);
       if (!probe.ok) {
-        if (probe.untrustedCertSha256) {
+        if (probe.untrustedCertSha256)
           setDetectedCert(probe.untrustedCertSha256);
-        }
         setStatus("error");
         return;
       }
@@ -106,69 +114,84 @@ export function ManualImapModal() {
 
   const formReady =
     form.email.includes("@") &&
-    Boolean(form.imapHost.trim()) &&
-    Boolean(form.smtpHost.trim());
+    Boolean(form.imapHost.trim() && form.smtpHost.trim());
 
   return (
-    <ModalShell
+    <ProviderConnectShell
       heading={t("onboarding.manualHeading")}
-      subtitle={t("onboarding.manualSubtitle")}
-      maxWidth={560}
+      footerNote={t("onboarding.manualFooterHint")}
+      backDisabled={status === "loading" || status === "success"}
       onClose={() => workspace.setOverlay({ type: "none" })}
-      footer={
-        <>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            disabled={status === "loading" || status === "success"}
-            onClick={() => workspace.setOverlay({ type: "add-account" })}
-          >
-            {t("onboarding.backToCommonProviders")}
-          </button>
-          <AsyncActionButton
-            status={status}
-            disabled={!formReady}
-            idleLabel={t("onboarding.manualTestSaveIdle")}
-            loadingLabel={stepLabel || t("common.handshakeRunningIdle")}
-            successLabel={t("onboarding.manualTestSaveSuccess")}
-            errorLabel={t("onboarding.manualTestSaveError")}
-            onClick={() => void handleSave()}
-          />
-        </>
+      onBack={() => workspace.setOverlay({ type: "add-account" })}
+      primaryAction={
+        <AsyncActionButton
+          className="pcm-btn-connect"
+          idleIcon="check"
+          status={status}
+          disabled={!formReady}
+          idleLabel={t("onboarding.testAndConnectBtn")}
+          loadingLabel={stepLabel || t("common.handshakeRunningIdle")}
+          successLabel={t("onboarding.manualTestSaveSuccess")}
+          errorLabel={t("onboarding.manualTestSaveError")}
+          onClick={() => void handleSave()}
+        />
       }
     >
-      <HandshakeSteps
-        running={status === "loading"}
-        report={report}
-        endpointHint={
-          form.imapHost.trim()
-            ? `${form.imapHost.trim()}:${form.imapPort || "993"}`
-            : undefined
-        }
-        onStepLabelChange={setStepLabel}
+      <ProviderSummaryCard
+        provider="imap"
+        name={t("onboarding.manualSummaryName")}
+        domainHint={t("onboarding.manualSummaryDomains")}
+        mode="tls"
       />
-      {detectedCert && (
-        <div className="settings-card" style={{ padding: "10px 12px" }}>
-          <Checkbox
-            checked={pinCert}
-            onChange={(v) => {
-              setPinCert(v);
+      <div className="pcm-columns">
+        <PreparationGuideCard
+          steps={[
+            t("onboarding.manualPrepStep1"),
+            t("onboarding.manualPrepStep2"),
+            t("onboarding.manualPrepStep3"),
+          ]}
+        />
+        <div className="pcm-form-col">
+          <ManualImapFields
+            val={form}
+            onChange={(patch) => {
+              setForm((p) => ({ ...p, ...patch }));
               if (status === "error") setStatus("idle");
             }}
-            ariaLabel={t("onboarding.pinCertAria")}
-          >
-            {t("onboarding.pinCertLabel", { fp: detectedCert.slice(0, 20) })}
-          </Checkbox>
+            onEmailBlur={(val) => void autoPrefill(val)}
+          />
+          {detectedCert && (
+            <div className="settings-card" style={{ padding: "10px 12px" }}>
+              <Checkbox
+                checked={pinCert}
+                onChange={(v) => {
+                  setPinCert(v);
+                  if (status === "error") setStatus("idle");
+                }}
+                ariaLabel={t("onboarding.pinCertAria")}
+              >
+                {t("onboarding.pinCertLabel", {
+                  fp: detectedCert.slice(0, 20),
+                })}
+              </Checkbox>
+            </div>
+          )}
+          {status !== "idle" || report ? (
+            <HandshakeSteps
+              running={status === "loading"}
+              report={report}
+              endpointHint={
+                form.imapHost.trim()
+                  ? `${form.imapHost.trim()}:${form.imapPort || "993"}`
+                  : undefined
+              }
+              onStepLabelChange={setStepLabel}
+            />
+          ) : (
+            <ProviderConnectInfoBanner />
+          )}
         </div>
-      )}
-      <ManualImapFields
-        val={form}
-        onChange={(patch) => {
-          setForm((p) => ({ ...p, ...patch }));
-          if (status === "error") setStatus("idle");
-        }}
-        onEmailBlur={(val) => void autoPrefill(val)}
-      />
-    </ModalShell>
+      </div>
+    </ProviderConnectShell>
   );
 }

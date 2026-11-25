@@ -6,6 +6,7 @@ import { imageLightbox } from "./zh/imageLightbox.ts";
 import { mailList, reader, security } from "./zh/mailAndSecurity.ts";
 import { mailListBackfill } from "./zh/mailListBackfill.ts";
 import { onboarding } from "./zh/onboarding.ts";
+import { providerConnect } from "./zh/providerConnect.ts";
 import { overlaysPrimary } from "./zh/overlaysPrimary.ts";
 import { overlaysSecondary } from "./zh/overlaysSecondary.ts";
 import { settingsAdvanced } from "./zh/settingsAdvanced.ts";
@@ -33,7 +34,10 @@ export const zhCN = {
     ...settingsGeneral,
     ...settingsAdvanced,
   },
-  onboarding,
+  onboarding: {
+    ...onboarding,
+    ...providerConnect,
+  },
   overlays: {
     ...overlaysPrimary,
     ...overlaysSecondary,

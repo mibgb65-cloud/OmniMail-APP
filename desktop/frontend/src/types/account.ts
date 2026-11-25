@@ -46,6 +46,9 @@ export interface ProviderCatalogItem {
   id: ProviderId;
   name: string;
   subtitle: string;
+  domainHint: string;
+  officialGuideUrl: string;
+  emailPlaceholder?: string;
   badgeText: string;
   badgeTone: "blue" | "amber" | "violet" | "neutral";
   authMode: AuthMode;
@@ -53,6 +56,7 @@ export interface ProviderCatalogItem {
   guideTitle: string;
   guideSummary: string;
   steps: string[];
+  oauthSteps?: string[];
   defaultImapHost: string;
   defaultImapPort: number;
   defaultSmtpHost: string;

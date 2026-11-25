@@ -25,12 +25,28 @@ const OFFICIAL_ICONS: Partial<Record<ProviderId, string>> = {
 interface ProviderIconProps {
   provider: ProviderId;
   size?: number;
+  bare?: boolean;
 }
 
 /** 9 家内置邮箱服务商使用官方 PNG 图标；通用 IMAP 使用中性服务器矢量图标 */
-export function ProviderIcon({ provider, size = 24 }: ProviderIconProps) {
+export function ProviderIcon({
+  provider,
+  size = 24,
+  bare = false,
+}: ProviderIconProps) {
   const src = OFFICIAL_ICONS[provider];
   if (src) {
+    if (bare) {
+      return (
+        <img
+          src={src}
+          alt={provider}
+          width={size}
+          height={size}
+          style={{ objectFit: "contain", display: "block", flexShrink: 0 }}
+        />
+      );
+    }
     return (
       <span
         style={{
@@ -63,6 +79,10 @@ export function ProviderIcon({ provider, size = 24 }: ProviderIconProps) {
       : provider === "nevermail"
         ? "clock"
         : "server";
+
+  if (bare) {
+    return <Icon name={iconName} size={size} />;
+  }
 
   return (
     <span

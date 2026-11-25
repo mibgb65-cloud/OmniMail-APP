@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PROVIDER_CATALOG } from "../../data/providers";
+import { findProviderCatalogItem } from "../../data/providers";
 import { localizeProviderPreset, useI18n } from "../../i18n";
 import {
   accountApi,
@@ -13,19 +13,21 @@ import {
   waitSuccessHold,
   type AsyncActionStatus,
 } from "../common/AsyncActionButton";
-import { HandshakeSteps } from "../common/HandshakeSteps";
-import { Icon } from "../common/Icon";
-import { ModalShell } from "../common/ModalShell";
-import { PasswordInput } from "../common/PasswordInput";
-import { ProviderStepsCard } from "./ProbeReportList";
+import { PreparationGuideCard } from "./ProbeReportList";
+import {
+  ProviderConnectShell,
+  ProviderSummaryCard,
+  resolveAccountName,
+} from "./ProviderConnectShell";
+import { ProviderGuideForm } from "./ProviderGuideForm";
 
 export function ProviderGuideModal({ provider }: { provider: ProviderId }) {
   const { workspace, toastStore } = useApp();
   const { lang, isEn, t } = useI18n();
-  const rawMeta =
-    PROVIDER_CATALOG.find((p) => p.id === provider) ?? PROVIDER_CATALOG[0];
+  const rawMeta = findProviderCatalogItem(provider);
   const meta = localizeProviderPreset(rawMeta, lang);
   const [email, setEmail] = useState("");
+  const [accountName, setAccountName] = useState("");
   const [secret, setSecret] = useState("");
   const [imapHost, setImapHost] = useState(rawMeta.defaultImapHost);
   const [imapPort, setImapPort] = useState(rawMeta.defaultImapPort || 993);
@@ -34,14 +36,19 @@ export function ProviderGuideModal({ provider }: { provider: ProviderId }) {
   const [status, setStatus] = useState<AsyncActionStatus>("idle");
   const [stepLabel, setStepLabel] = useState("");
   const [report, setReport] = useState<ConnectionTestReport | null>(null);
+
   const formReady =
     email.trim().includes("@") &&
     secret.trim().length >= 4 &&
     Boolean(imapHost.trim() && smtpHost.trim());
-  const bindField = (setter: (v: string) => void) => (v: string) => {
-    setter(v);
-    if (status === "error") setStatus("idle");
-  };
+
+  const bindField =
+    <T,>(setter: (v: T) => void) =>
+    (v: T) => {
+      setter(v);
+      if (status === "error") setStatus("idle");
+    };
+
   const autoResolveEmail = async (val: string) => {
     if (!val.includes("@")) return;
     const p = await accountApi.resolveProviderByEmail(val).catch(() => null);
@@ -51,18 +58,25 @@ export function ProviderGuideModal({ provider }: { provider: ProviderId }) {
     setSmtpHost(p.defaultSmtpHost);
     setSmtpPort(p.defaultSmtpPort || 465);
   };
+
   const handleTestAndConnect = async () => {
     setStatus("loading");
     setStepLabel("");
     setReport(null);
+    const trimmedEmail = email.trim();
+    const resolvedName = resolveAccountName(
+      accountName,
+      meta.name,
+      trimmedEmail,
+    );
     const req = {
-      name: `${meta.name} · ${email.split("@")[0]}`,
-      shortTag: meta.name,
-      email: email.trim(),
+      name: resolvedName,
+      shortTag: accountName.trim().slice(0, 10) || meta.name,
+      email: trimmedEmail,
       provider,
-      authMode: provider === "gmail" ? "app-password" : meta.authMode,
+      authMode: meta.authMode === "oauth" ? "app-password" : meta.authMode,
       secret,
-      senderName: email.split("@")[0],
+      senderName: accountName.trim() || trimmedEmail.split("@")[0],
       imapHost: imapHost.trim(),
       imapPort,
       imapSecurity: imapPort === 143 ? "STARTTLS" : "SSL/TLS",
@@ -83,116 +97,79 @@ export function ProviderGuideModal({ provider }: { provider: ProviderId }) {
       await workspace.refreshProfilesAndAccounts();
       setStatus("success");
       await waitSuccessHold(900);
-      const accountName = isEn
-        ? `${created.name} (${created.email})`
-        : `${created.name}（${created.email}）`;
       workspace.setOverlay({
         type: "sync-progress",
         accountId: created.id,
-        accountName,
+        accountName: isEn
+          ? `${created.name} (${created.email})`
+          : `${created.name}（${created.email}）`,
       });
     } catch (err) {
       setStatus("error");
-      const detail = parseBackendError(err).message;
       toastStore.pushToast({
         tone: "danger",
         title: t("toasts.connectSaveAccountFailed"),
-        detail,
+        detail: parseBackendError(err).message,
       });
     }
   };
 
   return (
-    <ModalShell
-      heading={meta.guideTitle}
-      subtitle={meta.guideSummary}
-      maxWidth={560}
+    <ProviderConnectShell
+      heading={t("onboarding.connectHeading", { provider: meta.name })}
+      backDisabled={status === "loading" || status === "success"}
       onClose={() => workspace.setOverlay({ type: "none" })}
-      footer={
-        <>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            disabled={status === "loading" || status === "success"}
-            onClick={() => workspace.setOverlay({ type: "add-account" })}
-          >
-            <Icon name="arrowLeft" size={14} />{" "}
-            {t("onboarding.backToProviders")}
-          </button>
-          <AsyncActionButton
-            status={status}
-            disabled={!formReady}
-            idleLabel={t("onboarding.testAndConnectIdle")}
-            loadingLabel={stepLabel || t("common.handshakeRunningIdle")}
-            successLabel={t("onboarding.testAndConnectSuccess")}
-            errorLabel={t("onboarding.testAndConnectError")}
-            onClick={() => void handleTestAndConnect()}
-          />
-        </>
+      onBack={() => workspace.setOverlay({ type: "add-account" })}
+      primaryAction={
+        <AsyncActionButton
+          className="pcm-btn-connect"
+          idleIcon="check"
+          status={status}
+          disabled={!formReady}
+          idleLabel={t("onboarding.testAndConnectBtn")}
+          loadingLabel={stepLabel || t("common.handshakeRunningIdle")}
+          successLabel={t("onboarding.testAndConnectSuccess")}
+          errorLabel={t("onboarding.testAndConnectError")}
+          onClick={() => void handleTestAndConnect()}
+        />
       }
     >
-      <ProviderStepsCard provider={provider} steps={meta.steps} />
-      <HandshakeSteps
-        running={status === "loading"}
-        report={report}
-        endpointHint={`${imapHost.trim()}:${imapPort}`}
-        onStepLabelChange={setStepLabel}
+      <ProviderSummaryCard
+        provider={provider}
+        name={meta.name}
+        domainHint={meta.domainHint}
+        mode="tls"
       />
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <div>
-          <label className="text-xs text-muted">
-            {t("onboarding.fullEmailLabel")}
-          </label>
-          <input
-            type="email"
-            className="input"
-            style={{ marginTop: 4 }}
-            value={email}
-            onChange={(e) => bindField(setEmail)(e.target.value)}
-            onBlur={(e) => void autoResolveEmail(e.target.value)}
-            placeholder={t("onboarding.fullEmailPlaceholder")}
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted">
-            {t("onboarding.authCodeOrAppPwdLabel")}
-          </label>
-          <PasswordInput
-            style={{ marginTop: 4 }}
-            value={secret}
-            onChange={bindField(setSecret)}
-            placeholder={t("onboarding.dpapiVaultPlaceholder")}
-            ariaLabel={t("onboarding.authCodeOrAppPwdAria")}
-          />
-        </div>
-        <div
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
-        >
-          <div>
-            <label className="text-xs text-muted">
-              {t("onboarding.imapHostPortLabel", { port: imapPort })}
-            </label>
-            <input
-              className="input"
-              style={{ marginTop: 4 }}
-              value={imapHost}
-              onChange={(e) => bindField(setImapHost)(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted">
-              {t("onboarding.smtpHostPortLabel", { port: smtpPort })}
-            </label>
-            <input
-              className="input"
-              style={{ marginTop: 4 }}
-              value={smtpHost}
-              onChange={(e) => bindField(setSmtpHost)(e.target.value)}
-            />
-          </div>
-        </div>
+      <div className="pcm-columns">
+        <PreparationGuideCard
+          provider={provider}
+          steps={meta.steps}
+          officialGuideUrl={meta.officialGuideUrl}
+        />
+        <ProviderGuideForm
+          provider={provider}
+          meta={meta}
+          email={email}
+          accountName={accountName}
+          secret={secret}
+          imapHost={imapHost}
+          imapPort={imapPort}
+          smtpHost={smtpHost}
+          smtpPort={smtpPort}
+          status={status}
+          report={report}
+          onEmailChange={bindField(setEmail)}
+          onEmailBlur={(val) => void autoResolveEmail(val)}
+          onAccountNameChange={bindField(setAccountName)}
+          onSecretChange={bindField(setSecret)}
+          onImapHostChange={bindField(setImapHost)}
+          onImapPortChange={bindField(setImapPort)}
+          onSmtpHostChange={bindField(setSmtpHost)}
+          onSmtpPortChange={bindField(setSmtpPort)}
+          onStepLabelChange={setStepLabel}
+        />
       </div>
-    </ModalShell>
+    </ProviderConnectShell>
   );
 }
