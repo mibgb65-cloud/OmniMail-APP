@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GetBootstrapState } from "../../bindings/omnimail/desktopservice";
-import { formatLocalizedTime, getCurrentLanguage, t } from "../i18n";
+import { getCurrentLanguage, t } from "../i18n";
 import type { EmailAccount } from "../types/account";
 import type {
   AppSettings,
@@ -12,6 +12,10 @@ import type {
   RuntimeBannerMode,
   WorkspaceScreen,
 } from "../types/ui";
+import {
+  buildAccountStatusPatch,
+  normalizeAccountRuntimeStatus,
+} from "./accountSyncState";
 import { useDesktopRuntimeEvents } from "./desktopActions";
 import {
   parseMailtoUrl,
@@ -134,27 +138,24 @@ export function useDesktopBridge(deps: BridgeDeps) {
         deps.onResetStoresForSwitch();
         void deps.refreshProfilesAndAccounts();
       },
-      onAccountStatus: (p: { accountId: string; status: string }) => {
-        const st =
-          p.status === "syncing" ||
-          p.status === "auth-expired" ||
-          p.status === "error"
-            ? p.status
-            : "connected";
-        deps.updateAccount(p.accountId, {
-          status: st,
-          lastSyncedAt: formatLocalizedTime("刚刚", getCurrentLanguage()),
-        });
-        if (st === "auth-expired") deps.setBannerMode("auth-expired");
-        else if (st === "error") deps.setBannerMode("partial-sync");
-        else if (st === "connected")
-          deps.setSyncLabel(t("topbar.allAccountsSynced"));
+      onAccountStatus: (p: {
+        accountId: string;
+        status: string;
+        lastError?: string;
+      }) => {
+        const st = normalizeAccountRuntimeStatus(p.status);
+        deps.updateAccount(
+          p.accountId,
+          buildAccountStatusPatch(p, getCurrentLanguage()),
+        );
+        if (st === "syncing") {
+          deps.setSyncLabel(t("topbar.syncingEllipsis"));
+        }
       },
       onSyncProgress: (p: LiveSyncProgress) => {
         setSyncProgressByAccount((prev) => new Map(prev).set(p.accountId, p));
         if (p.status === "syncing")
           deps.setSyncLabel(t("topbar.syncingEllipsis"));
-        else deps.setSyncLabel(p.stage);
       },
       onMailDelta: deps.onMailDelta,
       onOutboxUpdated: (p: { state: string; lastError?: string }) => {

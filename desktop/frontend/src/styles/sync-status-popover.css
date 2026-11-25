@@ -1,0 +1,170 @@
+/* TopBar 同步状态胶囊异常态与 SyncStatusPopover 外壳（对齐 1859607977:3079 亮/暗双色） */
+.sync-status-chip[data-sync-tone="warning"],
+.sync-status-chip[data-sync-tone="danger"] {
+  height: 28px;
+  max-width: 224px;
+  font-weight: 600;
+}
+.sync-status-chip[data-sync-tone="warning"] {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  color: #b45309;
+}
+.sync-status-chip[data-sync-tone="warning"]:hover {
+  background: #fef3c7;
+  border-color: #d97706;
+  color: #92400e;
+}
+.sync-status-chip[data-sync-tone="warning"] .status-dot {
+  background: #d97706;
+}
+[data-theme="dark"] .sync-status-chip[data-sync-tone="warning"] {
+  background: #2b2111;
+  border-color: #b45309;
+  color: #fbbf24;
+}
+[data-theme="dark"] .sync-status-chip[data-sync-tone="warning"]:hover {
+  background: #362915;
+  border-color: #d97706;
+  color: #fde68a;
+}
+[data-theme="dark"] .sync-status-chip[data-sync-tone="warning"] .status-dot {
+  background: #fbbf24;
+}
+.sync-status-chip[data-sync-tone="danger"] {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+.sync-status-chip[data-sync-tone="danger"]:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+[data-theme="dark"] .sync-status-chip[data-sync-tone="danger"] {
+  background: #2c1519;
+  border-color: #b91c1c;
+  color: #fca5a5;
+}
+[data-theme="dark"] .sync-status-chip[data-sync-tone="danger"]:hover {
+  background: #3b1920;
+  border-color: #ef4444;
+  color: #fecaca;
+}
+.sync-chip-chevron {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: transform 150ms ease;
+}
+.sync-chip-chevron.is-open {
+  transform: rotate(180deg);
+}
+.sync-status-popover {
+  position: fixed;
+  z-index: 420;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+  --wails-draggable: no-drag;
+  -webkit-app-region: no-drag;
+  animation: syncPopEnter 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="dark"] .sync-status-popover {
+  background: #131822;
+  border-color: #333e52;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.54);
+}
+@keyframes syncPopEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.ssp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ssp-head-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ssp-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ssp-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-ink);
+}
+.ssp-subtitle {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.ssp-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #fef3c7;
+  color: #b45309;
+}
+.ssp-badge[data-tone="danger"] {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.ssp-badge[data-tone="healthy"] {
+  background: #dcfce7;
+  color: #15803d;
+}
+[data-theme="dark"] .ssp-badge {
+  background: #2b2111;
+  color: #fbbf24;
+}
+[data-theme="dark"] .ssp-badge[data-tone="danger"] {
+  background: #2c1519;
+  color: #fca5a5;
+}
+[data-theme="dark"] .ssp-badge[data-tone="healthy"] {
+  background: #132a1f;
+  color: #4ade80;
+}
+.ssp-retry-all-btn {
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 8px;
+  background: #f7f9fc;
+  border: 1px solid #cbd5e1;
+  color: var(--text-ink);
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.ssp-retry-all-btn:hover {
+  background: #edf2f7;
+}
+[data-theme="dark"] .ssp-retry-all-btn {
+  background: #181f2c;
+  border-color: #333e52;
+}
+[data-theme="dark"] .ssp-retry-all-btn:hover {
+  background: #20293a;
+}

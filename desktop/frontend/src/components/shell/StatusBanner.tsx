@@ -6,17 +6,12 @@ export function StatusBanner() {
   const { workspace, toastStore, triggerSyncAll } = useApp();
   const { t } = useI18n();
   const { bannerMode, settings, accounts } = workspace;
-  const expiredAcc =
-    accounts.find((a) => a.status === "auth-expired") ?? accounts[0];
-  const failedAcc = accounts.find((a) => a.status === "error") ?? accounts[0];
   const autoReplyAcc = accounts.find(
     (a) => a.id === settings.autoReply.accountId,
   );
 
   const autoReplyActive =
     settings.autoReply.enabled || bannerMode === "auto-reply";
-
-  if (bannerMode === "none" && !autoReplyActive) return null;
 
   if (bannerMode === "offline") {
     return (
@@ -42,85 +37,8 @@ export function StatusBanner() {
     );
   }
 
-  if (bannerMode === "auth-expired") {
-    return (
-      <div className="runtime-banner danger" role="alert">
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon name="alertCircle" size={16} />
-          <strong>
-            {t("topbar.authExpiredTitle", {
-              name: expiredAcc?.name ?? t("topbar.accountFallback"),
-            })}
-          </strong>
-          <span style={{ opacity: 0.85 }}>{t("topbar.authExpiredDesc")}</span>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            type="button"
-            className="btn btn-sm btn-danger"
-            onClick={() =>
-              expiredAcc && expiredAcc.authMode !== "oauth"
-                ? workspace.setOverlay({
-                    type: "account-server",
-                    accountId: expiredAcc.id,
-                  })
-                : workspace.setOverlay({
-                    type: "oauth-flow",
-                    provider: expiredAcc?.provider ?? "gmail",
-                    stage: "waiting",
-                  })
-            }
-          >
-            {t("topbar.reauthorize")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm btn-secondary"
-            onClick={() => workspace.setBannerMode("none")}
-          >
-            {t("topbar.handleLater")}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (bannerMode === "partial-sync") {
-    return (
-      <div className="runtime-banner warning" role="status">
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon name="alertCircle" size={16} />
-          <strong>
-            {t("topbar.partialSyncTitle", {
-              name: failedAcc?.name ?? t("topbar.accountFallback"),
-            })}
-          </strong>
-          <span style={{ opacity: 0.85 }}>{t("topbar.partialSyncDesc")}</span>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            type="button"
-            className="btn btn-sm btn-secondary"
-            onClick={() =>
-              workspace.setOverlay({
-                type: "diagnostics",
-                accountId: failedAcc?.id ?? "",
-              })
-            }
-          >
-            {t("topbar.runDiagnostics")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm btn-ghost"
-            onClick={() => workspace.setBannerMode("none")}
-          >
-            {t("common.close")}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // 局部账户同步受阻与授权失效已统一收敛至 TopBarSyncChip + SyncStatusPopover + 侧边栏单账号原位提示，不再渲染通栏条推挤工作区
+  if (!autoReplyActive) return null;
 
   return (
     <div className="runtime-banner info" role="status">

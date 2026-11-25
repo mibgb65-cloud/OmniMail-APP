@@ -31,8 +31,9 @@ export function useAppActions(
         .then(() => workspace.refreshProfilesAndAccounts()),
       minSpin,
     ])
-      .then(() => {
+      .then(([, prof]) => {
         refreshUnreadView();
+        void prof;
         workspace.setSyncLabel(t("topbar.allAccountsSynced"));
         toastStore.pushToast({
           tone: "success",
@@ -48,6 +49,26 @@ export function useAppActions(
         });
       });
   }, [workspace, toastStore, refreshUnreadView]);
+
+  const triggerSyncAccount = useCallback(
+    (accountId: string) => {
+      if (!accountId) return;
+      workspace.updateAccount(accountId, { status: "syncing" });
+      workspace.setSyncLabel(t("topbar.syncingEllipsis"));
+      void accountApi
+        .triggerSync(accountId)
+        .then(() => workspace.refreshProfilesAndAccounts())
+        .then(() => refreshUnreadView())
+        .catch((err) => {
+          toastStore.pushToast({
+            tone: "warning",
+            title: t("toasts.syncProblem"),
+            detail: parseBackendError(err).message,
+          });
+        });
+    },
+    [workspace, toastStore, refreshUnreadView],
+  );
 
   const requestAiAction = useCallback(
     (actionLabel: string, action: MailAiAction) => {
@@ -84,5 +105,5 @@ export function useAppActions(
     [mailStore.selectedMail, workspace, aiStore],
   );
 
-  return { triggerSyncAll, requestAiAction };
+  return { triggerSyncAll, triggerSyncAccount, requestAiAction };
 }

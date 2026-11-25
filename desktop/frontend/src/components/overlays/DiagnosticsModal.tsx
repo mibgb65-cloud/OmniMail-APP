@@ -19,8 +19,9 @@ import { ScrollCodeBlock } from "../common/scroll-fade/FadeScroll";
 export function DiagnosticsModal({ accountId }: { accountId: string }) {
   const { workspace, toastStore } = useApp();
   const { t } = useI18n();
-  const acc =
-    workspace.accounts.find((a) => a.id === accountId) ?? workspace.accounts[0];
+  const acc = accountId
+    ? workspace.accounts.find((a) => a.id === accountId)
+    : undefined;
   const [report, setReport] = useState<DiagnosticReport | null>(null);
   const [logs, setLogs] = useState<SyncLogEntry[]>([]);
   const [probeStatus, setProbeStatus] = useState<AsyncActionStatus>("idle");

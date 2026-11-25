@@ -6,6 +6,10 @@ import { ScheduleSendModal } from "../compose/ScheduleSendModal";
 import { ContactEditModal } from "../contacts/ContactEditModal";
 import { DuplicateModal } from "../contacts/duplicates/DuplicateModal";
 import { AddAccountModal } from "../onboarding/AddAccountModal";
+import {
+  isConnectSuiteOverlay,
+  resolveConnectSuiteStageKey,
+} from "../onboarding/addAccountCatalog";
 import { LegalDocModal } from "../onboarding/LegalDocModal";
 import { ManualImapModal } from "../onboarding/ManualImapModal";
 import { MuseConnectModal } from "../onboarding/MuseConnectModal";
@@ -150,14 +154,29 @@ export function OverlayRouter() {
   const { rendered, closing } = useValuePresence(active, 140);
   if (!rendered) return null;
 
+  const isConnectSuite = isConnectSuiteOverlay(rendered);
+  const rootKey = isConnectSuite ? "connect-suite" : rendered.type;
+  const stageDir =
+    isConnectSuite && rendered.type === "add-account" ? "back" : "fwd";
+
   return (
     <div
-      key={rendered.type}
-      className="overlay-motion-root"
+      key={rootKey}
+      className={`overlay-motion-root ${isConnectSuite ? "is-connect-suite" : ""}`}
       data-layer="overlay"
       data-closing={closing ? "true" : "false"}
     >
-      {renderModal(rendered)}
+      {isConnectSuite ? (
+        <div
+          key={resolveConnectSuiteStageKey(rendered)}
+          className="connect-suite-stage"
+          data-dir={stageDir}
+        >
+          {renderModal(rendered)}
+        </div>
+      ) : (
+        renderModal(rendered)
+      )}
     </div>
   );
 }

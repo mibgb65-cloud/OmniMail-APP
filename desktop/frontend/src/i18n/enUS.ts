@@ -1,3 +1,4 @@
+import { addAccountPicker } from "./en/addAccountPicker.ts";
 import { common, sidebar, topbar } from "./en/commonAndShell.ts";
 import { compose } from "./en/compose.ts";
 import { contacts } from "./en/contacts.ts";
@@ -12,6 +13,7 @@ import { overlaysPrimary } from "./en/overlaysPrimary.ts";
 import { overlaysSecondary } from "./en/overlaysSecondary.ts";
 import { settingsAdvanced } from "./en/settingsAdvanced.ts";
 import { settingsGeneral } from "./en/settingsGeneral.ts";
+import { syncStatus } from "./en/syncStatus.ts";
 import { errors, toasts } from "./en/toastsAndErrors.ts";
 import { ai, translation } from "./en/translationAndAi.ts";
 import { workbuddy, workbuddyErrors } from "./en/workBuddy.ts";
@@ -19,7 +21,10 @@ import type { zhCN } from "./zhCN.ts";
 
 export const enUS = {
   common,
-  topbar,
+  topbar: {
+    ...topbar,
+    ...syncStatus,
+  },
   sidebar,
   mailList: {
     ...mailList,
@@ -40,6 +45,7 @@ export const enUS = {
   onboarding: {
     ...onboarding,
     ...providerConnect,
+    ...addAccountPicker,
   },
   overlays: {
     ...overlaysPrimary,

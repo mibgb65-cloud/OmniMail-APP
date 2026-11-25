@@ -178,11 +178,19 @@ func Remove(db *sql.DB, vault *security.Vault, accountID string) error {
 }
 
 func UpdateStatus(db *sql.DB, accountID, status, lastErr string, syncedUnixMs int64) {
+	cleanErr := strings.TrimSpace(security.RedactSensitive(lastErr))
+	if status == "connected" {
+		cleanErr = ""
+	}
 	if syncedUnixMs > 0 {
 		_, _ = db.Exec(`UPDATE accounts SET status=?, last_error=?, last_synced_at=? WHERE id=?`,
-			status, security.RedactSensitive(lastErr), syncedUnixMs, accountID)
-	} else {
-		_, _ = db.Exec(`UPDATE accounts SET status=?, last_error=? WHERE id=?`,
-			status, security.RedactSensitive(lastErr), accountID)
+			status, cleanErr, syncedUnixMs, accountID)
+		return
 	}
+	if status == "syncing" {
+		_, _ = db.Exec(`UPDATE accounts SET status=? WHERE id=?`, status, accountID)
+		return
+	}
+	_, _ = db.Exec(`UPDATE accounts SET status=?, last_error=? WHERE id=?`,
+		status, cleanErr, accountID)
 }

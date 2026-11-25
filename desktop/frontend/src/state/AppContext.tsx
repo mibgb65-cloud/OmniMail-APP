@@ -61,7 +61,7 @@ function useAppController() {
     }
   }, [overlay, resetForWorkspaceSwitch, resetWorkBuddy]);
 
-  const { triggerSyncAll, requestAiAction } = useAppActions(
+  const { triggerSyncAll, triggerSyncAccount, requestAiAction } = useAppActions(
     workspace,
     mailStore,
     aiStore,
@@ -156,6 +156,7 @@ function useAppController() {
     aiStore,
     toastStore,
     triggerSyncAll,
+    triggerSyncAccount,
     sendMailWithUndo,
     requestAiAction,
   };

@@ -1,16 +1,15 @@
-import { FadeTextarea } from "../../common/scroll-fade/FadeTextarea";
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../../../i18n";
 import { useApp } from "../../../state/AppContext";
 import type { MailItem } from "../../../types/mail";
 import { originalReplyAction } from "../../ai/aiAnalysisPrompt";
 import { Icon } from "../../common/Icon";
-import { ProviderIcon } from "../../common/ProviderIcon";
+import { FadeTextarea } from "../../common/scroll-fade/FadeTextarea";
 import { Tooltip } from "../../common/Tooltip";
+import { QuickReplyHeader } from "./QuickReplyHeader";
 
 const iconBtnStyle = { width: 26, height: 26, flexShrink: 0 };
 const aiBtnStyle = { width: 26, height: 26, color: "var(--brand-ai)" };
-const compactBtnStyle = { height: 28, padding: "0 12px", flexShrink: 0 };
 
 export function QuickReplyBox({ mail }: { mail: MailItem }) {
   const { t } = useI18n();
@@ -18,11 +17,13 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
   const { viewport, workspace, composeStore } = app;
   const [expanded, setExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
   const account =
     workspace.accounts.find((a) => a.id === mail.accountId) ??
     workspace.accounts[0];
   const hasText = Boolean(composeStore.quickReplyText.trim());
   const isOpen = viewport === "wide" || expanded || hasText;
+  const showCollapse = viewport !== "wide" && !hasText;
 
   useEffect(() => {
     if (expanded) textareaRef.current?.focus();
@@ -42,80 +43,21 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
     setExpanded(false);
   };
 
-  const senderLabel = `${account?.name ?? t("reader.quickReplyDefaultAccount")} · ${account?.providerLabel ?? "IMAP"}`;
-  const replyLock = workspace.settings.lockReplyToOriginalAccount;
-  const openFullReply = () =>
-    composeStore.openReplyCompose(mail, "reply", replyLock);
-  const draftAiReply = () =>
-    app.requestAiAction(t("ai.generateReplyDraft"), originalReplyAction());
-  const headerStyle = {
-    gap: 8,
-    flex: 1,
-    minWidth: 0,
-    cursor: isOpen ? "default" : "text",
-  };
-  const titleStyle = {
-    fontSize: 13,
-    fontWeight: isOpen ? 600 : 400,
-    color: isOpen ? "var(--text-ink)" : "var(--text-muted)",
-  };
   const fullComposeTip = t("reader.quickReplyFullComposeTip");
   const aiDraftTip = t("reader.quickReplyAiDraftTip");
-  const provider = account?.provider ?? mail.provider;
-  const sendViaText = t("reader.quickReplySendVia", { account: senderLabel });
-  const headerTitle = isOpen
-    ? t("reader.quickReplyOpenHeader", { sender: mail.senderName })
-    : t("reader.quickReplyCollapsedHeader", {
-        sender: mail.senderName,
-        account: senderLabel,
-      });
 
   return (
     <div className="quick-reply-wrap">
       <div className={isOpen ? "quick-reply-box" : "quick-reply-compact"}>
-        <div
-          className="row-between"
-          style={headerStyle}
-          onClick={() => !isOpen && setExpanded(true)}
-        >
-          <span className="row" style={{ gap: 7, minWidth: 0, flex: 1 }}>
-            <Icon name="reply" size={14} />
-            <span className="truncate" style={titleStyle}>
-              {headerTitle}
-            </span>
-          </span>
-
-          {isOpen ? (
-            <div className="row" style={{ gap: 6, flexShrink: 0 }}>
-              <span className="pill pill-neutral quick-reply-lock-pill">
-                <ProviderIcon provider={provider} size={15} />
-                <span className="truncate">{sendViaText}</span>
-                <Icon name="lock" size={11} />
-              </span>
-              {viewport !== "wide" && !hasText && (
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => setExpanded(false)}
-                >
-                  {t("reader.quickReplyCollapse")}
-                </button>
-              )}
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="btn btn-sm btn-primary"
-              style={compactBtnStyle}
-              onClick={(e) => {
-                e.stopPropagation();
-                setExpanded(true);
-              }}
-            >
-              {t("reader.reply")}
-            </button>
-          )}
-        </div>
+        <QuickReplyHeader
+          senderName={mail.senderName}
+          account={account}
+          fallbackProvider={mail.provider}
+          isOpen={isOpen}
+          showCollapse={showCollapse}
+          onExpand={() => setExpanded(true)}
+          onCollapse={() => setExpanded(false)}
+        />
 
         <div
           className="quick-reply-expand-grid"
@@ -153,7 +95,13 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
                     style={iconBtnStyle}
                     aria-label={fullComposeTip}
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={openFullReply}
+                    onClick={() =>
+                      composeStore.openReplyCompose(
+                        mail,
+                        "reply",
+                        workspace.settings.lockReplyToOriginalAccount,
+                      )
+                    }
                   >
                     <Icon name="paperclip" size={14} />
                   </button>
@@ -165,7 +113,12 @@ export function QuickReplyBox({ mail }: { mail: MailItem }) {
                     style={aiBtnStyle}
                     aria-label={aiDraftTip}
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={draftAiReply}
+                    onClick={() =>
+                      app.requestAiAction(
+                        t("ai.generateReplyDraft"),
+                        originalReplyAction(),
+                      )
+                    }
                   >
                     <Icon name="sparkle" size={14} />
                   </button>

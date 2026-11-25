@@ -16,6 +16,7 @@
 
   width: min(980px, calc(100vw - 40px));
   max-width: min(980px, calc(100vw - 40px));
+  height: min(760px, calc(100vh - 36px));
   max-height: calc(100vh - 36px);
   border-radius: 16px;
   background: var(--pcm-card-bg);
@@ -96,8 +97,18 @@
 }
 
 .pcm-body {
+  flex: 1;
+  min-height: 0;
   --scroll-padding: 18px 24px 20px;
   --scroll-gap: 16px;
+}
+
+.pcm-body > .fade-scroll-viewport > .fade-scroll-content {
+  min-height: 100%;
+}
+
+.pcm-columns {
+  flex: 1;
 }
 
 .pcm-summary-card {

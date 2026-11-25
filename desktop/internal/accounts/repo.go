@@ -48,6 +48,9 @@ func List(db *sql.DB, vault *security.Vault) ([]EmailAccountDTO, error) {
 		}
 		item.ImapIdle = idleInt != 0
 		item.IsDefault = defInt != 0
+		if item.Status == "connected" {
+			item.LastError = ""
+		}
 		item.LastSyncedAt = FormatRelativeSyncTime(item.LastSyncedUnixMs)
 		item.StorageMb = math.Round((float64(msgBytes)/(1024*1024))*10) / 10
 		item.AttachmentCacheMb = math.Round((float64(attBytes)/(1024*1024))*10) / 10

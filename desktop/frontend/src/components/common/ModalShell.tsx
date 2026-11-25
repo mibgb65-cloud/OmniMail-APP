@@ -85,29 +85,34 @@ export function ModalShell({
           </div>
         )}
         {noPadding ? (
-          <div
-            style={{
-              flex: 1,
-              minHeight: 0,
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            {children}
+          <div className="pcm-stage-slot">
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              {children}
+            </div>
+            {footer && <div className="modal-footer">{footer}</div>}
           </div>
         ) : (
-          <FadeScroll
-            className="modal-body"
-            label={
-              heading
-                ? t("common.modalBodyNamed", { heading })
-                : t("common.modalBody")
-            }
-          >
-            {children}
-          </FadeScroll>
+          <>
+            <FadeScroll
+              className="modal-body"
+              label={
+                heading
+                  ? t("common.modalBodyNamed", { heading })
+                  : t("common.modalBody")
+              }
+            >
+              {children}
+            </FadeScroll>
+            {footer && <div className="modal-footer">{footer}</div>}
+          </>
         )}
-        {footer && <div className="modal-footer">{footer}</div>}
       </div>
     </div>
   );

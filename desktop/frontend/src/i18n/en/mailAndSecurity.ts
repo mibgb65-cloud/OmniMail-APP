@@ -127,7 +127,10 @@ export const reader = {
   quickReplyDefaultAccount: "Work Mail",
   quickReplyOpenHeader: "Reply to {sender}",
   quickReplyCollapsedHeader: "Reply to {sender} (locked to {account})…",
-  quickReplySendVia: "Send as {account}",
+  quickReplyViaPrefix: "Via {provider} · ",
+  quickReplyLockTooltip:
+    "Locked to original account · Via {provider} · {email}",
+  quickReplySendVia: "Via {account}",
   quickReplyCollapse: "Collapse",
   quickReplyAria: "Quick reply body",
   quickReplyPlaceholder:

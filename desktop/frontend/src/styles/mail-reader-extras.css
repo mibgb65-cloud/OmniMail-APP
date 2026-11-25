@@ -140,7 +140,8 @@
   background: var(--bg-card);
   border: 1px solid var(--border-default);
   color: var(--text-ink);
-  max-width: 240px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .quick-reply-textarea {

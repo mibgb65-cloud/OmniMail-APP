@@ -50,6 +50,7 @@ export function mapAccountDTO(dto: EmailAccountDTO): EmailAccount {
     providerLabel: dto.providerLabel,
     authMode: (dto.authMode || "imap") as AuthMode,
     status: st,
+    lastError: st === "connected" ? "" : (dto.lastError ?? ""),
     unreadCount: dto.unreadCount ?? 0,
     lastSyncedAt: dto.lastSyncedAt || "尚未同步",
     senderName: dto.senderName,

@@ -24,6 +24,7 @@ import {
   readInitialThemeState,
   runThemeTransition,
 } from "./themeTransition";
+import { reconcileRuntimeSyncState } from "./accountSyncState";
 import { useWorkspaceCollections } from "./useWorkspaceCollections";
 
 export function useWorkspaceStore() {
@@ -53,6 +54,16 @@ export function useWorkspaceStore() {
   useEffect(() => {
     setCurrentLanguage(settings.language, true);
   }, [settings.language]);
+
+  const {
+    nextBannerMode: effectiveBannerMode,
+    nextSyncLabel: effectiveSyncLabel,
+  } = reconcileRuntimeSyncState({
+    accounts: collections.accounts,
+    bannerMode,
+    syncLabel,
+    lang: settings.language,
+  });
 
   useEffect(() => {
     if (settings.themePreference !== "system" || !window.matchMedia) return;
@@ -180,9 +191,9 @@ export function useWorkspaceStore() {
     toggleTheme,
     overlay,
     setOverlay,
-    bannerMode,
+    bannerMode: effectiveBannerMode,
     setBannerMode,
-    syncLabel,
+    syncLabel: effectiveSyncLabel,
     setSyncLabel,
     compactView,
     setCompactView,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand/v2"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"omnimail/internal/oauth"
 	"omnimail/internal/profilemgr"
 	"omnimail/internal/search"
+	"omnimail/internal/security"
 )
 
 var backoffSchedule = []time.Duration{
@@ -24,15 +26,18 @@ var backoffSchedule = []time.Duration{
 }
 
 type SyncWorker struct {
-	accountID string
-	sess      *profilemgr.Session
-	tm        *oauth.TokenManager
-	bus       *events.Bus
-	hooks     PipelineHooks
-	ctx       context.Context
-	cancel    context.CancelFunc
-	wakeCh    chan struct{}
-	wg        sync.WaitGroup
+	accountID        string
+	sess             *profilemgr.Session
+	tm               *oauth.TokenManager
+	bus              *events.Bus
+	hooks            PipelineHooks
+	ctx              context.Context
+	cancel           context.CancelFunc
+	wakeCh           chan struct{}
+	wg               sync.WaitGroup
+	dialIMAP         func(ctx context.Context, cfg mailproto.EndpointConfig, unilateral *imapclient.UnilateralDataHandler) (*imapclient.Client, error)
+	connectBackoffs  []time.Duration
+	connectJitterMax *time.Duration
 }
 
 func newSyncWorker(parent context.Context, sess *profilemgr.Session, accountID string, tm *oauth.TokenManager, bus *events.Bus, hooks PipelineHooks) *SyncWorker {
@@ -100,23 +105,36 @@ func (w *SyncWorker) runOneSyncCycle() error {
 	w.emitSyncProgress("syncing", "正在连接收件服务器…")
 	epCfg, accDTO, err := accounts.ResolveEndpointConfig(w.ctx, w.sess.DB, w.sess.Vault, w.tm, w.accountID)
 	if err != nil {
-		w.reportStatus("auth-expired", err.Error(), 0)
+		w.reportStatus("auth-expired", formatStageLastError("读取邮箱凭据失败", err), 0)
 		w.emitSyncProgress("failed", "未能读取邮箱凭据")
 		AppendSyncLog(w.sess.DB, w.sess.ProfileDir, w.accountID, "IMAP", "error", "auth", time.Since(start).Milliseconds(), "读取邮箱凭据失败", err.Error())
 		return err
 	}
 	w.reportStatus("syncing", "", 0)
 
-	reconnect := func() (*imapclient.Client, error) {
-		return mailproto.ConnectIMAP(w.ctx, epCfg, nil)
+	dialFn := w.dialIMAP
+	if dialFn == nil {
+		dialFn = mailproto.ConnectIMAP
 	}
-	workConn, err := reconnect()
+	reconnect := func() (*imapclient.Client, error) {
+		return dialFn(w.ctx, epCfg, nil)
+	}
+	delays := w.connectBackoffs
+	if delays == nil {
+		delays = transientConnectBackoffs
+	}
+	jitterMax := 400 * time.Millisecond
+	if w.connectJitterMax != nil {
+		jitterMax = *w.connectJitterMax
+	}
+
+	workConn, _, err := connectWithTransientRetry(w.ctx, reconnect, delays, jitterMax)
 	if err != nil {
-		st := "error"
-		if apperr.CodeOf(err) == apperr.CodeAuthExpired {
-			st = "auth-expired"
+		if w.ctx != nil && w.ctx.Err() != nil {
+			return w.ctx.Err()
 		}
-		w.reportStatus(st, err.Error(), 0)
+		st := classifyConnectStatus(err)
+		w.reportStatus(st, formatStageLastError(connectEndpointStageLabel(epCfg), err), 0)
 		w.emitSyncProgress("failed", "未能连接收件服务器")
 		AppendSyncLog(w.sess.DB, w.sess.ProfileDir, w.accountID, "IMAP", "error", "auth", time.Since(start).Milliseconds(), "连接收件服务器失败", err.Error())
 		return err
@@ -128,7 +146,7 @@ func (w *SyncWorker) runOneSyncCycle() error {
 	w.emitSyncProgress("syncing", "正在读取邮件文件夹…")
 	boxes, err := mailproto.DiscoverMailboxes(workConn)
 	if err != nil {
-		w.reportStatus("error", err.Error(), 0)
+		w.reportStatus("error", formatStageLastError("读取邮件文件夹列表失败", err), 0)
 		w.emitSyncProgress("failed", "未能读取邮件文件夹")
 		AppendSyncLog(w.sess.DB, w.sess.ProfileDir, w.accountID, "IMAP", "error", "list", time.Since(start).Milliseconds(), "读取邮件文件夹列表失败", err.Error())
 		return err
@@ -139,7 +157,7 @@ func (w *SyncWorker) runOneSyncCycle() error {
 
 	allAdded, syncedBox, failedBox, folderErrors, finalConn := w.syncBoxesWithReconnect(workConn, accDTO, boxes, reconnect)
 	workConn = finalConn
-	if w.ctx.Err() != nil {
+	if w.ctx != nil && w.ctx.Err() != nil {
 		return w.ctx.Err()
 	}
 
@@ -157,10 +175,14 @@ func (w *SyncWorker) runOneSyncCycle() error {
 }
 
 func (w *SyncWorker) reportStatus(status, lastErr string, syncedMs int64) {
-	accounts.UpdateStatus(w.sess.DB, w.accountID, status, lastErr, syncedMs)
+	cleanErr := strings.TrimSpace(security.RedactSensitive(lastErr))
+	if status == "connected" {
+		cleanErr = ""
+	}
+	accounts.UpdateStatus(w.sess.DB, w.accountID, status, cleanErr, syncedMs)
 	if w.bus != nil {
 		w.bus.Emit(events.AccountStatus, events.AccountStatusPayload{
-			AccountID: w.accountID, Status: status, LastError: lastErr, LastSyncedAt: syncedMs,
+			AccountID: w.accountID, Status: status, LastError: cleanErr, LastSyncedAt: syncedMs,
 		})
 	}
 }

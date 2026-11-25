@@ -1,0 +1,135 @@
+/* 09 · 添加邮箱 · 2 列服务商卡片、空态与 < 760px 窄屏降级 */
+.aam-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.aam-provider-card {
+  min-height: 61px;
+  padding: 10px 13px;
+  border-radius: 11px;
+  background: var(--pcm-card-bg);
+  border: 1px solid var(--pcm-div);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+}
+
+.aam-provider-card.is-custom-balance {
+  background: var(--pcm-surf);
+  border-style: dashed;
+}
+
+.aam-provider-card:hover,
+.aam-provider-card:focus-visible {
+  background: var(--pcm-info-bg);
+  border-color: var(--pcm-info-bd);
+  border-style: solid;
+  outline: none;
+}
+
+.aam-card-main {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  flex: 1;
+}
+
+.aam-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.aam-card-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-ink);
+}
+
+.aam-card-sub {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.aam-card-badge {
+  flex-shrink: 0;
+}
+
+.aam-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  padding: 56px 20px;
+}
+
+.aam-empty-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: var(--pcm-surf);
+  border: 1px solid var(--pcm-div);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aam-empty-title {
+  font-size: 14px;
+  color: var(--text-ink);
+}
+
+.aam-empty-desc {
+  margin: 0;
+  max-width: 340px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.aam-empty-actions {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 759px) {
+  .aam-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .aam-sidebar {
+    padding: 12px 18px;
+    border-right: 0;
+    border-bottom: 1px solid var(--pcm-div);
+  }
+  .aam-nav-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .aam-nav-item {
+    width: auto;
+  }
+  .aam-side-divider,
+  .aam-auth-modes,
+  .aam-sidebar-bottom {
+    display: none;
+  }
+  .aam-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

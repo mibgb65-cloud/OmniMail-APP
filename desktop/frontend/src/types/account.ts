@@ -12,6 +12,8 @@ export type ProviderId =
   | "workbuddy"
   | "imap";
 
+export type ProviderCategory = "agent" | "standard";
+
 export type AuthMode = "oauth" | "authcode" | "app-password" | "token" | "imap";
 
 export interface ServerEndpoint {
@@ -29,6 +31,7 @@ export interface EmailAccount {
   providerLabel: string;
   authMode: AuthMode;
   status: "connected" | "syncing" | "auth-expired" | "error";
+  lastError?: string;
   unreadCount: number;
   lastSyncedAt: string;
   senderName: string;
@@ -46,6 +49,7 @@ export interface EmailAccount {
 
 export interface ProviderCatalogItem {
   id: ProviderId;
+  category?: ProviderCategory;
   name: string;
   subtitle: string;
   domainHint: string;

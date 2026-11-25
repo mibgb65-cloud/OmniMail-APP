@@ -18,8 +18,9 @@ import { PasswordInput } from "../common/PasswordInput";
 export function AccountServerModal({ accountId }: { accountId: string }) {
   const { workspace, toastStore } = useApp();
   const { t } = useI18n();
-  const acc =
-    workspace.accounts.find((a) => a.id === accountId) ?? workspace.accounts[0];
+  const acc = accountId
+    ? workspace.accounts.find((a) => a.id === accountId)
+    : undefined;
   const [imapHost, setImapHost] = useState(acc?.imap.host ?? "");
   const [imapPort, setImapPort] = useState(String(acc?.imap.port ?? 993));
   const [smtpHost, setSmtpHost] = useState(acc?.smtp.host ?? "");

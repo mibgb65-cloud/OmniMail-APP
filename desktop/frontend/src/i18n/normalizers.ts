@@ -21,6 +21,10 @@ const BUILTIN_TEXT_EN: Record<string, string> = {
   同步部分受阻: "Sync partially blocked",
   首次同步即将开始: "Starting initial sync…",
   预览: "Preview",
+  "QQ 邮箱": "QQ Mail",
+  网易邮箱: "NetEase Mail",
+  "Linux Do 邮箱": "Linux Do Mail",
+  "iCloud 邮件": "iCloud Mail",
 };
 
 export function localizeContactGroup(

@@ -113,8 +113,10 @@ export const reader = {
   icsExportBtn: "导出 .ics",
   quickReplyDefaultAccount: "工作邮箱",
   quickReplyOpenHeader: "回复 {sender}",
-  quickReplyCollapsedHeader: "回复 {sender}（锁定{account}）…",
-  quickReplySendVia: "通过 {account} 发送",
+  quickReplyCollapsedHeader: "回复 {sender}（锁定 {account}）…",
+  quickReplyViaPrefix: "通过 {provider} · ",
+  quickReplyLockTooltip: "已锁定原收件账户 · 通过 {provider} · {email}",
+  quickReplySendVia: "通过 {account}",
   quickReplyCollapse: "收起",
   quickReplyAria: "快速回复正文",
   quickReplyPlaceholder:

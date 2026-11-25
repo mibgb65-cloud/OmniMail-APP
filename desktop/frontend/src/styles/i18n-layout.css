@@ -64,13 +64,70 @@
   text-overflow: ellipsis;
 }
 
-/* 底部快速回复框发件账号锁定胶囊防撑破 */
+/* 底部快速回复框发件账号锁定胶囊：移除死板 240/260px 截断，按真实剩余宽度三级降级 */
+.quick-reply-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.quick-reply-header-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1 1 96px;
+  min-width: min(96px, 38%);
+  overflow: hidden;
+}
+
+.quick-reply-header-right {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.quick-reply-header-right[data-stage="ellipsis"] {
+  flex: 0 1 auto;
+}
+
 .quick-reply-lock-pill {
   min-width: 0;
-  max-width: min(260px, 58%);
+  max-width: 100%;
+  flex: 0 1 auto;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.quick-reply-pill-prefix {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.quick-reply-pill-prefix + .quick-reply-pill-email {
+  margin-left: -5px;
+}
+
+.quick-reply-pill-email {
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-reply-measure-host {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 /* 设置页左侧导航与主侧栏导航文字单行省略保护 */

@@ -1,0 +1,183 @@
+/* 09 · 添加邮箱 · 右栏目录头部搜索框与分组标题栏 */
+.aam-manual-quick-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: var(--pcm-card-bg);
+  border: 1px solid var(--pcm-div);
+  text-align: left;
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard);
+}
+
+.aam-manual-quick-card:hover {
+  border-color: var(--pcm-info-bd);
+  background: var(--pcm-info-bg);
+}
+
+.aam-manual-quick-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--pcm-surf);
+  border: 1px solid var(--pcm-div);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aam-manual-quick-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.aam-manual-quick-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-ink);
+}
+
+.aam-manual-quick-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.aam-manual-quick-arrow {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.aam-vault-footnote {
+  margin: 2px 2px 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.aam-directory {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--pcm-card-bg);
+}
+
+.aam-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 22px 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.aam-search-box {
+  flex: 1;
+  min-width: 220px;
+  max-width: 380px;
+  height: 36px;
+  padding: 0 8px 0 11px;
+  border-radius: 9px;
+  background: var(--pcm-surf);
+  border: 1px solid var(--pcm-div);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aam-search-box:focus-within {
+  background: var(--pcm-card-bg);
+  border-color: var(--pcm-info-bd);
+}
+
+.aam-search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-ink);
+  font-size: 13px;
+}
+
+.aam-search-clear {
+  width: 22px;
+  height: 22px;
+}
+
+.aam-summary-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.aam-scroll {
+  flex: 1;
+  min-height: 0;
+  --scroll-padding: 4px 22px 18px;
+  --scroll-gap: 16px;
+}
+
+.aam-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.aam-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aam-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.aam-section-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.aam-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-ink);
+}
+
+.aam-section-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 19px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--pcm-surf);
+  border: 1px solid var(--pcm-div);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.aam-section-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}

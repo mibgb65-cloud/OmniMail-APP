@@ -21,7 +21,7 @@ type EmailAccountDTO struct {
 	ProviderLabel     string         `json:"providerLabel"`
 	AuthMode          string         `json:"authMode"`
 	Status            string         `json:"status"`
-	LastError         string         `json:"lastError,omitempty"`
+	LastError         string         `json:"lastError"`
 	UnreadCount       int            `json:"unreadCount"`
 	LastSyncedAt      string         `json:"lastSyncedAt"`
 	LastSyncedUnixMs  int64          `json:"lastSyncedUnixMs"`
