@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { PROVIDER_CATALOG } from "../src/data/providers.ts";
 import { enUS, setCurrentLanguage, zhCN } from "../src/i18n/index.ts";
 import { parseBackendError } from "../src/services/errorParser.ts";
+import { mapMailboxStatus } from "../src/services/workBuddyMappers.ts";
 import {
   deriveConnectModalState,
   EMPTY_DAILY_QUOTA,
@@ -70,6 +71,9 @@ test("WorkBuddy 官方品牌 PNG 尺寸、双栏设计稿文案与零实验性/�
 });
 
 test("WorkBuddyConnectModal 状态流转与双语错误码映射校验", () => {
+  assert.equal(mapMailboxStatus("active"), "running");
+  assert.equal(mapMailboxStatus("running"), "running");
+  assert.equal(mapMailboxStatus("forbidden"), "banned");
   const idle = deriveConnectModalState({
     stage: "idle",
     detectedEmail: "",

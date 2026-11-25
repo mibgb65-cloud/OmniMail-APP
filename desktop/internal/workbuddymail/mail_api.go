@@ -3,6 +3,7 @@ package workbuddymail
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -49,18 +50,24 @@ func (c *Client) GetConnectorStatus(ctx context.Context) (ConnectorState, error)
 	if status == http.StatusUnauthorized || status == http.StatusForbidden {
 		return ConnectorState{}, apperr.New(apperr.CodeWBAuthRequired, "WorkBuddy 登录状态已失效，请重新授权")
 	}
-	code, _, payload := unwrapEnvelope(body)
-	if status >= 500 {
-		return ConnectorState{}, apperr.New(apperr.CodeWBGatewayFailed, "查询智能体邮箱状态失败")
+	code, msg, payload := unwrapEnvelope(body)
+	if status >= 400 {
+		return ConnectorState{}, apperr.New(apperr.CodeWBGatewayFailed, formatConnectorStatusError(status, code, msg))
 	}
-	if code != 0 || len(payload) == 0 {
+	if code != 0 {
+		if isExplicitNotBoundMsg(msg) {
+			return ConnectorState{Status: StatusNotBound}, nil
+		}
+		return ConnectorState{}, apperr.New(apperr.CodeWBGatewayFailed, formatConnectorStatusError(status, code, msg))
+	}
+	if len(payload) == 0 {
 		return ConnectorState{Status: StatusNotBound}, nil
 	}
 	var raw struct {
-		Status   string `json:"status"`
-		Alias    string `json:"alias"`
-		OpenedAt int64  `json:"openedAt"`
-		UserType string `json:"userType"`
+		Status   string          `json:"status"`
+		Alias    string          `json:"alias"`
+		OpenedAt json.RawMessage `json:"openedAt"`
+		UserType string          `json:"userType"`
 	}
 	if err := json.Unmarshal(payload, &raw); err != nil {
 		return ConnectorState{}, apperr.New(apperr.CodeWBGatewayFailed, "解析智能体邮箱开通状态失败")
@@ -68,9 +75,25 @@ func (c *Client) GetConnectorStatus(ctx context.Context) (ConnectorState, error)
 	return ConnectorState{
 		Status:   NormalizeMailboxStatus(raw.Status),
 		Alias:    strings.TrimSpace(raw.Alias),
-		OpenedAt: raw.OpenedAt,
+		OpenedAt: parseOpenedAtUnixMs(raw.OpenedAt),
 		UserType: strings.TrimSpace(raw.UserType),
 	}, nil
+}
+
+func isExplicitNotBoundMsg(msg string) bool {
+	low := strings.ToLower(strings.TrimSpace(msg))
+	return low == "not_bound" || low == "mailbox_not_bound" || low == "agentmail_not_bound"
+}
+
+func formatConnectorStatusError(status, code int, msg string) string {
+	clean := sanitizeServerMessage(msg)
+	if clean != "" {
+		return fmt.Sprintf("查询智能体邮箱状态失败：%s", clean)
+	}
+	if code != 0 {
+		return fmt.Sprintf("查询智能体邮箱状态失败（code=%d）", code)
+	}
+	return fmt.Sprintf("查询智能体邮箱状态失败（HTTP %d）", status)
 }
 
 func (c *Client) GetMeAndAliases(ctx context.Context, preferredEmail string) ([]Alias, Alias, DailyQuota, error) {
@@ -85,8 +108,10 @@ func (c *Client) GetMeAndAliases(ctx context.Context, preferredEmail string) ([]
 	var raw struct {
 		Aliases []struct {
 			AliasID   string `json:"alias_id"`
+			AliasID2  string `json:"aliasId"`
 			Email     string `json:"email"`
 			IsPrimary bool   `json:"is_primary"`
+			Status    string `json:"status"`
 		} `json:"aliases"`
 		DailyQuota *struct {
 			Limit     int `json:"limit"`
@@ -107,7 +132,14 @@ func (c *Client) GetMeAndAliases(ctx context.Context, preferredEmail string) ([]
 	}
 	aliases := make([]Alias, 0, len(raw.Aliases))
 	for _, item := range raw.Aliases {
-		id, em := strings.TrimSpace(item.AliasID), strings.TrimSpace(item.Email)
+		if s := strings.TrimSpace(item.Status); s != "" {
+			norm := NormalizeMailboxStatus(s)
+			if norm == StatusNotBound || norm == StatusDeleted || norm == StatusRevoked {
+				continue
+			}
+		}
+		id := firstNonEmpty(item.AliasID, item.AliasID2)
+		em := strings.TrimSpace(item.Email)
 		if id != "" && em != "" {
 			aliases = append(aliases, Alias{AliasID: id, Email: em, IsPrimary: item.IsPrimary})
 		}

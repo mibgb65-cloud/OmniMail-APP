@@ -19,7 +19,7 @@ import {
   type WorkBuddyMessageList,
   type WorkBuddyMessageSummary,
   type WorkBuddyStatusAndAliases,
-} from "../types/workbuddy";
+} from "../types/workbuddy.ts";
 
 export function mapAuthStage(raw?: string): WorkBuddyAuthStage {
   if (
@@ -36,17 +36,19 @@ export function mapAuthStage(raw?: string): WorkBuddyAuthStage {
 }
 
 export function mapMailboxStatus(raw?: string): WorkBuddyMailboxStatus {
+  const s = raw?.trim().toLowerCase();
+  if (s === "active" || s === "running") return "running";
+  if (s === "forbidden") return "banned";
   if (
-    raw === "running" ||
-    raw === "not_bound" ||
-    raw === "deactivated" ||
-    raw === "suspended" ||
-    raw === "banned" ||
-    raw === "deleted" ||
-    raw === "revoked" ||
-    raw === "auth_failed"
+    s === "not_bound" ||
+    s === "deactivated" ||
+    s === "suspended" ||
+    s === "banned" ||
+    s === "deleted" ||
+    s === "revoked" ||
+    s === "auth_failed"
   ) {
-    return raw;
+    return s;
   }
   return "not_bound";
 }

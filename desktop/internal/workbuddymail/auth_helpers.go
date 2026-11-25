@@ -22,6 +22,8 @@ const (
 var allowedAPIDomains = map[string]struct{}{
 	"www.workbuddy.cn":    {},
 	"copilot.tencent.com": {},
+	"www.codebuddy.cn":    {},
+	"wb.tencentbuddy.com": {},
 }
 
 func ResolveBaseURL(raw string, allowLoopback bool) (string, string, error) {
@@ -67,7 +69,7 @@ func ValidateAuthBrowserURL(rawURL string, allowLoopback bool) (string, error) {
 }
 
 func isTrustedAuthHost(host string) bool {
-	for _, sfx := range []string{"workbuddy.cn", "tencent.com", "qq.com"} {
+	for _, sfx := range []string{"workbuddy.cn", "codebuddy.cn", "tencentbuddy.com", "tencent.com", "qq.com"} {
 		if host == sfx || strings.HasSuffix(host, "."+sfx) {
 			return true
 		}

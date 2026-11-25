@@ -165,6 +165,7 @@ func (a *AuthClient) doRawJSON(
 		return 0, nil, apperr.New(apperr.CodeWBGatewayFailed, "构造 WorkBuddy 请求失败")
 	}
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("X-Product", "SaaS")
 	if reqBody != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}

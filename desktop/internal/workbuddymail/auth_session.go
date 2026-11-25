@@ -33,18 +33,25 @@ func (a *AuthClient) FetchAccountInfo(ctx context.Context, creds TokenCredential
 	headers := map[string]string{
 		"Authorization": "Bearer " + creds.AccessToken,
 		"X-Domain":      domain,
+		"X-Product":     "SaaS",
 	}
-	for attempt := 0; attempt < 3; attempt++ {
+	interval := a.pollInterval
+	if interval <= 0 {
+		interval = time.Second
+	}
+	for {
 		status, body, err := a.doRawJSON(ctx, http.MethodGet, endpoint, nil, headers)
 		if err != nil {
 			return creds, err
 		}
 		code, _, payload := unwrapEnvelope(body)
-		if code == loginAccountPendingCode && attempt < 2 {
+		if code == loginAccountPendingCode {
+			timer := time.NewTimer(interval)
 			select {
 			case <-ctx.Done():
+				timer.Stop()
 				return creds, normalizeContextErr(ctx.Err())
-			case <-time.After(150 * time.Millisecond):
+			case <-timer.C:
 				continue
 			}
 		}
@@ -64,21 +71,12 @@ func (a *AuthClient) FetchAccountInfo(ctx context.Context, creds TokenCredential
 		if err := json.Unmarshal(payload, &raw); err != nil {
 			return creds, apperr.New(apperr.CodeWBGatewayFailed, "解析 WorkBuddy 账号信息失败")
 		}
-		uid := strings.TrimSpace(raw.UID)
-		if uid == "" {
-			uid = strings.TrimSpace(raw.ID)
-		}
-		if uid == "" {
-			uid = strings.TrimSpace(raw.UserID)
-		}
+		uid := firstNonEmpty(raw.UID, raw.ID, raw.UserID)
 		if uid == "" {
 			return creds, apperr.New(apperr.CodeWBGatewayFailed, "WorkBuddy 账号缺少有效用户标识")
 		}
 		ent := strings.TrimSpace(raw.EnterpriseID)
-		tenant := strings.TrimSpace(raw.TenantID)
-		if tenant == "" && ent != "" {
-			tenant = ent
-		}
+		tenant := firstNonEmpty(raw.TenantID, ent)
 		creds.UID = uid
 		creds.EnterpriseID = ent
 		creds.TenantID = tenant
@@ -86,7 +84,6 @@ func (a *AuthClient) FetchAccountInfo(ctx context.Context, creds TokenCredential
 		creds.Domain = domain
 		return creds, nil
 	}
-	return creds, apperr.New(apperr.CodeWBGatewayFailed, "获取 WorkBuddy 账号身份超时")
 }
 
 func (a *AuthClient) RefreshToken(ctx context.Context, creds TokenCredentials) (TokenCredentials, error) {

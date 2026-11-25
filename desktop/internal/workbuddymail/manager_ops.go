@@ -62,7 +62,7 @@ func (m *Manager) GetStatusAndAliases(sess *profilemgr.Session, accountID string
 	}
 	rec.MailboxStatus = connState.Status
 	if connState.Status == StatusRunning || connState.Status == StatusDeactivated {
-		aliases, primary, quota, aliasErr := cli.GetMeAndAliases(reqCtx, rec.Email)
+		aliases, primary, quota, aliasErr := cli.GetMeAndAliases(reqCtx, firstNonEmpty(rec.Email, connState.Alias))
 		if aliasErr == nil {
 			rec.Aliases = aliases
 			rec.AliasID = primary.AliasID
