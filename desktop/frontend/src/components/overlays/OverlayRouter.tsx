@@ -12,6 +12,7 @@ import { MuseConnectModal } from "../onboarding/MuseConnectModal";
 import { OAuthFlowModal } from "../onboarding/OAuthFlowModal";
 import { ProviderGuideModal } from "../onboarding/ProviderGuideModal";
 import { SyncProgressModal } from "../onboarding/SyncProgressModal";
+import { WorkBuddyConnectModal } from "../onboarding/WorkBuddyConnectModal";
 import { SettingsModal } from "../settings/SettingsModal";
 import { AdvancedSearchModal } from "./AdvancedSearchModal";
 import {
@@ -54,6 +55,8 @@ function renderModal(ov: Exclude<OverlayModal, { type: "none" }>) {
       return <ManualImapModal />;
     case "muse-connect":
       return <MuseConnectModal />;
+    case "workbuddy-connect":
+      return <WorkBuddyConnectModal />;
     case "sync-progress":
       return (
         <SyncProgressModal

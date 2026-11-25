@@ -14,6 +14,7 @@ import { settingsAdvanced } from "./zh/settingsAdvanced.ts";
 import { settingsGeneral } from "./zh/settingsGeneral.ts";
 import { errors, toasts } from "./zh/toastsAndErrors.ts";
 import { ai, translation } from "./zh/translationAndAi.ts";
+import { workbuddy, workbuddyErrors } from "./zh/workBuddy.ts";
 
 export const zhCN = {
   common,
@@ -44,10 +45,12 @@ export const zhCN = {
     ...overlaysSecondary,
   },
   muse,
+  workbuddy,
   toasts,
   errors: {
     ...errors,
     ...museErrors,
+    ...workbuddyErrors,
   },
 };
 

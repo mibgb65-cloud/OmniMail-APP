@@ -7,12 +7,14 @@ import {
 import { MailListPane } from "../mail/MailListPane";
 import { MailReaderPane } from "../mail/reader/MailReaderPane";
 import { MuseMailView } from "../muse/MuseMailView";
+import { WorkBuddyMailView } from "../workbuddy/WorkBuddyMailView";
 
-export type StageRoute = "mail" | "contacts" | "muse";
+export type StageRoute = "mail" | "contacts" | "muse" | "workbuddy";
 
 export function resolveStageRoute(screen: WorkspaceScreen): StageRoute {
   if (screen === "contacts") return "contacts";
   if (screen === "muse") return "muse";
+  if (screen === "workbuddy") return "workbuddy";
   return "mail";
 }
 
@@ -26,6 +28,9 @@ function renderStageContent(
   }
   if (route === "muse") {
     return <MuseMailView readOnlyExit={readOnlyExit} />;
+  }
+  if (route === "workbuddy") {
+    return <WorkBuddyMailView readOnlyExit={readOnlyExit} />;
   }
   return (
     <>

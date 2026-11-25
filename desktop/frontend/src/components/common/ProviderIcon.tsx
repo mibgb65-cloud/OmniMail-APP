@@ -6,6 +6,7 @@ import naverPng from "../../assets/providers/naver.png";
 import neteasePng from "../../assets/providers/netease.png";
 import outlookPng from "../../assets/providers/outlook.png";
 import qqPng from "../../assets/providers/qq.png";
+import workbuddyPng from "../../assets/providers/workbuddy.png";
 import yahooPng from "../../assets/providers/yahoo.png";
 import yandexPng from "../../assets/providers/yandex.png";
 import type { ProviderId } from "../../types/account";
@@ -22,6 +23,7 @@ const OFFICIAL_ICONS: Partial<Record<ProviderId, string>> = {
   linuxdo: linuxdoPng,
   nevermail: naverPng,
   muse: museSvg,
+  workbuddy: workbuddyPng,
 };
 
 interface ProviderIconProps {

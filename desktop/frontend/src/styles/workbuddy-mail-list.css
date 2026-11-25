@@ -1,0 +1,109 @@
+/* WorkBuddy Agent 邮箱列表栏与空状态样式 */
+.wb-list-pane,
+.wb-reader-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.wb-list-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.wb-list-title {
+  font-size: 13.5px;
+  color: var(--text-ink);
+}
+
+.wb-list-scroll {
+  --scroll-padding: 8px;
+  --scroll-gap: 6px;
+}
+
+.wb-msg-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wb-msg-card {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wb-unread-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.wb-att-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.wb-load-more-wrap {
+  padding: 8px 0 4px;
+}
+
+.wb-load-more-btn {
+  width: 100%;
+}
+
+.wb-empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  padding: 48px 20px;
+}
+
+.wb-reader-empty {
+  height: 100%;
+}
+
+.wb-empty-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+}
+
+.wb-empty-title {
+  font-size: 14px;
+  color: var(--text-ink);
+}
+
+.wb-empty-desc {
+  margin: 0;
+  max-width: 340px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}

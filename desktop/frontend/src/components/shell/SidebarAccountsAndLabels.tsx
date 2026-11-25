@@ -5,6 +5,7 @@ import { Icon } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
 import { Tooltip } from "../common/Tooltip";
 import { SidebarMuseSection } from "./SidebarMuseSection";
+import { SidebarWorkBuddySection } from "./SidebarWorkBuddySection";
 
 const STATUS_KEYS: Record<EmailAccount["status"], TranslationKey> = {
   connected: "sidebar.statusConnected",
@@ -186,6 +187,7 @@ export function SidebarAccountsAndLabels({
         </button>
       </div>
 
+      <SidebarWorkBuddySection onNavigate={onNavigate} />
       <SidebarMuseSection onNavigate={onNavigate} />
     </>
   );

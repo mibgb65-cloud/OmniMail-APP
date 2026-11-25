@@ -32,6 +32,16 @@ const (
 	CodeMuseGatewayFailed   = "ERR_MUSE_GATEWAY_FAILED"
 	CodeMuseUnsupported     = "ERR_MUSE_UNSUPPORTED"
 	CodeMuseCancelled       = "ERR_MUSE_CANCELLED"
+
+	CodeWBAuthRequired       = "ERR_WB_AUTH_REQUIRED"
+	CodeWBAuthTimeout        = "ERR_WB_AUTH_TIMEOUT"
+	CodeWBNotBound           = "ERR_WB_NOT_BOUND"
+	CodeWBSuspended          = "ERR_WB_SUSPENDED"
+	CodeWBQuotaExceeded      = "ERR_WB_QUOTA_EXCEEDED"
+	CodeWBRateLimited        = "ERR_WB_RATE_LIMITED"
+	CodeWBAttachmentTooLarge = "ERR_WB_ATTACHMENT_TOO_LARGE"
+	CodeWBGatewayFailed      = "ERR_WB_GATEWAY_FAILED"
+	CodeWBCancelled          = "ERR_WB_CANCELLED"
 )
 
 // AppError 统一格式化为 "[ERR_CODE] 中文人类可读提示"，方便前端精准识别错误码。

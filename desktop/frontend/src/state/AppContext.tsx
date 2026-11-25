@@ -15,6 +15,7 @@ import { useSendMailAction } from "./useSendMailAction";
 import { useGlobalShortcuts } from "./useShortcuts";
 import { useToasts } from "./useToasts";
 import { useViewportMode } from "./useViewportMode";
+import { useWorkBuddyStore } from "./useWorkBuddyStore";
 import { useWorkspaceStore } from "./useWorkspaceStore";
 
 export type AppContextValue = ReturnType<typeof useAppController>;
@@ -34,6 +35,12 @@ function useAppController() {
     workspace.setScreen,
     toastStore.pushToast,
   );
+  const workBuddyStore = useWorkBuddyStore(
+    workspace.activeProfileId,
+    workspace.screen,
+    workspace.setScreen,
+    toastStore.pushToast,
+  );
   const composeStore = useComposeStore(
     workspace.accounts,
     workspace.settings.defaultSendAccountId,
@@ -42,6 +49,7 @@ function useAppController() {
 
   const { leftNavOpen, setLeftNavOpen, overlay } = workspace;
   const { resetForWorkspaceSwitch } = museStore;
+  const { resetForWorkspaceSwitch: resetWorkBuddy } = workBuddyStore;
   useEffect(() => {
     if (viewport !== "compact" && leftNavOpen) setLeftNavOpen(false);
   }, [viewport, leftNavOpen, setLeftNavOpen]);
@@ -49,8 +57,9 @@ function useAppController() {
   useEffect(() => {
     if (overlay.type === "profile-manage" && overlay.mode === "unlock") {
       resetForWorkspaceSwitch();
+      resetWorkBuddy();
     }
-  }, [overlay, resetForWorkspaceSwitch]);
+  }, [overlay, resetForWorkspaceSwitch, resetWorkBuddy]);
 
   const { triggerSyncAll, requestAiAction } = useAppActions(
     workspace,
@@ -65,7 +74,15 @@ function useAppController() {
     composeStore.closeDraft();
     aiStore.reset();
     resetForWorkspaceSwitch();
-  }, [aiStore, composeStore, mailStore, resetForWorkspaceSwitch, workspace]);
+    resetWorkBuddy();
+  }, [
+    aiStore,
+    composeStore,
+    mailStore,
+    resetForWorkspaceSwitch,
+    resetWorkBuddy,
+    workspace,
+  ]);
 
   const desktopBridge = useDesktopBridge({
     settings: workspace.settings,
@@ -134,6 +151,7 @@ function useAppController() {
     desktopBridge,
     mailStore,
     museStore,
+    workBuddyStore,
     composeStore,
     aiStore,
     toastStore,

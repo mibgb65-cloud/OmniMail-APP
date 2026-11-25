@@ -14,6 +14,7 @@ import { settingsAdvanced } from "./en/settingsAdvanced.ts";
 import { settingsGeneral } from "./en/settingsGeneral.ts";
 import { errors, toasts } from "./en/toastsAndErrors.ts";
 import { ai, translation } from "./en/translationAndAi.ts";
+import { workbuddy, workbuddyErrors } from "./en/workBuddy.ts";
 import type { zhCN } from "./zhCN.ts";
 
 export const enUS = {
@@ -45,9 +46,11 @@ export const enUS = {
     ...overlaysSecondary,
   },
   muse,
+  workbuddy,
   toasts,
   errors: {
     ...errors,
     ...museErrors,
+    ...workbuddyErrors,
   },
 } satisfies typeof zhCN;

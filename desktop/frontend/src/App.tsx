@@ -42,7 +42,9 @@ function OmniMailShell() {
   const stageRef = useRef<HTMLDivElement>(null);
   const aiPanel = useAiPanelResize(stageRef, dockAi, isMailScreen);
   const showLeftDrawer =
-    (isMailScreen || workspace.screen === "muse") &&
+    (isMailScreen ||
+      workspace.screen === "muse" ||
+      workspace.screen === "workbuddy") &&
     viewport === "compact" &&
     workspace.leftNavOpen;
   const leftDrawer = usePresence(showLeftDrawer, 180);

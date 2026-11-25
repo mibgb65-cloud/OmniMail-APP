@@ -3,6 +3,7 @@ import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
 import { AccountDetailView } from "./AccountDetailView";
+import { WorkBuddyAccountsSection } from "./WorkBuddyAccountsSection";
 
 export function AccountsTab({
   selectedAccountId,
@@ -93,6 +94,8 @@ export function AccountsTab({
           </div>
         </div>
       ))}
+
+      <WorkBuddyAccountsSection />
 
       {museStore.status.bound && museStore.status.verifiedEmail && (
         <div className="settings-card">

@@ -114,6 +114,33 @@ export function AddAccountModal() {
         <button
           type="button"
           className="provider-card"
+          onClick={() => workspace.setOverlay({ type: "workbuddy-connect" })}
+        >
+          <div className="row" style={{ gap: 11, minWidth: 0 }}>
+            <ProviderIcon provider="workbuddy" size={32} />
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 14,
+                  color: "var(--text-ink)",
+                }}
+              >
+                {t("workbuddy.providerName")}
+              </div>
+              <div className="text-xs text-muted truncate">
+                {t("workbuddy.addModalCardSub")}
+              </div>
+            </div>
+          </div>
+          <span className="pill pill-accent" style={{ flexShrink: 0 }}>
+            {t("workbuddy.addModalCardBadge")}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className="provider-card"
           onClick={() => workspace.setOverlay({ type: "muse-connect" })}
         >
           <div className="row" style={{ gap: 11, minWidth: 0 }}>

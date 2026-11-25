@@ -15,6 +15,7 @@ import (
 	"omnimail/internal/outbox"
 	"omnimail/internal/profilemgr"
 	"omnimail/internal/syncer"
+	"omnimail/internal/workbuddymail"
 	"omnimail/services"
 )
 
@@ -41,10 +42,13 @@ func main() {
 	aiGateway := ai.NewGateway(bus)
 	museMgr := musemail.NewManager()
 	defer museMgr.Close()
+	wbMgr := workbuddymail.NewManager()
+	defer wbMgr.Close()
 
 	profMgr.RegisterHook(syncMgr)
 	profMgr.RegisterHook(outboxSched)
 	profMgr.RegisterHook(museMgr)
+	profMgr.RegisterHook(wbMgr)
 
 	store.SetMigrationHooks(profMgr.PauseForMigration, profMgr.ResumeAfterMigration)
 	_ = profMgr.InitStartup()
@@ -60,6 +64,7 @@ func main() {
 	aiSvc := services.NewAiService(profMgr, aiGateway)
 	diagSvc := services.NewDiagnosticService(profMgr, tokenMgr)
 	museMailSvc := services.NewMuseMailService(profMgr, museMgr)
+	wbMailSvc := services.NewWorkBuddyMailService(profMgr, wbMgr)
 
 	var appRef *application.App
 	app := application.New(application.Options{
@@ -81,6 +86,7 @@ func main() {
 			application.NewService(aiSvc),
 			application.NewService(diagSvc),
 			application.NewService(museMailSvc),
+			application.NewService(wbMailSvc),
 		},
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "com.omnimail.desktop.client",
@@ -127,6 +133,7 @@ func main() {
 	services.AttachMailRuntime(mailSvc, app, mainWin, syncMgr, calResponder)
 	services.AttachContactRuntime(contactSvc, app, mainWin)
 	services.AttachDiagnosticRuntime(diagSvc, app, mainWin)
+	services.AttachWorkBuddyRuntime(wbMailSvc, app, mainWin)
 	attachWindowLifecycle(app, mainWin, desktopSvc, geom, hideBoot)
 
 	tray := setupSystemTray(app, desktopSvc, profMgr)

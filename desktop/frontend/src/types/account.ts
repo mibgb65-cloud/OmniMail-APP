@@ -9,6 +9,7 @@ export type ProviderId =
   | "linuxdo"
   | "nevermail"
   | "muse"
+  | "workbuddy"
   | "imap";
 
 export type AuthMode = "oauth" | "authcode" | "app-password" | "token" | "imap";
