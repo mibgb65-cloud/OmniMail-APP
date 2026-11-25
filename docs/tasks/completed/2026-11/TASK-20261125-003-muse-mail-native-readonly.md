@@ -2,6 +2,7 @@
 
 - **状态**：Completed
 - **日期**：2026-11-25
+- **实现提交**：`39d1c53a5f7476899679cf5b936e7af3ad267034`（`codex/reader-toolbar-overlap`）
 - **关联文档**：
   - [产品范围](../../../product/PRD.md)
   - [架构概览](../../../architecture/OVERVIEW.md)
