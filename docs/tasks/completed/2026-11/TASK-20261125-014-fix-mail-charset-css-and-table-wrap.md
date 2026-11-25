@@ -25,4 +25,5 @@
 - 单文件行数门禁：所有修改及新增源码文件均严格 `<= 200` 行。
 - 新增与更新单测：`desktop/internal/mailproto/header_charset_test.go`、`desktop/internal/security/css_sanitizer_test.go`、`desktop/internal/mailrepair/repair_test.go`、`desktop/frontend/tests/linkify-plain-text.test.mjs`。
 - 全量门禁：`go test -v ./internal/mailproto/... ./internal/security/... ./internal/mailrepair/... ./internal/storage/... ./internal/search/...`、前端单测（`96/96` 通过）、`task verify` 与 `task build` 全部零错误通过。
-- 未验证事项：未自动启动桌面窗口，未创建 Git 提交或生产安装包（待指令触发本地 Beta 打包后实机核对三封样本邮件）。
+- 未验证事项：未自动启动桌面窗口，未推送远程仓库。
+- 实现已提交：`9406b576349861d681723b5a721aa0654378bf56`，纳入 [Beta 16 本地安装包](TASK-20261125-015-windows-beta-16-local-release.md)。
