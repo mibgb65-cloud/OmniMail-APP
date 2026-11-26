@@ -1,31 +1,31 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { GetBootstrapState } from "../../bindings/omnimail/desktopservice";
-import { getCurrentLanguage, t } from "../i18n";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getCurrentLanguage, isSyncLabelActive, t } from "../i18n";
 import type { EmailAccount } from "../types/account";
-import type {
-  AppSettings,
-  LanguageCode,
-  ThemePreference,
-} from "../types/settings";
+import type { AppSettings, LanguageCode } from "../types/settings";
 import type {
   OverlayModal,
   RuntimeBannerMode,
   WorkspaceScreen,
 } from "../types/ui";
 import {
+  applyAccountStatusToList,
+  applySyncProgressToAccounts,
   buildAccountStatusPatch,
+  deriveAccountSyncState,
   normalizeAccountRuntimeStatus,
+  resolveIdleSyncLabel,
 } from "./accountSyncState";
 import { useDesktopRuntimeEvents } from "./desktopActions";
-import {
-  parseMailtoUrl,
-  resolveThemeFromPref,
-  setDesktopBridgeReady,
-} from "./storageHelpers";
 import type { LiveSyncProgress } from "./syncProgress";
-import { useDesktopStorageOps } from "./useDesktopStorageOps";
+import {
+  useDesktopBootstrap,
+  useDesktopStorageOps,
+} from "./useDesktopStorageOps";
 
 interface BridgeDeps {
+  accounts: EmailAccount[];
+  manualSyncPending: boolean;
+  syncLabel: string;
   settings: AppSettings;
   applySettingsFromBackend: (patch: Partial<AppSettings>) => void;
   setScreen: (screen: WorkspaceScreen) => void;
@@ -36,12 +36,13 @@ interface BridgeDeps {
   refreshProfilesAndAccounts: () => Promise<{
     launchBehavior: "last-profile" | "ask-on-launch";
     requiresUnlock: boolean;
+    accounts: EmailAccount[];
   }>;
   onResetStoresForSwitch: () => void;
   onMailDelta: (addedIds?: readonly string[]) => void;
   openNewCompose: (to?: string[]) => void;
   updateComposeDraft: (patch: { subject?: string; body?: string }) => void;
-  pushToast: (notice: {
+  pushToast: (n: {
     tone: "info" | "success" | "warning" | "danger";
     title: string;
     detail?: string;
@@ -54,10 +55,22 @@ export function useDesktopBridge(deps: BridgeDeps) {
     deps.settings,
     deps.refreshProfilesAndAccounts,
   );
-  const { setStorage } = storageOps;
   const [syncProgressByAccount, setSyncProgressByAccount] = useState(
     () => new Map<string, LiveSyncProgress>(),
   );
+  const runtimeRef = useRef({
+    accounts: deps.accounts,
+    manualSyncPending: deps.manualSyncPending,
+    syncLabel: deps.syncLabel,
+  });
+
+  useEffect(() => {
+    runtimeRef.current = {
+      accounts: deps.accounts,
+      manualSyncPending: deps.manualSyncPending,
+      syncLabel: deps.syncLabel,
+    };
+  }, [deps.accounts, deps.manualSyncPending, deps.syncLabel]);
 
   const onTrayCompose = useCallback(
     (to?: string[], subject?: string, body?: string) => {
@@ -85,48 +98,35 @@ export function useDesktopBridge(deps: BridgeDeps) {
     [deps],
   );
 
-  useEffect(() => {
-    let active = true;
-    void GetBootstrapState()
-      .then(async (dto) => {
-        setDesktopBridgeReady(true);
-        if (!active) return;
-        setStorage(dto.storage);
-        const pref = (
-          ["light", "dark", "system"].includes(dto.preferences.themePreference)
-            ? dto.preferences.themePreference
-            : "system"
-        ) as ThemePreference;
-        const lang: LanguageCode =
-          dto.preferences.language === "en-US" ? "en-US" : "zh-CN";
-        deps.applySettingsFromBackend({
-          themePreference: pref,
-          theme: resolveThemeFromPref(pref),
-          language: lang,
-          closeToTray: dto.preferences.closeToTray,
-          launchAtStartup: dto.preferences.launchAtStartup,
-          silentStartToTray: Boolean(dto.preferences.silentStartToTray),
-        });
-        const prof = await deps.refreshProfilesAndAccounts();
-        if (!dto.bootstrap.initialized) deps.setScreen("onboarding");
-        else if (
-          !prof.requiresUnlock &&
-          prof.launchBehavior === "ask-on-launch"
-        )
-          deps.setOverlay({ type: "profile-manage", mode: "switch" });
-        if (dto.launchIntent.mailtoUrl) {
-          const p = parseMailtoUrl(dto.launchIntent.mailtoUrl);
-          onTrayCompose(p.to, p.subject, p.body);
+  useDesktopBootstrap({
+    ...deps,
+    setStorage: storageOps.setStorage,
+    onTrayCompose,
+    onOpenExternalFile,
+  });
+
+  const syncLabelForAccounts = useCallback(
+    (next: EmailAccount[], activeNow: boolean, lang: LanguageCode) => {
+      if (activeNow) {
+        if (!isSyncLabelActive(runtimeRef.current.syncLabel)) {
+          const nextLabel = t("topbar.syncingEllipsis");
+          runtimeRef.current.syncLabel = nextLabel;
+          deps.setSyncLabel(nextLabel);
         }
-        if (dto.launchIntent.filePath)
-          onOpenExternalFile(dto.launchIntent.filePath);
-      })
-      .catch(() => void deps.refreshProfilesAndAccounts());
-    return () => {
-      active = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+        return;
+      }
+      if (
+        next.length > 0 &&
+        deriveAccountSyncState(next).syncingAccounts.length === 0 &&
+        !runtimeRef.current.manualSyncPending
+      ) {
+        const idle = resolveIdleSyncLabel(next, lang);
+        runtimeRef.current.syncLabel = idle;
+        deps.setSyncLabel(idle);
+      }
+    },
+    [deps],
+  );
 
   const eventHandlers = useMemo(
     () => ({
@@ -143,42 +143,51 @@ export function useDesktopBridge(deps: BridgeDeps) {
         status: string;
         lastError?: string;
       }) => {
+        const lang = getCurrentLanguage();
         const st = normalizeAccountRuntimeStatus(p.status);
-        deps.updateAccount(
-          p.accountId,
-          buildAccountStatusPatch(p, getCurrentLanguage()),
+        const next = applyAccountStatusToList(
+          runtimeRef.current.accounts,
+          p,
+          lang,
         );
-        if (st === "syncing") {
-          deps.setSyncLabel(t("topbar.syncingEllipsis"));
-        }
+        runtimeRef.current.accounts = next;
+        deps.updateAccount(p.accountId, buildAccountStatusPatch(p, lang));
+        syncLabelForAccounts(next, st === "syncing", lang);
       },
       onSyncProgress: (p: LiveSyncProgress) => {
+        const lang = getCurrentLanguage();
         setSyncProgressByAccount((prev) => new Map(prev).set(p.accountId, p));
-        if (p.status === "syncing")
-          deps.setSyncLabel(t("topbar.syncingEllipsis"));
+        const cur = runtimeRef.current.accounts;
+        const prevAcc = cur.find((a) => a.id === p.accountId);
+        const next = applySyncProgressToAccounts(cur, p, lang);
+        runtimeRef.current.accounts = next;
+        const updatedAcc = next.find((a) => a.id === p.accountId);
+        if (updatedAcc && updatedAcc !== prevAcc)
+          deps.updateAccount(p.accountId, updatedAcc);
+        syncLabelForAccounts(next, p.status === "syncing", lang);
+        if (p.status !== "syncing" && prevAcc?.status === "syncing")
+          void deps.refreshProfilesAndAccounts().catch(() => undefined);
       },
       onMailDelta: deps.onMailDelta,
       onOutboxUpdated: (p: { state: string; lastError?: string }) => {
         deps.onMailDelta();
-        if (p.state === "sent") {
+        if (p.state === "sent")
           deps.pushToast({ tone: "success", title: t("toasts.mailDelivered") });
-        } else if (p.state === "failed") {
+        else if (p.state === "failed")
           deps.pushToast({
             tone: "danger",
             title: t("toasts.mailSendFailedOutbox"),
             detail: p.lastError,
           });
-        }
       },
-      onTrayUnlockProfile: (profileId: string) => {
+      onTrayUnlockProfile: (profileId: string) =>
         deps.setOverlay({
           type: "profile-manage",
           mode: "unlock",
           targetProfileId: profileId,
-        });
-      },
+        }),
     }),
-    [deps, onOpenExternalFile, onTrayCompose],
+    [deps, onOpenExternalFile, onTrayCompose, syncLabelForAccounts],
   );
   useDesktopRuntimeEvents(eventHandlers);
 

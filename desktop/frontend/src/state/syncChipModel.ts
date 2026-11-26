@@ -26,9 +26,17 @@ export function buildSyncChipModel(params: {
   viewport: ViewportMode;
   showJustDone: boolean;
   lang: LanguageCode;
+  manualSyncPending?: boolean;
 }): SyncChipModel {
-  const { accounts, bannerMode, syncLabel, viewport, showJustDone, lang } =
-    params;
+  const {
+    accounts,
+    bannerMode,
+    syncLabel,
+    viewport,
+    showJustDone,
+    lang,
+    manualSyncPending,
+  } = params;
   const isCompact = viewport === "compact";
   const isLaptop = viewport === "laptop";
 
@@ -43,7 +51,7 @@ export function buildSyncChipModel(params: {
 
   const derived = deriveAccountSyncState(accounts);
   const activelySyncing =
-    isSyncLabelActive(syncLabel) || derived.syncingAccounts.length > 0;
+    Boolean(manualSyncPending) || derived.syncingAccounts.length > 0;
 
   if (activelySyncing) {
     const fallback = translateWithLang(lang, "topbar.syncingEllipsis");

@@ -1,31 +1,27 @@
-import { startTransition, useCallback, useEffect, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { INITIAL_SETTINGS } from "../data/settingsDefaults";
-import { setCurrentLanguage, t } from "../i18n";
+import { getCurrentLanguage, setCurrentLanguage, t } from "../i18n";
 import {
   accountApi,
   contactApi,
   profileApi,
   ruleApi,
 } from "../services/backendClient";
-import type {
-  AppSettings,
-  ThemeMode,
-  ThemePreference,
-} from "../types/settings";
+import type { EmailAccount } from "../types/account";
+import type { AppSettings } from "../types/settings";
 import type {
   OverlayModal,
   RuntimeBannerMode,
   WorkspaceScreen,
 } from "../types/ui";
-import { resolveThemeFromPref } from "./storageHelpers";
-import { scheduleSettingsPersist } from "./themeStorage";
 import {
-  getEffectiveTheme,
-  readInitialThemeState,
-  runThemeTransition,
-} from "./themeTransition";
-import { reconcileRuntimeSyncState } from "./accountSyncState";
+  deriveAccountSyncState,
+  reconcileRuntimeSyncState,
+  resolveIdleSyncLabel,
+} from "./accountSyncState";
+import { readInitialThemeState } from "./themeTransition";
 import { useWorkspaceCollections } from "./useWorkspaceCollections";
+import { useWorkspaceThemeSettings } from "./useWorkspaceTheme";
 
 export function useWorkspaceStore() {
   const collections = useWorkspaceCollections();
@@ -40,20 +36,27 @@ export function useWorkspaceStore() {
   const [syncLabel, setSyncLabel] = useState(() =>
     t("topbar.allAccountsSynced"),
   );
+  const [manualSyncCount, setManualSyncCount] = useState(0);
+  const manualSyncCountRef = useRef(0);
   const [compactView, setCompactView] = useState<"list" | "reader">("reader");
   const [leftNavOpen, setLeftNavOpen] = useState(false);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (root.getAttribute("data-theme") !== settings.theme) {
-      root.setAttribute("data-theme", settings.theme);
-      root.style.colorScheme = settings.theme;
-    }
-  }, [settings.theme]);
+  const manualSyncPending = manualSyncCount > 0;
+  const beginManualSync = useCallback(() => {
+    manualSyncCountRef.current += 1;
+    setManualSyncCount(manualSyncCountRef.current);
+  }, []);
+  const endManualSync = useCallback(() => {
+    manualSyncCountRef.current = Math.max(0, manualSyncCountRef.current - 1);
+    setManualSyncCount(manualSyncCountRef.current);
+  }, []);
+  const resetManualSync = useCallback(() => {
+    manualSyncCountRef.current = 0;
+    setManualSyncCount(0);
+  }, []);
 
-  useEffect(() => {
-    setCurrentLanguage(settings.language, true);
-  }, [settings.language]);
+  const { applySettingsFromBackend, updateSettings, toggleTheme } =
+    useWorkspaceThemeSettings(settings, setSettings);
 
   const {
     nextBannerMode: effectiveBannerMode,
@@ -63,71 +66,8 @@ export function useWorkspaceStore() {
     bannerMode,
     syncLabel,
     lang: settings.language,
+    manualSyncPending,
   });
-
-  useEffect(() => {
-    if (settings.themePreference !== "system" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => {
-      const next: ThemeMode = mq.matches ? "dark" : "light";
-      runThemeTransition(next, (finalTheme) => {
-        startTransition(() => {
-          setSettings((prev) => ({ ...prev, theme: finalTheme }));
-        });
-      });
-    };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, [settings.themePreference]);
-
-  const applySettingsFromBackend = useCallback(
-    (patch: Partial<AppSettings>) => {
-      if (patch.language) setCurrentLanguage(patch.language, true);
-      setSettings((prev) => ({ ...prev, ...patch }));
-    },
-    [],
-  );
-
-  const updateSettings = useCallback((patch: Partial<AppSettings>) => {
-    if (patch.language) setCurrentLanguage(patch.language, true);
-    let nextPref: ThemePreference | undefined = patch.themePreference;
-    if (!nextPref && patch.theme) nextPref = patch.theme;
-    const nextResolved: ThemeMode | undefined = nextPref
-      ? resolveThemeFromPref(nextPref)
-      : patch.theme;
-
-    if (nextResolved) {
-      runThemeTransition(nextResolved, (finalTheme) => {
-        const finalPref: ThemePreference =
-          nextPref === "system" ? "system" : finalTheme;
-        const finalPatch: Partial<AppSettings> = {
-          ...patch,
-          themePreference: finalPref,
-          theme: finalTheme,
-        };
-        startTransition(() => {
-          setSettings((prev) => {
-            const merged: AppSettings = { ...prev, ...finalPatch };
-            scheduleSettingsPersist(merged, finalPatch);
-            return merged;
-          });
-        });
-      });
-      return;
-    }
-
-    setSettings((prev) => {
-      const merged: AppSettings = { ...prev, ...patch };
-      scheduleSettingsPersist(merged, patch);
-      return merged;
-    });
-  }, []);
-
-  const toggleTheme = useCallback(() => {
-    const nextTheme: ThemeMode =
-      getEffectiveTheme() === "light" ? "dark" : "light";
-    updateSettings({ theme: nextTheme, themePreference: nextTheme });
-  }, [updateSettings]);
 
   const {
     setProfiles,
@@ -151,7 +91,7 @@ export function useWorkspaceStore() {
         mode: "unlock",
         targetProfileId: profList.activeProfileId,
       });
-      return profList;
+      return { ...profList, accounts: [] as EmailAccount[] };
     }
     const [appCfg, accs, cnts, blks, rls] = await Promise.all([
       profileApi.getAppSettings().catch(() => null),
@@ -162,10 +102,18 @@ export function useWorkspaceStore() {
     ]);
     if (appCfg) setSettings((prev) => ({ ...prev, ...appCfg }));
     setAccounts(accs);
+    if (
+      accs.length > 0 &&
+      manualSyncCountRef.current === 0 &&
+      deriveAccountSyncState(accs).syncingAccounts.length === 0
+    ) {
+      const nextLang = appCfg?.language ?? getCurrentLanguage();
+      setSyncLabel(resolveIdleSyncLabel(accs, nextLang));
+    }
     setContacts(cnts);
     setBlacklist(blks);
     setRules(rls);
-    return profList;
+    return { ...profList, accounts: accs };
   }, [
     setAccounts,
     setActiveProfileId,
@@ -178,6 +126,8 @@ export function useWorkspaceStore() {
 
   const resetLocalData = useCallback(() => {
     clearCollections();
+    manualSyncCountRef.current = 0;
+    setManualSyncCount(0);
     setScreen("onboarding");
   }, [clearCollections]);
 
@@ -195,6 +145,10 @@ export function useWorkspaceStore() {
     setBannerMode,
     syncLabel: effectiveSyncLabel,
     setSyncLabel,
+    manualSyncPending,
+    beginManualSync,
+    endManualSync,
+    resetManualSync,
     compactView,
     setCompactView,
     leftNavOpen,

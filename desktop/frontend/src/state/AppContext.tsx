@@ -78,6 +78,7 @@ function useAppController() {
 
   const onResetStoresForSwitch = useCallback(() => {
     workspace.clearCollections();
+    workspace.resetManualSync();
     mailStore.resetMailState();
     composeStore.closeDraft();
     aiStore.reset();
@@ -93,6 +94,9 @@ function useAppController() {
   ]);
 
   const desktopBridge = useDesktopBridge({
+    accounts: workspace.accounts,
+    manualSyncPending: workspace.manualSyncPending,
+    syncLabel: workspace.syncLabel,
     settings: workspace.settings,
     applySettingsFromBackend: workspace.applySettingsFromBackend,
     setScreen: workspace.setScreen,

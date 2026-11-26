@@ -1,7 +1,12 @@
-import { useCallback } from "react";
-import { isSyncLabelActive, t } from "../i18n";
+import { useCallback, useRef } from "react";
+import { getCurrentLanguage, t } from "../i18n";
 import { accountApi, parseBackendError } from "../services/backendClient";
 import type { MailAiAction } from "../types/mailAi";
+import {
+  buildAccountStatusPatch,
+  canTriggerManualSync,
+  resolveIdleSyncLabel,
+} from "./accountSyncState";
 import type { useAiStore } from "./useAiStore";
 import type { useMailStore } from "./useMailStore";
 import type { useToasts } from "./useToasts";
@@ -14,27 +19,32 @@ export function useAppActions(
   toastStore: ReturnType<typeof useToasts>,
 ) {
   const { refreshUnreadView } = mailStore;
+  const syncGuardRef = useRef(false);
 
   const triggerSyncAll = useCallback(() => {
     if (
-      workspace.accounts.length === 0 ||
-      isSyncLabelActive(workspace.syncLabel)
+      syncGuardRef.current ||
+      !canTriggerManualSync(workspace.accounts, workspace.manualSyncPending)
     ) {
       return;
     }
+    syncGuardRef.current = true;
     const count = workspace.accounts.length;
+    workspace.beginManualSync();
     workspace.setSyncLabel(t("topbar.syncingAccounts", { count }));
     const minSpin = new Promise((r) => window.setTimeout(r, 420));
+
     void Promise.all([
       accountApi
         .triggerSync("")
         .then(() => workspace.refreshProfilesAndAccounts()),
       minSpin,
     ])
-      .then(([, prof]) => {
+      .then(([prof]) => {
         refreshUnreadView();
-        void prof;
-        workspace.setSyncLabel(t("topbar.allAccountsSynced"));
+        workspace.setSyncLabel(
+          resolveIdleSyncLabel(prof.accounts, getCurrentLanguage()),
+        );
         toastStore.pushToast({
           tone: "success",
           title: t("toasts.syncAllDone", { count }),
@@ -47,24 +57,47 @@ export function useAppActions(
           title: t("toasts.syncProblem"),
           detail: parseBackendError(err).message,
         });
+      })
+      .finally(() => {
+        syncGuardRef.current = false;
+        workspace.endManualSync();
       });
   }, [workspace, toastStore, refreshUnreadView]);
 
   const triggerSyncAccount = useCallback(
     (accountId: string) => {
       if (!accountId) return;
+      workspace.beginManualSync();
       workspace.updateAccount(accountId, { status: "syncing" });
       workspace.setSyncLabel(t("topbar.syncingEllipsis"));
+
       void accountApi
         .triggerSync(accountId)
         .then(() => workspace.refreshProfilesAndAccounts())
-        .then(() => refreshUnreadView())
+        .then((prof) => {
+          refreshUnreadView();
+          workspace.setSyncLabel(
+            resolveIdleSyncLabel(prof.accounts, getCurrentLanguage()),
+          );
+        })
         .catch((err) => {
+          const errMsg = parseBackendError(err).message;
+          workspace.updateAccount(
+            accountId,
+            buildAccountStatusPatch(
+              { accountId, status: "error", lastError: errMsg },
+              getCurrentLanguage(),
+            ),
+          );
+          void workspace.refreshProfilesAndAccounts().catch(() => undefined);
           toastStore.pushToast({
             tone: "warning",
             title: t("toasts.syncProblem"),
-            detail: parseBackendError(err).message,
+            detail: errMsg,
           });
+        })
+        .finally(() => {
+          workspace.endManualSync();
         });
     },
     [workspace, toastStore, refreshUnreadView],

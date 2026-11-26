@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { isSyncLabelActive, isSyncLabelHealthy, useI18n } from "../../i18n";
+import { useI18n } from "../../i18n";
 import { deriveAccountSyncState } from "../../state/accountSyncState";
 import { useApp } from "../../state/AppContext";
 import { buildSyncChipModel } from "../../state/syncChipModel";
@@ -11,7 +11,7 @@ import { SyncStatusPopover } from "./SyncStatusPopover";
 export function TopBarSyncChip() {
   const { viewport, workspace, triggerSyncAll } = useApp();
   const { lang, t } = useI18n();
-  const { bannerMode, syncLabel, accounts } = workspace;
+  const { bannerMode, syncLabel, manualSyncPending, accounts } = workspace;
 
   const chipRef = useRef<HTMLButtonElement | null>(null);
   const wasSyncingRef = useRef(false);
@@ -21,8 +21,7 @@ export function TopBarSyncChip() {
   const hasNoAccount = accounts.length === 0;
   const derived = deriveAccountSyncState(accounts);
   const isSyncing =
-    !hasNoAccount &&
-    (isSyncLabelActive(syncLabel) || derived.syncingAccounts.length > 0);
+    !hasNoAccount && (manualSyncPending || derived.syncingAccounts.length > 0);
 
   useEffect(() => {
     if (isSyncing) {
@@ -32,7 +31,7 @@ export function TopBarSyncChip() {
     }
     if (wasSyncingRef.current) {
       wasSyncingRef.current = false;
-      if (isSyncLabelHealthy(syncLabel) && !derived.hasIssues) {
+      if (bannerMode !== "offline" && !derived.hasIssues) {
         const enterTimer = window.setTimeout(() => setShowJustDone(true), 0);
         const holdTimer = window.setTimeout(() => setShowJustDone(false), 1050);
         return () => {
@@ -42,7 +41,7 @@ export function TopBarSyncChip() {
       }
     }
     return undefined;
-  }, [isSyncing, syncLabel, derived.hasIssues]);
+  }, [isSyncing, bannerMode, derived.hasIssues]);
 
   const chipModel = buildSyncChipModel({
     accounts,
@@ -51,6 +50,7 @@ export function TopBarSyncChip() {
     viewport,
     showJustDone,
     lang,
+    manualSyncPending,
   });
 
   const syncPhase =

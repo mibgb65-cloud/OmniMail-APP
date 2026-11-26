@@ -1,11 +1,17 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   CompleteInitialSetup,
+  GetBootstrapState,
   GetStorageInfo,
   InspectTargetDirectory,
   MigrateDataDirectory,
 } from "../../bindings/omnimail/desktopservice";
-import type { AppSettings } from "../types/settings";
+import type {
+  AppSettings,
+  LanguageCode,
+  ThemePreference,
+} from "../types/settings";
+import type { OverlayModal, WorkspaceScreen } from "../types/ui";
 import {
   openDesktopDataDir,
   pickDesktopDataDir,
@@ -17,6 +23,9 @@ import {
   buildFallbackStorageInfo,
   inspectDirectoryInBrowser,
   isWailsDesktop,
+  parseMailtoUrl,
+  resolveThemeFromPref,
+  setDesktopBridgeReady,
   type MigrationResult,
   type StorageInfo,
   type TargetDirCheck,
@@ -117,4 +126,60 @@ export function useDesktopStorageOps(
     openDataDir: openDesktopDataDir,
     restartApp: restartDesktopApp,
   };
+}
+
+export function useDesktopBootstrap(opts: {
+  setStorage: (s: StorageInfo) => void;
+  applySettingsFromBackend: (patch: Partial<AppSettings>) => void;
+  refreshProfilesAndAccounts: () => Promise<{
+    launchBehavior: "last-profile" | "ask-on-launch";
+    requiresUnlock: boolean;
+  }>;
+  setScreen: (screen: WorkspaceScreen) => void;
+  setOverlay: (ov: OverlayModal) => void;
+  onTrayCompose: (to?: string[], subject?: string, body?: string) => void;
+  onOpenExternalFile: (fileName: string) => void;
+}) {
+  useEffect(() => {
+    let active = true;
+    void GetBootstrapState()
+      .then(async (dto) => {
+        setDesktopBridgeReady(true);
+        if (!active) return;
+        opts.setStorage(dto.storage);
+        const pref = (
+          ["light", "dark", "system"].includes(dto.preferences.themePreference)
+            ? dto.preferences.themePreference
+            : "system"
+        ) as ThemePreference;
+        const lang: LanguageCode =
+          dto.preferences.language === "en-US" ? "en-US" : "zh-CN";
+        opts.applySettingsFromBackend({
+          themePreference: pref,
+          theme: resolveThemeFromPref(pref),
+          language: lang,
+          closeToTray: dto.preferences.closeToTray,
+          launchAtStartup: dto.preferences.launchAtStartup,
+          silentStartToTray: Boolean(dto.preferences.silentStartToTray),
+        });
+        const prof = await opts.refreshProfilesAndAccounts();
+        if (!dto.bootstrap.initialized) opts.setScreen("onboarding");
+        else if (
+          !prof.requiresUnlock &&
+          prof.launchBehavior === "ask-on-launch"
+        )
+          opts.setOverlay({ type: "profile-manage", mode: "switch" });
+        if (dto.launchIntent.mailtoUrl) {
+          const p = parseMailtoUrl(dto.launchIntent.mailtoUrl);
+          opts.onTrayCompose(p.to, p.subject, p.body);
+        }
+        if (dto.launchIntent.filePath)
+          opts.onOpenExternalFile(dto.launchIntent.filePath);
+      })
+      .catch(() => void opts.refreshProfilesAndAccounts());
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 }

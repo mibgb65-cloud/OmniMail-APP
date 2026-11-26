@@ -1,13 +1,13 @@
 import {
   formatLocalizedTime,
   isSyncLabelActive,
-  isSyncLabelBlocked,
   localizeBuiltinText,
   translateWithLang,
 } from "../i18n/index.ts";
 import type { EmailAccount } from "../types/account.ts";
 import type { LanguageCode } from "../types/settings.ts";
 import type { OverlayModal, RuntimeBannerMode } from "../types/ui.ts";
+import type { LiveSyncProgress } from "./syncProgress.ts";
 
 export type SyncChipTone =
   "empty" | "syncing" | "done" | "offline" | "danger" | "warning" | "healthy";
@@ -55,6 +55,25 @@ export function deriveAccountSyncState(
   };
 }
 
+export function canTriggerManualSync(
+  accounts: readonly EmailAccount[],
+  manualSyncPending: boolean,
+): boolean {
+  if (accounts.length === 0 || manualSyncPending) return false;
+  return deriveAccountSyncState(accounts).syncingAccounts.length === 0;
+}
+
+export function resolveIdleSyncLabel(
+  accounts: readonly EmailAccount[],
+  lang: LanguageCode,
+): string {
+  const { hasIssues } = deriveAccountSyncState(accounts);
+  return translateWithLang(
+    lang,
+    hasIssues ? "topbar.syncPartialFailed" : "topbar.allAccountsSynced",
+  );
+}
+
 export function buildAccountStatusPatch(
   payload: { accountId: string; status: string; lastError?: string },
   lang: LanguageCode,
@@ -85,16 +104,41 @@ export function applyAccountStatusToList(
   );
 }
 
+export function applySyncProgressToAccounts(
+  accounts: readonly EmailAccount[],
+  progress: Pick<LiveSyncProgress, "accountId" | "status">,
+  lang: LanguageCode,
+): EmailAccount[] {
+  const nowLabel = formatLocalizedTime("刚刚", lang);
+  return accounts.map((acc) => {
+    if (acc.id !== progress.accountId) return acc;
+    if (progress.status === "syncing") {
+      return acc.status === "syncing" ? acc : { ...acc, status: "syncing" };
+    }
+    if (acc.status !== "syncing") return acc;
+    if (progress.status === "done") {
+      return {
+        ...acc,
+        status: "connected",
+        lastError: "",
+        lastSyncedAt: nowLabel,
+      };
+    }
+    return { ...acc, status: "error", lastSyncedAt: nowLabel };
+  });
+}
+
 export function reconcileRuntimeSyncState(params: {
   accounts: readonly EmailAccount[];
   bannerMode: RuntimeBannerMode;
   syncLabel: string;
   lang: LanguageCode;
+  manualSyncPending?: boolean;
 }): { nextBannerMode: RuntimeBannerMode; nextSyncLabel: string } {
-  const { errorAccounts, authExpiredAccounts, syncingAccounts } =
-    deriveAccountSyncState(params.accounts);
+  const { authExpiredAccounts, syncingAccounts } = deriveAccountSyncState(
+    params.accounts,
+  );
 
-  // 局部账户异常完全收敛至顶栏胶囊与浮层；所有异常恢复时自动清除残留状态
   let nextBannerMode = params.bannerMode;
   if (
     params.bannerMode === "partial-sync" ||
@@ -104,22 +148,17 @@ export function reconcileRuntimeSyncState(params: {
   }
 
   let nextSyncLabel = params.syncLabel;
-  if (params.accounts.length > 0 && syncingAccounts.length === 0) {
-    if (errorAccounts.length === 0 && authExpiredAccounts.length === 0) {
-      if (
-        !isSyncLabelActive(params.syncLabel) ||
-        isSyncLabelBlocked(params.syncLabel)
-      ) {
+  if (params.accounts.length > 0) {
+    if (syncingAccounts.length > 0) {
+      if (!isSyncLabelActive(params.syncLabel)) {
         nextSyncLabel = translateWithLang(
           params.lang,
-          "topbar.allAccountsSynced",
+          "topbar.syncingEllipsis",
         );
       }
-    } else if (!isSyncLabelActive(params.syncLabel)) {
-      nextSyncLabel = translateWithLang(
-        params.lang,
-        "topbar.syncPartialFailed",
-      );
+    } else if (!params.manualSyncPending) {
+      // 非手动同步等待期且所有账户均非 syncing 时，无条件收敛残留的同步中文案
+      nextSyncLabel = resolveIdleSyncLabel(params.accounts, params.lang);
     }
   }
 
