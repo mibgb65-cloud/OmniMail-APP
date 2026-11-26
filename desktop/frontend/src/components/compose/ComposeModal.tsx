@@ -13,11 +13,9 @@ import {
   type ComposeRichEditorHandle,
 } from "./ComposeRichEditor";
 import { ComposeToolbar } from "./ComposeToolbar";
-import {
-  EMPTY_ACTIVE_FORMATS,
-  type ComposeActiveFormats,
-} from "./composeEditorCommands";
+import { EMPTY_ACTIVE_FORMATS } from "./composeEditorCommands";
 import { useComposeDropZone } from "./useComposeDropZone";
+import { useInlineComposeAi } from "./useInlineComposeAi";
 
 export function ComposeModal() {
   const { viewport, workspace, composeStore, toastStore, sendMailWithUndo } =
@@ -29,15 +27,19 @@ export function ComposeModal() {
       : null;
   const { rendered: draft, closing } = useValuePresence(activeDraft, 140);
   const editorHandleRef = useRef<ComposeRichEditorHandle | null>(null);
-  const [activeFormats, setActiveFormats] =
-    useState<ComposeActiveFormats>(EMPTY_ACTIVE_FORMATS);
+  const [activeFormats, setActiveFormats] = useState(EMPTY_ACTIVE_FORMATS);
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [linkInitialText, setLinkInitialText] = useState("");
+  const inlineAi = useInlineComposeAi(
+    activeDraft,
+    () => workspace.setOverlay({ type: "settings", tab: "ai" }),
+    toastStore.pushToast,
+  );
+  const aiBusy = inlineAi.busy;
 
   const handleInsertInlineImage = useCallback(
-    (url: string, contentId: string, filename: string) => {
-      editorHandleRef.current?.insertInlineImage(url, contentId, filename);
-    },
+    (url: string, cid: string, name: string) =>
+      editorHandleRef.current?.insertInlineImage(url, cid, name),
     [],
   );
 
@@ -50,9 +52,8 @@ export function ComposeModal() {
     });
 
   const handleEditorChange = useCallback(
-    (body: string, bodyHtml: string) => {
-      composeStore.updateDraft({ body, bodyHtml });
-    },
+    (body: string, bodyHtml: string) =>
+      composeStore.updateDraft({ body, bodyHtml }),
     [composeStore],
   );
 
@@ -65,9 +66,13 @@ export function ComposeModal() {
   if (!draft) return null;
 
   const isCompact = viewport === "compact";
-  const minimizeDraft = () => composeStore.updateDraft({ minimized: true });
+  const minimizeDraft = () => {
+    inlineAi.clearPreview();
+    composeStore.updateDraft({ minimized: true });
+  };
 
   const handleSend = () => {
+    if (aiBusy) return;
     if (draft.to.length + draft.cc.length + draft.bcc.length === 0) {
       toastStore.pushToast({
         tone: "warning",
@@ -120,6 +125,7 @@ export function ComposeModal() {
           <div className="compose-top-fixed">
             <ComposeModalHeader
               modeTitle={modeTitle}
+              aiBusy={aiBusy}
               savedAtText={t("compose.autoSaved", {
                 time: formatTime(draft.savedAt),
               })}
@@ -130,6 +136,7 @@ export function ComposeModal() {
               activeFormats={activeFormats}
               linkPopoverOpen={linkPopoverOpen}
               linkInitialText={linkInitialText}
+              aiBusy={aiBusy}
               onFormat={(cmd) => editorHandleRef.current?.execFormat(cmd)}
               onOpenLinkPopover={handleOpenLinkPopover}
               onCloseLinkPopover={() => setLinkPopoverOpen(false)}
@@ -143,11 +150,12 @@ export function ComposeModal() {
           </div>
 
           <FadeScroll label={t("compose.bodyScrollLabel")}>
-            <ComposeInlineAiBar />
+            <ComposeInlineAiBar ai={inlineAi} />
             <ComposeRichEditor
               draftId={draft.id}
               body={draft.body}
               bodyHtml={draft.bodyHtml}
+              readOnly={aiBusy}
               ariaLabel={t("compose.bodyAria")}
               placeholder={t("compose.bodyPlaceholder")}
               editorHandleRef={editorHandleRef}
@@ -163,19 +171,22 @@ export function ComposeModal() {
           <ComposeFooterBar
             scheduledAt={draft.scheduledAt}
             isCompact={isCompact}
+            aiBusy={aiBusy}
             onSend={handleSend}
-            onSchedule={() =>
+            onSchedule={() => {
+              if (aiBusy) return;
               workspace.setOverlay({
                 type: "schedule-send",
                 draftId: draft.id,
-              })
-            }
-            onDiscard={() =>
+              });
+            }}
+            onDiscard={() => {
+              inlineAi.stopAssist();
               workspace.setOverlay({
                 type: "danger-confirm",
                 kind: "discard-draft",
-              })
-            }
+              });
+            }}
           />
         </div>
       </div>

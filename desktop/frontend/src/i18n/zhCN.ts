@@ -1,6 +1,7 @@
 import { addAccountPicker } from "./zh/addAccountPicker.ts";
 import { common, sidebar, topbar } from "./zh/commonAndShell.ts";
 import { compose } from "./zh/compose.ts";
+import { composeInlineAi } from "./zh/composeInlineAi.ts";
 import { contacts } from "./zh/contacts.ts";
 import { externalLink } from "./zh/externalLink.ts";
 import { imageLightbox } from "./zh/imageLightbox.ts";
@@ -38,7 +39,10 @@ export const zhCN = {
   labels: labelPopover,
   translation,
   ai,
-  compose,
+  compose: {
+    ...compose,
+    ...composeInlineAi,
+  },
   contacts,
   settings: {
     ...settingsGeneral,

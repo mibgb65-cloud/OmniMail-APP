@@ -5,12 +5,14 @@ import { Tooltip } from "../common/Tooltip";
 interface ComposeModalHeaderProps {
   modeTitle: string;
   savedAtText: string;
+  aiBusy?: boolean;
   onMinimize: () => void;
 }
 
 export function ComposeModalHeader({
   modeTitle,
   savedAtText,
+  aiBusy = false,
   onMinimize,
 }: ComposeModalHeaderProps) {
   const { t } = useI18n();
@@ -18,6 +20,12 @@ export function ComposeModalHeader({
     <div className="modal-header compose-modal-header">
       <div className="row" style={{ gap: 8, minWidth: 0 }}>
         <h2 className="modal-title truncate">{modeTitle}</h2>
+        {aiBusy && (
+          <span className="cia-header-drafting-pill">
+            <i className="cia-dot-pulse" aria-hidden="true" />
+            <span>{t("compose.aiDraftingHeaderPill")}</span>
+          </span>
+        )}
         <span className="pill pill-neutral truncate">{savedAtText}</span>
       </div>
       <div className="row" style={{ gap: 6, flexShrink: 0 }}>
@@ -49,6 +57,7 @@ export function ComposeModalHeader({
 interface ComposeFooterBarProps {
   scheduledAt?: string;
   isCompact: boolean;
+  aiBusy?: boolean;
   onSend: () => void;
   onSchedule: () => void;
   onDiscard: () => void;
@@ -57,6 +66,7 @@ interface ComposeFooterBarProps {
 export function ComposeFooterBar({
   scheduledAt,
   isCompact,
+  aiBusy = false,
   onSend,
   onSchedule,
   onDiscard,
@@ -64,8 +74,13 @@ export function ComposeFooterBar({
   const { t } = useI18n();
   return (
     <div className="modal-footer compose-footer-fixed">
-      <div className="row" style={{ gap: 8 }}>
-        <button type="button" className="btn btn-primary" onClick={onSend}>
+      <div className="row" style={{ gap: 8, minWidth: 0 }}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={aiBusy}
+          onClick={onSend}
+        >
           <span>
             {scheduledAt
               ? t("compose.confirmScheduleSend")
@@ -76,15 +91,21 @@ export function ComposeFooterBar({
         <button
           type="button"
           className="btn btn-secondary"
+          disabled={aiBusy}
           onClick={onSchedule}
         >
           <Icon name="clock" size={13} /> {t("compose.scheduleSendBtn")}
         </button>
+        {aiBusy && !isCompact && (
+          <span className="cia-footer-lock-hint truncate">
+            {t("compose.footerSendLockedHint")}
+          </span>
+        )}
       </div>
 
-      <div className="row" style={{ gap: 8 }}>
-        <span className="kbd">Ctrl + Enter</span>
-        {!isCompact && (
+      <div className="row" style={{ gap: 8, flexShrink: 0 }}>
+        <span className={`kbd${aiBusy ? " is-muted" : ""}`}>Ctrl + Enter</span>
+        {!isCompact && !aiBusy && (
           <span className="text-xs text-muted">
             {t("compose.quickSendHint")}
           </span>

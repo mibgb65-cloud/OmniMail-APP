@@ -1,6 +1,7 @@
 import { addAccountPicker } from "./en/addAccountPicker.ts";
 import { common, sidebar, topbar } from "./en/commonAndShell.ts";
 import { compose } from "./en/compose.ts";
+import { composeInlineAi } from "./en/composeInlineAi.ts";
 import { contacts } from "./en/contacts.ts";
 import { externalLink } from "./en/externalLink.ts";
 import { imageLightbox } from "./en/imageLightbox.ts";
@@ -39,7 +40,10 @@ export const enUS = {
   labels: labelPopover,
   translation,
   ai,
-  compose,
+  compose: {
+    ...compose,
+    ...composeInlineAi,
+  },
   contacts,
   settings: {
     ...settingsGeneral,

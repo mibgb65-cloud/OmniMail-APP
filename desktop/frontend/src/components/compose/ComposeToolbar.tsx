@@ -20,6 +20,7 @@ interface ComposeToolbarProps {
   activeFormats: ComposeActiveFormats;
   linkPopoverOpen: boolean;
   linkInitialText: string;
+  aiBusy?: boolean;
   onFormat: (cmd: ComposeFormatCommand) => void;
   onOpenLinkPopover: () => void;
   onCloseLinkPopover: () => void;
@@ -55,6 +56,7 @@ export function ComposeToolbar(props: ComposeToolbarProps) {
         <Tooltip key={btn.cmd} label={label} shortcut={btn.shortcut}>
           <button
             type="button"
+            disabled={props.aiBusy}
             className={`compose-fmt-btn${isActive ? " active" : ""}`}
             aria-label={label}
             aria-pressed={btn.activeKey ? isActive : undefined}
@@ -82,6 +84,7 @@ export function ComposeToolbar(props: ComposeToolbarProps) {
           <Tooltip label={t("compose.fmtLink")} shortcut="Ctrl+K">
             <button
               type="button"
+              disabled={props.aiBusy}
               className={`compose-fmt-btn${props.linkPopoverOpen ? " active" : ""}`}
               aria-label={t("compose.fmtLink")}
               onMouseDown={(e) => e.preventDefault()}
@@ -90,7 +93,7 @@ export function ComposeToolbar(props: ComposeToolbarProps) {
               <FormatGlyph name="link" />
             </button>
           </Tooltip>
-          {props.linkPopoverOpen && (
+          {props.linkPopoverOpen && !props.aiBusy && (
             <ComposeLinkPopover
               initialText={props.linkInitialText}
               onConfirm={props.onConfirmLink}
@@ -100,6 +103,7 @@ export function ComposeToolbar(props: ComposeToolbarProps) {
           <Tooltip label={t("compose.fmtImage")}>
             <button
               type="button"
+              disabled={props.aiBusy}
               className="compose-fmt-btn"
               aria-label={t("compose.fmtImage")}
               onMouseDown={(e) => e.preventDefault()}

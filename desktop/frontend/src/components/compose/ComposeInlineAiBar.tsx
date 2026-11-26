@@ -2,152 +2,194 @@ import { useState } from "react";
 import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
-import { plainTextToComposeHtml } from "./composeRichHtml";
-import { useInlineComposeAi } from "./useInlineComposeAi";
+import { ComposeInlineAiPreview } from "./ComposeInlineAiPreview";
+import {
+  buildAppendedDraftBody,
+  buildReplacedDraftBody,
+  countInlineAiChars,
+  deriveComposeAiLockState,
+  INLINE_AI_PRESETS,
+  resolveInlineAiPhase,
+} from "./composeInlineAiLogic";
+import type { InlineComposeAiController } from "./useInlineComposeAi";
 
-export function ComposeInlineAiBar() {
-  const { workspace, composeStore, toastStore } = useApp();
+export function ComposeInlineAiBar({ ai }: { ai: InlineComposeAiController }) {
+  const { composeStore, toastStore } = useApp();
   const { t } = useI18n();
   const draft = composeStore.draft;
-  const [prompt, setPrompt] = useState("");
-  const { reqId, preview, setPreview, busy, runAssist, stopAssist } =
-    useInlineComposeAi(
-      draft,
-      () => workspace.setOverlay({ type: "settings", tab: "ai" }),
-      toastStore.pushToast,
-    );
+  const [promptBox, setPromptBox] = useState({ scopeId: "", text: "" });
 
   if (!draft || !draft.inlineAiOpen) return null;
 
+  const prompt = promptBox.scopeId === draft.id ? promptBox.text : "";
+  const setPrompt = (text: string) => setPromptBox({ scopeId: draft.id, text });
+
+  const { busy, preview, stopped, activePreset, canRegenerate } = ai;
+  const lock = deriveComposeAiLockState(busy, activePreset);
+  const phase = resolveInlineAiPhase(busy, preview);
+  const streamCount = countInlineAiChars(preview);
+
+  const submitPrompt = () => {
+    const trimmed = prompt.trim();
+    if (!trimmed || busy) return;
+    ai.runAssist("draft", "professional", trimmed, "custom");
+  };
+
+  const handleCloseBar = () => {
+    ai.clearPreview();
+    composeStore.updateDraft({ inlineAiOpen: false });
+  };
+
+  const handleReplace = () => {
+    const next = buildReplacedDraftBody(preview);
+    composeStore.updateDraft(next);
+    ai.clearPreview();
+    setPrompt("");
+    toastStore.pushToast({ tone: "success", title: t("toasts.adoptedAiBody") });
+  };
+
+  const handleAppend = () => {
+    const next = buildAppendedDraftBody(draft.body, draft.bodyHtml, preview);
+    composeStore.updateDraft(next);
+    ai.clearPreview();
+    setPrompt("");
+    toastStore.pushToast({
+      tone: "success",
+      title: t("compose.appendedAiBodyToast"),
+    });
+  };
+
   return (
-    <div
-      style={{
-        padding: "10px 20px",
-        background: "var(--bg-ai-surface)",
-        borderBottom: "1px solid var(--border-ai)",
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-      }}
-    >
-      <div className="row-between">
-        <span
-          className="row text-xs"
-          style={{ color: "var(--brand-ai)", fontWeight: 700 }}
-        >
-          <Icon name="sparkle" size={14} /> {t("compose.inlineAiBanner")}
-        </span>
-        <div className="row" style={{ gap: 6 }}>
-          {busy && reqId && (
+    <div className={`cia-bar${busy ? " is-busy" : ""}`}>
+      <div
+        className={`cia-aurora-track${busy ? " is-active" : ""}`}
+        aria-hidden="true"
+      >
+        <div className="cia-aurora-beam" />
+      </div>
+
+      <div className="cia-body">
+        <div className="cia-top-row">
+          <div className="cia-title-group">
+            <span className="cia-ai-mark" aria-hidden="true">
+              AI
+            </span>
+            <span className="cia-banner-title">
+              {t("compose.inlineAiBanner")}
+            </span>
+            {busy && (
+              <span className="cia-live-pill">
+                <span className="cia-stagger-dots" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                <span>
+                  {phase === "streaming"
+                    ? t("compose.streamingCountStatus", { count: streamCount })
+                    : t("compose.thinkingStatus")}
+                </span>
+              </span>
+            )}
+          </div>
+
+          <div className="cia-top-actions">
+            {busy && (
+              <button
+                type="button"
+                className="cia-stop-btn"
+                onClick={ai.stopAssist}
+              >
+                <span className="cia-stop-square" aria-hidden="true" />
+                <span>{t("compose.stopGeneratingBtn")}</span>
+                <kbd className="cia-stop-esc">Esc</kbd>
+              </button>
+            )}
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={stopAssist}
+              className="btn btn-ghost btn-sm"
+              onClick={handleCloseBar}
             >
-              {t("compose.stopBtn")}
+              {t("common.close")}
             </button>
-          )}
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => composeStore.updateDraft({ inlineAiOpen: false })}
-          >
-            {t("common.close")}
-          </button>
+          </div>
         </div>
-      </div>
 
-      <div className="row" style={{ flexWrap: "wrap" }}>
-        <button
-          type="button"
-          disabled={busy}
-          className="btn btn-secondary btn-sm"
-          onClick={() => runAssist("draft", "professional")}
-        >
-          {t("compose.generateFirstDraft")}
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          className="btn btn-secondary btn-sm"
-          onClick={() => runAssist("polish", "professional")}
-        >
-          {t("compose.makeFormal")}
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          className="btn btn-secondary btn-sm"
-          onClick={() => runAssist("polish", "concise")}
-        >
-          {t("compose.makeConcise")}
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          className="btn btn-secondary btn-sm"
-          onClick={() => runAssist("translate_en", "professional")}
-        >
-          {t("compose.translateToEn")}
-        </button>
-        <input
-          type="text"
-          className="input"
-          style={{ height: 28, flex: 1, minWidth: 160 }}
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && prompt.trim() && !busy) {
-              runAssist("draft", "professional", prompt.trim());
-              setPrompt("");
-            }
-          }}
-          placeholder={t("compose.customPromptPlaceholder")}
-        />
-      </div>
+        <div className="cia-controls-row">
+          {INLINE_AI_PRESETS.map((preset) => {
+            const isActive = lock.highlightedPreset === preset.id;
+            const isDimmed = busy && !isActive;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                disabled={lock.presetsDisabled}
+                className={`btn btn-secondary btn-sm cia-preset-btn${isActive ? " is-active-run" : ""}${isDimmed ? " is-dimmed" : ""}`}
+                onClick={() =>
+                  ai.runAssist(preset.action, preset.tone, "", preset.id)
+                }
+              >
+                {isActive && (
+                  <span className="cia-dot-pulse" aria-hidden="true" />
+                )}
+                <span>{t(preset.labelKey)}</span>
+              </button>
+            );
+          })}
 
-      {preview && (
-        <div
-          style={{
-            padding: "8px 10px",
-            borderRadius: 8,
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-default)",
-            fontSize: 12,
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          <div>{preview}</div>
-          {!busy && (
-            <div className="row" style={{ marginTop: 8, gap: 6 }}>
+          <div className={`cia-prompt-wrap${busy ? " is-locked" : ""}`}>
+            {lock.highlightedPreset === "custom" && (
+              <span className="cia-dot-pulse" aria-hidden="true" />
+            )}
+            <input
+              type="text"
+              className="cia-prompt-input"
+              disabled={lock.promptDisabled}
+              aria-busy={busy ? "true" : undefined}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onFocus={(e) => {
+                if (!busy && preview) e.currentTarget.select();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !busy && prompt.trim()) {
+                  e.preventDefault();
+                  submitPrompt();
+                }
+              }}
+              placeholder={t("compose.customPromptPlaceholder")}
+            />
+            {busy ? (
+              <span className="cia-locked-pill">
+                {t("compose.inputLockedPill")}
+              </span>
+            ) : (
               <button
                 type="button"
-                className="btn btn-primary btn-sm"
-                onClick={() => {
-                  composeStore.updateDraft({
-                    body: preview,
-                    bodyHtml: plainTextToComposeHtml(preview),
-                  });
-                  setPreview("");
-                  toastStore.pushToast({
-                    tone: "success",
-                    title: t("toasts.adoptedAiBody"),
-                  });
-                }}
+                className="cia-send-prompt-btn"
+                disabled={!prompt.trim()}
+                aria-label={t("compose.sendPromptAria")}
+                onClick={submitPrompt}
               >
-                {t("compose.adoptAndReplace")}
+                <Icon name="arrowUp" size={13} />
               </button>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => setPreview("")}
-              >
-                {t("compose.discardAiBtn")}
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      )}
+
+        {phase !== "idle" && (
+          <ComposeInlineAiPreview
+            phase={phase}
+            preview={preview}
+            stopped={stopped}
+            canRegenerate={canRegenerate}
+            onReplace={handleReplace}
+            onAppend={handleAppend}
+            onRegenerate={ai.regenerate}
+            onDiscard={ai.clearPreview}
+          />
+        )}
+      </div>
     </div>
   );
 }

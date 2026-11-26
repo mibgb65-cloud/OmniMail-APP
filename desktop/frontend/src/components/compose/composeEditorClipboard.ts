@@ -1,7 +1,11 @@
 import type { RefObject } from "react";
-import type {
-  ComposeActiveFormats,
-  ComposeFormatCommand,
+import {
+  applyComposeFormat,
+  cloneSelectionRange,
+  insertInlineImageAtRange,
+  insertSafeLinkAtRange,
+  type ComposeActiveFormats,
+  type ComposeFormatCommand,
 } from "./composeEditorCommands";
 
 export interface ComposeRichEditorHandle {
@@ -20,6 +24,7 @@ export interface ComposeRichEditorProps {
   draftId: string;
   body: string;
   bodyHtml?: string;
+  readOnly?: boolean;
   placeholder: string;
   ariaLabel: string;
   editorHandleRef: RefObject<ComposeRichEditorHandle | null>;
@@ -37,4 +42,47 @@ export function extractClipboardImages(
     .filter((it) => it.kind === "file" && it.type.startsWith("image/"))
     .map((it) => it.getAsFile())
     .filter((f): f is File => Boolean(f));
+}
+
+export function buildComposeEditorHandle(
+  contentRef: RefObject<HTMLDivElement | null>,
+  savedRangeRef: RefObject<Range | null>,
+  readOnly: boolean,
+  syncFromDom: () => void,
+): ComposeRichEditorHandle {
+  return {
+    execFormat: (cmd) => {
+      if (!contentRef.current || readOnly) return;
+      applyComposeFormat(contentRef.current, cmd);
+      syncFromDom();
+    },
+    insertLink: (url, displayText) => {
+      if (!contentRef.current || readOnly) return;
+      insertSafeLinkAtRange(
+        contentRef.current,
+        savedRangeRef.current,
+        url,
+        displayText,
+      );
+      savedRangeRef.current = null;
+      syncFromDom();
+    },
+    insertInlineImage: (url, contentId, filename = "") => {
+      if (!contentRef.current || readOnly) return;
+      insertInlineImageAtRange(
+        contentRef.current,
+        savedRangeRef.current,
+        url,
+        contentId,
+        filename,
+      );
+      savedRangeRef.current = null;
+      syncFromDom();
+    },
+    saveSelection: () => {
+      savedRangeRef.current = cloneSelectionRange(contentRef.current);
+    },
+    getSelectedText: () =>
+      cloneSelectionRange(contentRef.current)?.toString().trim() ?? "",
+  };
 }

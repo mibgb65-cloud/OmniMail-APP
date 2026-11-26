@@ -1,0 +1,199 @@
+/* 19 · 写信内联 AI：生成态锁定、顶栏 2.5px Aurora 流光扫光条与控制栏 */
+@keyframes cia-aurora-slide {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+@keyframes cia-dot-pulse-anim {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.84);
+  }
+}
+
+.cia-bar {
+  position: relative;
+  background: #f5f7ff;
+  border-bottom: 1px solid #c7d2fe;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme="dark"] .cia-bar {
+  background: #151932;
+  border-bottom-color: #312e81;
+}
+
+.cia-aurora-track {
+  height: 2.5px;
+  width: 100%;
+  background: #e0e7ff;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 260ms var(--ease-standard);
+}
+
+[data-theme="dark"] .cia-aurora-track {
+  background: #1e1b4b;
+}
+
+.cia-aurora-track.is-active {
+  opacity: 1;
+}
+
+.cia-aurora-beam {
+  width: 44%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4f46e5, #38bdf8, #8b5cf6);
+  will-change: transform;
+  animation: cia-aurora-slide 1.6s ease-in-out infinite;
+}
+
+.cia-body {
+  padding: 12px 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cia-top-row,
+.cia-title-group,
+.cia-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cia-top-row {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.cia-title-group {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.cia-ai-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: var(--brand-ai);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cia-banner-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #3730a3;
+}
+
+[data-theme="dark"] .cia-banner-title {
+  color: #c7d2fe;
+}
+
+.cia-live-pill,
+.cia-header-drafting-pill {
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #e0e7ff;
+  border: 1px solid #c7d2fe;
+  color: #4338ca;
+  font-size: 11px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-theme="dark"] .cia-live-pill,
+[data-theme="dark"] .cia-header-drafting-pill {
+  background: #1e1b4b;
+  border-color: #4338ca;
+  color: #c7d2fe;
+}
+
+.cia-dot-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-ai);
+  flex-shrink: 0;
+  animation: cia-dot-pulse-anim 1.2s ease-in-out infinite;
+}
+
+.cia-stagger-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.cia-stagger-dots > i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--brand-ai);
+  animation: cia-dot-pulse-anim 1.1s ease-in-out infinite;
+}
+
+.cia-stagger-dots > i:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.cia-stagger-dots > i:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+.cia-stop-btn {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 7px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+[data-theme="dark"] .cia-stop-btn {
+  background: #3b1520;
+  border-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+.cia-stop-btn:hover {
+  filter: brightness(0.97);
+}
+
+.cia-stop-square {
+  width: 7px;
+  height: 7px;
+  border-radius: 1.5px;
+  background: currentColor;
+}
+
+.cia-stop-esc {
+  font-size: 10px;
+  opacity: 0.85;
+  font-family: var(--font-mono);
+}
