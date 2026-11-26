@@ -54,3 +54,55 @@ func TestSanitizeMailHTMLSafeDataImageAndSVGBlock(t *testing.T) {
 		t.Fatalf("超过 2MB 的 data:image 应被拦截")
 	}
 }
+
+func TestSanitizeMailHTMLMalformedMissingOpeningQuoteAndLegacyRestore(t *testing.T) {
+	const spotifyHero = "https://message-editor.scdn.co/5523037c-6ddb-45f7-9362-fec3a62435ca"
+
+	t.Run("mso_comment_and_missing_opening_quote", func(t *testing.T) {
+		raw := `<!--[if mso]><img src=` + spotifyHero + `" /><![endif]--><div><img src="` + spotifyHero + `"></div>`
+		cleaned, hasRemote := SanitizeMailHTML(raw, nil)
+		if !hasRemote {
+			t.Fatalf("应识别外链图片并标记 hasRemote=true")
+		}
+		if strings.Contains(cleaned, "&#34;") || strings.Contains(cleaned, "&quot;") {
+			t.Fatalf("清洗输出不得包含尾随引号污染: %s", cleaned)
+		}
+		if got := strings.Count(cleaned, "<img"); got != 1 {
+			t.Fatalf("MSO 注释剥离后应仅保留 1 张正常图片, got=%d html=%s", got, cleaned)
+		}
+		wantAttr := `data-omnimail-src="` + spotifyHero + `"`
+		if !strings.Contains(cleaned, wantAttr) {
+			t.Fatalf("未生成干净的 data-omnimail-src: %s", cleaned)
+		}
+	})
+
+	t.Run("uncommented_missing_opening_quote_no_cross_tag_swallow", func(t *testing.T) {
+		raw := `<img alt="a" src=https://cdn.example.com/hero.jpg" /><img src="https://cdn.example.com/next.jpg">` +
+			`<img src=https://cdn.example.com/selfclose.png/>`
+		cleaned, hasRemote := SanitizeMailHTML(raw, nil)
+		if !hasRemote {
+			t.Fatalf("应标记 hasRemote=true")
+		}
+		if strings.Contains(cleaned, "&#34;") || strings.Contains(cleaned, "&quot;") {
+			t.Fatalf("不得将残缺引号写入 data-omnimail-src: %s", cleaned)
+		}
+		for _, want := range []string{
+			`data-omnimail-src="https://cdn.example.com/hero.jpg"`,
+			`data-omnimail-src="https://cdn.example.com/next.jpg"`,
+			`data-omnimail-src="https://cdn.example.com/selfclose.png"`,
+		} {
+			if !strings.Contains(cleaned, want) {
+				t.Fatalf("缺失预期干净外链属性 %s，实际输出: %s", want, cleaned)
+			}
+		}
+	})
+
+	t.Run("legacy_polluted_db_restore_remote_images", func(t *testing.T) {
+		polluted := `<img data-omnimail-src="` + spotifyHero + `&#34;">`
+		restored := RestoreRemoteImages(polluted)
+		want := `<img src="` + spotifyHero + `">`
+		if restored != want {
+			t.Fatalf("存量污染 URL 还原结果不符:\ngot:  %s\nwant: %s", restored, want)
+		}
+	})
+}

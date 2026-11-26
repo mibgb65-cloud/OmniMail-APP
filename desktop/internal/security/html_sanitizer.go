@@ -18,8 +18,6 @@ var (
 	mailPolicy    *bluemonday.Policy
 
 	reSafeClassOrID  = regexp.MustCompile(`^[A-Za-z0-9_\-\s]+$`)
-	reImgTag         = regexp.MustCompile(`(?is)<img\b(?:"[^"]*"|'[^']*'|[^>"'])*>`)
-	reImgSrcAttr     = regexp.MustCompile(`(?is)\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))`)
 	reDataOmniSrc    = regexp.MustCompile(`(?is)\bdata-omnimail-src\s*=\s*"([^"]*)"`)
 	reCssExternalURL = regexp.MustCompile(`(?is)url\s*\(\s*['"]?\s*(?:https?:|//)[^)]*\)`)
 	reInlineFixedPos = regexp.MustCompile(`(?i)\bposition\s*:\s*fixed\b`)
@@ -59,18 +57,16 @@ func ExtractHTMLReferencedCIDs(rawHTML string) map[string]bool {
 	if strings.TrimSpace(rawHTML) == "" {
 		return out
 	}
-	for _, tag := range reImgTag.FindAllString(rawHTML, -1) {
-		m := reImgSrcAttr.FindStringSubmatch(tag)
-		if len(m) == 0 {
-			continue
-		}
-		src := html.UnescapeString(strings.TrimSpace(firstNonEmpty(m[1], m[2], m[3])))
-		if strings.HasPrefix(strings.ToLower(src), "cid:") {
+	source := stripHTMLCommentsOutsideStyle(rawHTML)
+	_ = scanImgTags(source, func(tag string) string {
+		src, _, _, ok := extractImgSrcAndCleanTag(tag)
+		if ok && strings.HasPrefix(strings.ToLower(src), "cid:") {
 			if key := NormalizeContentID(src[4:]); key != "" {
 				out[key] = true
 			}
 		}
-	}
+		return tag
+	})
 	return out
 }
 
@@ -113,41 +109,39 @@ func SanitizeMailHTML(rawHTML string, cidMap map[string]string) (sanitized strin
 	withoutStyles, cleanCSS, styleRemote := extractAndSanitizeStyleBlocks(rawHTML)
 	remoteFound := styleRemote
 
-	rewritten := reImgTag.ReplaceAllStringFunc(withoutStyles, func(tag string) string {
-		m := reImgSrcAttr.FindStringSubmatch(tag)
-		if len(m) == 0 {
+	rewritten := scanImgTags(withoutStyles, func(tag string) string {
+		src, mStart, mEnd, ok := extractImgSrcAndCleanTag(tag)
+		if !ok {
 			return tag
 		}
-		src := html.UnescapeString(strings.TrimSpace(firstNonEmpty(m[1], m[2], m[3])))
 		lower := strings.ToLower(src)
 		if strings.HasPrefix(lower, "/omnimail-cid/") {
 			attID := strings.TrimPrefix(src, "/omnimail-cid/")
 			if unesc, err := url.PathUnescape(attID); err == nil && unesc != "" {
 				attID = unesc
 			}
-			return reImgSrcAttr.ReplaceAllString(tag, `src="`+html.EscapeString(src)+`" data-omnimail-cid="`+html.EscapeString(attID)+`"`)
+			return replaceAttrSpan(tag, mStart, mEnd, `src="`+html.EscapeString(src)+`" data-omnimail-cid="`+html.EscapeString(attID)+`"`)
 		}
 		if strings.HasPrefix(lower, "cid:") {
-			if attID, ok := normMap[NormalizeContentID(src[4:])]; ok && attID != "" {
+			if attID, hit := normMap[NormalizeContentID(src[4:])]; hit && attID != "" {
 				safePath := "/omnimail-cid/" + url.PathEscape(attID)
-				return reImgSrcAttr.ReplaceAllString(tag, `src="`+safePath+`" data-omnimail-cid="`+html.EscapeString(attID)+`"`)
+				return replaceAttrSpan(tag, mStart, mEnd, `src="`+safePath+`" data-omnimail-cid="`+html.EscapeString(attID)+`"`)
 			}
-			return reImgSrcAttr.ReplaceAllString(tag, `data-omnimail-cid-missing="1"`)
+			return replaceAttrSpan(tag, mStart, mEnd, `data-omnimail-cid-missing="1"`)
 		}
 		if strings.HasPrefix(lower, "data:") {
-			if safeData, ok := normalizeSafeRasterDataURI(src); ok {
-				return reImgSrcAttr.ReplaceAllString(tag, `src="`+safeData+`"`)
+			if safeData, safe := normalizeSafeRasterDataURI(src); safe {
+				return replaceAttrSpan(tag, mStart, mEnd, `src="`+safeData+`"`)
 			}
-			return reImgSrcAttr.ReplaceAllString(tag, "")
+			return replaceAttrSpan(tag, mStart, mEnd, "")
 		}
 		if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") || strings.HasPrefix(lower, "//") {
-			remoteFound = true
-			if strings.HasPrefix(lower, "//") {
-				src = "https:" + src
+			if cleanURL, valid := sanitizeRemoteImageURL(src); valid {
+				remoteFound = true
+				return replaceAttrSpan(tag, mStart, mEnd, `data-omnimail-src="`+html.EscapeString(cleanURL)+`"`)
 			}
-			return reImgSrcAttr.ReplaceAllString(tag, `data-omnimail-src="`+html.EscapeString(src)+`"`)
 		}
-		return reImgSrcAttr.ReplaceAllString(tag, "")
+		return replaceAttrSpan(tag, mStart, mEnd, "")
 	})
 
 	if reCssExternalURL.MatchString(rewritten) {
@@ -163,7 +157,7 @@ func SanitizeMailHTML(rawHTML string, cidMap map[string]string) (sanitized strin
 	return cleaned, remoteFound
 }
 
-// RestoreRemoteImages 在全局允许外链或单封邮件放行时，安全地将 data-omnimail-src 还原为 src。
+// RestoreRemoteImages 在全局允许外链或单封邮件放行时，安全地将 data-omnimail-src 还原为干净的 src（兼容存量残留引号污染）。
 func RestoreRemoteImages(sanitizedHTML string) string {
 	if !strings.Contains(sanitizedHTML, "data-omnimail-src=") {
 		return sanitizedHTML
@@ -173,12 +167,11 @@ func RestoreRemoteImages(sanitizedHTML string) string {
 		if len(m) < 2 {
 			return ""
 		}
-		raw := html.UnescapeString(m[1])
-		u, err := url.Parse(raw)
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		cleanURL, ok := sanitizeRemoteImageURL(m[1])
+		if !ok {
 			return ""
 		}
-		return `src="` + html.EscapeString(raw) + `"`
+		return `src="` + html.EscapeString(cleanURL) + `"`
 	})
 }
 
