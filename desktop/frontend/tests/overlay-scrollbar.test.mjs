@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   attachScrollFade,
   computeOverlayScrollbar,
@@ -155,4 +158,37 @@ test("attachScrollFade 同步更新滑块样式、触发活跃回调并在销毁
   ctrl.dispose();
   assert.equal(attrs.has("data-scrollable"), false);
   assert.equal(listeners.size, 0);
+});
+
+test("侧边栏与嵌套滚动区通过负外边距出血 + --scroll-padding 对齐，避免滚动条压盖卡片右缘", () => {
+  const stylesDir = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../src/styles",
+  );
+  const sidebarCss = readFileSync(path.join(stylesDir, "sidebar.css"), "utf8");
+  const laptopCss = readFileSync(
+    path.join(stylesDir, "responsive-laptop.css"),
+    "utf8",
+  );
+  const settingsCss = readFileSync(
+    path.join(stylesDir, "settings.css"),
+    "utf8",
+  );
+
+  assert.match(
+    sidebarCss,
+    /\.sidebar-scroll\s*\{[^}]*margin-inline:\s*-12px;[^}]*--scroll-padding:\s*0 12px;/s,
+  );
+  assert.match(
+    sidebarCss,
+    /\.left-nav-drawer\s+\.sidebar-scroll\s*\{[^}]*margin-inline:\s*-10px;[^}]*--scroll-padding:\s*0 10px;/s,
+  );
+  assert.match(
+    laptopCss,
+    /\.sidebar-pane\s+\.sidebar-scroll\s*\{[^}]*margin-inline:\s*-10px;[^}]*--scroll-padding:\s*0 10px;/s,
+  );
+  assert.match(
+    settingsCss,
+    /\.settings-nav-scroll\s*\{[^}]*margin-inline:\s*-12px;[^}]*--scroll-padding:\s*0 12px;/s,
+  );
 });

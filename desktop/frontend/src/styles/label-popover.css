@@ -67,7 +67,8 @@
 
 .lpp-list {
   max-height: 196px;
-  --scroll-padding: 1px;
+  margin-inline: -7px;
+  --scroll-padding: 1px 7px;
   --scroll-gap: 2px;
 }
 

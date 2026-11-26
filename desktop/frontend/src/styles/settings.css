@@ -33,6 +33,8 @@
 }
 
 .settings-nav-scroll {
+  margin-inline: -12px;
+  --scroll-padding: 0 12px;
   --scroll-gap: 2px;
 }
 

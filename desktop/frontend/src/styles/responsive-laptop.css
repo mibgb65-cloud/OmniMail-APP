@@ -15,6 +15,11 @@
     gap: 8px;
   }
 
+  .sidebar-pane .sidebar-scroll {
+    margin-inline: -10px;
+    --scroll-padding: 0 10px;
+  }
+
   .compose-cta {
     height: 36px;
     border-radius: 10px;

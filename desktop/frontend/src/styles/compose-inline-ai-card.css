@@ -139,6 +139,8 @@
 
 .cia-preview-scroll {
   max-height: 220px;
+  margin-inline: -14px;
+  --scroll-padding: 0 14px;
 }
 
 .cia-preview-text {

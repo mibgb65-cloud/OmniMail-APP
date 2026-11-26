@@ -148,6 +148,8 @@
 
 .ufm-notes-scroll {
   max-height: min(300px, calc(100vh - 340px));
+  margin-inline: -16px;
+  --scroll-padding: 0 16px;
 }
 
 .ufm-notes-body {

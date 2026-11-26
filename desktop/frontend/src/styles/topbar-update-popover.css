@@ -93,6 +93,8 @@
 
 .tup-notes-scroll {
   min-height: 0;
+  margin-inline: -16px;
+  --scroll-padding: 0 16px;
 }
 
 .tup-highlights-list {

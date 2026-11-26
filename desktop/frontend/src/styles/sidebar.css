@@ -47,7 +47,14 @@
 }
 
 .sidebar-scroll {
+  margin-inline: -12px;
+  --scroll-padding: 0 12px;
   --scroll-gap: 8px;
+}
+
+.left-nav-drawer .sidebar-scroll {
+  margin-inline: -10px;
+  --scroll-padding: 0 10px;
 }
 
 .nav-section {

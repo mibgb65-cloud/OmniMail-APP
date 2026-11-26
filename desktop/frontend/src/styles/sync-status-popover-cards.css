@@ -1,5 +1,7 @@
 /* SyncStatusPopover 内部异常卡片与健康汇总条（对齐 1859607977:3079 亮/暗双色） */
 .ssp-card-list {
+  margin-inline: -16px;
+  --scroll-padding: 0 16px;
   --scroll-gap: 10px;
 }
 .ssp-issue-card {
