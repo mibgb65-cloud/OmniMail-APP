@@ -29,7 +29,11 @@ func (s *noiseGatewaySession) GetMailboxEmail(ctx context.Context) (string, erro
 	if err != nil {
 		return "", err
 	}
-	return parseVerifiedMailboxEmail(raw)
+	email, err := parseVerifiedMailboxEmail(raw)
+	if err != nil {
+		return "", classifyStageNetErr(stageMailboxGet, err)
+	}
+	return email, nil
 }
 
 func (s *noiseGatewaySession) ListThreadsRaw(ctx context.Context, upstreamCursor string) ([]byte, error) {
@@ -45,6 +49,7 @@ func (s *noiseGatewaySession) GetThreadRaw(ctx context.Context, threadID string)
 }
 
 func (s *noiseGatewaySession) unaryGET(ctx context.Context, routeName, pathParam string, query map[string]string) ([]byte, error) {
+	stage := stageForRoute(routeName)
 	path, err := buildReadOnlyPath(routeName, pathParam, query)
 	if err != nil {
 		return nil, err
@@ -56,27 +61,27 @@ func (s *noiseGatewaySession) unaryGET(ctx context.Context, routeName, pathParam
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed || s.ws == nil {
-		return nil, errGatewayFailed("Muse 网关连接已关闭")
+		return nil, errStageGatewayFailed(stage, "Muse 网关连接已关闭")
 	}
 
 	sid := s.stream
 	s.stream++
-	if err := s.sendGetFrameLocked(reqCtx, sid, path); err != nil {
+	if err := s.sendGetFrameLocked(reqCtx, stage, sid, path); err != nil {
 		_ = s.ws.CloseNow()
 		s.closed = true
 		return nil, err
 	}
 
-	status, body, err := s.readStreamResponseLocked(reqCtx, sid)
+	status, body, err := s.readStreamResponseLocked(reqCtx, stage, sid)
 	if err != nil {
 		_ = s.ws.CloseNow()
 		s.closed = true
 		return nil, err
 	}
-	return inspectGatewayStatusAndJSON(status, body)
+	return inspectGatewayStatusAndJSON(stage, status, body)
 }
 
-func (s *noiseGatewaySession) sendGetFrameLocked(ctx context.Context, sid int64, path string) error {
+func (s *noiseGatewaySession) sendGetFrameLocked(ctx context.Context, stage string, sid int64, path string) error {
 	sfBytes := encodeServiceFrameRequest(sid, appRequestMsg{
 		Verb:    http.MethodGet,
 		Path:    path,
@@ -92,15 +97,15 @@ func (s *noiseGatewaySession) sendGetFrameLocked(ctx context.Context, sid int64,
 	})
 	ct, err := s.sendCS.Encrypt(nil, nil, ntf)
 	if err != nil {
-		return errGatewayFailed("网关请求加密失败")
+		return errStageGatewayFailed(stage, "网关请求加密失败")
 	}
 	if err := s.ws.Write(ctx, websocket.MessageBinary, ct); err != nil {
-		return classifyContextOrNetErr(err)
+		return classifyStageNetErr(stage, err)
 	}
 	return nil
 }
 
-func (s *noiseGatewaySession) readStreamResponseLocked(ctx context.Context, sid int64) (int32, []byte, error) {
+func (s *noiseGatewaySession) readStreamResponseLocked(ctx context.Context, stage string, sid int64) (int32, []byte, error) {
 	var (
 		gotStatus bool
 		status    int32
@@ -108,7 +113,7 @@ func (s *noiseGatewaySession) readStreamResponseLocked(ctx context.Context, sid 
 		bodyBuf   bytes.Buffer
 	)
 	for !done {
-		sf, err := s.readNextServiceFrameLocked(ctx)
+		sf, err := s.readNextServiceFrameLocked(ctx, stage)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -117,23 +122,23 @@ func (s *noiseGatewaySession) readStreamResponseLocked(ctx context.Context, sid 
 		}
 		switch {
 		case sf.Reset != nil:
-			return 0, nil, errGatewayFailed("Muse 网关重置了当前请求流")
+			return 0, nil, errStageGatewayFailed(stage, "Muse 网关重置了当前请求流")
 		case sf.Response != nil:
 			gotStatus = true
 			status = sf.Response.Status
-			if err := appendBounded(&bodyBuf, sf.Response.Body); err != nil {
+			if err := appendBounded(stage, &bodyBuf, sf.Response.Body); err != nil {
 				return 0, nil, err
 			}
 			done = sf.Response.EndBody
 		case sf.BodyChunk != nil && gotStatus:
-			if err := appendBounded(&bodyBuf, sf.BodyChunk.Data); err != nil {
+			if err := appendBounded(stage, &bodyBuf, sf.BodyChunk.Data); err != nil {
 				return 0, nil, err
 			}
 			done = sf.BodyChunk.EndBody
 		}
 	}
 	if !gotStatus {
-		return 0, nil, errGatewayFailed("Muse 网关未返回有效响应头")
+		return 0, nil, errStageGatewayFailed(stage, "Muse 网关未返回有效响应头")
 	}
 	return status, bodyBuf.Bytes(), nil
 }

@@ -83,6 +83,18 @@ func (c *cookiesCompletedImpl) CookiesCompleted(errorCode int32, list *w2CookieL
 	return uintptr(windows.S_OK)
 }
 
+func (h *isolatedLoginHost) dispatchHostMsg(hwnd uintptr, msg uint32) {
+	switch msg {
+	case wmSize:
+		h.resizeToClient()
+		_, _, _ = procInvalidateRect.Call(hwnd, 0, 0)
+	case wmAppExtractCookies:
+		h.handleExtractCookiesOnSTA()
+	default:
+		h.drainSTATasks()
+	}
+}
+
 func (h *isolatedLoginHost) onControllerCompleted(errorCode int32, ctrl *w2Controller, readyCh chan<- error) uintptr {
 	hwnd := h.hwnd.Load()
 	if errorCode < 0 || ctrl == nil {
@@ -91,6 +103,7 @@ func (h *isolatedLoginHost) onControllerCompleted(errorCode int32, ctrl *w2Contr
 	}
 	comAddRef(unsafe.Pointer(ctrl))
 	h.ctrl = ctrl
+	controllerPutDarkBackground(ctrl)
 	wv, hr := controllerGetWebView(ctrl)
 	if wv == nil {
 		notifyReadyErr(readyCh, hwnd, errUnsupported(fmt.Sprintf("无法获取独立登录内核实例（HRESULT %s）", formatHResult(hr))))
@@ -123,7 +136,8 @@ func (h *isolatedLoginHost) resizeToClient() {
 	var rc winRect
 	if hwnd := h.hwnd.Load(); h.ctrl != nil && hwnd != 0 {
 		if ret, _, _ := procGetClientRect.Call(hwnd, uintptr(unsafe.Pointer(&rc))); ret != 0 {
-			controllerPutBounds(h.ctrl, rc)
+			_, wvBounds := computeWebViewClientBounds(rc, queryWindowDPI(windows.Handle(hwnd)))
+			controllerPutBounds(h.ctrl, wvBounds)
 		}
 	}
 }
@@ -164,37 +178,6 @@ func (h *isolatedLoginHost) teardownOnSTA() {
 		h.activeReq <- cookieReply{err: errCancelled()}
 		h.activeReq = nil
 	}
-	if h.wv != nil {
-		if h.navToken != 0 {
-			_, _, _ = syscall.SyscallN(h.wv.vtbl.RemoveNavigationStarting, uintptr(unsafe.Pointer(h.wv)), uintptr(h.navToken))
-		}
-		if h.winToken != 0 {
-			_, _, _ = syscall.SyscallN(h.wv.vtbl.RemoveNewWindowRequested, uintptr(unsafe.Pointer(h.wv)), uintptr(h.winToken))
-		}
-		deleteAllWebViewCookies(h.wv)
-		comRelease(unsafe.Pointer(h.wv))
-		h.wv = nil
-	}
-	if h.ctrl != nil {
-		controllerClose(h.ctrl)
-		comRelease(unsafe.Pointer(h.ctrl))
-		h.ctrl = nil
-	}
-	if h.env != nil {
-		comRelease(unsafe.Pointer(h.env))
-		h.env = nil
-	}
-	if h.cookieCb != nil {
-		_ = h.cookieCb.Close()
-	}
-	if h.newWinCb != nil {
-		_ = h.newWinCb.Close()
-	}
-	if h.navCb != nil {
-		_ = h.navCb.Close()
-	}
-	if h.ctrlCb != nil {
-		_ = h.ctrlCb.Close()
-	}
-	h.cookieCb, h.newWinCb, h.navCb, h.ctrlCb = nil, nil, nil, nil
+	releaseWebViewAndGuards(h)
+	releaseComCallbacks(h)
 }

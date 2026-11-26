@@ -41,6 +41,7 @@ func main() {
 	syncMgr.SetPipelineHooks(pipeline)
 	calResponder := services.NewCalendarResponder(outboxSched)
 	aiGateway := ai.NewGateway(bus)
+	musemail.SetEmbeddedAppIconICO(embeddedWindowsICO)
 	museMgr := musemail.NewManager()
 	wbMgr := workbuddymail.NewManager()
 

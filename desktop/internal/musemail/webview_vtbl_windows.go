@@ -11,6 +11,17 @@ var iidICoreWebView2_2 = windows.GUID{
 	Data4: [8]byte{0xb2, 0xbc, 0x73, 0xe0, 0x61, 0xe3, 0x18, 0x4c},
 }
 
+var iidICoreWebView2Controller2 = windows.GUID{
+	Data1: 0xc979903e,
+	Data2: 0xd4ca,
+	Data3: 0x4228,
+	Data4: [8]byte{0x92, 0xeb, 0x47, 0xee, 0x3f, 0xa9, 0x6e, 0xab},
+}
+
+type w2Color struct {
+	A, R, G, B uint8
+}
+
 type iUnknownVtbl struct {
 	QueryInterface, AddRef, Release uintptr
 }
@@ -41,6 +52,13 @@ type w2ControllerVtbl struct {
 }
 
 type w2Controller struct{ vtbl *w2ControllerVtbl }
+
+type w2Controller2Vtbl struct {
+	w2ControllerVtbl
+	GetDefaultBackgroundColor, PutDefaultBackgroundColor uintptr
+}
+
+type w2Controller2 struct{ vtbl *w2Controller2Vtbl }
 
 // w2WebViewVtbl 严格对齐 ICoreWebView2 全部 61 个槽位（slot 0..60）。
 type w2WebViewVtbl struct {

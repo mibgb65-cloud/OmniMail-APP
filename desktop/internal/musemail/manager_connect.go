@@ -73,7 +73,10 @@ func (m *Manager) VerifyConnection(sess *profilemgr.Session) (VerifyResultDTO, e
 	st.cancelVerify = cancel
 	win := st.loginWin
 	m.mu.Unlock()
-	defer cancel()
+	defer func() {
+		cancel()
+		m.clearCancelVerifyIfCurrent(st)
+	}()
 
 	if win == nil || !win.IsAlive() {
 		return VerifyResultDTO{}, errNotLoggedIn()
@@ -142,36 +145,6 @@ func (m *Manager) ConfirmConnection(sess *profilemgr.Session, accountName string
 		st.connID = randomOpaqueToken()
 	}
 	return st.statusSnapshot(), nil
-}
-
-func (m *Manager) Disconnect(sess *profilemgr.Session) StatusDTO {
-	m.mu.Lock()
-	if sess == nil || m.activeState == nil || m.activeState.profileID != sess.Meta.ID {
-		m.mu.Unlock()
-		return StatusDTO{LoginStage: "idle"}
-	}
-	old := m.activeState
-	m.activeState = newProfileRuntimeState(sess.Meta.ID, sess.Ctx)
-	snap := m.activeState.statusSnapshot()
-	m.mu.Unlock()
-	destroyRuntimeState(old)
-	return snap
-}
-
-func (m *Manager) CancelActiveRequests(sess *profilemgr.Session) {
-	if sess == nil {
-		return
-	}
-	m.mu.Lock()
-	if st := m.activeState; st != nil && st.profileID == sess.Meta.ID {
-		for _, fn := range []*context.CancelFunc{&st.cancelVerify, &st.cancelList, &st.cancelThread} {
-			if *fn != nil {
-				(*fn)()
-				*fn = nil
-			}
-		}
-	}
-	m.mu.Unlock()
 }
 
 func (st *profileRuntimeState) resetLoadedCollectionLocked() {

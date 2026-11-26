@@ -171,10 +171,7 @@ func defaultMuseDisplayName(customName, email string) string {
 	if name := clampRunes(strings.TrimSpace(customName), 64); name != "" {
 		return name
 	}
-	if idx := strings.IndexByte(email, '@'); idx > 0 {
-		return "Muse Mail · " + email[:idx]
-	}
-	return "Muse Mail"
+	return "Muse"
 }
 
 func recordSanitizedErr(st *profileRuntimeState, err error) {

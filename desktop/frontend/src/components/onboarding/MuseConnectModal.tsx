@@ -1,45 +1,34 @@
-import { useState } from "react";
 import { useI18n } from "../../i18n";
-import {
-  museMailApi,
-  parseBackendError,
-  type ParsedBackendError,
-} from "../../services/backendClient";
+import { museMailApi, parseBackendError } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
-import { MUSE_OFFICIAL_GUIDE_URL, type MuseLoginStage } from "../../types/muse";
+import { MUSE_OFFICIAL_GUIDE_URL } from "../../types/muse";
 import {
   AsyncActionButton,
   waitSuccessHold,
-  type AsyncActionStatus,
 } from "../common/AsyncActionButton";
 import { MuseConnectForm } from "./MuseConnectForm";
+import { resolveInitialMuseAccountName } from "./museConnectPolling";
 import { PreparationGuideCard } from "./ProbeReportList";
 import {
   ProviderConnectShell,
   ProviderSummaryCard,
 } from "./ProviderConnectShell";
+import { useMuseLoginAutoFlow } from "./useMuseLoginAutoFlow";
 
 export function MuseConnectModal() {
   const { workspace, museStore, toastStore } = useApp();
   const { t } = useI18n();
+  const flow = useMuseLoginAutoFlow(museStore.status);
 
-  const [loginStage, setLoginStage] = useState<MuseLoginStage>(() =>
-    museStore.status.bound ? "connected" : museStore.status.loginStage,
-  );
-  const [verifiedEmail, setVerifiedEmail] = useState(() =>
-    museStore.status.bound ? "" : museStore.status.verifiedEmail,
-  );
-  const [accountName, setAccountName] = useState("");
-  const [openingLogin, setOpeningLogin] = useState(false);
-  const [actionStatus, setActionStatus] = useState<AsyncActionStatus>("idle");
-  const [error, setError] = useState<ParsedBackendError | null>(null);
-
-  const busy = actionStatus === "loading" || actionStatus === "success";
   const steps = [t("muse.prepStep1"), t("muse.prepStep2"), t("muse.prepStep3")];
 
   const cleanupUnboundAndClose = (backToPicker: boolean) => {
-    if (busy) return;
-    if (!museStore.status.bound && (loginStage !== "idle" || verifiedEmail)) {
+    if (flow.busy) return;
+    flow.markAborted();
+    if (
+      !museStore.status.bound &&
+      (flow.loginStage !== "idle" || flow.verifiedEmail)
+    ) {
       void museMailApi.disconnect();
     }
     workspace.setOverlay(
@@ -47,35 +36,19 @@ export function MuseConnectModal() {
     );
   };
 
-  const handleOpenLoginWindow = async () => {
-    setOpeningLogin(true);
-    setError(null);
-    if (actionStatus === "error") setActionStatus("idle");
-    try {
-      const next = await museMailApi.beginConnect();
-      setLoginStage(next.loginStage);
-      setVerifiedEmail("");
-    } catch (err) {
-      if (!museStore.status.bound) setLoginStage("idle");
-      setError(parseBackendError(err));
-    } finally {
-      setOpeningLogin(false);
-    }
-  };
-
   const handlePrimaryAction = async () => {
-    setError(null);
-    setActionStatus("loading");
+    if (!flow.verifiedEmail) {
+      await flow.runVerifyOnce();
+      return;
+    }
+    if (flow.verifyLockRef.current) return;
+    flow.setError(null);
+    flow.setActionStatus("loading");
     try {
-      if (!verifiedEmail) {
-        const res = await museMailApi.verifyConnection();
-        setVerifiedEmail(res.email);
-        setLoginStage("verified");
-        setActionStatus("idle");
-        return;
-      }
-      const boundStatus = await museMailApi.confirmConnection(accountName);
-      setActionStatus("success");
+      const boundStatus = await museMailApi.confirmConnection(
+        resolveInitialMuseAccountName(flow.accountName),
+      );
+      flow.setActionStatus("success");
       await waitSuccessHold();
       toastStore.pushToast({
         tone: "success",
@@ -84,28 +57,29 @@ export function MuseConnectModal() {
       workspace.setOverlay({ type: "none" });
       museStore.applyConnectedStatus(boundStatus);
     } catch (err) {
-      setError(parseBackendError(err));
-      setActionStatus("error");
+      flow.setError(parseBackendError(err));
+      flow.setActionStatus("error");
     }
   };
 
-  const canSubmit = Boolean(verifiedEmail) || loginStage === "login_open";
+  const canSubmit =
+    Boolean(flow.verifiedEmail) || flow.loginStage === "login_open";
 
   return (
     <ProviderConnectShell
       heading={t("muse.connectHeading")}
       onClose={() => cleanupUnboundAndClose(false)}
       onBack={() => cleanupUnboundAndClose(true)}
-      backDisabled={busy}
+      backDisabled={flow.busy}
       footerNote={t("muse.footerNote")}
       primaryAction={
         <AsyncActionButton
           className="pcm-btn-connect"
-          status={actionStatus}
-          disabled={!canSubmit || openingLogin}
+          status={flow.actionStatus}
+          disabled={!canSubmit || flow.openingLogin}
           idleIcon="check"
           idleLabel={
-            verifiedEmail
+            flow.verifiedEmail
               ? t("muse.confirmBindBtn")
               : t("muse.verifyAndConnectBtn")
           }
@@ -132,17 +106,17 @@ export function MuseConnectModal() {
         />
 
         <MuseConnectForm
-          loginStage={loginStage}
-          verifiedEmail={verifiedEmail}
-          accountName={accountName}
-          openingLogin={openingLogin}
-          busy={busy}
-          error={error}
+          loginStage={flow.loginStage}
+          verifiedEmail={flow.verifiedEmail}
+          accountName={flow.accountName}
+          openingLogin={flow.openingLogin}
+          busy={flow.busy}
+          error={flow.error}
           onAccountNameChange={(val) => {
-            setAccountName(val);
-            if (actionStatus === "error") setActionStatus("idle");
+            flow.setAccountName(val);
+            if (flow.actionStatus === "error") flow.setActionStatus("idle");
           }}
-          onOpenLoginWindow={() => void handleOpenLoginWindow()}
+          onOpenLoginWindow={() => void flow.openLoginWindow()}
         />
       </div>
     </ProviderConnectShell>

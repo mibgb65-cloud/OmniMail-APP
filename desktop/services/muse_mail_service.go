@@ -27,6 +27,14 @@ func (s *MuseMailService) GetStatus() (musemail.StatusDTO, error) {
 	return s.mgr.GetStatus(sess), nil
 }
 
+func (s *MuseMailService) CheckLoginSessionReady() (musemail.LoginSessionProbeDTO, error) {
+	sess, err := s.prof.ActiveSession()
+	if err != nil {
+		return musemail.LoginSessionProbeDTO{}, nil
+	}
+	return s.mgr.CheckLoginSessionReady(sess), nil
+}
+
 func (s *MuseMailService) BeginConnect() (musemail.StatusDTO, error) {
 	sess, err := s.prof.ActiveSession()
 	if err != nil {

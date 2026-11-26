@@ -1,4 +1,5 @@
 import type {
+  LoginSessionProbeDTO,
   MessageDTO,
   StatusDTO,
   ThreadDetailDTO,
@@ -9,6 +10,7 @@ import type {
 import {
   BeginConnect,
   CancelRefresh,
+  CheckLoginSessionReady,
   ConfirmConnection,
   Disconnect,
   GetStatus,
@@ -128,6 +130,17 @@ export const museMailApi = {
   async beginConnect(): Promise<MuseStatus> {
     if (!isWailsDesktop()) requireDesktopErr();
     return mapStatus(await BeginConnect());
+  },
+
+  async checkLoginSessionReady(): Promise<LoginSessionProbeDTO> {
+    if (!isWailsDesktop()) {
+      return { windowOpen: false, sessionReady: false };
+    }
+    const dto = await CheckLoginSessionReady();
+    return {
+      windowOpen: Boolean(dto.windowOpen),
+      sessionReady: Boolean(dto.sessionReady),
+    };
   },
 
   async verifyConnection(): Promise<VerifyResultDTO> {

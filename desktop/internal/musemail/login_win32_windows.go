@@ -3,12 +3,8 @@
 package musemail
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
 	"sync"
 	"syscall"
-	"time"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -21,9 +17,11 @@ const (
 	wmAppExtractCookies = 0x8001
 	wmAppShutdown       = 0x8002
 	wmAppRunSTA         = 0x8003
+	csHRedraw           = 0x0002
+	csVRedraw           = 0x0001
 	wsOverlappedWindow  = 0x00CF0000
-	wsVisible           = 0x10000000
-	cwUseDefault        = -0x80000000
+	wsMaximizeBox       = 0x00010000
+	wsLoginWindowStyle  = wsOverlappedWindow &^ wsMaximizeBox
 	swShowNormal        = 1
 	smCxScreen          = 0
 	smCyScreen          = 1
@@ -33,6 +31,7 @@ const (
 	swpNoSize           = 0x0001
 	swpShowWindow       = 0x0040
 	museLoginWndClass   = "OmniMailMuseIsolatedLoginWnd"
+	museLoginWndTitle   = "Muse Mail · 官方安全登录"
 )
 
 var (
@@ -84,13 +83,16 @@ func ensureLoginWndClass() error {
 		clsName, _ := windows.UTF16PtrFromString(museLoginWndClass)
 		hInst, _, _ := procGetModuleHandleW.Call(0)
 		hCursor, _, _ := procLoadCursorW.Call(0, 32512)
+		bigIcon, smIcon := resolveProcessAppIcons()
+		bgBrush := sharedDarkWindowBrush()
+		if bgBrush == 0 {
+			bgBrush = windows.Handle(6)
+		}
 		wc := wndClassExW{
-			Size:       uint32(unsafe.Sizeof(wndClassExW{})),
-			WndProc:    syscall.NewCallback(museLoginWndProc),
-			Instance:   windows.Handle(hInst),
-			Cursor:     windows.Handle(hCursor),
-			Background: windows.Handle(6),
-			ClassName:  clsName,
+			Size: uint32(unsafe.Sizeof(wndClassExW{})), Style: csHRedraw | csVRedraw,
+			WndProc: syscall.NewCallback(museLoginWndProc), Instance: windows.Handle(hInst),
+			Icon: bigIcon, Cursor: windows.Handle(hCursor), Background: bgBrush,
+			ClassName: clsName, IconSm: smIcon,
 		}
 		if atom, _, err := procRegisterClassExW.Call(uintptr(unsafe.Pointer(&wc))); atom == 0 {
 			wndClassErr = err
@@ -99,24 +101,22 @@ func ensureLoginWndClass() error {
 	return wndClassErr
 }
 
-func createCenteredLoginHWND(title string, width, height int32) (windows.Handle, error) {
+func createImmersiveLoginHWND(title string) (windows.Handle, error) {
 	if err := ensureLoginWndClass(); err != nil {
 		return 0, err
 	}
 	clsName, _ := windows.UTF16PtrFromString(museLoginWndClass)
 	wndTitle, _ := windows.UTF16PtrFromString(title)
 	hInst, _, _ := procGetModuleHandleW.Call(0)
-	screenW, _, _ := procGetSystemMetrics.Call(smCxScreen)
-	screenH, _, _ := procGetSystemMetrics.Call(smCyScreen)
-	posX, posY := int32(cwUseDefault), int32(cwUseDefault)
-	if int32(screenW) > width && int32(screenH) > height {
-		posX, posY = (int32(screenW)-width)/2, (int32(screenH)-height)/2
-	}
-	hwnd, _, err := procCreateWindowExW.Call(0, uintptr(unsafe.Pointer(clsName)), uintptr(unsafe.Pointer(wndTitle)), wsOverlappedWindow|wsVisible, uintptr(posX), uintptr(posY), uintptr(width), uintptr(height), 0, 0, hInst, 0)
+	posX, posY, width, height := resolveLoginPlacement()
+	hwnd, _, err := procCreateWindowExW.Call(0, uintptr(unsafe.Pointer(clsName)), uintptr(unsafe.Pointer(wndTitle)), wsLoginWindowStyle, uintptr(posX), uintptr(posY), uintptr(width), uintptr(height), 0, 0, hInst, 0)
 	if hwnd == 0 {
 		return 0, err
 	}
-	return windows.Handle(hwnd), nil
+	h := windows.Handle(hwnd)
+	applyImmersiveDarkDwmAttributes(h)
+	applyWindowAppIcons(h)
+	return h, nil
 }
 
 func activateLoginWindowForeground(hwnd windows.Handle) {
@@ -134,16 +134,30 @@ func activateLoginWindowForeground(hwnd windows.Handle) {
 func museLoginWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 	h := windows.Handle(hwnd)
 	switch msg {
+	case wmGetMinMaxInfo:
+		applyMinTrackSize(h, lParam)
+		return 0
+	case wmDpiChanged:
+		applySuggestedDPIRect(hwnd, lParam)
+		if v, ok := hwndRegistry.Load(h); ok {
+			v.(*isolatedLoginHost).resizeToClient()
+		}
+		_, _, _ = procInvalidateRect.Call(hwnd, 0, 0)
+		return 0
+	case wmEraseBkgnd:
+		if br := sharedDarkWindowBrush(); br != 0 && wParam != 0 {
+			var rc winRect
+			if ok, _, _ := procGetClientRect.Call(hwnd, uintptr(unsafe.Pointer(&rc))); ok != 0 {
+				_, _, _ = procFillRect.Call(wParam, uintptr(unsafe.Pointer(&rc)), uintptr(br))
+				return 1
+			}
+		}
+	case wmPaint:
+		paintTrustRibbon(hwnd)
+		return 0
 	case wmSize, wmAppExtractCookies, wmAppRunSTA:
 		if v, ok := hwndRegistry.Load(h); ok {
-			host := v.(*isolatedLoginHost)
-			if msg == wmSize {
-				host.resizeToClient()
-			} else if msg == wmAppExtractCookies {
-				host.handleExtractCookiesOnSTA()
-			} else {
-				host.drainSTATasks()
-			}
+			v.(*isolatedLoginHost).dispatchHostMsg(hwnd, msg)
 		}
 		return 0
 	case wmAppShutdown, wmClose:
@@ -158,39 +172,4 @@ func museLoginWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr 
 	}
 	ret, _, _ := procDefWindowProcW.Call(hwnd, uintptr(msg), wParam, lParam)
 	return ret
-}
-
-func deleteAllWebViewCookies(wv *w2WebView) {
-	if wv2, _ := queryWebView2(wv); wv2 != nil {
-		defer comRelease(unsafe.Pointer(wv2))
-		var mgr *w2CookieMgr
-		if hr, _, _ := syscall.SyscallN(wv2.vtbl.GetCookieManager, uintptr(unsafe.Pointer(wv2)), uintptr(unsafe.Pointer(&mgr))); int32(hr) >= 0 && mgr != nil {
-			_, _, _ = syscall.SyscallN(mgr.vtbl.DeleteAllCookies, uintptr(unsafe.Pointer(mgr)))
-			comRelease(unsafe.Pointer(mgr))
-		}
-	}
-}
-
-func removeTempDirWithRetry(dir string, browserPID uint32) {
-	if dir == "" {
-		return
-	}
-	if browserPID != 0 {
-		if hProc, err := windows.OpenProcess(windows.SYNCHRONIZE, false, browserPID); err == nil {
-			_, _ = windows.WaitForSingleObject(hProc, 900)
-			_ = windows.CloseHandle(hProc)
-		}
-	}
-	for i := 0; i < 12 && os.RemoveAll(dir) != nil; i++ {
-		time.Sleep(80 * time.Millisecond)
-	}
-}
-
-func sweepStaleMuseWebViewDirs() {
-	entries, _ := os.ReadDir(os.TempDir())
-	for _, e := range entries {
-		if e.IsDir() && strings.HasPrefix(e.Name(), "omnimail-muse-wv2-") {
-			_ = os.RemoveAll(filepath.Join(os.TempDir(), e.Name()))
-		}
-	}
 }

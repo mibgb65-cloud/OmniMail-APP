@@ -12,10 +12,6 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-type winRect struct {
-	Left, Top, Right, Bottom int32
-}
-
 type w2ControllerCompletedHandler interface {
 	combridge.IUnknown
 	ControllerCompleted(errorCode int32, ctrl *w2Controller) uintptr
@@ -37,53 +33,35 @@ type w2GetCookiesCompletedHandler interface {
 }
 
 func init() {
-	combridge.RegisterVTable[combridge.IUnknown, w2ControllerCompletedHandler](
-		"{6c4819f3-c9b7-4260-8127-c9f5bde7f68c}",
-		func(this uintptr, errorCode int32, ctrl *w2Controller) uintptr {
-			return combridge.Resolve[w2ControllerCompletedHandler](this).ControllerCompleted(errorCode, ctrl)
-		},
-	)
-	combridge.RegisterVTable[combridge.IUnknown, w2NavStartingHandler](
-		"{9adbe429-f36d-432b-9ddc-f8881fbd76e3}",
-		func(this uintptr, sender *w2WebView, args *w2NavArgs) uintptr {
-			return combridge.Resolve[w2NavStartingHandler](this).NavigationStarting(sender, args)
-		},
-	)
-	combridge.RegisterVTable[combridge.IUnknown, w2NewWindowRequestedHandler](
-		"{d4c185fe-c81c-4989-97af-2d3fa7ab5651}",
-		func(this uintptr, sender *w2WebView, args *w2NewWinArgs) uintptr {
-			return combridge.Resolve[w2NewWindowRequestedHandler](this).NewWindowRequested(sender, args)
-		},
-	)
-	combridge.RegisterVTable[combridge.IUnknown, w2GetCookiesCompletedHandler](
-		"{5a4f5069-5c15-47c3-8646-f3de1fe17011}",
-		func(this uintptr, errorCode int32, list *w2CookieList) uintptr {
-			return combridge.Resolve[w2GetCookiesCompletedHandler](this).CookiesCompleted(errorCode, list)
-		},
-	)
+	combridge.RegisterVTable[combridge.IUnknown, w2ControllerCompletedHandler]("{6c4819f3-c9b7-4260-8127-c9f5bde7f68c}", func(this uintptr, errorCode int32, ctrl *w2Controller) uintptr {
+		return combridge.Resolve[w2ControllerCompletedHandler](this).ControllerCompleted(errorCode, ctrl)
+	})
+	combridge.RegisterVTable[combridge.IUnknown, w2NavStartingHandler]("{9adbe429-f36d-432b-9ddc-f8881fbd76e3}", func(this uintptr, sender *w2WebView, args *w2NavArgs) uintptr {
+		return combridge.Resolve[w2NavStartingHandler](this).NavigationStarting(sender, args)
+	})
+	combridge.RegisterVTable[combridge.IUnknown, w2NewWindowRequestedHandler]("{d4c185fe-c81c-4989-97af-2d3fa7ab5651}", func(this uintptr, sender *w2WebView, args *w2NewWinArgs) uintptr {
+		return combridge.Resolve[w2NewWindowRequestedHandler](this).NewWindowRequested(sender, args)
+	})
+	combridge.RegisterVTable[combridge.IUnknown, w2GetCookiesCompletedHandler]("{5a4f5069-5c15-47c3-8646-f3de1fe17011}", func(this uintptr, errorCode int32, list *w2CookieList) uintptr {
+		return combridge.Resolve[w2GetCookiesCompletedHandler](this).CookiesCompleted(errorCode, list)
+	})
 }
 
-func formatHResult(hr uintptr) string {
-	return fmt.Sprintf("0x%08X", uint32(hr))
-}
+func formatHResult(hr uintptr) string { return fmt.Sprintf("0x%08X", uint32(hr)) }
 
 func comAddRef(ptr unsafe.Pointer) {
-	if ptr == nil {
-		return
-	}
-	vtbl := *(**iUnknownVtbl)(ptr)
-	if vtbl != nil && vtbl.AddRef != 0 {
-		_, _, _ = syscall.SyscallN(vtbl.AddRef, uintptr(ptr))
+	if ptr != nil {
+		if vtbl := *(**iUnknownVtbl)(ptr); vtbl != nil && vtbl.AddRef != 0 {
+			_, _, _ = syscall.SyscallN(vtbl.AddRef, uintptr(ptr))
+		}
 	}
 }
 
 func comRelease(ptr unsafe.Pointer) {
-	if ptr == nil {
-		return
-	}
-	vtbl := *(**iUnknownVtbl)(ptr)
-	if vtbl != nil && vtbl.Release != 0 {
-		_, _, _ = syscall.SyscallN(vtbl.Release, uintptr(ptr))
+	if ptr != nil {
+		if vtbl := *(**iUnknownVtbl)(ptr); vtbl != nil && vtbl.Release != 0 {
+			_, _, _ = syscall.SyscallN(vtbl.Release, uintptr(ptr))
+		}
 	}
 }
 
@@ -98,6 +76,19 @@ func controllerPutBounds(ctrl *w2Controller, r winRect) {
 	}
 }
 
+func controllerPutDarkBackground(ctrl *w2Controller) {
+	if ctrl == nil {
+		return
+	}
+	var ctrl2 *w2Controller2
+	if hr, _, _ := syscall.SyscallN(ctrl.vtbl.QueryInterface, uintptr(unsafe.Pointer(ctrl)), uintptr(unsafe.Pointer(&iidICoreWebView2Controller2)), uintptr(unsafe.Pointer(&ctrl2))); int32(hr) >= 0 && ctrl2 != nil {
+		defer comRelease(unsafe.Pointer(ctrl2))
+		col := w2Color{A: 255, R: 0x1E, G: 0x1F, B: 0x22}
+		packed := *(*uint32)(unsafe.Pointer(&col))
+		_, _, _ = syscall.SyscallN(ctrl2.vtbl.PutDefaultBackgroundColor, uintptr(unsafe.Pointer(ctrl2)), uintptr(packed))
+	}
+}
+
 func controllerPutVisible(ctrl *w2Controller, visible bool) {
 	if ctrl != nil {
 		v := uintptr(0)
@@ -105,12 +96,6 @@ func controllerPutVisible(ctrl *w2Controller, visible bool) {
 			v = 1
 		}
 		_, _, _ = syscall.SyscallN(ctrl.vtbl.PutIsVisible, uintptr(unsafe.Pointer(ctrl)), v)
-	}
-}
-
-func controllerClose(ctrl *w2Controller) {
-	if ctrl != nil {
-		_, _, _ = syscall.SyscallN(ctrl.vtbl.Close, uintptr(unsafe.Pointer(ctrl)))
 	}
 }
 
@@ -137,16 +122,14 @@ func queryWebView2(wv *w2WebView) (*w2WebView2, uintptr) {
 
 func lockDownWebViewSettings(wv *w2WebView) {
 	var s *w2Settings
-	hr, _, _ := syscall.SyscallN(wv.vtbl.GetSettings, uintptr(unsafe.Pointer(wv)), uintptr(unsafe.Pointer(&s)))
-	if int32(hr) < 0 || s == nil {
-		return
+	if hr, _, _ := syscall.SyscallN(wv.vtbl.GetSettings, uintptr(unsafe.Pointer(wv)), uintptr(unsafe.Pointer(&s))); int32(hr) >= 0 && s != nil {
+		defer comRelease(unsafe.Pointer(s))
+		_, _, _ = syscall.SyscallN(s.vtbl.PutAreHostObjectsAllowed, uintptr(unsafe.Pointer(s)), 0)
+		_, _, _ = syscall.SyscallN(s.vtbl.PutIsWebMessageEnabled, uintptr(unsafe.Pointer(s)), 0)
+		_, _, _ = syscall.SyscallN(s.vtbl.PutAreDevToolsEnabled, uintptr(unsafe.Pointer(s)), 0)
+		_, _, _ = syscall.SyscallN(s.vtbl.PutAreDefaultContextMenusEnabled, uintptr(unsafe.Pointer(s)), 0)
+		_, _, _ = syscall.SyscallN(s.vtbl.PutIsStatusBarEnabled, uintptr(unsafe.Pointer(s)), 0)
 	}
-	defer comRelease(unsafe.Pointer(s))
-	_, _, _ = syscall.SyscallN(s.vtbl.PutAreHostObjectsAllowed, uintptr(unsafe.Pointer(s)), 0)
-	_, _, _ = syscall.SyscallN(s.vtbl.PutIsWebMessageEnabled, uintptr(unsafe.Pointer(s)), 0)
-	_, _, _ = syscall.SyscallN(s.vtbl.PutAreDevToolsEnabled, uintptr(unsafe.Pointer(s)), 0)
-	_, _, _ = syscall.SyscallN(s.vtbl.PutAreDefaultContextMenusEnabled, uintptr(unsafe.Pointer(s)), 0)
-	_, _, _ = syscall.SyscallN(s.vtbl.PutIsStatusBarEnabled, uintptr(unsafe.Pointer(s)), 0)
 }
 
 func webViewNavigate(wv *w2WebView, rawURL string) uintptr {
@@ -160,8 +143,7 @@ func webViewNavigate(wv *w2WebView, rawURL string) uintptr {
 
 func readComLPWSTR(fn uintptr, self unsafe.Pointer) string {
 	var raw *uint16
-	hr, _, _ := syscall.SyscallN(fn, uintptr(self), uintptr(unsafe.Pointer(&raw)))
-	if int32(hr) < 0 || raw == nil {
+	if hr, _, _ := syscall.SyscallN(fn, uintptr(self), uintptr(unsafe.Pointer(&raw))); int32(hr) < 0 || raw == nil {
 		return ""
 	}
 	defer windows.CoTaskMemFree(unsafe.Pointer(raw))

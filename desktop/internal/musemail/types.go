@@ -18,6 +18,12 @@ type VerifyResultDTO struct {
 	LoginStage string `json:"loginStage"`
 }
 
+// LoginSessionProbeDTO 描述独立登录窗口本地 Cookie 池的轻量探测结果（不发起任何外部网关请求）。
+type LoginSessionProbeDTO struct {
+	WindowOpen   bool `json:"windowOpen"`
+	SessionReady bool `json:"sessionReady"`
+}
+
 // ThreadSummaryDTO 表示会话列表单行归一化摘要（不伪造未读状态、星标或同步位点）。
 type ThreadSummaryDTO struct {
 	ID           string   `json:"id"`

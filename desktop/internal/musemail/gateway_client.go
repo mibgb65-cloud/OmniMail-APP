@@ -3,6 +3,7 @@ package musemail
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -44,7 +45,7 @@ func NewLiveConnector() *LiveConnector {
 	return &LiveConnector{
 		MuseOrigin: defaultMuseOrigin,
 		GatewayURL: "wss://" + defaultGatewayHost + "/v1/noise",
-		HTTPClient: newChromeTLSHTTPClient([]string{"http/1.1", "h2"}),
+		HTTPClient: newChromeTLSHTTPClient([]string{"http/1.1"}),
 		WSDialHTTP: newChromeTLSHTTPClient([]string{"http/1.1"}),
 	}
 }
@@ -52,7 +53,7 @@ func NewLiveConnector() *LiveConnector {
 func (c *LiveConnector) Connect(ctx context.Context, cookieHeader string) (GatewaySession, error) {
 	httpCli := c.HTTPClient
 	if httpCli == nil {
-		httpCli = newChromeTLSHTTPClient([]string{"http/1.1", "h2"})
+		httpCli = newChromeTLSHTTPClient([]string{"http/1.1"})
 	}
 	tokens, err := exchangeGatewayTokens(ctx, httpCli, c.MuseOrigin, cookieHeader)
 	if err != nil {
@@ -64,7 +65,7 @@ func (c *LiveConnector) Connect(ctx context.Context, cookieHeader string) (Gatew
 	}
 	u, err := url.Parse(gwBase)
 	if err != nil {
-		return nil, errGatewayFailed("网关地址配置异常")
+		return nil, errStageGatewayFailed(stageWSDial, "网关地址配置异常")
 	}
 	q := u.Query()
 	q.Set("vm_id", tokens.VMID)
@@ -76,7 +77,7 @@ func (c *LiveConnector) Connect(ctx context.Context, cookieHeader string) (Gatew
 
 	wsHTTP := c.WSDialHTTP
 	if wsHTTP == nil {
-		wsHTTP = httpCli
+		wsHTTP = newChromeTLSHTTPClient([]string{"http/1.1"})
 	}
 	hdr := http.Header{}
 	hdr.Set("User-Agent", museBrowserUA)
@@ -86,10 +87,13 @@ func (c *LiveConnector) Connect(ctx context.Context, cookieHeader string) (Gatew
 		HTTPHeader: hdr,
 	})
 	if err != nil {
-		if resp != nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
-			return nil, errAuthExpired()
+		if resp != nil {
+			if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+				return nil, errStageAuthExpired(stageWSDial, resp.StatusCode)
+			}
+			return nil, errStageGatewayFailed(stageWSDial, fmt.Sprintf("Muse 网关握手建连失败（HTTP %d）", resp.StatusCode))
 		}
-		return nil, classifyContextOrNetErr(err)
+		return nil, classifyStageNetErr(stageWSDial, err)
 	}
 	ws.SetReadLimit(maxSingleWSFrameBytes)
 
@@ -115,7 +119,7 @@ func performNoiseXXInitiator(ctx context.Context, ws *websocket.Conn) (*noise.Ci
 	cs := newNoiseCipherSuite()
 	staticKP, err := cs.GenerateKeypair(rand.Reader)
 	if err != nil {
-		return nil, nil, errGatewayFailed("")
+		return nil, nil, errStageGatewayFailed(stageNoiseXX, "生成网关握手密钥失败")
 	}
 	hs, err := noise.NewHandshakeState(noise.Config{
 		CipherSuite:   cs,
@@ -125,31 +129,31 @@ func performNoiseXXInitiator(ctx context.Context, ws *websocket.Conn) (*noise.Ci
 		StaticKeypair: staticKP,
 	})
 	if err != nil {
-		return nil, nil, errGatewayFailed("")
+		return nil, nil, errStageGatewayFailed(stageNoiseXX, "初始化网关加密状态失败")
 	}
 	msg1, _, _, err := hs.WriteMessage(nil, nil)
 	if err != nil {
-		return nil, nil, errGatewayFailed("Noise 握手初始化失败")
+		return nil, nil, errStageGatewayFailed(stageNoiseXX, "Noise 握手初始化失败")
 	}
 	if err := ws.Write(ctx, websocket.MessageBinary, msg1); err != nil {
-		return nil, nil, classifyContextOrNetErr(err)
+		return nil, nil, classifyStageNetErr(stageNoiseXX, err)
 	}
 	typ, msg2, err := ws.Read(ctx)
 	if err != nil {
-		return nil, nil, classifyContextOrNetErr(err)
+		return nil, nil, classifyStageNetErr(stageNoiseXX, err)
 	}
 	if typ != websocket.MessageBinary {
-		return nil, nil, errGatewayFailed("网关握手帧类型无效")
+		return nil, nil, errStageGatewayFailed(stageNoiseXX, "网关握手帧类型无效")
 	}
 	if _, _, _, err := hs.ReadMessage(nil, msg2); err != nil {
-		return nil, nil, errGatewayFailed("网关加密握手校验未通过")
+		return nil, nil, errStageGatewayFailed(stageNoiseXX, "网关加密握手校验未通过")
 	}
 	msg3, sendCS, recvCS, err := hs.WriteMessage(nil, nil)
 	if err != nil || sendCS == nil || recvCS == nil {
-		return nil, nil, errGatewayFailed("网关会话密钥派生失败")
+		return nil, nil, errStageGatewayFailed(stageNoiseXX, "网关会话密钥派生失败")
 	}
 	if err := ws.Write(ctx, websocket.MessageBinary, msg3); err != nil {
-		return nil, nil, classifyContextOrNetErr(err)
+		return nil, nil, classifyStageNetErr(stageNoiseXX, err)
 	}
 	return sendCS, recvCS, nil
 }
@@ -172,7 +176,7 @@ func buildReadOnlyPath(routeName string, pathParam string, query map[string]stri
 	path := tpl
 	if strings.Contains(path, "{thread_id}") {
 		if strings.TrimSpace(pathParam) == "" {
-			return "", errGatewayFailed("会话标识不能为空")
+			return "", errStageGatewayFailed(stageForRoute(routeName), "会话标识不能为空")
 		}
 		path = strings.ReplaceAll(path, "{thread_id}", url.PathEscape(strings.TrimSpace(pathParam)))
 	}

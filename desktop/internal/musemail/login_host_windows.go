@@ -77,7 +77,9 @@ func newDefaultLoginWindow() (LoginWindow, error) {
 	}
 }
 
-func (h *isolatedLoginHost) IsAlive() bool { return h.alive.Load() }
+func (h *isolatedLoginHost) IsAlive() bool {
+	return h.alive.Load() && h.hwnd.Load() != 0
+}
 
 func (h *isolatedLoginHost) drainSTATasks() {
 	for {
@@ -163,14 +165,13 @@ func (h *isolatedLoginHost) runSTAThread(readyCh chan<- error) {
 		windows.CoUninitialize()
 		removeTempDirWithRetry(h.tempDir, h.browserPID)
 	}()
-	hwnd, err := createCenteredLoginHWND("Muse Mail · 官方安全登录", 540, 720)
+	hwnd, err := createImmersiveLoginHWND(museLoginWndTitle)
 	if err != nil {
 		readyCh <- errUnsupported("无法创建独立 Muse 登录窗口")
 		return
 	}
 	h.hwnd.Store(uintptr(hwnd))
 	hwndRegistry.Store(hwnd, h)
-	activateLoginWindowForeground(hwnd)
 	err = webviewloader.CreateCoreWebView2EnvironmentWithOptions(
 		&envCompletedBridge{host: h, readyCh: readyCh},
 		webviewloader.WithUserDataFolder(h.tempDir),

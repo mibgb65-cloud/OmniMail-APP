@@ -50,6 +50,21 @@ func TestWebView2VTableOffsetsAndComInitTolerance(t *testing.T) {
 		t.Fatalf("w2CookieVtbl.GetIsSession slot = %d, want 16", got)
 	}
 
+	var ctrl2 w2Controller2Vtbl
+	if got := unsafe.Offsetof(ctrl2.PutDefaultBackgroundColor) / ptrSize; got != 27 {
+		t.Fatalf("w2Controller2Vtbl.PutDefaultBackgroundColor slot = %d, want 27", got)
+	}
+
+	var seenAttrs []uint32
+	applyImmersiveDarkDwmWithSetter(0x1234, func(_ uintptr, attr uint32, _ *uint32, _ uint32) uintptr {
+		seenAttrs = append(seenAttrs, attr)
+		return 0x80070057 // 模拟旧版 Win10 不支持新属性时返回 E_INVALIDARG
+	})
+	if len(seenAttrs) != 5 || seenAttrs[0] != 20 || seenAttrs[1] != 19 || seenAttrs[2] != 33 || seenAttrs[3] != 35 || seenAttrs[4] != 36 {
+		t.Fatalf("DWM 属性降级序列错误: %v", seenAttrs)
+	}
+	applyImmersiveDarkDwmAttributes(0)
+
 	if !isCoInitSucceeded(nil) {
 		t.Fatal("nil (S_OK) 必须视为成功")
 	}

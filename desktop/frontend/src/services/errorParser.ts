@@ -79,10 +79,17 @@ export function parseBackendError(
     const mappedKey = ERROR_CODE_KEYS[code];
     if (mappedKey && (lang === "en-US" || !detail)) {
       const baseMsg = translateWithLang(lang, mappedKey);
+      const stageMatch = /^\[([a-z0-9_]+)\]/i.exec(detail);
       const hrMatch = /\b0x[0-9A-Fa-f]{8}\b/.exec(detail);
+      const httpMatch = /\bHTTP\s+(\d{3})\b/i.exec(detail);
+      const extras: string[] = [];
+      if (hrMatch) extras.push(`HRESULT ${hrMatch[0]}`);
+      if (httpMatch) extras.push(`HTTP ${httpMatch[1]}`);
+      const stagePrefix = stageMatch ? `[${stageMatch[1]}] ` : "";
+      const suffix = extras.length > 0 ? ` (${extras.join(", ")})` : "";
       return {
         code,
-        message: hrMatch ? `${baseMsg} (HRESULT ${hrMatch[0]})` : baseMsg,
+        message: `${stagePrefix}${baseMsg}${suffix}`,
       };
     }
     return { code, message: detail || trimmed };
