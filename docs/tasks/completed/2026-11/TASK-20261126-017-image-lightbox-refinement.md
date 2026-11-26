@@ -1,7 +1,7 @@
 # TASK-20261126-017 · 重构图片大图预览器（ImageLightbox 智能透明底板、悬浮胶囊去重与三段式阻尼动效）
 
 - 状态：Completed
-- 实现提交：待提交（工作区已通过全量验证）
+- 实现提交：`8eee9ffefc1c489049172294a9a8c77b4882b06f`
 - 实际改动：
   1. **悬浮毛玻璃胶囊与操作去重**（`ImageLightboxTopbar.tsx`、`ImageLightboxControls.tsx`、`image-lightbox.css`、`image-lightbox-controls.css`）：去掉厚重通栏顶条与底边框，改为左右独立悬浮毛玻璃胶囊（左上展示文件图标、文件名、`来源 · W × H px` 副文案及多图分割线 + `1 / N` 徽标；右上展示带微缩色块的「棋盘格 / 浅灰底板 / 纯黑」三段切换器 + 独立 `Esc` 圆角关闭按钮），移除右上角重复的「另存为」按钮并将保存能力统一收敛到底部主按钮「保存原图」，同时通过 `--lb-*` 变量完整适配暗色深邃磨砂画布与亮色柔和浅雾磨砂画布；
   2. **零依赖离屏 Canvas 透明与明暗采样**（`imageSurfaceAnalysis.ts`、`useLightboxGalleryState.ts`、`ImageLightboxModal.tsx`、`image-lightbox-stage.css`）：`onLoad` 在离屏 `32×32` `<canvas>` 采样像素透明占比（`alpha < 245` 占比 `> 5%`）与感知亮度（`0.299R + 0.587G + 0.114B`），偏深色透明图（`< 135`，如黑色 Meta Logo）自动推荐 `light` 浅灰底板、偏浅色透明图（`>= 185`）自动推荐 `dark` 深色底板、中性透明图推荐 `checker` 棋盘格、普通非透明照片返回 `none` 原图高质感投影；捕获跨域 `SecurityError` 时按扩展名与尺寸平滑回退不抛错；透明图及小尺寸徽标（`< 420 × 220`）自动包裹 `.lightbox-media-mat` 呼吸感衬底卡并支持用户手动切换覆盖；
