@@ -7,8 +7,9 @@ import {
   type ReactNode,
 } from "react";
 import { useValuePresence } from "../../state/usePresence";
-import { Icon } from "./Icon";
+import { resolveCustomSelectTriggerMeta } from "../../utils/accountDisplay";
 import { CustomSelectPopover } from "./CustomSelectPopover";
+import { Icon } from "./Icon";
 import {
   computePopoverGeometry,
   usePopoverDismiss,
@@ -31,6 +32,7 @@ interface CustomSelectProps {
   compact?: boolean;
   mono?: boolean;
   fullWidth?: boolean;
+  showSublabelInTrigger?: boolean;
   minMenuWidth?: number;
   style?: CSSProperties;
   ariaLabel?: string;
@@ -45,6 +47,7 @@ export function CustomSelect({
   compact = false,
   mono = false,
   fullWidth = false,
+  showSublabelInTrigger = false,
   minMenuWidth = 176,
   style,
   ariaLabel,
@@ -70,6 +73,10 @@ export function CustomSelect({
     options.findIndex((o) => String(o.value) === String(value)),
   );
   const current = options[selectedIndex] ?? options[0];
+  const triggerMeta = resolveCustomSelectTriggerMeta(
+    current,
+    showSublabelInTrigger,
+  );
   const isOpen = geo !== null;
   const closeMenu = useCallback(() => setGeo(null), []);
 
@@ -131,6 +138,7 @@ export function CustomSelect({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-label={ariaLabel}
+        title={triggerMeta.title}
         disabled={disabled}
         data-open={isOpen ? "true" : "false"}
         className={`custom-select-trigger${compact ? " compact" : ""}${mono ? " mono" : ""}${fullWidth ? " full" : ""}`}
@@ -140,7 +148,21 @@ export function CustomSelect({
       >
         <span className="row" style={{ gap: 7, minWidth: 0, flex: 1 }}>
           {current?.icon}
-          <span className="truncate">{current?.label ?? ""}</span>
+          {triggerMeta.inlineSublabel ? (
+            <>
+              <span className="custom-select-trigger-label">
+                {triggerMeta.label}
+              </span>
+              <span className="custom-select-trigger-sep" aria-hidden="true">
+                ·
+              </span>
+              <span className="custom-select-trigger-sublabel">
+                {triggerMeta.inlineSublabel}
+              </span>
+            </>
+          ) : (
+            <span className="truncate">{triggerMeta.label}</span>
+          )}
         </span>
         <Icon name="chevronDown" size={13} className="select-chevron" />
       </button>
@@ -158,8 +180,8 @@ export function CustomSelect({
           mono={mono}
           onFocusIndex={setFocusIdx}
           onChoose={choose}
-          onSearch={(query) => {
-            setSearch(query);
+          onSearch={(q) => {
+            setSearch(q);
             setFocusIdx(0);
           }}
           onKeyDown={handleKeyDown}

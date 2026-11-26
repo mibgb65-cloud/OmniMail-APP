@@ -47,7 +47,8 @@ export function AutoReplyTab() {
             </label>
             <CustomSelect
               fullWidth
-              minMenuWidth={220}
+              showSublabelInTrigger
+              minMenuWidth={280}
               style={{ marginTop: 4 }}
               value={ar.accountId}
               ariaLabel={t("settings.autoReplyAccountAria")}

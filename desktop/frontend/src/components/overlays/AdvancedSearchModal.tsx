@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
+import { resolveSidebarAccountTitle } from "../../utils/accountDisplay";
 import { Checkbox } from "../common/Checkbox";
 import { CustomSelect } from "../common/CustomSelect";
 import { ModalShell } from "../common/ModalShell";
@@ -8,7 +9,7 @@ import { ProviderIcon } from "../common/ProviderIcon";
 
 export function AdvancedSearchModal() {
   const { workspace, mailStore, toastStore } = useApp();
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
   const [from, setFrom] = useState(mailStore.advSearch.from);
   const [subject, setSubject] = useState(mailStore.advSearch.subject);
   const [accountId, setAccountId] = useState(mailStore.advSearch.accountId);
@@ -103,7 +104,8 @@ export function AdvancedSearchModal() {
           </label>
           <CustomSelect
             fullWidth
-            minMenuWidth={220}
+            showSublabelInTrigger
+            minMenuWidth={280}
             style={{ marginTop: 4 }}
             value={accountId}
             ariaLabel={t("overlays.advAccountScopeAria")}
@@ -111,7 +113,7 @@ export function AdvancedSearchModal() {
               { value: "all", label: t("overlays.advAllAccountsOpt") },
               ...workspace.accounts.map((acc) => ({
                 value: acc.id,
-                label: acc.name,
+                label: resolveSidebarAccountTitle(acc, lang),
                 sublabel: acc.email,
                 icon: <ProviderIcon provider={acc.provider} size={18} />,
               })),

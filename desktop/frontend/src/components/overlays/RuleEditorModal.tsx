@@ -6,6 +6,7 @@ import {
   type RulePreviewResult,
 } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
+import { resolveSidebarAccountTitle } from "../../utils/accountDisplay";
 import { Checkbox } from "../common/Checkbox";
 import { CustomSelect } from "../common/CustomSelect";
 import { ModalShell } from "../common/ModalShell";
@@ -72,7 +73,7 @@ export function RuleEditorModal({ ruleId }: { ruleId?: string }) {
     },
     ...workspace.accounts.map((acc) => ({
       value: acc.id,
-      label: acc.name,
+      label: resolveSidebarAccountTitle(acc, lang),
       sublabel: acc.email,
       icon: <ProviderIcon provider={acc.provider} size={18} />,
     })),
@@ -132,6 +133,8 @@ export function RuleEditorModal({ ruleId }: { ruleId?: string }) {
       <RuleFieldRow label={t("overlays.ruleScopeLabel")}>
         <CustomSelect
           fullWidth
+          showSublabelInTrigger
+          minMenuWidth={280}
           value={accountScope}
           ariaLabel={t("overlays.ruleScopeLabel")}
           options={scopeOptions}

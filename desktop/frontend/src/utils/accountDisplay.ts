@@ -3,6 +3,27 @@ import type { LanguageCode } from "../types/settings.ts";
 
 export const ACCOUNT_NAME_MAX_LEN = 24;
 
+export interface TriggerDisplayMeta {
+  label: string;
+  inlineSublabel: string | null;
+  title?: string;
+}
+
+export function resolveCustomSelectTriggerMeta(
+  current: { label: string; sublabel?: string } | undefined,
+  showSublabelInTrigger = false,
+): TriggerDisplayMeta {
+  if (!current) {
+    return { label: "", inlineSublabel: null, title: undefined };
+  }
+  const label = current.label ?? "";
+  const sub = current.sublabel?.trim() ?? "";
+  const hasDistinctSub = Boolean(sub && sub !== label.trim());
+  const inlineSublabel = showSublabelInTrigger && hasDistinctSub ? sub : null;
+  const title = hasDistinctSub ? `${label} · ${sub}` : label || undefined;
+  return { label, inlineSublabel, title };
+}
+
 export const CONCISE_PROVIDER_LABELS: Record<
   Exclude<ProviderId, "imap">,
   { zh: string; en: string }

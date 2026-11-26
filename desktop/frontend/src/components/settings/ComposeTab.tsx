@@ -31,9 +31,11 @@ export function ComposeTab() {
             </div>
           </div>
           <CustomSelect
+            showSublabelInTrigger
             value={s.defaultSendAccountId}
             ariaLabel={t("settings.defaultSendAccountTitle")}
-            minMenuWidth={240}
+            minMenuWidth={280}
+            style={{ maxWidth: 360 }}
             options={workspace.accounts.map((acc) => ({
               value: acc.id,
               label: resolveSidebarAccountTitle(acc, lang),

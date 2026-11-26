@@ -37,11 +37,12 @@ export function ComposeHeaderFields() {
         <div className="row" style={{ flex: 1, minWidth: 0, gap: 6 }}>
           <CustomSelect
             compact
+            showSublabelInTrigger
             value={draft.accountId}
             disabled={draft.lockedAccount}
             ariaLabel={t("compose.selectSenderAria")}
-            minMenuWidth={280}
-            style={{ flex: 1, maxWidth: 340 }}
+            minMenuWidth={300}
+            style={{ flex: 1, maxWidth: 420 }}
             onChange={(val) => composeStore.updateDraft({ accountId: val })}
             options={senderOptions}
           />
