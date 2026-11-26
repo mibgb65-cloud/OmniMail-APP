@@ -1,6 +1,7 @@
 # TASK-20261126-006 · 修复邮件阅读器主题配色冲突、追踪像素误报错与会话重复渲染
 
 - 状态：Completed
+- 实现提交：`0716d750373fa015cd7641c3b5cb523a26c3b066`
 - 范围：
   1. 剥离顶层 HTML 注释与 Outlook MSO 条件注释后再抽取 `<style>`，解耦邮件自带 `@media (prefers-color-scheme: dark|light)` 与系统主题匹配，自动改写限定到 `.mail-html-inner[data-theme=...][data-html-mode=...]` 作用域，兼容 `mail.db` 已入库存量邮件并显式声明亮色 `color-scheme: light`；
   2. 静默隐藏 `1×1` 追踪像素与显式隐藏信标图片（不弹 `.omnimail-img-fallback` 卡片、不进入大图预览画廊），并区分「内嵌图片暂未缓存或加载失败」与「远程图片加载失败」文案；
