@@ -5,6 +5,7 @@ import {
 } from "../../state/accountSyncState";
 import { useApp } from "../../state/AppContext";
 import type { EmailAccount } from "../../types/account";
+import { resolveSidebarAccountTitle } from "../../utils/accountDisplay";
 import { ProviderIcon } from "../common/ProviderIcon";
 
 export function SyncIssueAccountCard({
@@ -26,7 +27,9 @@ export function SyncIssueAccountCard({
             <ProviderIcon provider={account.provider} size={20} bare />
           </span>
           <div className="ssp-card-meta">
-            <span className="ssp-card-name truncate">{account.name}</span>
+            <span className="ssp-card-name truncate">
+              {resolveSidebarAccountTitle(account, lang)}
+            </span>
             <span className="ssp-card-sub truncate">
               {t(
                 isAuth ? "topbar.popCardAuthMeta" : "topbar.popCardBlockedMeta",

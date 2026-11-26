@@ -1,29 +1,8 @@
-import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { classifyMuseViewState } from "../../types/muse";
-import { Icon } from "../common/Icon";
-import { ProviderIcon } from "../common/ProviderIcon";
 import { MuseStateCard } from "./MuseStateCard";
 import { MuseThreadListPane } from "./MuseThreadListPane";
 import { MuseThreadReaderPane } from "./MuseThreadReaderPane";
-
-function formatLastRefreshed(
-  ms: number,
-  lang: string,
-  notYet: string,
-  formatTemplate: (time: string) => string,
-): string {
-  if (!ms || ms <= 0) return notYet;
-  const d = new Date(ms);
-  if (Number.isNaN(d.getTime())) return notYet;
-  const hm = new Intl.DateTimeFormat(lang === "en-US" ? "en-US" : "zh-CN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(d);
-  return formatTemplate(hm);
-}
 
 export function MuseMailView({
   readOnlyExit = false,
@@ -31,7 +10,6 @@ export function MuseMailView({
   readOnlyExit?: boolean;
 }) {
   const { workspace, museStore } = useApp();
-  const { lang, t } = useI18n();
   const {
     status,
     threads,
@@ -54,65 +32,17 @@ export function MuseMailView({
   });
 
   const refreshing = listLoading || loadingMore;
-  const refreshedLabel = formatLastRefreshed(
-    status.lastRefreshedAt,
-    lang,
-    t("muse.notRefreshedYet"),
-    (tm) => t("muse.lastRefreshedAt", { time: tm }),
+  const currentIndex = Math.max(
+    0,
+    threads.findIndex((x) => x.id === selectedThreadId),
   );
+  const navigateThread = (delta: -1 | 1) => {
+    const next = threads[currentIndex + delta];
+    if (next) void museStore.selectThread(next.id);
+  };
 
   return (
     <div className="muse-view-root" aria-hidden={readOnlyExit || undefined}>
-      <header className="panel-card muse-topbar-card">
-        <div className="muse-topbar-left">
-          <ProviderIcon provider="muse" size={28} />
-          <div style={{ minWidth: 0 }}>
-            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <strong className="muse-topbar-name truncate">
-                {status.accountName || t("muse.providerName")}
-              </strong>
-              {status.verifiedEmail && (
-                <span className="muse-verified-chip">
-                  {status.verifiedEmail}
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-muted">{refreshedLabel}</div>
-          </div>
-        </div>
-
-        <div className="muse-topbar-actions">
-          {status.bound && (
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => {
-                if (refreshing) void museStore.cancelRefresh();
-                else void museStore.refreshThreads();
-              }}
-            >
-              <Icon name={refreshing ? "square" : "refresh"} size={13} />
-              <span>
-                {refreshing
-                  ? t("muse.cancelRefreshBtn")
-                  : t("muse.manualRefreshBtn")}
-              </span>
-            </button>
-          )}
-
-          {status.bound && (
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => void museStore.disconnect()}
-            >
-              <Icon name="x" size={13} />
-              <span>{t("muse.disconnectBtn")}</span>
-            </button>
-          )}
-        </div>
-      </header>
-
       {stateKind !== "ready" ? (
         <section className="panel-card muse-state-stage">
           <MuseStateCard
@@ -126,19 +56,40 @@ export function MuseMailView({
           />
         </section>
       ) : (
-        <div className="muse-columns">
+        <>
           <MuseThreadListPane
+            accountName={status.accountName}
+            verifiedEmail={status.verifiedEmail}
+            lastRefreshedAt={status.lastRefreshedAt}
             threads={threads}
             selectedThreadId={selectedThreadId}
             listLoading={listLoading}
             loadingMore={loadingMore}
+            refreshing={refreshing}
             hasMore={hasMore}
             compact={workspace.settings.density === "compact"}
+            onRefreshOrCancel={() => {
+              if (refreshing) void museStore.cancelRefresh();
+              else void museStore.refreshThreads();
+            }}
+            onDisconnect={() => void museStore.disconnect()}
             onSelectThread={(id) => void museStore.selectThread(id)}
             onLoadMore={() => void museStore.loadMoreThreads()}
           />
-          <MuseThreadReaderPane detail={threadDetail} loading={detailLoading} />
-        </div>
+
+          <MuseThreadReaderPane
+            verifiedEmail={status.verifiedEmail}
+            lastRefreshedAt={status.lastRefreshedAt}
+            detail={threadDetail}
+            loading={detailLoading}
+            refreshing={refreshing}
+            currentIndex={currentIndex}
+            totalCount={threads.length}
+            onNavigate={navigateThread}
+            onRefresh={() => void museStore.refreshThreads()}
+            onDisconnect={() => void museStore.disconnect()}
+          />
+        </>
       )}
     </div>
   );

@@ -1,40 +1,75 @@
 import { useI18n } from "../../i18n";
+import type { ParsedBackendError } from "../../services/backendClient";
 import type {
+  WorkBuddyAccount,
+  WorkBuddyDailyQuota,
   WorkBuddyDirection,
   WorkBuddyMessageSummary,
 } from "../../types/workbuddy";
+import {
+  formatAgentClockTime,
+  resolveConciseAgentTitle,
+} from "../../utils/agentMailFormat";
 import { Icon } from "../common/Icon";
 import { FadeScroll } from "../common/scroll-fade/FadeScroll";
 import { MailListSkeleton } from "../mail/MailListSkeleton";
+import { WorkBuddyListHeader } from "./WorkBuddyListHeader";
+import { WorkBuddyMailCard } from "./WorkBuddyMailCard";
 
 export interface WorkBuddyListPaneProps {
+  account?: WorkBuddyAccount;
   dir: WorkBuddyDirection;
   searchQuery: string;
+  dailyQuota: WorkBuddyDailyQuota;
+  lastSyncedAt: number;
   messages: WorkBuddyMessageSummary[];
   selectedMessageId: string;
+  selectedDetailFormat?: "HTML" | "TEXT";
   listLoading: boolean;
   loadingMore: boolean;
   hasMore: boolean;
   compact: boolean;
+  activeError: ParsedBackendError | null;
+  onChangeDir: (next: WorkBuddyDirection) => void;
+  onChangeSearch: (next: string) => void;
+  onRefresh: () => void;
   onSelectMessage: (id: string) => void;
   onLoadMore: () => void;
+  onReauthorize: () => void;
 }
 
-export function WorkBuddyListPane({
-  dir,
-  searchQuery,
-  messages,
-  selectedMessageId,
-  listLoading,
-  loadingMore,
-  hasMore,
-  compact,
-  onSelectMessage,
-  onLoadMore,
-}: WorkBuddyListPaneProps) {
-  const { t, formatTime } = useI18n();
+export function WorkBuddyListPane(props: WorkBuddyListPaneProps) {
+  const {
+    account,
+    dir,
+    searchQuery,
+    dailyQuota,
+    lastSyncedAt,
+    messages,
+    selectedMessageId,
+    selectedDetailFormat,
+    listLoading,
+    loadingMore,
+    hasMore,
+    compact,
+    activeError,
+    onChangeDir,
+    onChangeSearch,
+    onRefresh,
+    onSelectMessage,
+    onLoadMore,
+    onReauthorize,
+  } = props;
+  const { t } = useI18n();
   const hasSearch = Boolean(searchQuery.trim());
-
+  const title = resolveConciseAgentTitle(account?.accountName, "workbuddy");
+  const subtitle = account?.email
+    ? t("workbuddy.listSubtitle", {
+        email: account.email,
+        count: messages.length,
+      })
+    : t("workbuddy.listCountLabel", { count: messages.length });
+  const syncClock = formatAgentClockTime(lastSyncedAt, false);
   const emptyTitle = hasSearch
     ? t("workbuddy.emptySearchTitle")
     : dir === "sent"
@@ -43,99 +78,94 @@ export function WorkBuddyListPane({
 
   return (
     <section
-      className="panel-card wb-list-pane"
-      aria-label={t("workbuddy.providerName")}
+      className="panel-card mail-list-pane wb-list-pane"
+      aria-label={title}
     >
-      <div className="wb-list-head">
-        <strong className="wb-list-title">
-          {dir === "sent" ? t("workbuddy.sentTab") : t("workbuddy.inboxTab")}
-        </strong>
-        <span className="text-xs text-muted">
-          {t("workbuddy.listCountLabel", { count: messages.length })}
-        </span>
-      </div>
+      <WorkBuddyListHeader
+        title={title}
+        subtitle={subtitle}
+        dir={dir}
+        searchQuery={searchQuery}
+        dailyQuota={dailyQuota}
+        listLoading={listLoading}
+        onChangeDir={onChangeDir}
+        onChangeSearch={onChangeSearch}
+        onRefresh={onRefresh}
+      />
+
+      {activeError && (
+        <div className="wb-inline-alert" role="alert">
+          <Icon name="alertCircle" size={14} />
+          <span className="truncate" style={{ flex: 1 }}>
+            {activeError.message}
+          </span>
+          {activeError.code === "ERR_WB_AUTH_REQUIRED" && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={onReauthorize}
+            >
+              {t("workbuddy.reauthorizeBtn")}
+            </button>
+          )}
+        </div>
+      )}
 
       <FadeScroll
         key={`${dir}:${hasSearch ? searchQuery.trim() : "all"}`}
-        className="wb-list-scroll"
-        label={t("workbuddy.providerName")}
+        className="mail-list-scroll wb-list-scroll"
+        label={title}
       >
         {listLoading && messages.length === 0 ? (
           <MailListSkeleton compact={compact} />
         ) : messages.length === 0 ? (
-          <div className="wb-empty-box">
-            <span className="wb-empty-icon" aria-hidden="true">
-              <Icon name="inbox" size={20} />
+          <div className="list-empty-state">
+            <span className="list-empty-icon-box" aria-hidden="true">
+              <Icon name="inbox" size={22} />
             </span>
             <strong className="wb-empty-title">{emptyTitle}</strong>
             <p className="wb-empty-desc">{t("workbuddy.emptyListDesc")}</p>
           </div>
         ) : (
-          <div className="wb-msg-items">
-            {messages.map((item) => {
-              const selected = item.messageId === selectedMessageId;
-              const peer =
-                dir === "sent"
-                  ? item.to.join(", ") || item.from
-                  : item.from || item.to[0] || "—";
-              return (
-                <button
-                  key={item.messageId}
-                  type="button"
-                  className={`mail-card wb-msg-card ${selected ? "selected" : ""} ${!item.isRead ? "unread" : ""}`}
-                  aria-pressed={selected}
-                  onClick={() => onSelectMessage(item.messageId)}
-                >
-                  <div className="mail-card-top">
-                    <div className="mail-card-sender">
-                      {!item.isRead && (
-                        <span
-                          className="wb-unread-dot"
-                          aria-label={t("workbuddy.unreadDotAria")}
-                        />
-                      )}
-                      <span className="truncate">{peer || "—"}</span>
-                    </div>
-                    <span className="mail-card-time">
-                      {item.createdAt ? formatTime(item.createdAt) : ""}
-                    </span>
-                  </div>
-
-                  <div className="mail-card-subject truncate">
-                    {item.subject || t("workbuddy.noSubject")}
-                  </div>
-
-                  {!compact && item.snippet && (
-                    <div className="mail-card-snippet">{item.snippet}</div>
-                  )}
-
-                  {item.hasAttachments && (
-                    <div className="mail-card-bottom">
-                      <span className="wb-att-chip">
-                        <Icon name="paperclip" size={11} />
-                        <span>{t("workbuddy.downloadAttachmentBtn")}</span>
-                      </span>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-
+          <>
+            <div className="list-group-head">
+              <span className="truncate">
+                {syncClock
+                  ? t("workbuddy.listGroupSyncedAt", { time: syncClock })
+                  : t("workbuddy.listGroupRecent")}
+              </span>
+              <span className="list-group-range">
+                1–{messages.length} / {messages.length}
+              </span>
+            </div>
+            {messages.map((item) => (
+              <WorkBuddyMailCard
+                key={item.messageId}
+                item={item}
+                dir={dir}
+                compact={compact}
+                selected={item.messageId === selectedMessageId}
+                detailBodyFormat={
+                  item.messageId === selectedMessageId
+                    ? selectedDetailFormat
+                    : undefined
+                }
+                onSelect={() => onSelectMessage(item.messageId)}
+              />
+            ))}
             {hasMore && (
-              <div className="wb-load-more-wrap">
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm wb-load-more-btn"
-                  disabled={loadingMore}
-                  onClick={onLoadMore}
-                >
-                  {loadingMore
-                    ? t("workbuddy.loadingMoreBtn")
-                    : t("workbuddy.loadMoreBtn")}
-                </button>
-              </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm wb-load-more-btn"
+                disabled={loadingMore}
+                onClick={onLoadMore}
+              >
+                {loadingMore
+                  ? t("workbuddy.loadingMoreBtn")
+                  : t("workbuddy.loadMoreBtn")}
+              </button>
             )}
-          </div>
+          </>
         )}
       </FadeScroll>
     </section>

@@ -66,6 +66,15 @@ export const muse = {
   threadListHeading: "Conversations",
   threadCountLabel:
     "{count, plural, one {# conversation} other {# conversations}} loaded",
+  listSubtitle: "{email} · {count} threads",
+  listGroupSyncedAt: "Recent · Refreshed at {time}",
+  listGroupRecent: "Recent conversations",
+  copyMailboxBtn: "Copy Address",
+  copiedMailboxToast: "Copied Muse Mail address: {email}",
+  readOnlyModeBadge: "Read-only",
+  footerSyncedStatus:
+    "Muse Mail · Refreshed at {time} (In-memory read-only session)",
+  footerIdleStatus: "Muse Mail · In-memory read-only session",
   loadMoreBtn: "Load more",
   loadingMoreBtn: "Loading more…",
   noSubjectFallback: "(No subject)",

@@ -1,61 +1,16 @@
-/* Muse Mail 会话列表、正文消息卡片与 6 种状态反馈面板 */
-.muse-list-head {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.muse-list-title {
-  font-size: 13.5px;
-  color: var(--text-ink);
-}
-
-.muse-list-scroll {
-  --scroll-padding: 8px;
-  --scroll-gap: 6px;
-}
-
-.muse-thread-items {
+/* Muse Mail 会话列表与正文消息卡片样式 */
+.muse-list-pane,
+.muse-reader-pane {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .muse-thread-card {
   width: 100%;
-  text-align: left;
-  cursor: pointer;
-}
-
-.muse-load-more-wrap {
-  display: flex;
-  justify-content: center;
-  padding: 8px 0 4px;
-}
-
-.muse-load-more-btn {
-  width: 100%;
-}
-
-.muse-reader-head {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 20px 12px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.muse-reader-subject {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1.35;
-  color: var(--text-ink);
 }
 
 .muse-reader-subnote {
@@ -66,52 +21,16 @@
   color: var(--text-muted);
 }
 
-.muse-reader-scroll {
-  --scroll-padding: 16px 20px 24px;
-  --scroll-gap: 12px;
-}
-
 .muse-msg-stack {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.muse-msg-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-default);
-}
-
-.muse-msg-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.muse-msg-meta-left {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  flex: 1;
-}
-
-.muse-msg-sender {
-  font-size: 13px;
-  color: var(--text-ink);
-}
-
-.muse-msg-time {
-  font-size: 12px;
-  color: var(--text-muted);
-  white-space: nowrap;
+.muse-avatar {
+  background: var(--bg-selected);
+  border: 1px solid var(--border-selected);
+  color: var(--brand-accent);
 }
 
 .muse-verdict-chip {
@@ -172,16 +91,4 @@
   border: 1px solid var(--border-default);
   font-size: 12px;
   color: var(--text-body);
-}
-
-@media (max-width: 819px) {
-  .muse-columns {
-    flex-direction: column;
-  }
-
-  .muse-list-pane {
-    width: 100%;
-    min-width: 0;
-    max-height: 44%;
-  }
 }

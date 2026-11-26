@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
+import { resolveSidebarAccountTitle } from "../../utils/accountDisplay";
 import type { IconName } from "../common/Icon";
 import { filterPaletteCommands } from "./paletteCommandFilter";
 
@@ -24,7 +25,7 @@ export function usePaletteCommands(
 ): PaletteCommand[] {
   const { workspace, mailStore, composeStore, aiStore, triggerSyncAll } =
     useApp();
-  const { t, localizeText } = useI18n();
+  const { lang, t, localizeText } = useI18n();
 
   return useMemo<PaletteCommand[]>(() => {
     const activeName = workspace.activeProfile?.name
@@ -142,7 +143,9 @@ export function usePaletteCommands(
         id: `acc-${acc.id}`,
         cat: "accounts",
         icon: "mail",
-        title: t("overlays.cmdAccountOnlyTitle", { name: acc.name }),
+        title: t("overlays.cmdAccountOnlyTitle", {
+          name: resolveSidebarAccountTitle(acc, lang),
+        }),
         hint: acc.email,
         run: closeRun(() => {
           workspace.setScreen("mail");
@@ -164,6 +167,7 @@ export function usePaletteCommands(
     query,
     category,
     close,
+    lang,
     t,
     localizeText,
   ]);

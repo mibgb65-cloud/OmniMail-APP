@@ -7,16 +7,24 @@ import { TopBarSyncChip } from "./TopBarSyncChip";
 import { WindowControls, handleDragRegionDoubleClick } from "./WindowControls";
 
 export function TopBar() {
-  const { viewport, workspace, mailStore } = useApp();
+  const { viewport, workspace, mailStore, workBuddyStore } = useApp();
   const { t } = useI18n();
   const { settings, screen } = workspace;
   const isCompact = viewport === "compact";
   const isLaptop = viewport === "laptop";
+  const isWorkBuddy = screen === "workbuddy";
 
   const searchPlaceholder =
     screen === "contacts"
       ? t("topbar.searchContactsPlaceholder")
-      : t("topbar.searchMailPlaceholder");
+      : isWorkBuddy
+        ? t("topbar.searchWorkBuddyPlaceholder")
+        : screen === "muse"
+          ? t("topbar.searchMusePlaceholder")
+          : t("topbar.searchMailPlaceholder");
+  const activeQuery = isWorkBuddy
+    ? workBuddyStore.searchQuery
+    : mailStore.searchQuery;
 
   return (
     <header className="topbar" onDoubleClick={handleDragRegionDoubleClick}>
@@ -37,18 +45,25 @@ export function TopBar() {
         <Icon name="search" size={14} />
         <input
           className="topbar-search-input"
-          value={mailStore.searchQuery}
+          value={activeQuery}
           onChange={(e) => {
+            if (isWorkBuddy) {
+              workBuddyStore.setSearchQuery(e.target.value);
+              return;
+            }
             if (screen !== "mail") workspace.setScreen("mail");
             mailStore.setSearchQuery(e.target.value);
           }}
           placeholder={searchPlaceholder}
         />
-        {mailStore.searchQuery && (
+        {activeQuery && (
           <button
             type="button"
             className="icon-btn topbar-mini-icon"
-            onClick={() => mailStore.setSearchQuery("")}
+            onClick={() => {
+              if (isWorkBuddy) workBuddyStore.setSearchQuery("");
+              else mailStore.setSearchQuery("");
+            }}
             aria-label={t("topbar.clearSearch")}
           >
             <Icon name="x" size={12} />

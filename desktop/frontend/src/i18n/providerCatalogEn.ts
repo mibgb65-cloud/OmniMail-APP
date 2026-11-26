@@ -1,6 +1,7 @@
 import type { ProviderCatalogItem, ProviderId } from "../types/account.ts";
 import type { LanguageCode } from "../types/settings.ts";
 import { EN_PROVIDERS_AGENT } from "./providerCatalogEnAgent.ts";
+import { EN_PROVIDERS_ENTERPRISE } from "./providerCatalogEnEnterprise.ts";
 import {
   EN_PROVIDERS_PRIMARY,
   type ProviderLocaleCopy,
@@ -11,6 +12,7 @@ const EN_PROVIDERS: Partial<Record<ProviderId, ProviderLocaleCopy>> = {
   ...EN_PROVIDERS_AGENT,
   ...EN_PROVIDERS_PRIMARY,
   ...EN_PROVIDERS_SECONDARY,
+  ...EN_PROVIDERS_ENTERPRISE,
 };
 
 export function localizeProviderPreset(

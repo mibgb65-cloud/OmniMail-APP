@@ -37,6 +37,11 @@ export function AddAccountSidebar({
       label: t("onboarding.pickerCatStandard"),
       count: counts.standard,
     },
+    {
+      id: "enterprise",
+      label: t("onboarding.pickerCatEnterprise"),
+      count: counts.enterprise,
+    },
   ];
 
   return (
@@ -81,6 +86,9 @@ export function AddAccountSidebar({
             </span>
             <span className="aam-mode-tag">
               {t("onboarding.pickerModeAuthCode")}
+            </span>
+            <span className="aam-mode-tag">
+              {t("onboarding.pickerModeMxProbe")}
             </span>
             <span className="aam-mode-tag">
               {t("onboarding.pickerModeAgentGateway")}

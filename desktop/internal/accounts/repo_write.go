@@ -11,20 +11,6 @@ import (
 	"omnimail/internal/security"
 )
 
-func strOrDefault(v, def string) string {
-	if s := strings.TrimSpace(v); s != "" {
-		return s
-	}
-	return def
-}
-
-func intOrDefault(v, def int) int {
-	if v > 0 {
-		return v
-	}
-	return def
-}
-
 func Create(db *sql.DB, vault *security.Vault, req ConnectRequest) (EmailAccountDTO, error) {
 	email := strings.ToLower(strings.TrimSpace(req.Email))
 	if !strings.Contains(email, "@") || len(email) > 160 {
@@ -43,8 +29,9 @@ func Create(db *sql.DB, vault *security.Vault, req ConnectRequest) (EmailAccount
 	authMode := strOrDefault(req.AuthMode, preset.AuthMode)
 	id := strOrDefault(req.ID, fmt.Sprintf("acc-%d", time.Now().UnixMilli()%1_000_000_000))
 	localPart := email[:strings.IndexByte(email, '@')]
-	name := strOrDefault(req.Name, preset.Name+" · "+localPart)
-	shortTag := strOrDefault(req.ShortTag, preset.Name)
+	concise := ConciseProviderName(preset.ID, email)
+	name := truncateRunes(strOrDefault(req.Name, concise), 24)
+	shortTag := truncateRunes(strOrDefault(req.ShortTag, name), 10)
 	senderName := strOrDefault(req.SenderName, localPart)
 
 	var existingCount int
@@ -87,10 +74,13 @@ func Update(db *sql.DB, vault *security.Vault, req UpdateRequest) (EmailAccountD
 		return EmailAccountDTO{}, err
 	}
 	if req.Name != nil && strings.TrimSpace(*req.Name) != "" {
-		cur.Name = strings.TrimSpace(*req.Name)
+		cur.Name = truncateRunes(strings.TrimSpace(*req.Name), 24)
+		if req.ShortTag == nil || strings.TrimSpace(*req.ShortTag) == "" {
+			cur.ShortTag = truncateRunes(cur.Name, 10)
+		}
 	}
 	if req.ShortTag != nil && strings.TrimSpace(*req.ShortTag) != "" {
-		cur.ShortTag = strings.TrimSpace(*req.ShortTag)
+		cur.ShortTag = truncateRunes(strings.TrimSpace(*req.ShortTag), 10)
 	}
 	if req.SenderName != nil {
 		cur.SenderName = strings.TrimSpace(*req.SenderName)

@@ -78,20 +78,21 @@ function mapPresetToCatalog(p: ProviderPreset): ProviderCatalogItem {
   return {
     ...base,
     id: p.id as ProviderId,
-    name: p.name,
-    subtitle: p.subtitle,
-    badgeText: p.badgeText,
-    badgeTone: tone,
+    category: base.category,
+    name: base.name || p.name,
+    subtitle: base.subtitle || p.subtitle,
+    badgeText: base.badgeText || p.badgeText,
+    badgeTone: base.badgeTone || tone,
     authMode: p.authMode as AuthMode,
-    officialIcon: p.officialIcon,
-    guideTitle: p.guideTitle,
-    guideSummary: p.guideSummary,
-    steps: p.steps ?? base.steps,
+    officialIcon: base.officialIcon || p.officialIcon,
+    guideTitle: base.guideTitle || p.guideTitle,
+    guideSummary: base.guideSummary || p.guideSummary,
+    steps: base.steps.length > 0 ? base.steps : (p.steps ?? []),
     defaultImapHost: p.defaultImapHost,
     defaultImapPort: p.defaultImapPort,
     defaultSmtpHost: p.defaultSmtpHost,
     defaultSmtpPort: p.defaultSmtpPort,
-    note: p.note,
+    note: p.note ?? base.note,
   };
 }
 
@@ -103,8 +104,9 @@ export const accountApi = {
   },
 
   async resolveProviderByEmail(email: string): Promise<ProviderPreset | null> {
-    if (!isWailsDesktop()) return null;
-    return AccountService.ResolveProviderByEmail(email);
+    return isWailsDesktop()
+      ? AccountService.ResolveProviderByEmail(email)
+      : null;
   },
 
   async startOAuthFlow(provider: ProviderId): Promise<FlowStartResult> {
@@ -119,42 +121,40 @@ export const accountApi = {
   },
 
   async cancelOAuthFlow(flowId: string): Promise<void> {
-    if (!isWailsDesktop() || !flowId) return;
-    await AccountService.CancelOAuthFlow(flowId);
+    if (isWailsDesktop() && flowId)
+      await AccountService.CancelOAuthFlow(flowId);
   },
 
   async testConnection(req: ConnectRequest): Promise<ConnectionTestReport> {
-    if (!isWailsDesktop()) {
-      const en = getCurrentLanguage() === "en-US";
-      const rows = en
-        ? ([
-            ["dns", "DNS & port check", 18, "Reachable"],
-            ["tls", "TLS handshake", 42, "TLS 1.3 verified"],
-            ["imap", "IMAP auth", 95, "6 folders found"],
-            ["smtp", "SMTP auth", 76, "Ready"],
-          ] as const)
-        : ([
-            ["dns", "DNS 与端口连通", 18, "端口可达"],
-            ["tls", "TLS 安全握手", 42, "TLS 1.3 验证通过"],
-            ["imap", "IMAP 认证", 95, "已识别 6 个文件夹"],
-            ["smtp", "SMTP 认证", 76, "发件通道正常"],
-          ] as const);
-      return {
+    if (isWailsDesktop()) return AccountService.TestConnection(req);
+    const en = getCurrentLanguage() === "en-US";
+    const rows = en
+      ? ([
+          ["dns", "DNS & port check", 18, "Reachable"],
+          ["tls", "TLS handshake", 42, "TLS 1.3 verified"],
+          ["imap", "IMAP auth", 95, "6 folders found"],
+          ["smtp", "SMTP auth", 76, "Ready"],
+        ] as const)
+      : ([
+          ["dns", "DNS 与端口连通", 18, "端口可达"],
+          ["tls", "TLS 安全握手", 42, "TLS 1.3 验证通过"],
+          ["imap", "IMAP 认证", 95, "已识别 6 个文件夹"],
+          ["smtp", "SMTP 认证", 76, "发件通道正常"],
+        ] as const);
+    return {
+      ok: true,
+      summary: en
+        ? "Preview mode: 4-step handshake simulated"
+        : "预览模式：四阶段连接模拟通过",
+      discoveredMailboxes: 6,
+      steps: rows.map(([stage, label, durationMs, detail]) => ({
+        stage,
+        label,
         ok: true,
-        summary: en
-          ? "Preview mode: 4-step handshake simulated"
-          : "预览模式：四阶段连接模拟通过",
-        discoveredMailboxes: 6,
-        steps: rows.map(([stage, label, durationMs, detail]) => ({
-          stage,
-          label,
-          ok: true,
-          durationMs,
-          detail,
-        })),
-      };
-    }
-    return AccountService.TestConnection(req);
+        durationMs,
+        detail,
+      })),
+    };
   },
 
   async addAccount(req: ConnectRequest): Promise<EmailAccount> {
@@ -168,33 +168,40 @@ export const accountApi = {
         provider: req.provider as ProviderId,
       };
     }
-    const dto = await AccountService.AddAccount(req);
-    return mapAccountDTO(dto);
+    return mapAccountDTO(await AccountService.AddAccount(req));
   },
 
   async listAccounts(): Promise<EmailAccount[]> {
     if (!isWailsDesktop()) return INITIAL_ACCOUNTS;
-    const list = await AccountService.ListAccounts();
-    return (list ?? []).map(mapAccountDTO);
+    return ((await AccountService.ListAccounts()) ?? []).map(mapAccountDTO);
   },
 
   async updateAccount(req: UpdateRequest): Promise<EmailAccount> {
-    const dto = await AccountService.UpdateAccount(req);
-    return mapAccountDTO(dto);
+    if (!isWailsDesktop()) {
+      const base =
+        INITIAL_ACCOUNTS.find((a) => a.id === req.id) ?? INITIAL_ACCOUNTS[0];
+      return {
+        ...base,
+        id: req.id,
+        name: req.name ?? base.name,
+        shortTag: req.shortTag ?? base.shortTag,
+        senderName: req.senderName ?? base.senderName,
+        replyTo: req.replyTo ?? base.replyTo,
+        signature: req.signature ?? base.signature,
+      };
+    }
+    return mapAccountDTO(await AccountService.UpdateAccount(req));
   },
 
   async setDefaultAccount(accountId: string): Promise<void> {
-    if (!isWailsDesktop()) return;
-    await AccountService.SetDefaultAccount(accountId);
+    if (isWailsDesktop()) await AccountService.SetDefaultAccount(accountId);
   },
 
   async removeAccount(accountId: string): Promise<void> {
-    if (!isWailsDesktop()) return;
-    await AccountService.RemoveAccount(accountId);
+    if (isWailsDesktop()) await AccountService.RemoveAccount(accountId);
   },
 
   async triggerSync(accountId = ""): Promise<void> {
-    if (!isWailsDesktop()) return;
-    await AccountService.TriggerSync(accountId);
+    if (isWailsDesktop()) await AccountService.TriggerSync(accountId);
   },
 };

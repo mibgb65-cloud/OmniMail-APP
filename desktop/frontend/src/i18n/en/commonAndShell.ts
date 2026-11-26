@@ -70,6 +70,8 @@ export const common = {
 export const topbar = {
   backToInbox: "Back to Unified Inbox",
   searchMailPlaceholder: "Search accounts, contacts, subjects, or attachments…",
+  searchWorkBuddyPlaceholder: "Search WorkBuddy subject, sender, or body…",
+  searchMusePlaceholder: "Search regular mailboxes (opens Unified Inbox)…",
   searchContactsPlaceholder:
     "Search contact names, emails, companies, or groups…",
   clearSearch: "Clear search",
@@ -163,6 +165,11 @@ export const sidebar = {
   statusAuthExpired: "Re-auth needed",
   statusError: "Connection issue",
   accountUnreadAria: "{name}, {status}, {count} unread",
+  renameAccountBtn: "Rename account",
+  renamePopoverTitle: "Rename Mail Account",
+  renameResetDefault: "Reset to concise default",
+  accountSettingsMenu: "Account settings",
+  syncAccountNowMenu: "Sync this account now",
   labels: "Labels",
   manageLabelsTip: "Manage or create labels",
   manageLabelsAria: "Manage labels",

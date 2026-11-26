@@ -7,6 +7,10 @@ import { HandshakeSteps } from "../common/HandshakeSteps";
 import { Icon } from "../common/Icon";
 import { PasswordInput } from "../common/PasswordInput";
 import {
+  AccountDisplayNameField,
+  MxDetectedBanner,
+} from "./AccountNamingWidgets";
+import {
   ProviderConnectInfoBanner,
   resolveSecretLabelKey,
 } from "./ProviderConnectShell";
@@ -21,6 +25,8 @@ export interface ProviderGuideFormProps {
   imapPort: number;
   smtpHost: string;
   smtpPort: number;
+  detectedMxHost?: string;
+  detectedProviderLabel?: string;
   status: AsyncActionStatus;
   report: ConnectionTestReport | null;
   onEmailChange: (next: string) => void;
@@ -44,6 +50,8 @@ export function ProviderGuideForm({
   imapPort,
   smtpHost,
   smtpPort,
+  detectedMxHost,
+  detectedProviderLabel,
   status,
   report,
   onEmailChange,
@@ -64,7 +72,17 @@ export function ProviderGuideForm({
   return (
     <div className="pcm-form-col">
       <div className="pcm-field">
-        <label className="pcm-label">{t("onboarding.emailAddressLabel")}</label>
+        <div className="pcm-label-row">
+          <label className="pcm-label">
+            {t("onboarding.emailAddressLabel")}
+          </label>
+          {detectedMxHost && detectedProviderLabel && (
+            <MxDetectedBanner
+              mxHost={detectedMxHost}
+              providerLabel={detectedProviderLabel}
+            />
+          )}
+        </div>
         <input
           type="email"
           className="input"
@@ -77,15 +95,12 @@ export function ProviderGuideForm({
         />
       </div>
 
-      <div className="pcm-field">
-        <label className="pcm-label">{t("onboarding.accountNameLabel")}</label>
-        <input
-          className="input"
-          value={accountName}
-          onChange={(e) => onAccountNameChange(e.target.value)}
-          placeholder={t("onboarding.accountNamePlaceholder")}
-        />
-      </div>
+      <AccountDisplayNameField
+        provider={provider}
+        email={email}
+        value={accountName}
+        onChange={onAccountNameChange}
+      />
 
       <div className="pcm-field">
         <label className="pcm-label">{secretLabel}</label>
@@ -175,7 +190,9 @@ export function ProviderGuideForm({
           onStepLabelChange={onStepLabelChange}
         />
       ) : (
-        <ProviderConnectInfoBanner />
+        <ProviderConnectInfoBanner
+          description={t("onboarding.namingInfoNote")}
+        />
       )}
     </div>
   );

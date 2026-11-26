@@ -4,14 +4,24 @@ import type {
   ProviderId,
 } from "../types/account.ts";
 import { PROVIDERS_AGENT } from "./providersAgent.ts";
+import { PROVIDERS_ENTERPRISE } from "./providersEnterprise.ts";
 import { PROVIDERS_PRIMARY } from "./providersPrimary.ts";
 import { PROVIDERS_SECONDARY } from "./providersSecondary.ts";
 
-export { PROVIDERS_AGENT };
+export { PROVIDERS_AGENT, PROVIDERS_ENTERPRISE };
 
-export const PROVIDER_CATALOG: ProviderCatalogItem[] = [
+const ENTERPRISE_ID_SET = new Set<ProviderId>(
+  PROVIDERS_ENTERPRISE.map((item) => item.id),
+);
+
+export const STANDARD_PROVIDER_CATALOG: ProviderCatalogItem[] = [
   ...PROVIDERS_PRIMARY,
   ...PROVIDERS_SECONDARY,
+];
+
+export const PROVIDER_CATALOG: ProviderCatalogItem[] = [
+  ...STANDARD_PROVIDER_CATALOG,
+  ...PROVIDERS_ENTERPRISE,
 ];
 
 export const ALL_PROVIDER_PRESETS: ProviderCatalogItem[] = [
@@ -19,10 +29,18 @@ export const ALL_PROVIDER_PRESETS: ProviderCatalogItem[] = [
   ...PROVIDER_CATALOG,
 ];
 
+export function isEnterpriseProviderId(id: string): boolean {
+  return ENTERPRISE_ID_SET.has(id as ProviderId);
+}
+
 export function resolveProviderCategory(
-  item: Pick<ProviderCatalogItem, "category">,
+  item: Pick<ProviderCatalogItem, "id" | "category">,
 ): ProviderCategory {
-  return item.category === "agent" ? "agent" : "standard";
+  if (item.category === "agent") return "agent";
+  if (item.category === "enterprise" || ENTERPRISE_ID_SET.has(item.id)) {
+    return "enterprise";
+  }
+  return "standard";
 }
 
 export function mergePickerPresets(

@@ -1,4 +1,4 @@
-/* WorkBuddy Agent 邮箱列表栏与空状态样式 */
+/* WorkBuddy Agent 邮箱列表栏、2栏分段 Tab、内联搜索与卡片来源标签样式 */
 .wb-list-pane,
 .wb-reader-pane {
   display: flex;
@@ -9,64 +9,87 @@
   overflow: hidden;
 }
 
-.wb-list-head {
-  flex-shrink: 0;
+.wb-filter-tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wb-filter-tabs .filter-tabs-indicator {
+  width: calc((100% - 6px) / 2);
+}
+
+.list-head-icon-btn.is-active {
+  background: var(--bg-selected);
+  border-color: var(--border-selected);
+  color: var(--brand-accent);
+}
+
+.wb-list-search-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.wb-list-title {
-  font-size: 13.5px;
-  color: var(--text-ink);
-}
-
-.wb-list-scroll {
-  --scroll-padding: 8px;
-  --scroll-gap: 6px;
-}
-
-.wb-msg-items {
-  display: flex;
-  flex-direction: column;
   gap: 6px;
+  height: 30px;
+  padding: 0 8px 0 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+}
+
+.wb-list-search-row:focus-within {
+  border-color: var(--brand-accent);
+  background: var(--bg-card);
+}
+
+.wb-search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-ink);
+  font-size: 12px;
+}
+
+.wb-search-clear {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .wb-msg-card {
   width: 100%;
-  text-align: left;
-  cursor: pointer;
 }
 
-.wb-unread-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--accent-primary);
-  flex-shrink: 0;
+.wb-card-snippet {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.45;
 }
 
-.wb-att-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-default);
+.source-tag[data-provider="workbuddy"] {
+  background: var(--status-success-bg);
+  color: var(--status-success);
+  border: 1px solid color-mix(in srgb, var(--status-success) 24%, transparent);
+}
+
+.source-tag[data-provider="muse"] {
+  background: var(--bg-selected);
+  color: var(--brand-accent);
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 24%, transparent);
+}
+
+.wb-card-meta-status {
   font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.wb-load-more-wrap {
-  padding: 8px 0 4px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .wb-load-more-btn {
   width: 100%;
+  margin-top: 2px;
 }
 
 .wb-empty-box {
@@ -80,13 +103,13 @@
 }
 
 .wb-reader-empty {
-  height: 100%;
+  flex: 1;
 }
 
 .wb-empty-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 11px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

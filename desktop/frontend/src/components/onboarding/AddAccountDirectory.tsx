@@ -1,8 +1,12 @@
 import { useI18n } from "../../i18n";
-import type { ProviderCatalogItem } from "../../types/account";
+import type { ProviderCatalogItem, ProviderId } from "../../types/account";
 import { Icon } from "../common/Icon";
 import { FadeScroll } from "../common/scroll-fade/FadeScroll";
-import { CustomBalanceCard, ProviderOptionCard } from "./AddAccountCards";
+import {
+  CustomBalanceCard,
+  EnterpriseExtraBanners,
+  ProviderOptionCard,
+} from "./AddAccountCards";
 import type {
   FilteredPickerDirectory,
   PickerCategoryFilter,
@@ -14,6 +18,7 @@ export interface AddAccountDirectoryProps {
   directory: FilteredPickerDirectory;
   onSearchChange: (next: string) => void;
   onSelectProvider: (item: ProviderCatalogItem) => void;
+  onSelectOAuthProvider: (provider: ProviderId) => void;
   onOpenManualImap: () => void;
 }
 
@@ -23,6 +28,7 @@ export function AddAccountDirectory({
   directory,
   onSearchChange,
   onSelectProvider,
+  onSelectOAuthProvider,
   onOpenManualImap,
 }: AddAccountDirectoryProps) {
   const { t } = useI18n();
@@ -32,7 +38,36 @@ export function AddAccountDirectory({
       ? t("onboarding.pickerCatAgent")
       : activeCategory === "standard"
         ? t("onboarding.pickerCatStandard")
-        : t("onboarding.pickerCatAll");
+        : activeCategory === "enterprise"
+          ? t("onboarding.pickerCatEnterprise")
+          : t("onboarding.pickerCatAll");
+
+  const renderGroup = (
+    title: string,
+    hint: string,
+    items: ProviderCatalogItem[],
+    extra?: React.ReactNode,
+  ) => (
+    <div className="aam-section-block">
+      <div className="aam-section-head">
+        <div className="aam-section-title-row">
+          <strong className="aam-section-title">{title}</strong>
+          <span className="aam-section-badge">{items.length}</span>
+        </div>
+        <span className="aam-section-hint">{hint}</span>
+      </div>
+      <div className="aam-grid">
+        {items.map((item) => (
+          <ProviderOptionCard
+            key={item.id}
+            item={item}
+            onSelect={onSelectProvider}
+          />
+        ))}
+        {extra}
+      </div>
+    </div>
+  );
 
   return (
     <section className="aam-directory">
@@ -103,62 +138,48 @@ export function AddAccountDirectory({
           </div>
         ) : activeCategory === "all" && !directory.hasQuery ? (
           <div className="aam-sections">
-            {directory.agentItems.length > 0 && (
+            {directory.agentItems.length > 0 &&
+              renderGroup(
+                t("onboarding.pickerCatAgent"),
+                t("onboarding.pickerGroupAgentHint"),
+                directory.agentItems,
+              )}
+            {directory.standardItems.length > 0 &&
+              renderGroup(
+                t("onboarding.pickerCatStandard"),
+                t("onboarding.pickerGroupStandardHint"),
+                directory.standardItems,
+                directory.showCustomBalanceCard ? (
+                  <CustomBalanceCard onClick={onOpenManualImap} />
+                ) : null,
+              )}
+            {directory.enterpriseItems.length > 0 && (
               <div className="aam-section-block">
-                <div className="aam-section-head">
-                  <div className="aam-section-title-row">
-                    <strong className="aam-section-title">
-                      {t("onboarding.pickerCatAgent")}
-                    </strong>
-                    <span className="aam-section-badge">
-                      {directory.agentItems.length}
-                    </span>
-                  </div>
-                  <span className="aam-section-hint">
-                    {t("onboarding.pickerGroupAgentHint")}
-                  </span>
-                </div>
-                <div className="aam-grid">
-                  {directory.agentItems.map((item) => (
-                    <ProviderOptionCard
-                      key={item.id}
-                      item={item}
-                      onSelect={onSelectProvider}
-                    />
-                  ))}
-                </div>
+                {renderGroup(
+                  t("onboarding.pickerCatEnterprise"),
+                  t("onboarding.pickerGroupEnterpriseHint"),
+                  directory.enterpriseItems,
+                )}
+                {directory.showEnterpriseExtras && (
+                  <EnterpriseExtraBanners
+                    onSelectOAuth={onSelectOAuthProvider}
+                    onOpenManualImap={onOpenManualImap}
+                  />
+                )}
               </div>
             )}
-
-            {directory.standardItems.length > 0 && (
-              <div className="aam-section-block">
-                <div className="aam-section-head">
-                  <div className="aam-section-title-row">
-                    <strong className="aam-section-title">
-                      {t("onboarding.pickerCatStandard")}
-                    </strong>
-                    <span className="aam-section-badge">
-                      {directory.standardItems.length}
-                    </span>
-                  </div>
-                  <span className="aam-section-hint">
-                    {t("onboarding.pickerGroupStandardHint")}
-                  </span>
-                </div>
-                <div className="aam-grid">
-                  {directory.standardItems.map((item) => (
-                    <ProviderOptionCard
-                      key={item.id}
-                      item={item}
-                      onSelect={onSelectProvider}
-                    />
-                  ))}
-                  {directory.showCustomBalanceCard && (
-                    <CustomBalanceCard onClick={onOpenManualImap} />
-                  )}
-                </div>
-              </div>
+          </div>
+        ) : activeCategory === "enterprise" && !directory.hasQuery ? (
+          <div className="aam-sections">
+            {renderGroup(
+              t("onboarding.pickerCatEnterprise"),
+              t("onboarding.pickerGroupEnterpriseHint"),
+              directory.enterpriseItems,
             )}
+            <EnterpriseExtraBanners
+              onSelectOAuth={onSelectOAuthProvider}
+              onOpenManualImap={onOpenManualImap}
+            />
           </div>
         ) : (
           <div className="aam-grid">

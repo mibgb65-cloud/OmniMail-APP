@@ -1,4 +1,4 @@
-/* WorkBuddy Agent 邮箱接入弹窗状态胶囊与主视图顶栏样式（严格对齐亮暗主题 token） */
+/* WorkBuddy Agent 邮箱接入弹窗状态胶囊与统一三栏工作台容器（严格对齐亮暗主题 token） */
 .wb-auth-actions {
   display: inline-flex;
   align-items: center;
@@ -32,145 +32,52 @@
   color: var(--status-success);
 }
 
+/* 主界面：直接作为 .route-main-stage 下的并列双栏容器，与左侧边栏顶部基准线齐平 */
 .wb-view-root {
-  grid-column: 2 / -1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex: 1;
   min-width: 0;
   min-height: 0;
-  height: 100%;
-}
-
-.wb-topbar-card {
-  flex-shrink: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 11px 16px;
-  flex-wrap: wrap;
-}
-
-.wb-topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  min-width: 0;
-}
-
-.wb-topbar-name {
-  font-size: 14.5px;
-  color: var(--text-ink);
+  gap: var(--workspace-column-gap);
+  overflow: hidden;
 }
 
 .wb-quota-pill {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  padding: 0 9px;
-  border-radius: 999px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-default);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.wb-topbar-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.wb-dir-tabs {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px;
-  border-radius: 9px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-default);
-}
-
-.wb-dir-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.wb-dir-tab.active {
-  background: var(--bg-card);
-  color: var(--text-ink);
-  box-shadow: var(--shadow-xs);
-}
-
-.wb-search-box {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  width: 240px;
-  max-width: 100%;
-  height: 32px;
-  padding: 0 8px 0 10px;
-  border-radius: 9px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-default);
-  color: var(--text-muted);
-}
-
-.wb-search-box:focus-within {
-  border-color: var(--accent-primary);
-  background: var(--bg-card);
-}
-
-.wb-search-input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  outline: none;
-  background: transparent;
-  color: var(--text-ink);
-  font-size: 12.5px;
-}
-
-.wb-search-clear {
-  width: 20px;
   height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--status-success-bg);
+  border: 1px solid color-mix(in srgb, var(--status-success) 30%, transparent);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--status-success);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.wb-error-banner {
+.wb-inline-alert {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 14px;
-  border-radius: 10px;
+  gap: 7px;
+  padding: 7px 11px;
   background: var(--status-danger-bg);
-  border: 1px solid color-mix(in srgb, var(--status-danger) 32%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--status-danger) 30%, transparent);
   color: var(--status-danger);
-  font-size: 12.5px;
+  font-size: 12px;
 }
 
-.wb-columns {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
-  gap: 10px;
-}
+@media (max-width: 819px) {
+  .wb-view-root {
+    flex-direction: column;
+  }
 
-@media (max-width: 900px) {
-  .wb-columns {
-    grid-template-columns: 1fr;
+  .wb-list-pane {
+    width: 100%;
+    min-width: 0;
+    max-height: 44%;
   }
 }

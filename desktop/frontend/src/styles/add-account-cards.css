@@ -108,6 +108,56 @@
   gap: 8px;
 }
 
+.provider-ent-badge {
+  background: var(--ent-bg-light, var(--bg-card));
+  border: 1px solid var(--ent-bd-light, var(--border-default));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .provider-ent-badge {
+  background: var(--ent-bg-dark, var(--bg-card));
+  border-color: var(--ent-bd-dark, var(--border-default));
+}
+
+.aam-ent-extras {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aam-ent-banner {
+  min-height: 58px;
+  padding: 10px 14px;
+  border-radius: 11px;
+  background: var(--pcm-surf);
+  border: 1px solid var(--pcm-div);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.aam-ent-banner-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.aam-ent-banner-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 759px) {
   .aam-layout {
     grid-template-columns: minmax(0, 1fr);

@@ -1,6 +1,11 @@
 import { useI18n } from "../../i18n";
+import type { ProviderId } from "../../types/account";
 import { CustomSelect } from "../common/CustomSelect";
 import { PasswordInput } from "../common/PasswordInput";
+import {
+  AccountDisplayNameField,
+  MxDetectedBanner,
+} from "./AccountNamingWidgets";
 
 export interface ManualImapFormState {
   displayName: string;
@@ -15,11 +20,19 @@ export interface ManualImapFormState {
 
 export function ManualImapFields({
   val,
+  effectiveProvider = "imap",
+  detectedMxHost,
+  detectedProviderLabel,
   onChange,
+  onDisplayNameChange,
   onEmailBlur,
 }: {
   val: ManualImapFormState;
+  effectiveProvider?: ProviderId;
+  detectedMxHost?: string;
+  detectedProviderLabel?: string;
   onChange: (patch: Partial<ManualImapFormState>) => void;
+  onDisplayNameChange: (next: string) => void;
   onEmailBlur: (email: string) => void;
 }) {
   const { t } = useI18n();
@@ -39,32 +52,34 @@ export function ManualImapFields({
 
   return (
     <>
-      <div className="pcm-grid-2">
-        <div className="pcm-field">
+      <div className="pcm-field">
+        <div className="pcm-label-row">
           <label className="pcm-label">
             {t("onboarding.emailAddressLabel")}
           </label>
-          <input
-            type="email"
-            className="input"
-            value={val.email}
-            onChange={(e) => onChange({ email: e.target.value })}
-            onBlur={(e) => onEmailBlur(e.target.value)}
-            placeholder="name@company.example"
-          />
+          {detectedMxHost && detectedProviderLabel && (
+            <MxDetectedBanner
+              mxHost={detectedMxHost}
+              providerLabel={detectedProviderLabel}
+            />
+          )}
         </div>
-        <div className="pcm-field">
-          <label className="pcm-label">
-            {t("onboarding.accountNameLabel")}
-          </label>
-          <input
-            className="input"
-            value={val.displayName}
-            onChange={(e) => onChange({ displayName: e.target.value })}
-            placeholder={t("onboarding.accountNamePlaceholder")}
-          />
-        </div>
+        <input
+          type="email"
+          className="input"
+          value={val.email}
+          onChange={(e) => onChange({ email: e.target.value })}
+          onBlur={(e) => onEmailBlur(e.target.value)}
+          placeholder="name@company.example"
+        />
       </div>
+
+      <AccountDisplayNameField
+        provider={effectiveProvider}
+        email={val.email}
+        value={val.displayName}
+        onChange={onDisplayNameChange}
+      />
 
       <div className="pcm-field">
         <label className="pcm-label">{t("onboarding.appPwdLabel")}</label>

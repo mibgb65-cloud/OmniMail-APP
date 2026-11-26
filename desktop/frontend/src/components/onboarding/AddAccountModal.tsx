@@ -133,6 +133,13 @@ export function AddAccountModal() {
           onSelectProvider={(item) =>
             workspace.setOverlay(resolveProviderTargetOverlay(item))
           }
+          onSelectOAuthProvider={(provider) =>
+            workspace.setOverlay({
+              type: "oauth-flow",
+              provider,
+              stage: "waiting",
+            })
+          }
           onOpenManualImap={handleManualImap}
         />
       </div>

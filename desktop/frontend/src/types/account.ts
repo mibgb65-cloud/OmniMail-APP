@@ -8,11 +8,17 @@ export type ProviderId =
   | "yandex"
   | "linuxdo"
   | "nevermail"
+  | "tencent_exmail"
+  | "aliyun_exmail"
+  | "netease_exmail"
+  | "feishu"
+  | "mail263"
+  | "zoho_exmail"
   | "muse"
   | "workbuddy"
   | "imap";
 
-export type ProviderCategory = "agent" | "standard";
+export type ProviderCategory = "agent" | "standard" | "enterprise";
 
 export type AuthMode = "oauth" | "authcode" | "app-password" | "token" | "imap";
 

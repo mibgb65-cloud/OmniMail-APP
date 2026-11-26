@@ -1,5 +1,6 @@
 import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
+import { resolveSidebarAccountTitle } from "../../utils/accountDisplay";
 import { CustomSelect } from "../common/CustomSelect";
 import { Icon } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
@@ -7,14 +8,15 @@ import { RecipientInputRow } from "./RecipientInputRow";
 
 export function ComposeHeaderFields() {
   const { workspace, composeStore, toastStore } = useApp();
-  const { t, formatTime, localizeText } = useI18n();
+  const { lang, t, formatTime } = useI18n();
   const draft = composeStore.draft;
   if (!draft) return null;
 
   const senderOptions = workspace.accounts.length
     ? workspace.accounts.map((acc) => ({
         value: acc.id,
-        label: localizeText(acc.name) || t("topbar.accountFallback"),
+        label:
+          resolveSidebarAccountTitle(acc, lang) || t("topbar.accountFallback"),
         sublabel: acc.email,
         icon: <ProviderIcon provider={acc.provider} size={18} />,
       }))

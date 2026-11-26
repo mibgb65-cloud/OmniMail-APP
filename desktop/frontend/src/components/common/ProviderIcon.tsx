@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import gmailPng from "../../assets/providers/gmail.png";
 import icloudPng from "../../assets/providers/icloud.png";
 import linuxdoPng from "../../assets/providers/linuxdo.png";
@@ -10,6 +11,10 @@ import workbuddyPng from "../../assets/providers/workbuddy.png";
 import yahooPng from "../../assets/providers/yahoo.png";
 import yandexPng from "../../assets/providers/yandex.png";
 import type { ProviderId } from "../../types/account";
+import {
+  ENTERPRISE_BADGE_THEMES,
+  renderEnterpriseGlyph,
+} from "./EnterpriseProviderGlyph";
 import { Icon } from "./Icon";
 
 const OFFICIAL_ICONS: Partial<Record<ProviderId, string>> = {
@@ -32,7 +37,7 @@ interface ProviderIconProps {
   bare?: boolean;
 }
 
-/** 9 家内置邮箱服务商使用官方 PNG 图标；通用 IMAP 使用中性服务器矢量图标 */
+/** 内置服务商使用官方 PNG 或企业邮箱品牌矢量徽标；通用 IMAP 使用中性服务器矢量图标 */
 export function ProviderIcon({
   provider,
   size = 24,
@@ -77,15 +82,40 @@ export function ProviderIcon({
     );
   }
 
-  const iconName =
-    provider === "linuxdo"
-      ? "terminal"
-      : provider === "nevermail"
-        ? "clock"
-        : "server";
+  const entTheme = ENTERPRISE_BADGE_THEMES[provider];
+  if (entTheme) {
+    if (bare) {
+      return (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          {renderEnterpriseGlyph(provider, size)}
+        </span>
+      );
+    }
+    const entStyle = {
+      width: size,
+      height: size,
+      borderRadius: Math.max(5, Math.round(size * 0.25)),
+      "--ent-bg-light": entTheme.lightBg,
+      "--ent-bd-light": entTheme.lightBd,
+      "--ent-bg-dark": entTheme.darkBg,
+      "--ent-bd-dark": entTheme.darkBd,
+    } as CSSProperties;
+    return (
+      <span className="provider-ent-badge" style={entStyle}>
+        {renderEnterpriseGlyph(provider, Math.round(size * 0.72))}
+      </span>
+    );
+  }
 
   if (bare) {
-    return <Icon name={iconName} size={size} />;
+    return <Icon name="server" size={size} />;
   }
 
   return (
@@ -103,7 +133,7 @@ export function ProviderIcon({
         flexShrink: 0,
       }}
     >
-      <Icon name={iconName} size={Math.round(size * 0.56)} />
+      <Icon name="server" size={Math.round(size * 0.56)} />
     </span>
   );
 }

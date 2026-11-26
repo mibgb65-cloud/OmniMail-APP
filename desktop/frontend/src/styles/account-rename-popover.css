@@ -1,0 +1,142 @@
+/* 30 · 企业邮箱与账户命名规范：侧边栏悬停重命名按钮、轻量重命名浮层与设置页身份三列布局 */
+.account-row-tail {
+  position: relative;
+  min-width: 26px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.account-rename-btn {
+  position: absolute;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard);
+}
+
+.account-row:hover .account-row-stats,
+.account-row.is-renaming .account-row-stats,
+.account-row:focus-within .account-row-stats {
+  opacity: 0;
+}
+
+.account-row:hover .account-rename-btn,
+.account-row.is-renaming .account-rename-btn,
+.account-row:focus-within .account-rename-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.account-rename-btn:hover,
+.account-row.is-renaming .account-rename-btn {
+  border-color: var(--border-selected);
+  background: var(--bg-selected);
+  color: var(--text-ink);
+}
+
+.account-rename-popover {
+  position: fixed;
+  z-index: 95;
+  padding: 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow:
+    0 14px 32px rgba(15, 23, 42, 0.14),
+    0 2px 8px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+[data-theme="dark"] .account-rename-popover {
+  background: #131822;
+  border-color: #333e52;
+  box-shadow:
+    0 18px 40px rgba(2, 6, 23, 0.6),
+    0 2px 10px rgba(2, 6, 23, 0.4);
+}
+
+.arp-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.arp-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-ink);
+  flex-shrink: 0;
+}
+
+.arp-email {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  min-width: 0;
+}
+
+.arp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.arp-reset-btn {
+  padding: 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.arp-reset-btn:hover {
+  color: var(--text-ink);
+}
+
+.arp-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adv-identity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .adv-identity-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.adv-field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}

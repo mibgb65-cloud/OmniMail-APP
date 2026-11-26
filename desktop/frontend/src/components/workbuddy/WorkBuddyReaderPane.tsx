@@ -1,39 +1,79 @@
 import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
-import type {
-  WorkBuddyAttachmentMeta,
-  WorkBuddyMessageDetail,
+import {
+  shouldShowDailyQuota,
+  type WorkBuddyAccount,
+  type WorkBuddyAttachmentMeta,
+  type WorkBuddyDailyQuota,
+  type WorkBuddyDirection,
+  type WorkBuddyMessageDetail,
 } from "../../types/workbuddy";
+import {
+  buildAgentReplySubject,
+  parseMailAddressDisplay,
+} from "../../utils/agentMailFormat";
 import { Icon } from "../common/Icon";
+import { ProviderIcon } from "../common/ProviderIcon";
 import { FadeScroll } from "../common/scroll-fade/FadeScroll";
-import { SafeMailHtmlView } from "../mail/reader/SafeMailHtmlView";
-import { useReaderLinkHandlers } from "../mail/reader/useReaderLinkHandlers";
-import { WorkBuddyAttachmentList } from "./WorkBuddyReaderExtras";
+import {
+  WorkBuddyReaderFooter,
+  WorkBuddyReaderToolbar,
+} from "./WorkBuddyReaderChrome";
+import { WorkBuddyThreadCard } from "./WorkBuddyThreadCard";
 
 export interface WorkBuddyReaderPaneProps {
+  account?: WorkBuddyAccount;
+  dir: WorkBuddyDirection;
+  dailyQuota: WorkBuddyDailyQuota;
+  lastSyncedAt: number;
   detail: WorkBuddyMessageDetail | null;
   loading: boolean;
   savingAttachmentId: string;
+  currentIndex: number;
+  totalCount: number;
+  onNavigate: (delta: -1 | 1) => void;
   onMarkRead: () => void;
+  onRefreshBody: () => void;
   onSaveAttachment: (att: WorkBuddyAttachmentMeta) => void;
   onRequestDelete: (messageId: string, subject: string) => void;
 }
 
-export function WorkBuddyReaderPane({
-  detail,
-  loading,
-  savingAttachmentId,
-  onMarkRead,
-  onSaveAttachment,
-  onRequestDelete,
-}: WorkBuddyReaderPaneProps) {
-  const { workspace } = useApp();
-  const { t, formatTime } = useI18n();
-  const { onMailto, onExternalLink } = useReaderLinkHandlers(false);
+export function WorkBuddyReaderPane(props: WorkBuddyReaderPaneProps) {
+  const {
+    account,
+    dir,
+    dailyQuota,
+    lastSyncedAt,
+    detail,
+    loading,
+    savingAttachmentId,
+    currentIndex,
+    totalCount,
+    onNavigate,
+    onMarkRead,
+    onRefreshBody,
+    onSaveAttachment,
+    onRequestDelete,
+  } = props;
+  const { workspace, composeStore, toastStore } = useApp();
+  const { t } = useI18n();
+
+  const copyText = (value: string, toastTitle: string) => {
+    if (!value) return;
+    void navigator.clipboard?.writeText(value).catch(() => undefined);
+    toastStore.pushToast({ tone: "success", title: toastTitle });
+  };
+
+  const mailboxEmail = account?.email ?? "";
+  const copyMailbox = () =>
+    copyText(
+      mailboxEmail,
+      t("workbuddy.copiedMailboxToast", { email: mailboxEmail }),
+    );
 
   if (loading && !detail) {
     return (
-      <section className="panel-card wb-reader-pane">
+      <section className="panel-card mail-reader-pane wb-reader-pane">
         <div className="wb-reader-skeleton" aria-busy="true">
           <span
             className="omni-shimmer-bar"
@@ -48,13 +88,20 @@ export function WorkBuddyReaderPane({
             style={{ width: "92%", height: 120 }}
           />
         </div>
+        <WorkBuddyReaderFooter
+          lastSyncedAt={lastSyncedAt}
+          canCopyMailbox={Boolean(mailboxEmail)}
+          canReply={false}
+          onCopyMailbox={copyMailbox}
+          onReplyViaRegular={() => undefined}
+        />
       </section>
     );
   }
 
   if (!detail) {
     return (
-      <section className="panel-card wb-reader-pane">
+      <section className="panel-card mail-reader-pane wb-reader-pane">
         <div className="wb-empty-box wb-reader-empty">
           <span className="wb-empty-icon" aria-hidden="true">
             <Icon name="mail" size={20} />
@@ -64,108 +111,101 @@ export function WorkBuddyReaderPane({
           </strong>
           <p className="wb-empty-desc">{t("workbuddy.selectMessageDesc")}</p>
         </div>
+        <WorkBuddyReaderFooter
+          lastSyncedAt={lastSyncedAt}
+          canCopyMailbox={Boolean(mailboxEmail)}
+          canReply={false}
+          onCopyMailbox={copyMailbox}
+          onReplyViaRegular={() => undefined}
+        />
       </section>
     );
   }
 
   const subjectText = detail.subject || t("workbuddy.noSubject");
-  const firstAtt = detail.attachments[0];
+  const senderParsed = parseMailAddressDisplay(detail.from);
+  const senderEmail = senderParsed.email || detail.from || "";
+  const showQuota = shouldShowDailyQuota(dailyQuota);
+  const replyTarget =
+    dir === "sent"
+      ? parseMailAddressDisplay(detail.to[0] ?? "").email || detail.to[0] || ""
+      : senderEmail;
 
   return (
-    <section className="panel-card wb-reader-pane">
-      <div className="wb-reader-toolbar">
-        <div className="wb-reader-toolbar-left">
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            disabled={detail.isRead}
-            onClick={onMarkRead}
-          >
-            <Icon name="check" size={13} />
-            <span>
-              {detail.isRead
-                ? t("workbuddy.alreadyReadLabel")
-                : t("workbuddy.markReadBtn")}
-            </span>
-          </button>
+    <section className="panel-card mail-reader-pane wb-reader-pane">
+      <WorkBuddyReaderToolbar
+        isRead={detail.isRead}
+        loading={loading}
+        firstAttachment={detail.attachments[0]}
+        savingAttachmentId={savingAttachmentId}
+        currentIndex={currentIndex}
+        totalCount={totalCount}
+        onMarkRead={onMarkRead}
+        onCopySender={() =>
+          copyText(
+            senderEmail,
+            t("workbuddy.copiedSenderToast", { email: senderEmail }),
+          )
+        }
+        onRefreshBody={onRefreshBody}
+        onSaveAttachment={onSaveAttachment}
+        onRequestDelete={() => onRequestDelete(detail.messageId, subjectText)}
+        onNavigate={onNavigate}
+      />
 
-          {firstAtt && (
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              disabled={Boolean(savingAttachmentId)}
-              onClick={() => onSaveAttachment(firstAtt)}
-            >
-              <Icon name="download" size={13} />
-              <span>{t("workbuddy.downloadAttachmentBtn")}</span>
-            </button>
-          )}
-        </div>
-
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm wb-delete-action-btn"
-          onClick={() => onRequestDelete(detail.messageId, subjectText)}
+      <div className="reader-body">
+        <FadeScroll
+          key={detail.messageId}
+          className="reader-scroll selectable"
+          label={subjectText}
         >
-          <Icon name="trash" size={13} />
-          <span>{t("workbuddy.deleteBtn")}</span>
-        </button>
-      </div>
-
-      <FadeScroll
-        key={detail.messageId}
-        className="wb-reader-scroll"
-        label={subjectText}
-      >
-        <header className="wb-detail-head">
-          <h2 className="wb-detail-subject">{subjectText}</h2>
-          <div className="wb-detail-meta">
-            <div className="wb-detail-meta-row">
-              <span className="wb-meta-key">{t("workbuddy.senderLabel")}</span>
-              <span className="wb-meta-val">{detail.from || "—"}</span>
-              {detail.createdAt && (
-                <span className="wb-meta-time">
-                  {formatTime(detail.createdAt)}
+          <div className="reader-badges-row">
+            <div className="reader-badges-chips">
+              <span className="pill pill-neutral reader-account-pill">
+                <ProviderIcon provider="workbuddy" size={16} />
+                <span>
+                  {mailboxEmail ? `WorkBuddy · ${mailboxEmail}` : "WorkBuddy"}
+                </span>
+              </span>
+              <span className="pill wb-dir-pill">
+                {t(dir === "sent" ? "workbuddy.sentTab" : "workbuddy.inboxTab")}
+              </span>
+              {showQuota && (
+                <span className="pill pill-neutral">
+                  {t("workbuddy.dailyQuotaBadge", {
+                    remaining: dailyQuota.remaining,
+                    limit: dailyQuota.limit,
+                  })}
                 </span>
               )}
             </div>
-            {detail.to.length > 0 && (
-              <div className="wb-detail-meta-row">
-                <span className="wb-meta-key">
-                  {t("workbuddy.recipientsLabel")}
-                </span>
-                <span className="wb-meta-val">{detail.to.join(", ")}</span>
-              </div>
-            )}
-            {detail.cc.length > 0 && (
-              <div className="wb-detail-meta-row">
-                <span className="wb-meta-key">{t("workbuddy.ccLabel")}</span>
-                <span className="wb-meta-val">{detail.cc.join(", ")}</span>
-              </div>
-            )}
+            <span className="reader-thread-meta">
+              {t("workbuddy.singleThreadMeta")}
+            </span>
           </div>
-        </header>
 
-        <WorkBuddyAttachmentList
-          attachments={detail.attachments}
-          savingAttachmentId={savingAttachmentId}
-          onSaveAttachment={onSaveAttachment}
-        />
+          <h2 className="reader-subject">{subjectText}</h2>
 
-        <div className="wb-detail-body">
-          {detail.bodyFormat === "HTML" && detail.sanitizedHtml ? (
-            <SafeMailHtmlView
-              html={detail.sanitizedHtml}
-              theme={workspace.settings.theme}
-              htmlThemeMode={workspace.settings.darkHtmlMode}
-              onMailto={onMailto}
-              onExternalLink={onExternalLink}
-            />
-          ) : (
-            <pre className="wb-plain-body">{detail.plainText}</pre>
-          )}
-        </div>
-      </FadeScroll>
+          <WorkBuddyThreadCard
+            detail={detail}
+            savingAttachmentId={savingAttachmentId}
+            onSaveAttachment={onSaveAttachment}
+          />
+        </FadeScroll>
+      </div>
+
+      <WorkBuddyReaderFooter
+        lastSyncedAt={lastSyncedAt}
+        canCopyMailbox={Boolean(mailboxEmail)}
+        canReply={Boolean(replyTarget) && workspace.accounts.length > 0}
+        onCopyMailbox={copyMailbox}
+        onReplyViaRegular={() =>
+          composeStore.openNewCompose(
+            replyTarget ? [replyTarget] : [],
+            buildAgentReplySubject(subjectText),
+          )
+        }
+      />
     </section>
   );
 }

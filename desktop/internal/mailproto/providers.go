@@ -21,9 +21,17 @@ type ProviderPreset struct {
 	AutoAppendsSent     bool     `json:"autoAppendsSent"`
 	RequiresIMAPID      bool     `json:"requiresImapId"`
 	Note                string   `json:"note,omitempty"`
+	DetectedVia         string   `json:"detectedVia,omitempty"`
 }
 
 func ListProviderPresets() []ProviderPreset {
+	out := make([]ProviderPreset, 0, 16)
+	out = append(out, standardProviderPresets()...)
+	out = append(out, enterpriseAndFallbackPresets()...)
+	return out
+}
+
+func standardProviderPresets() []ProviderPreset {
 	return []ProviderPreset{
 		{
 			ID: "gmail", Name: "Gmail", Subtitle: "支持 OAuth 2.0 授权或 16 位应用专用密码",
@@ -109,15 +117,6 @@ func ListProviderPresets() []ProviderPreset {
 			DefaultImapHost: "imap.naver.com", DefaultImapPort: 993, DefaultImapSecurity: "SSL/TLS",
 			DefaultSmtpHost: "smtp.naver.com", DefaultSmtpPort: 465, DefaultSmtpSecurity: "SSL/TLS",
 			AutoAppendsSent: false, Note: "SMTP 同时兼容 465 SSL/TLS 与 587 STARTTLS",
-		},
-		{
-			ID: "imap", Name: "通用 IMAP / SMTP", Subtitle: "自建邮局、企业邮箱或任意标准协议服务",
-			BadgeText: "自定义配置", BadgeTone: "neutral", AuthMode: "imap", OfficialIcon: false,
-			GuideTitle: "手动配置 IMAP / SMTP", GuideSummary: "自定义服务器地址、端口、加密协议，支持企业内网自签名证书指纹固定。",
-			Steps:           []string{"向管理员获取 IMAP 与 SMTP 主机名、端口和加密方式", "填写登录账号与密码后运行四步测连"},
-			DefaultImapHost: "", DefaultImapPort: 993, DefaultImapSecurity: "SSL/TLS",
-			DefaultSmtpHost: "", DefaultSmtpPort: 465, DefaultSmtpSecurity: "SSL/TLS",
-			AutoAppendsSent: false,
 		},
 	}
 }

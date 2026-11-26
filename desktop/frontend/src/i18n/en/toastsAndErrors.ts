@@ -89,7 +89,8 @@ export const toasts = {
   mergedDupGroupsDetail:
     "Alternate emails and message history remain available on the primary contact.",
   mergedRefreshDelayed: "Merge complete — directory will refresh shortly",
-  savedIdentitySignature: "Saved sender identity and signature",
+  savedIdentitySignature: "Saved display name, sender identity, and signature",
+  renamedAccountDone: "Renamed account to “{name}”",
   setDefaultSenderDone: "Set as default sender account",
   savedSignatureConfig: "Signature saved",
   ruleExecutedTitle: "Rule “{name}” completed",

@@ -18,7 +18,7 @@ const rootDir = path.resolve(
   "..",
 );
 
-test("9 家内置服务商均补齐 domainHint、https 官方指引链接与 3 步准备文案", () => {
+test("15 家内置个人与企业服务商均补齐 domainHint、https 官方指引链接与 3 步准备文案", () => {
   const expectedIds = [
     "gmail",
     "outlook",
@@ -29,6 +29,12 @@ test("9 家内置服务商均补齐 domainHint、https 官方指引链接与 3 �
     "yandex",
     "icloud",
     "yahoo",
+    "tencent_exmail",
+    "aliyun_exmail",
+    "netease_exmail",
+    "feishu",
+    "mail263",
+    "zoho_exmail",
   ];
   assert.deepEqual(
     PROVIDER_CATALOG.map((p) => p.id),
@@ -72,37 +78,43 @@ test("9 家内置服务商均补齐 domainHint、https 官方指引链接与 3 �
     findProviderCatalogItem("netease").domainHint,
     "163.com / 126.com",
   );
-  assert.equal(findProviderCatalogItem("linuxdo").domainHint, "linux.do");
-  assert.equal(findProviderCatalogItem("nevermail").domainHint, "naver.com");
+  assert.equal(
+    findProviderCatalogItem("tencent_exmail").defaultImapHost,
+    "imap.exmail.qq.com",
+  );
+  assert.equal(
+    findProviderCatalogItem("netease_exmail").defaultImapHost,
+    "imaphz.qiye.163.com",
+  );
 });
 
-test("专用凭据标签按服务商精准分流，且账户名称支持自定义或回退邮箱前缀", () => {
+test("专用凭据标签按个人与企业服务商精准分流，账户名称支持自定义或回退精简品牌名", () => {
   assert.equal(
     zhCN.onboarding[resolveSecretLabelKey("qq").split(".")[1]],
     "客户端授权码",
   );
   assert.equal(
-    zhCN.onboarding[resolveSecretLabelKey("netease").split(".")[1]],
+    zhCN.onboarding[resolveSecretLabelKey("netease_exmail").split(".")[1]],
     "客户端授权码",
   );
   assert.equal(
-    zhCN.onboarding[resolveSecretLabelKey("icloud").split(".")[1]],
-    "App 专用密码",
+    zhCN.onboarding[resolveSecretLabelKey("tencent_exmail").split(".")[1]],
+    "客户端专用密码",
   );
   assert.equal(
-    zhCN.onboarding[resolveSecretLabelKey("yahoo").split(".")[1]],
-    "App 专用密码",
+    zhCN.onboarding[resolveSecretLabelKey("feishu").split(".")[1]],
+    "客户端专用密码",
   );
   assert.equal(
-    zhCN.onboarding[resolveSecretLabelKey("yandex").split(".")[1]],
-    "App 专用密码",
+    zhCN.onboarding[resolveSecretLabelKey("aliyun_exmail").split(".")[1]],
+    "三方客户端安全密码",
   );
   assert.equal(
-    zhCN.onboarding[resolveSecretLabelKey("nevermail").split(".")[1]],
-    "App 专用密码",
+    zhCN.onboarding[resolveSecretLabelKey("mail263").split(".")[1]],
+    "三方客户端安全密码",
   );
   assert.equal(
-    zhCN.onboarding[resolveSecretLabelKey("gmail").split(".")[1]],
+    zhCN.onboarding[resolveSecretLabelKey("zoho_exmail").split(".")[1]],
     "App 专用密码",
   );
   assert.equal(
@@ -114,9 +126,10 @@ test("专用凭据标签按服务商精准分流，且账户名称支持自定�
     resolveAccountName("  工作邮箱  ", "QQ 邮箱", "xinghe@qq.com"),
     "工作邮箱",
   );
+  assert.equal(resolveAccountName("   ", "QQ 邮箱", "xinghe@qq.com"), "QQ");
   assert.equal(
-    resolveAccountName("   ", "QQ 邮箱", "xinghe@qq.com"),
-    "QQ 邮箱 · xinghe",
+    resolveAccountName("", "imap", "xiarui@ganlion.cc"),
+    "ganlion.cc",
   );
   assert.equal(enUS.onboarding.localEncryptedPill, "Local encrypted");
 });

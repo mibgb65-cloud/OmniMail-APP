@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useI18n } from "../../i18n";
+import type { ConnectionTestReport } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
 import { openSafeExternalUrl } from "../../state/desktopActions";
-import type { ConnectionTestReport } from "../../services/backendClient";
 import type { ProviderId } from "../../types/account";
 import { HandshakeSteps } from "../common/HandshakeSteps";
 import { Icon } from "../common/Icon";
@@ -21,12 +21,14 @@ export interface PreparationGuideCardProps {
   officialGuideUrl?: string;
   provider?: ProviderId;
   footnoteText?: string;
+  previewSlot?: ReactNode;
 }
 
 export function PreparationGuideCard({
   steps,
   officialGuideUrl,
   footnoteText,
+  previewSlot,
 }: PreparationGuideCardProps) {
   const { t } = useI18n();
   const { workspace } = useApp();
@@ -69,6 +71,7 @@ export function PreparationGuideCard({
         </div>
 
         <div className="pcm-prep-bottom">
+          {previewSlot}
           {officialGuideUrl && (
             <button
               type="button"

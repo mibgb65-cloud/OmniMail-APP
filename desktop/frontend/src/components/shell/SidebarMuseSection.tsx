@@ -1,5 +1,6 @@
 import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
+import { resolveConciseAgentTitle } from "../../utils/agentMailFormat";
 import { ProviderIcon } from "../common/ProviderIcon";
 import { Tooltip } from "../common/Tooltip";
 
@@ -17,7 +18,7 @@ export function SidebarMuseSection({
   }
 
   const active = workspace.screen === "muse";
-  const displayName = status.accountName || t("muse.providerName");
+  const displayName = resolveConciseAgentTitle(status.accountName, "muse");
 
   return (
     <>

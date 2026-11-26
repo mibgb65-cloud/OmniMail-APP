@@ -51,10 +51,14 @@ export function useComposeStore(
   }, [draft]);
 
   const openNewCompose = useCallback(
-    (prefillTo?: string[]) => {
+    (prefillTo?: string[], prefillSubject?: string) => {
       if (isWailsDesktop()) {
         void composeApi
-          .createDraft({ mode: "new", prefillTo })
+          .createDraft({
+            mode: "new",
+            prefillTo,
+            subject: prefillSubject ?? "",
+          })
           .then((created) => {
             if (created) {
               lastSavedFpRef.current = draftContentFingerprint(created);
@@ -78,7 +82,7 @@ export function useComposeStore(
         cc: [],
         bcc: [],
         showCcBcc: false,
-        subject: "",
+        subject: prefillSubject ?? "",
         body: "",
         attachments: [],
         savedAt: new Date().toTimeString().slice(0, 5),

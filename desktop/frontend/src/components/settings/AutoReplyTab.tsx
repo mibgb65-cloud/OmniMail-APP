@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useI18n } from "../../i18n";
 import { parseBackendError, ruleApi } from "../../services/backendClient";
 import { useApp } from "../../state/AppContext";
+import { resolveSidebarAccountTitle } from "../../utils/accountDisplay";
 import {
   AsyncActionButton,
   type AsyncActionStatus,
@@ -14,7 +15,7 @@ import { SwitchRow } from "./SwitchRow";
 
 export function AutoReplyTab() {
   const { workspace, toastStore } = useApp();
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
   const ar = workspace.settings.autoReply;
   const [saveStatus, setSaveStatus] = useState<AsyncActionStatus>("idle");
 
@@ -52,7 +53,7 @@ export function AutoReplyTab() {
               ariaLabel={t("settings.autoReplyAccountAria")}
               options={workspace.accounts.map((acc) => ({
                 value: acc.id,
-                label: acc.name,
+                label: resolveSidebarAccountTitle(acc, lang),
                 sublabel: acc.email,
                 icon: <ProviderIcon provider={acc.provider} size={18} />,
               }))}

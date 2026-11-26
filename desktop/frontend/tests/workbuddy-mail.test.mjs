@@ -128,7 +128,7 @@ test("WorkBuddyConnectModal 状态流转与双语错误码映射校验", () => {
   }
 });
 
-test("WorkBuddyMailView 列表已读状态、配额显隐、两步删除确认与无回复转发按钮校验", () => {
+test("WorkBuddyMailView 三栏工作台对齐、配额显隐、两步删除确认与常规邮箱回信闭环校验", () => {
   assert.equal(shouldShowDailyQuota(EMPTY_DAILY_QUOTA), false);
   assert.equal(
     shouldShowDailyQuota({
@@ -171,30 +171,28 @@ test("WorkBuddyMailView 列表已读状态、配额显隐、两步删除确认�
   assert.equal(afterDel.items.length, 1);
   assert.equal(afterDel.nextSelectedId, "m2");
 
-  const modalSrc = readFileSync(
-    path.join(
-      rootDir,
-      "src",
-      "components",
-      "onboarding",
-      "WorkBuddyConnectModal.tsx",
-    ),
+  const viewSrc = readFileSync(
+    path.join(rootDir, "src/components/workbuddy/WorkBuddyMailView.tsx"),
     "utf8",
   );
-  assert.match(modalSrc, /ProviderConnectShell/);
-  assert.match(modalSrc, /PreparationGuideCard/);
+  const wbCss = readFileSync(
+    path.join(rootDir, "src/styles/workbuddy-mail.css"),
+    "utf8",
+  );
+  assert.doesNotMatch(viewSrc, /wb-topbar-card|wb-columns/);
+  assert.doesNotMatch(wbCss, /grid-column:\s*2\s*\/\s*-1/);
+  assert.match(wbCss, /flex:\s*1/);
 
   const readerSrc = readFileSync(
-    path.join(
-      rootDir,
-      "src",
-      "components",
-      "workbuddy",
-      "WorkBuddyReaderPane.tsx",
-    ),
+    path.join(rootDir, "src/components/workbuddy/WorkBuddyReaderPane.tsx"),
     "utf8",
   );
-  assert.match(readerSrc, /SafeMailHtmlView/);
-  assert.match(readerSrc, /useReaderLinkHandlers/);
-  assert.doesNotMatch(readerSrc, /openReply|openForward|openNewCompose/);
+  const cardSrc = readFileSync(
+    path.join(rootDir, "src/components/workbuddy/WorkBuddyThreadCard.tsx"),
+    "utf8",
+  );
+  assert.match(cardSrc, /SafeMailHtmlView/);
+  assert.match(cardSrc, /useReaderLinkHandlers/);
+  assert.match(readerSrc, /openNewCompose/);
+  assert.doesNotMatch(readerSrc, /openReply|openForward/);
 });

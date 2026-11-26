@@ -1,5 +1,6 @@
 import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
+import { resolveSidebarAccountTitle } from "../../utils/accountDisplay";
 import { Icon } from "../common/Icon";
 import { ProviderIcon } from "../common/ProviderIcon";
 import { AccountDetailView } from "./AccountDetailView";
@@ -13,7 +14,7 @@ export function AccountsTab({
   onSelectAccount: (id?: string) => void;
 }) {
   const { workspace, museStore } = useApp();
-  const { t, formatTime } = useI18n();
+  const { lang, t, formatTime } = useI18n();
 
   if (
     selectedAccountId &&
@@ -59,7 +60,9 @@ export function AccountsTab({
               <ProviderIcon provider={acc.provider} size={30} />
               <div>
                 <div className="row" style={{ gap: 6 }}>
-                  <strong style={{ fontSize: 14 }}>{acc.name}</strong>
+                  <strong style={{ fontSize: 14 }}>
+                    {resolveSidebarAccountTitle(acc, lang)}
+                  </strong>
                   {workspace.settings.defaultSendAccountId === acc.id && (
                     <span className="pill pill-accent">
                       {t("settings.defaultSendBadge")}

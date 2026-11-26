@@ -1,5 +1,6 @@
 import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
+import { resolveConciseAgentTitle } from "../../utils/agentMailFormat";
 import { ProviderIcon } from "../common/ProviderIcon";
 import { Tooltip } from "../common/Tooltip";
 
@@ -10,7 +11,7 @@ export function SidebarWorkBuddySection({
 }) {
   const { workspace, workBuddyStore } = useApp();
   const { t } = useI18n();
-  const { accounts, activeAccount } = workBuddyStore;
+  const { accounts, activeAccount, messages } = workBuddyStore;
 
   if (accounts.length === 0) {
     return null;
@@ -22,18 +23,25 @@ export function SidebarWorkBuddySection({
       <div className="nav-section">
         <div className="nav-section-head">
           <span className="truncate">{t("workbuddy.sidebarSectionTitle")}</span>
+          <span>{accounts.length}</span>
         </div>
 
         {accounts.map((acc) => {
-          const active =
-            workspace.screen === "workbuddy" &&
-            activeAccount?.accountId === acc.accountId;
-          const displayName = acc.accountName || t("workbuddy.providerName");
+          const isCurrent = activeAccount?.accountId === acc.accountId;
+          const active = workspace.screen === "workbuddy" && isCurrent;
+          const displayName = resolveConciseAgentTitle(
+            acc.accountName,
+            "workbuddy",
+          );
+          const unreadCount = isCurrent
+            ? messages.filter((m) => !m.isRead).length
+            : 0;
 
           return (
             <Tooltip
               key={acc.accountId}
               label={`${displayName} · ${acc.email}`}
+              badge={unreadCount}
               placement="right"
             >
               <button
@@ -63,6 +71,9 @@ export function SidebarWorkBuddySection({
                       aria-hidden="true"
                     />
                   </span>
+                  {unreadCount > 0 && (
+                    <span className="account-unread-count">{unreadCount}</span>
+                  )}
                 </div>
               </button>
             </Tooltip>

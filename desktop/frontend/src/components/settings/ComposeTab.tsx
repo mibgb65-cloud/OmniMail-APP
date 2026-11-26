@@ -1,5 +1,6 @@
 import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
+import { resolveSidebarAccountTitle } from "../../utils/accountDisplay";
 import { CustomSelect } from "../common/CustomSelect";
 import { ToggleSwitch } from "../common/ModalShell";
 import { ProviderIcon } from "../common/ProviderIcon";
@@ -8,7 +9,7 @@ import { SwitchRow } from "./SwitchRow";
 
 export function ComposeTab() {
   const { workspace, toastStore } = useApp();
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
   const s = workspace.settings;
   const activeAcc =
     workspace.accounts.find((a) => a.id === s.defaultSendAccountId) ??
@@ -35,7 +36,7 @@ export function ComposeTab() {
             minMenuWidth={240}
             options={workspace.accounts.map((acc) => ({
               value: acc.id,
-              label: acc.name,
+              label: resolveSidebarAccountTitle(acc, lang),
               sublabel: acc.email,
               icon: <ProviderIcon provider={acc.provider} size={18} />,
             }))}
@@ -89,7 +90,7 @@ export function ComposeTab() {
           <div className="row-between">
             <strong style={{ fontSize: 14 }}>
               {t("settings.defaultAccountSignatureHeading", {
-                tag: activeAcc.shortTag,
+                tag: resolveSidebarAccountTitle(activeAcc, lang),
               })}
             </strong>
             <ToggleSwitch

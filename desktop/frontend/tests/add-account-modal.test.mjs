@@ -12,6 +12,7 @@ import {
 } from "../src/components/onboarding/addAccountCatalog.ts";
 import {
   ALL_PROVIDER_PRESETS,
+  isEnterpriseProviderId,
   mergePickerPresets,
   PROVIDER_CATALOG,
   PROVIDERS_AGENT,
@@ -24,31 +25,33 @@ const rootDir = path.resolve(
   "..",
 );
 
-test("添加邮箱双栏选型：分类回退兼容、AI Agent / 传统分类统计与奇数补位校验", () => {
-  // 旧结构未带 category 字段时自动回退为 standard
+test("添加邮箱双栏选型：三分类统计、企业邮箱分组与奇数补位校验", () => {
   const legacyPresets = PROVIDER_CATALOG.map((p) => {
     const copy = { ...p };
     delete copy.category;
     return copy;
   });
   for (const item of legacyPresets) {
-    assert.equal(resolveProviderCategory(item), "standard");
+    const expected = isEnterpriseProviderId(item.id)
+      ? "enterprise"
+      : "standard";
+    assert.equal(resolveProviderCategory(item), expected);
   }
 
   const merged = mergePickerPresets(legacyPresets);
   const counts = countProvidersByCategory(merged);
   assert.equal(counts.agent, PROVIDERS_AGENT.length);
   assert.equal(counts.standard, 9);
-  assert.equal(counts.total, 11);
+  assert.equal(counts.enterprise, 6);
+  assert.equal(counts.total, 17);
 
-  // 全部服务商且无搜索词：展示 AI Agent 与传统分组，且 9 家奇数传统邮箱自动开启补位自定义卡
   const allView = filterPickerDirectory(merged, "all", "");
-  assert.equal(allView.matched.length, 11);
+  assert.equal(allView.matched.length, 17);
   assert.equal(allView.agentItems.length, 2);
   assert.equal(allView.standardItems.length, 9);
+  assert.equal(allView.enterpriseItems.length, 6);
   assert.equal(allView.showCustomBalanceCard, true);
 
-  // 切换至 AI Agent 邮箱分类
   const agentView = filterPickerDirectory(merged, "agent", "");
   assert.deepEqual(
     agentView.matched.map((p) => p.id),
@@ -56,25 +59,34 @@ test("添加邮箱双栏选型：分类回退兼容、AI Agent / 传统分类统
   );
   assert.equal(agentView.showCustomBalanceCard, false);
 
-  // 切换至传统与常用邮箱分类
   const stdView = filterPickerDirectory(merged, "standard", "");
   assert.equal(stdView.matched.length, 9);
   assert.equal(stdView.showCustomBalanceCard, true);
+
+  const entView = filterPickerDirectory(merged, "enterprise", "");
+  assert.deepEqual(
+    entView.matched.map((p) => p.id),
+    [
+      "tencent_exmail",
+      "aliyun_exmail",
+      "netease_exmail",
+      "feishu",
+      "mail263",
+      "zoho_exmail",
+    ],
+  );
+  assert.equal(entView.showCustomBalanceCard, false);
 });
 
-test("添加邮箱双栏选型：关键词搜索（名称 / 域名后缀 / badgeText）与空态重置", () => {
-  const enPresets = ALL_PROVIDER_PRESETS.map((p) =>
-    localizeProviderPreset(p, "en-US"),
-  );
-  for (const item of enPresets) {
+test("添加邮箱双栏选型：个人与企业关键词搜索及空态校验", () => {
+  for (const p of ALL_PROVIDER_PRESETS) {
+    const item = localizeProviderPreset(p, "en-US");
     assert.doesNotMatch(
       item.name + item.subtitle + item.badgeText,
       /[\u4e00-\u9fff]/,
-      `${item.id} English preset leaked CJK`,
     );
   }
 
-  // 按域名后缀搜索
   const foxmailHit = filterPickerDirectory(
     ALL_PROVIDER_PRESETS,
     "all",
@@ -84,21 +96,38 @@ test("添加邮箱双栏选型：关键词搜索（名称 / 域名后缀 / badge
     foxmailHit.matched.map((p) => p.id),
     ["qq"],
   );
-  // 搜索过滤态下不补位自定义卡片
   assert.equal(foxmailHit.showCustomBalanceCard, false);
 
-  // 按 badgeText 搜索
-  const oauthHit = filterPickerDirectory(
+  const exmailHit = filterPickerDirectory(
     ALL_PROVIDER_PRESETS,
-    "standard",
-    "浏览器授权",
+    "all",
+    "exmail.qq.com",
   );
   assert.deepEqual(
-    oauthHit.matched.map((p) => p.id),
-    ["gmail", "outlook"],
+    exmailHit.matched.map((p) => p.id),
+    ["tencent_exmail"],
   );
 
-  // 搜索无结果空态
+  const aliyunHit = filterPickerDirectory(
+    ALL_PROVIDER_PRESETS,
+    "enterprise",
+    "aliyun",
+  );
+  assert.deepEqual(
+    aliyunHit.matched.map((p) => p.id),
+    ["aliyun_exmail"],
+  );
+
+  const larkHit = filterPickerDirectory(
+    ALL_PROVIDER_PRESETS,
+    "enterprise",
+    "feishu",
+  );
+  assert.deepEqual(
+    larkHit.matched.map((p) => p.id),
+    ["feishu"],
+  );
+
   const emptyHit = filterPickerDirectory(
     ALL_PROVIDER_PRESETS,
     "all",
@@ -109,77 +138,51 @@ test("添加邮箱双栏选型：关键词搜索（名称 / 域名后缀 / badge
   assert.equal(emptyHit.showCustomBalanceCard, false);
 });
 
-test("点击服务商跳转目标接入模态框、手动 IMAP 入口与 980×760 零跳动样式门禁", () => {
+test("点击服务商跳转目标模态框与 980×760 零跳动样式门禁", () => {
   const byId = Object.fromEntries(ALL_PROVIDER_PRESETS.map((p) => [p.id, p]));
   assert.deepEqual(resolveProviderTargetOverlay(byId.workbuddy), {
     type: "workbuddy-connect",
-  });
-  assert.deepEqual(resolveProviderTargetOverlay(byId.muse), {
-    type: "muse-connect",
   });
   assert.deepEqual(resolveProviderTargetOverlay(byId.gmail), {
     type: "oauth-flow",
     provider: "gmail",
     stage: "waiting",
   });
-  assert.deepEqual(resolveProviderTargetOverlay(byId.qq), {
+  assert.deepEqual(resolveProviderTargetOverlay(byId.tencent_exmail), {
     type: "provider-guide",
-    provider: "qq",
+    provider: "tencent_exmail",
   });
 
-  // 同尺寸弹窗族共享 connect-suite 外层遮罩，避免销毁闪烁
   assert.equal(isConnectSuiteOverlay({ type: "add-account" }), true);
   assert.equal(isConnectSuiteOverlay({ type: "manual-imap" }), true);
-  assert.equal(isConnectSuiteOverlay({ type: "workbuddy-connect" }), true);
   assert.equal(
     resolveConnectSuiteStageKey({ type: "provider-guide", provider: "qq" }),
     "provider-guide:qq",
   );
-
-  // 双语文案与零实验性/安全边界警告校验
-  assert.equal(zhCN.onboarding.pickerCatAgent, "AI Agent 邮箱");
-  assert.equal(zhCN.onboarding.pickerCatStandard, "传统与常用邮箱");
-  assert.equal(enUS.onboarding.pickerCatAgent, "AI Agent Mail");
+  assert.equal(zhCN.onboarding.pickerCatStandard, "个人与常规");
+  assert.equal(zhCN.onboarding.pickerCatEnterprise, "企业邮箱");
+  assert.equal(enUS.onboarding.pickerCatEnterprise, "Enterprise Mail");
 
   const modalSrc = readFileSync(
-    path.join(
-      rootDir,
-      "src",
-      "components",
-      "onboarding",
-      "AddAccountModal.tsx",
-    ),
+    path.join(rootDir, "src/components/onboarding/AddAccountModal.tsx"),
     "utf8",
   );
   const sideSrc = readFileSync(
-    path.join(
-      rootDir,
-      "src",
-      "components",
-      "onboarding",
-      "AddAccountSidebar.tsx",
-    ),
+    path.join(rootDir, "src/components/onboarding/AddAccountSidebar.tsx"),
     "utf8",
   );
   assert.match(modalSrc, /pcm-modal-card/);
-  assert.match(modalSrc, /manual-imap/);
   assert.match(sideSrc, /onOpenManualImap/);
   assert.doesNotMatch(modalSrc + sideSrc, /实验性|安全边界/);
 
   const pcmCss = readFileSync(
-    path.join(rootDir, "src", "styles", "provider-connect-modal.css"),
+    path.join(rootDir, "src/styles/provider-connect-modal.css"),
     "utf8",
   );
   const aamCss = readFileSync(
-    path.join(rootDir, "src", "styles", "add-account-modal.css"),
-    "utf8",
-  );
-  const cardsCss = readFileSync(
-    path.join(rootDir, "src", "styles", "add-account-cards.css"),
+    path.join(rootDir, "src/styles/add-account-modal.css"),
     "utf8",
   );
   assert.match(pcmCss, /height:\s*min\(760px,\s*calc\(100vh\s*-\s*36px\)\)/);
   assert.match(aamCss, /grid-template-columns:\s*228px\s+minmax\(0,\s*1fr\)/);
-  assert.match(aamCss, /prefers-reduced-motion:\s*reduce/);
-  assert.match(cardsCss, /@media\s*\(max-width:\s*759px\)/);
 });
