@@ -1,6 +1,7 @@
 # TASK-20261126-004 · 关于页重构与静默自动更新闭环
 
 - 状态：Completed
+- 实现提交：`63797d6a5c6b8c070577e83b4bf9167b378d6ee9`
 - 范围：
   1. 在 NSIS 安装器 `desktop/build/windows/installer/omnimail.nsi` 中新增 `/RELAUNCH` 静默升级后自动拉起新版支持（兼容 `CurrentUser` 与 `AllUsers` 非提权拉起），保留用户既有开机自启与 `bootstrap.json` 数据目录配置；
   2. 在 Go 后端新增 `desktop/internal/updater/` 与 `desktop/updater_service.go`，支持 `DesktopPreferences` 更新偏好持久化（旧版配置向后兼容且切换主题/语言不丢失）、Stable / Beta 双通道 GitHub Release 检查与真实错误上报、受信任 HTTPS 域名与重定向流式下载、`<os.TempDir()>/OmniMail-Updates` `.part` 进度事件与 `SHA256SUMS.txt` 严格校验、以及 Windows NSIS 静默覆盖安装并自动重启（含未安装 `dev` 便携模式降级兜底）；
