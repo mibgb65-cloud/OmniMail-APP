@@ -3,6 +3,7 @@ import { useApp } from "../../state/AppContext";
 import { useValuePresence } from "../../state/usePresence";
 import type { MailItem } from "../../types/mail";
 import { ActionMenu, type ActionMenuEntry } from "../common/ActionMenu";
+import { LabelPickerPopover } from "./LabelPickerPopover";
 
 interface MailContextMenuProps {
   state: { mail: MailItem; x: number; y: number } | null;
@@ -63,15 +64,18 @@ export function MailContextMenu({ state, onClose }: MailContextMenuProps) {
         workspace.setOverlay({ type: "snooze", mailIds: [mail.id] }),
     },
     {
-      label: t("mailList.ctxManageLabels"),
+      label: t("labels.ctxApplyLabel"),
       icon: "tag",
       shortcut: "L",
-      onSelect: () =>
-        workspace.setOverlay({
-          type: "label-manage",
-          mailIds: [mail.id],
-          mode: "assign",
-        }),
+      renderSubmenu: ({ anchorRect, closeSubmenu }) => (
+        <LabelPickerPopover
+          mailIds={[mail.id]}
+          anchorRect={anchorRect}
+          cascade
+          onClose={closeSubmenu}
+        />
+      ),
+      onSelect: () => undefined,
     },
     {
       label: t("mailList.ctxArchiveThread"),

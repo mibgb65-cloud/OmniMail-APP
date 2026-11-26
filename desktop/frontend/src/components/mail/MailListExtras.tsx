@@ -1,13 +1,18 @@
+import { useState } from "react";
 import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { Icon } from "../common/Icon";
+import { LabelPickerPopover } from "./LabelPickerPopover";
 
 export function MailListBatchBar() {
   const { t } = useI18n();
   const { workspace, mailStore, toastStore } = useApp();
   const { checkedIds } = mailStore;
+  const [labelAnchor, setLabelAnchor] = useState<HTMLElement | null>(null);
 
   if (checkedIds.length === 0) return null;
+  const pushInfo = (title: string) =>
+    toastStore.pushToast({ tone: "info", title });
 
   return (
     <div className="batch-bar">
@@ -20,23 +25,37 @@ export function MailListBatchBar() {
           className="btn btn-sm btn-secondary"
           onClick={() => {
             mailStore.markRead(checkedIds, false);
-            toastStore.pushToast({
-              tone: "info",
-              title: t("toasts.markedReadCount", { count: checkedIds.length }),
-            });
+            pushInfo(t("toasts.markedReadCount", { count: checkedIds.length }));
           }}
         >
           {t("mailList.batchMarkRead")}
         </button>
         <button
           type="button"
+          data-batch-label-trigger="true"
+          aria-expanded={labelAnchor !== null}
+          className={`btn btn-sm btn-secondary${labelAnchor ? " is-label-open" : ""}`}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            const el = e.currentTarget;
+            setLabelAnchor((prev) => (prev ? null : el));
+          }}
+        >
+          {t("labels.batchLabel")}
+        </button>
+        {labelAnchor && (
+          <LabelPickerPopover
+            mailIds={checkedIds}
+            anchorEl={labelAnchor}
+            onClose={() => setLabelAnchor(null)}
+          />
+        )}
+        <button
+          type="button"
           className="btn btn-sm btn-secondary"
           onClick={() => {
             mailStore.moveMails(checkedIds, "archive");
-            toastStore.pushToast({
-              tone: "info",
-              title: t("toasts.batchArchived"),
-            });
+            pushInfo(t("toasts.batchArchived"));
           }}
         >
           {t("mailList.batchArchive")}
@@ -55,10 +74,7 @@ export function MailListBatchBar() {
           className="btn btn-sm btn-danger-soft"
           onClick={() => {
             mailStore.moveMails(checkedIds, "trash");
-            toastStore.pushToast({
-              tone: "info",
-              title: t("toasts.batchMovedTrash"),
-            });
+            pushInfo(t("toasts.batchMovedTrash"));
           }}
         >
           {t("mailList.batchDelete")}
@@ -101,12 +117,7 @@ export function MailListEmptyState({
         <button
           type="button"
           className="btn btn-primary"
-          style={{
-            height: 36,
-            padding: "0 16px",
-            fontSize: 12,
-            fontWeight: 600,
-          }}
+          style={{ height: 36, padding: "0 16px" }}
           onClick={() => workspace.setOverlay({ type: "add-account" })}
         >
           <Icon name="plus" size={13} /> {t("sidebar.addFirstAccount")}

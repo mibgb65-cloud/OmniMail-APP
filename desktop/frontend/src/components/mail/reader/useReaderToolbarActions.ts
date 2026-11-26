@@ -1,10 +1,42 @@
+import { createElement, useEffect, type RefObject } from "react";
 import { useI18n } from "../../../i18n";
 import { useApp } from "../../../state/AppContext";
 import type { MailItem } from "../../../types/mail";
 import type { ActionMenuEntry } from "../../common/ActionMenu";
+import { LabelPickerPopover } from "../LabelPickerPopover";
 import type { ReaderActionId } from "./readerToolbarLayout";
 
-export function useReaderToolbarActions(mail: MailItem) {
+export const READER_LABEL_SHORTCUT_EVENT = "omnimail:open-label-picker";
+
+export function useReaderLabelShortcut(
+  labelBtnRef: RefObject<HTMLElement | null>,
+  moreBtnRef: RefObject<HTMLElement | null>,
+  toolbarRef: RefObject<HTMLElement | null>,
+  onToggleAnchor: (target: HTMLElement | null) => void,
+) {
+  useEffect(() => {
+    const onShortcut = () => {
+      const batchBtn = document.querySelector<HTMLElement>(
+        '[data-batch-label-trigger="true"]',
+      );
+      if (batchBtn) {
+        batchBtn.click();
+        return;
+      }
+      onToggleAnchor(
+        labelBtnRef.current ?? moreBtnRef.current ?? toolbarRef.current ?? null,
+      );
+    };
+    window.addEventListener(READER_LABEL_SHORTCUT_EVENT, onShortcut);
+    return () =>
+      window.removeEventListener(READER_LABEL_SHORTCUT_EVENT, onShortcut);
+  }, [labelBtnRef, moreBtnRef, onToggleAnchor, toolbarRef]);
+}
+
+export function useReaderToolbarActions(
+  mail: MailItem,
+  onToggleLabelPicker?: (triggerEl?: HTMLElement | null) => void,
+) {
   const { t, localizeText } = useI18n();
   const { workspace, mailStore, composeStore, toastStore } = useApp();
   const replyLock = workspace.settings.lockReplyToOriginalAccount;
@@ -47,12 +79,14 @@ export function useReaderToolbarActions(mail: MailItem) {
       icon: "tag",
       label: t("reader.label"),
       shortcut: "L",
-      onSelect: () =>
-        workspace.setOverlay({
-          type: "label-manage",
+      renderSubmenu: ({ anchorRect, closeSubmenu }) =>
+        createElement(LabelPickerPopover, {
           mailIds: [mail.id],
-          mode: "assign",
+          anchorRect,
+          cascade: true,
+          onClose: closeSubmenu,
         }),
+      onSelect: (triggerEl) => onToggleLabelPicker?.(triggerEl),
     },
   ];
 

@@ -4,6 +4,7 @@ import { compose } from "./en/compose.ts";
 import { contacts } from "./en/contacts.ts";
 import { externalLink } from "./en/externalLink.ts";
 import { imageLightbox } from "./en/imageLightbox.ts";
+import { labelPopover } from "./en/labelPopover.ts";
 import { mailList, reader, security } from "./en/mailAndSecurity.ts";
 import { mailListBackfill } from "./en/mailListBackfill.ts";
 import { muse, museErrors } from "./en/museMail.ts";
@@ -35,6 +36,7 @@ export const enUS = {
   security,
   externalLink,
   imageLightbox,
+  labels: labelPopover,
   translation,
   ai,
   compose,

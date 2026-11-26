@@ -1,0 +1,184 @@
+/* 15 · 标签管理轻量化交互规范：侧边栏原地标签行与原地编辑浮层 (LabelEditPopover) */
+.label-edit-popover {
+  padding: 14px;
+  gap: 11px;
+}
+
+.lep-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lep-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-ink);
+}
+
+.lep-close-btn {
+  width: 22px;
+  height: 22px;
+}
+
+.lep-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.lep-field-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.lep-input {
+  height: 32px;
+  font-size: 12.5px;
+}
+
+.lep-swatches {
+  padding-top: 2px;
+}
+
+.lep-divider {
+  height: 1px;
+  background: var(--border-default);
+}
+
+.lep-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lep-delete-btn {
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 7px;
+  background: var(--status-danger-bg);
+  color: var(--status-danger);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.lep-delete-btn:hover {
+  filter: brightness(0.96);
+}
+
+.lep-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-label-add-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-label-row {
+  height: 32px;
+  padding: 0 8px 0 10px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  border: 1px solid transparent;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+}
+
+.sidebar-label-row:hover,
+.sidebar-label-row.is-editing {
+  background: var(--bg-hover);
+}
+
+.sidebar-label-row.active {
+  background: var(--bg-selected);
+  border-color: var(--border-selected);
+}
+
+.sidebar-label-main-btn {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  color: var(--text-body);
+  font-size: 13px;
+}
+
+.sidebar-label-row.active .sidebar-label-main-btn {
+  color: var(--brand-accent);
+  font-weight: 600;
+}
+
+.sidebar-label-tail {
+  position: relative;
+  min-width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.sidebar-label-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  transition: opacity var(--dur-fast) var(--ease-standard);
+}
+
+.sidebar-label-edit-btn {
+  position: absolute;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard);
+}
+
+.sidebar-label-row:hover .sidebar-label-count,
+.sidebar-label-row.is-editing .sidebar-label-count,
+.sidebar-label-row:focus-within .sidebar-label-count {
+  opacity: 0;
+}
+
+.sidebar-label-row:hover .sidebar-label-edit-btn,
+.sidebar-label-row.is-editing .sidebar-label-edit-btn,
+.sidebar-label-row:focus-within .sidebar-label-edit-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar-label-edit-btn:hover,
+.sidebar-label-row.is-editing .sidebar-label-edit-btn {
+  border-color: var(--border-selected);
+  background: var(--bg-selected);
+  color: var(--text-ink);
+}

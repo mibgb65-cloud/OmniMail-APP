@@ -3,6 +3,7 @@ import { Icon } from "./Icon";
 
 interface CheckboxProps {
   checked: boolean;
+  indeterminate?: boolean;
   onChange: (next: boolean) => void;
   children?: ReactNode;
   size?: "sm" | "md";
@@ -13,6 +14,7 @@ interface CheckboxProps {
 
 export function Checkbox({
   checked,
+  indeterminate = false,
   onChange,
   children,
   size = "md",
@@ -20,22 +22,28 @@ export function Checkbox({
   ariaLabel,
   style,
 }: CheckboxProps) {
+  const isMixed = indeterminate && !checked;
+  const nextVal = isMixed ? true : !checked;
   const toggle = (e: MouseEvent<HTMLElement>) => {
     e.stopPropagation();
-    if (!disabled) onChange(!checked);
+    if (!disabled) onChange(nextVal);
   };
 
   const box = (
     <button
       type="button"
       role="checkbox"
-      aria-checked={checked}
+      aria-checked={isMixed ? "mixed" : checked}
       aria-label={ariaLabel}
       disabled={disabled}
-      className={`checkbox-box${size === "sm" ? " sm" : ""}${checked ? " checked" : ""}`}
+      className={`checkbox-box${size === "sm" ? " sm" : ""}${checked ? " checked" : ""}${isMixed ? " mixed" : ""}`}
       onClick={toggle}
     >
-      {checked && <Icon name="check" size={size === "sm" ? 11 : 12} />}
+      {checked ? (
+        <Icon name="check" size={size === "sm" ? 11 : 12} />
+      ) : isMixed ? (
+        <Icon name="minus" size={size === "sm" ? 11 : 12} />
+      ) : null}
     </button>
   );
 
@@ -48,7 +56,7 @@ export function Checkbox({
       style={style}
       onClick={(e) => {
         if (disabled || (e.target as HTMLElement).closest("button")) return;
-        onChange(!checked);
+        onChange(nextVal);
       }}
     >
       {box}

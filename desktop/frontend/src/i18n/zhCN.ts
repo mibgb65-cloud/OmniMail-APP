@@ -4,6 +4,7 @@ import { compose } from "./zh/compose.ts";
 import { contacts } from "./zh/contacts.ts";
 import { externalLink } from "./zh/externalLink.ts";
 import { imageLightbox } from "./zh/imageLightbox.ts";
+import { labelPopover } from "./zh/labelPopover.ts";
 import { mailList, reader, security } from "./zh/mailAndSecurity.ts";
 import { mailListBackfill } from "./zh/mailListBackfill.ts";
 import { muse, museErrors } from "./zh/museMail.ts";
@@ -34,6 +35,7 @@ export const zhCN = {
   security,
   externalLink,
   imageLightbox,
+  labels: labelPopover,
   translation,
   ai,
   compose,

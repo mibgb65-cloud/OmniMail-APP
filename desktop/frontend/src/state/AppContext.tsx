@@ -5,6 +5,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
+import { READER_LABEL_SHORTCUT_EVENT } from "../components/mail/reader/ReaderToolbar";
 import { useAiStore } from "./useAiStore";
 import { useAppActions } from "./useAppActions";
 import { useComposeStore } from "./useComposeStore";
@@ -139,6 +140,11 @@ function useAppController() {
       const next = list[Math.max(0, Math.min(list.length - 1, idx + delta))];
       if (next && next.id !== mailStore.selectedMail?.id)
         mailStore.openMail(next.id);
+    },
+    onOpenLabelPicker: () => {
+      if (workspace.screen !== "mail") return;
+      if (mailStore.checkedIds.length === 0 && !mailStore.selectedMail) return;
+      window.dispatchEvent(new Event(READER_LABEL_SHORTCUT_EVENT));
     },
     onEscape: () => {
       if (workspace.overlay.type !== "none")

@@ -9,6 +9,7 @@ interface ShortcutHandlers {
   onToggleAi: () => void;
   onSyncAll: () => void;
   onStepMail: (delta: -1 | 1) => void;
+  onOpenLabelPicker?: () => void;
   onEscape: () => void;
   overlay: OverlayModal;
   composeOpen: boolean;
@@ -76,6 +77,9 @@ export function useGlobalShortcuts(handlers: ShortcutHandlers) {
         } else if (lower === "c") {
           e.preventDefault();
           handlers.onNewCompose();
+        } else if (lower === "l" && handlers.onOpenLabelPicker) {
+          e.preventDefault();
+          handlers.onOpenLabelPicker();
         }
       }
     };

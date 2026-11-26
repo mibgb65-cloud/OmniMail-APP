@@ -1,0 +1,96 @@
+/* 15 · 标签管理轻量化交互规范：右键级联菜单指示与阅读器主题胶囊直删 */
+.context-menu-item.is-sub-open {
+  background: var(--bg-selected);
+  color: var(--brand-accent);
+}
+
+.context-menu-tail {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.context-menu-sub-arrow {
+  color: var(--text-muted);
+}
+
+.context-menu-item.is-sub-open .context-menu-sub-arrow,
+.context-menu-item.is-sub-open .context-menu-kbd {
+  color: var(--brand-accent);
+}
+
+.reader-act-btn.is-label-open,
+.btn.is-label-open {
+  border-color: var(--brand-accent);
+  background: var(--bg-selected);
+  color: var(--brand-accent);
+}
+
+.reader-label-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 5px;
+}
+
+.reader-label-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.reader-label-chip-remove {
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border-radius: 999px;
+  color: inherit;
+  opacity: 0.65;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    opacity var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard);
+}
+
+.reader-label-chip:hover .reader-label-chip-remove,
+.reader-label-chip-remove:focus-visible {
+  opacity: 1;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="dark"] .reader-label-chip:hover .reader-label-chip-remove,
+[data-theme="dark"] .reader-label-chip-remove:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.reader-label-add-chip {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px dashed var(--border-strong);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reader-label-add-chip:hover,
+.reader-label-add-chip.is-open {
+  border: 1px solid var(--brand-accent);
+  background: var(--bg-selected);
+  color: var(--brand-accent);
+}
+
+.lmm-edit-row {
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}

@@ -6,6 +6,7 @@ import {
   type SetStateAction,
 } from "react";
 import { INITIAL_LABELS } from "../data/accounts";
+import { computeLabelTriState } from "../components/mail/labelPopoverLogic";
 import { mailApi } from "../services/backendClient";
 import type { MailItem, MailLabel } from "../types/mail";
 import { isWailsDesktop } from "./storageHelpers";
@@ -39,18 +40,20 @@ export function useMailLabels(
 
   const toggleMailLabel = useCallback(
     (mailIds: string[], labelId: string) => {
-      const first = mails.find((m) => mailIds.includes(m.id));
-      const removing = Boolean(first?.labels.includes(labelId));
+      if (mailIds.length === 0 || !labelId) return;
+      const tri = computeLabelTriState(mails, mailIds, labelId);
+      // 仅当全部已选邮件都拥有该标签时才移除；未选或半选状态统一将该标签应用到全部已选邮件
+      const removing = tri === "checked";
+      const idSet = new Set(mailIds);
       setMails((prev) =>
         prev.map((m) => {
-          if (!mailIds.includes(m.id)) return m;
-          const has = m.labels.includes(labelId);
-          return {
-            ...m,
-            labels: has
-              ? m.labels.filter((l) => l !== labelId)
-              : [...m.labels, labelId],
-          };
+          if (!idSet.has(m.id)) return m;
+          const nextLabels = removing
+            ? m.labels.filter((l) => l !== labelId)
+            : m.labels.includes(labelId)
+              ? m.labels
+              : [...m.labels, labelId];
+          return { ...m, labels: nextLabels };
         }),
       );
       void mailApi
@@ -75,6 +78,49 @@ export function useMailLabels(
       .catch(() => undefined);
     return tempId;
   }, []);
+
+  const createAndApplyLabel = useCallback(
+    async (name: string, color: string, mailIds: string[]) => {
+      const tempId = `lbl-${Date.now()}`;
+      const idSet = new Set(mailIds);
+      setLabels((prev) => [...prev, { id: tempId, name, color }]);
+      if (mailIds.length > 0) {
+        setMails((prev) =>
+          prev.map((m) =>
+            idSet.has(m.id) && !m.labels.includes(tempId)
+              ? { ...m, labels: [...m.labels, tempId] }
+              : m,
+          ),
+        );
+      }
+      try {
+        const saved = await mailApi.saveLabel({ id: tempId, name, color });
+        const finalId = saved.id || tempId;
+        setLabels((prev) => prev.map((l) => (l.id === tempId ? saved : l)));
+        if (finalId !== tempId && mailIds.length > 0) {
+          setMails((prev) =>
+            prev.map((m) =>
+              idSet.has(m.id)
+                ? {
+                    ...m,
+                    labels: m.labels.map((lid) =>
+                      lid === tempId ? finalId : lid,
+                    ),
+                  }
+                : m,
+            ),
+          );
+        }
+        if (mailIds.length > 0) {
+          await mailApi.applyLabels(mailIds, [finalId], []);
+        }
+        return finalId;
+      } catch {
+        return tempId;
+      }
+    },
+    [setMails],
+  );
 
   const renameLabel = useCallback((id: string, name: string, color: string) => {
     setLabels((prev) =>
@@ -103,6 +149,7 @@ export function useMailLabels(
     reloadLabels,
     toggleMailLabel,
     createLabel,
+    createAndApplyLabel,
     renameLabel,
     deleteLabel,
   };

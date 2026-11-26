@@ -137,6 +137,8 @@ html[data-theme-sync="true"] .btn {
   .custom-select-menu,
   .dt-picker-popover,
   .context-menu,
+  .label-picker-popover,
+  .label-edit-popover,
   .custom-tooltip,
   .reader-motion-stage,
   .settings-tab-stage,
@@ -178,7 +180,8 @@ html[data-theme-sync="true"] .btn {
   .btn-icon:active:not(:disabled),
   .compose-cta:active,
   .custom-select-trigger[data-open="true"] .select-chevron,
-  .swatch-btn.active {
+  .swatch-btn.active,
+  .lpp-mini-swatch.active {
     transform: none !important;
   }
 

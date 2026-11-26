@@ -1,15 +1,23 @@
+import { useCallback, useRef, useState } from "react";
 import { useI18n } from "../../../i18n";
 import { useApp } from "../../../state/AppContext";
 import type { MailItem } from "../../../types/mail";
 import type { DarkHtmlMode } from "../../../types/settings";
 import { Icon } from "../../common/Icon";
 import { Tooltip } from "../../common/Tooltip";
+import { LabelPickerPopover } from "../LabelPickerPopover";
 import { ReaderTranslateButton } from "../translation/ReaderTranslateButton";
 import { HtmlThemeModeToggle } from "./HtmlThemeModeToggle";
 import { ReaderMoreMenu } from "./ReaderMoreMenu";
 import { getReaderToolbarSlotStyles } from "./readerToolbarLayout";
-import { useReaderToolbarActions } from "./useReaderToolbarActions";
+import {
+  READER_LABEL_SHORTCUT_EVENT,
+  useReaderLabelShortcut,
+  useReaderToolbarActions,
+} from "./useReaderToolbarActions";
 import { useReaderToolbarLayout } from "./useReaderToolbarLayout";
+
+export { READER_LABEL_SHORTCUT_EVENT };
 
 export function ReaderToolbar({
   mail,
@@ -38,7 +46,19 @@ export function ReaderToolbar({
       : 162
     : 0;
   const { ref, layout } = useReaderToolbarLayout(reservedToggleWidth);
-  const { actions, handleDelete } = useReaderToolbarActions(mail);
+  const labelBtnRef = useRef<HTMLButtonElement | null>(null);
+  const moreBtnRef = useRef<HTMLButtonElement | null>(null);
+  const [labelAnchor, setLabelAnchor] = useState<HTMLElement | null>(null);
+
+  const toggleAnchor = useCallback((target: HTMLElement | null) => {
+    setLabelAnchor((prev) => (prev ? null : target));
+  }, []);
+
+  const { actions, handleDelete } = useReaderToolbarActions(mail, (el) =>
+    toggleAnchor(el ?? labelBtnRef.current ?? moreBtnRef.current ?? null),
+  );
+  useReaderLabelShortcut(labelBtnRef, moreBtnRef, ref, toggleAnchor);
+
   const aiLabel = t(aiStore.aiOpen ? "reader.hideAi" : "reader.showAi");
   const deleteTip = t(
     mail.folder === "trash"
@@ -59,19 +79,26 @@ export function ReaderToolbar({
       data-ai-label={layout.aiLabel}
     >
       <div className="reader-toolbar-group">
-        {visibleActions.map((act) => (
-          <button
-            key={act.id}
-            type="button"
-            className="btn btn-sm btn-secondary reader-act-btn"
-            aria-label={act.label}
-            title={layout.density === "icons" ? act.label : undefined}
-            onClick={act.onSelect}
-          >
-            {act.icon && <Icon name={act.icon} size={13} />}
-            <span>{act.label}</span>
-          </button>
-        ))}
+        {visibleActions.map((act) => {
+          const isLabel = act.id === "label";
+          const isOpen = isLabel && labelAnchor !== null;
+          return (
+            <button
+              key={act.id}
+              ref={isLabel ? labelBtnRef : undefined}
+              type="button"
+              aria-expanded={isLabel ? isOpen : undefined}
+              className={`btn btn-sm btn-secondary reader-act-btn${isOpen ? " is-label-open" : ""}`}
+              aria-label={act.label}
+              title={layout.density === "icons" ? act.label : undefined}
+              onMouseDown={isLabel ? (e) => e.stopPropagation() : undefined}
+              onClick={(e) => act.onSelect(e.currentTarget)}
+            >
+              {act.icon && <Icon name={act.icon} size={13} />}
+              <span>{act.label}</span>
+            </button>
+          );
+        })}
         <ReaderTranslateButton key={mail.id} />
         {showHtmlThemeToggle && onHtmlThemeModeChange && (
           <HtmlThemeModeToggle
@@ -96,6 +123,7 @@ export function ReaderToolbar({
           mail={mail}
           onDelete={handleDelete}
           foldedItems={foldedActions}
+          triggerRef={moreBtnRef}
         />
       </div>
 
@@ -146,6 +174,14 @@ export function ReaderToolbar({
           </span>
         </button>
       </div>
+
+      {labelAnchor && (
+        <LabelPickerPopover
+          mailIds={[mail.id]}
+          anchorEl={labelAnchor}
+          onClose={() => setLabelAnchor(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { useI18n } from "../../../i18n";
 import { useApp } from "../../../state/AppContext";
 import { useValuePresence } from "../../../state/usePresence";
@@ -11,10 +11,12 @@ export function ReaderMoreMenu({
   mail,
   onDelete,
   foldedItems,
+  triggerRef,
 }: {
   mail: MailItem;
   onDelete: () => void;
   foldedItems: ActionMenuEntry[];
+  triggerRef?: RefObject<HTMLButtonElement | null>;
 }) {
   const { t } = useI18n();
   const { workspace } = useApp();
@@ -69,7 +71,10 @@ export function ReaderMoreMenu({
     <>
       <Tooltip label={t("reader.moreActionsTip")}>
         <button
-          ref={btnRef}
+          ref={(node) => {
+            btnRef.current = node;
+            if (triggerRef) triggerRef.current = node;
+          }}
           type="button"
           className="icon-btn icon-btn-bordered reader-icon-btn"
           aria-label={t("reader.moreActionsTip")}

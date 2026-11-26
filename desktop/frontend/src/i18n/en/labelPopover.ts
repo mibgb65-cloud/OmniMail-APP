@@ -1,0 +1,27 @@
+import type { labelPopover as zhLabelPopover } from "../zh/labelPopover.ts";
+
+export const labelPopover = {
+  ctxApplyLabel: "Apply label",
+  batchLabel: "Label",
+  pickerAria: "Apply labels to email",
+  searchPlaceholder: "Filter or type new label…",
+  enterToCreateHint: "Enter to create",
+  createAndApplyBtn: "Create & apply “{name}”",
+  quickNewAndApplyBtn: "New label & apply now",
+  emptyLabelsHint: "Type a name and press Enter to create your first label",
+  triStateCheckedAria: "Label {name} applied (click to remove)",
+  triStateMixedAria: "Label {name} on some messages (click to apply to all)",
+  triStateUncheckedAria: "Apply label {name}",
+  createLabelTitle: "Create Label",
+  editLabelTitle: "Edit Label",
+  labelNameField: "Label Name",
+  labelNamePlaceholder: "e.g. Core Work, Invoices",
+  labelColorField: "Label Color",
+  deleteLabelBtn: "Delete Label",
+  sidebarCreateTip: "Create label",
+  sidebarEditBtnAria: "Edit label {name}",
+  removeSubjectLabelAria: "Remove label {name}",
+  addSubjectLabelTip: "Add label",
+  updatedLabelToast: "Updated label “{name}”",
+  createdAndAppliedToast: "Created & applied label “{name}”",
+} satisfies typeof zhLabelPopover;
