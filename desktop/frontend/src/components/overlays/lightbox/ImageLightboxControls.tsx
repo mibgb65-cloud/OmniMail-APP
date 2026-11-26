@@ -20,6 +20,30 @@ interface ImageLightboxControlsProps {
   onSelectIndex: (index: number) => void;
 }
 
+export function LightboxNavButton({
+  dir,
+  ariaLabel,
+  onTrigger,
+}: {
+  dir: "prev" | "next";
+  ariaLabel: string;
+  onTrigger: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`lightbox-nav-btn ${dir}`}
+      aria-label={ariaLabel}
+      onClick={(e) => {
+        e.stopPropagation();
+        onTrigger();
+      }}
+    >
+      <Icon name={dir === "prev" ? "chevronLeft" : "chevronRight"} size={20} />
+    </button>
+  );
+}
+
 export function ImageLightboxControls({
   images,
   activeIndex,

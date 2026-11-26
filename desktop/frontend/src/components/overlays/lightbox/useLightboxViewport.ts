@@ -113,7 +113,7 @@ export function useLightboxViewport(
   );
 
   const handlePointerDown = useCallback(
-    (e: React.PointerEvent<HTMLImageElement>) => {
+    (e: React.PointerEvent<HTMLElement>) => {
       if (e.button !== 0 || (tf.fitMode && tf.scale <= 1)) return;
       e.preventDefault();
       e.stopPropagation();
@@ -131,7 +131,7 @@ export function useLightboxViewport(
   );
 
   const handlePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLImageElement>) => {
+    (e: React.PointerEvent<HTMLElement>) => {
       const origin = dragOriginRef.current;
       if (!origin || origin.pointerId !== e.pointerId) return;
       const dx = e.clientX - origin.startX;
@@ -145,15 +145,12 @@ export function useLightboxViewport(
     [],
   );
 
-  const handlePointerUp = useCallback(
-    (e: React.PointerEvent<HTMLImageElement>) => {
-      const origin = dragOriginRef.current;
-      if (!origin || origin.pointerId !== e.pointerId) return;
-      dragOriginRef.current = null;
-      setDragging(false);
-    },
-    [],
-  );
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLElement>) => {
+    const origin = dragOriginRef.current;
+    if (!origin || origin.pointerId !== e.pointerId) return;
+    dragOriginRef.current = null;
+    setDragging(false);
+  }, []);
 
   return {
     transform: tf,

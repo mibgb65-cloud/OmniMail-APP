@@ -1,0 +1,168 @@
+/* Lightbox 三段式开合阻尼动效、切图轻过渡与无障碍减弱动态降级（仅动画 opacity / transform） */
+@keyframes lightbox-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lightbox-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes lightbox-stage-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes lightbox-stage-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.94) translateY(4px);
+  }
+}
+
+@keyframes lightbox-topbar-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lightbox-topbar-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes lightbox-dock-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lightbox-dock-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes lightbox-slide-fade {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.lightbox-backdrop {
+  animation: lightbox-backdrop-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.lightbox-stage-frame {
+  animation: lightbox-stage-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.lightbox-topbar {
+  animation: lightbox-topbar-in 220ms cubic-bezier(0.22, 1, 0.36, 1) 35ms both;
+}
+
+.lightbox-bottom-dock {
+  animation: lightbox-dock-in 220ms cubic-bezier(0.22, 1, 0.36, 1) 35ms both;
+}
+
+.lightbox-slide-swap {
+  animation: lightbox-slide-fade 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.lightbox-backdrop[data-closing="true"],
+.overlay-motion-root[data-closing="true"] .lightbox-backdrop {
+  pointer-events: none;
+  animation: lightbox-backdrop-out 170ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.lightbox-backdrop[data-closing="true"] .lightbox-topbar,
+.overlay-motion-root[data-closing="true"] .lightbox-topbar {
+  animation: lightbox-topbar-out 120ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.lightbox-backdrop[data-closing="true"] .lightbox-bottom-dock,
+.overlay-motion-root[data-closing="true"] .lightbox-bottom-dock {
+  animation: lightbox-dock-out 120ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.lightbox-backdrop[data-closing="true"] .lightbox-stage-frame,
+.overlay-motion-root[data-closing="true"] .lightbox-stage-frame {
+  animation: lightbox-stage-out 170ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox-backdrop,
+  .lightbox-stage-frame,
+  .lightbox-topbar,
+  .lightbox-bottom-dock,
+  .lightbox-slide-swap {
+    animation: lightbox-backdrop-in 120ms linear both !important;
+    animation-delay: 0ms !important;
+  }
+
+  .lightbox-backdrop[data-closing="true"],
+  .overlay-motion-root[data-closing="true"] .lightbox-backdrop,
+  .lightbox-backdrop[data-closing="true"] .lightbox-topbar,
+  .overlay-motion-root[data-closing="true"] .lightbox-topbar,
+  .lightbox-backdrop[data-closing="true"] .lightbox-bottom-dock,
+  .overlay-motion-root[data-closing="true"] .lightbox-bottom-dock,
+  .lightbox-backdrop[data-closing="true"] .lightbox-stage-frame,
+  .overlay-motion-root[data-closing="true"] .lightbox-stage-frame {
+    animation: lightbox-backdrop-out 120ms linear both !important;
+  }
+
+  .lightbox-media-carrier,
+  .lightbox-surface-btn,
+  .lightbox-close-btn,
+  .lightbox-nav-btn,
+  .lightbox-ctrl-btn,
+  .lightbox-ctrl-text-btn,
+  .lightbox-thumb-item {
+    transition: none !important;
+  }
+}

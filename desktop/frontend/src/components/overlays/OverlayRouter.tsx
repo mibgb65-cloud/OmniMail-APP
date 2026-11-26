@@ -39,7 +39,10 @@ import { RuleEditorModal } from "./RuleEditorModal";
 import { SnoozeModal } from "./SnoozeModal";
 import { UpdateFlowModal } from "./UpdateFlowModal";
 
-function renderModal(ov: Exclude<OverlayModal, { type: "none" }>) {
+function renderModal(
+  ov: Exclude<OverlayModal, { type: "none" }>,
+  closing: boolean,
+) {
   switch (ov.type) {
     case "settings":
       return (
@@ -103,7 +106,11 @@ function renderModal(ov: Exclude<OverlayModal, { type: "none" }>) {
       );
     case "image-lightbox":
       return (
-        <ImageLightboxModal images={ov.images} initialIndex={ov.initialIndex} />
+        <ImageLightboxModal
+          images={ov.images}
+          initialIndex={ov.initialIndex}
+          closing={closing}
+        />
       );
     case "attachment-transfer":
       return <AttachmentTransferModal mode={ov.mode} />;
@@ -148,10 +155,12 @@ function renderModal(ov: Exclude<OverlayModal, { type: "none" }>) {
   }
 }
 
+export const OVERLAY_EXIT_MS = 180;
+
 export function OverlayRouter() {
   const { workspace } = useApp();
   const active = workspace.overlay.type === "none" ? null : workspace.overlay;
-  const { rendered, closing } = useValuePresence(active, 140);
+  const { rendered, closing } = useValuePresence(active, OVERLAY_EXIT_MS);
   if (!rendered) return null;
 
   const isConnectSuite = isConnectSuiteOverlay(rendered);
@@ -164,6 +173,7 @@ export function OverlayRouter() {
       key={rootKey}
       className={`overlay-motion-root ${isConnectSuite ? "is-connect-suite" : ""}`}
       data-layer="overlay"
+      data-overlay-type={rendered.type}
       data-closing={closing ? "true" : "false"}
     >
       {isConnectSuite ? (
@@ -172,10 +182,10 @@ export function OverlayRouter() {
           className="connect-suite-stage"
           data-dir={stageDir}
         >
-          {renderModal(rendered)}
+          {renderModal(rendered, closing)}
         </div>
       ) : (
-        renderModal(rendered)
+        renderModal(rendered, closing)
       )}
     </div>
   );

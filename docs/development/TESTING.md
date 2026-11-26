@@ -7,7 +7,7 @@
 
 ## 自动化测试覆盖
 
-- **前端单元测试（`task frontend:test`）**：覆盖中英双语词典键与占位符完备性、统一英文术语表与翻译品牌边界、英文读信工具栏响应式折叠槽位、轻量贴标签/原地管理浮层的三态判据与视口翻转定位及无全局删除按钮门禁、顶栏同步状态机解耦与后台/单账户同步收尾收敛判据、写信内联 AI 生成态协同锁定与抢停隔离及替换/追加采纳闭环、全站邮箱账户选择器收起态真实邮箱副标题判据、滚动边界与回顶轻胶囊阈值、全仓零原生下拉/单复选框门禁与嵌套 Portal 浮层交互判据、SPF/DKIM/DMARC 安全横幅分色与信任状态，以及 Heroicons 的 SVG 规格和关键图标映射；不启动原生窗口。
+- **前端单元测试（`task frontend:test`）**：覆盖中英双语词典键与占位符完备性、统一英文术语表与翻译品牌边界、英文读信工具栏响应式折叠槽位、轻量贴标签/原地管理浮层的三态判据与视口翻转定位及无全局删除按钮门禁、顶栏同步状态机解耦与后台/单账户同步收尾收敛判据、写信内联 AI 生成态协同锁定与抢停隔离及替换/追加采纳闭环、全站邮箱账户选择器收起态真实邮箱副标题判据、图片大图预览透明明暗采样智能底板与三段式开合层分离判据、滚动边界与回顶轻胶囊阈值、全仓零原生下拉/单复选框门禁与嵌套 Portal 浮层交互判据、SPF/DKIM/DMARC 安全横幅分色与信任状态，以及 Heroicons 的 SVG 规格和关键图标映射；不启动原生窗口。
 - **纯 Go 单元测试（离线可重复执行）**：覆盖桌面引导与双轨版本号解析（`desktop`）、DPAPI 凭据盒与 Argon2id PIN 锁及 HTML 净化（`internal/security`）、SQLite WAL 16 表与 Zstd CAS 存储（`internal/storage`、`internal/profilemgr`）、10 家服务商解析与 CJK 解码及 `.ics` 冲突检测（`internal/mailproto`、`internal/oauth`）、Muse Mail `http/1.1` ALPN 与系统代理隧道/阶段脱敏诊断/WebView2 虚表与自动关窗生命周期（`internal/musemail`）、幂等同步与 FTS5 混合检索（`internal/syncer`）、RFC5322 BCC 零头泄露与零网络真撤回（`internal/outbox`）、联系人/黑名单/规则干跑/防循环自动回复（`internal/contacts`、`internal/rules`）、5 步 `PrivacyGuard` 与脱敏诊断包（`internal/ai`、`internal/diagnostics`）。
 - **可选真实邮局非破坏性协议验证（`//go:build live`）**：在配置本地临时环境变量 `OMNIMAIL_LIVE_ACCOUNTS_FILE` 时，可在 `desktop/` 下执行 `go test -tags=live ./internal/syncer ./internal/outbox` 进行只读 `BODY.PEEK[]` 多邮局连通验证（严禁在仓库内写入任何真实账号或凭据）。
 
