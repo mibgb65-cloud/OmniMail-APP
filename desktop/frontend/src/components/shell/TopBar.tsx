@@ -4,10 +4,12 @@ import { BrandLogo } from "../common/BrandLogo";
 import { Icon } from "../common/Icon";
 import { Tooltip } from "../common/Tooltip";
 import { TopBarSyncChip } from "./TopBarSyncChip";
+import { TopBarUpdateChip } from "./TopBarUpdateChip";
 import { WindowControls, handleDragRegionDoubleClick } from "./WindowControls";
 
 export function TopBar() {
-  const { viewport, workspace, mailStore, workBuddyStore } = useApp();
+  const { viewport, workspace, mailStore, workBuddyStore, updateStore } =
+    useApp();
   const { t } = useI18n();
   const { settings, screen } = workspace;
   const isCompact = viewport === "compact";
@@ -26,8 +28,17 @@ export function TopBar() {
     ? workBuddyStore.searchQuery
     : mailStore.searchQuery;
 
+  const updateDotTone =
+    updateStore.flowState === "ready" || updateStore.flowState === "installing"
+      ? "ready"
+      : "accent";
+
   return (
-    <header className="topbar" onDoubleClick={handleDragRegionDoubleClick}>
+    <header
+      className="topbar"
+      data-has-update={updateStore.chipVisible ? "true" : undefined}
+      onDoubleClick={handleDragRegionDoubleClick}
+    >
       <div className="topbar-left">
         <button
           type="button"
@@ -91,6 +102,8 @@ export function TopBar() {
       </div>
 
       <div className="topbar-right">
+        <TopBarUpdateChip />
+
         {!isCompact && (
           <Tooltip label={t("topbar.switchLanguage")}>
             <button
@@ -151,12 +164,26 @@ export function TopBar() {
           <button
             type="button"
             className="icon-btn icon-btn-bordered topbar-settings-btn"
-            onClick={() =>
-              workspace.setOverlay({ type: "settings", tab: "general" })
-            }
+            onClick={() => {
+              const goAbout =
+                updateStore.chipVisible &&
+                typeof window !== "undefined" &&
+                window.innerWidth < 860;
+              workspace.setOverlay({
+                type: "settings",
+                tab: goAbout ? "about" : "general",
+              });
+            }}
             aria-label={t("topbar.openSettings")}
           >
             <Icon name="settings" size={15} />
+            {updateStore.chipVisible && (
+              <span
+                className="topbar-settings-update-dot"
+                data-tone={updateDotTone}
+                aria-hidden="true"
+              />
+            )}
           </button>
         </Tooltip>
 

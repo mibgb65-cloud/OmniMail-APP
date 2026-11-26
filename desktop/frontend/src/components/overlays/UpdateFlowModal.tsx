@@ -1,156 +1,159 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckForUpdates } from "../../../bindings/omnimail/desktopservice";
-import type { UpdateCheckResult } from "../../../bindings/omnimail/models";
-import { formatUnixTimestamp, useI18n } from "../../i18n";
+import { useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
 import { openSafeExternalUrl } from "../../state/desktopActions";
-import { isWailsDesktop } from "../../state/storageHelpers";
 import type { UpdateStage } from "../../types/ui";
+import { formatVersionTag } from "../../utils/updateFormat";
 import {
   AsyncActionButton,
   type AsyncActionStatus,
 } from "../common/AsyncActionButton";
 import { Icon } from "../common/Icon";
 import { ModalShell } from "../common/ModalShell";
-
-function formatVersionTag(raw?: string): string {
-  const s = (raw ?? "").trim();
-  if (!s) return "v0.0.1";
-  return s.startsWith("v") || s.startsWith("V") ? s : `v${s}`;
-}
+import { UpdateFlowModalBody } from "./UpdateFlowModalBody";
 
 export function UpdateFlowModal({
-  stage: _initialStage,
+  stage: initialStage,
 }: {
   stage: UpdateStage;
 }) {
-  const { workspace } = useApp();
-  const { lang, isEn, t, formatTime } = useI18n();
-  const [status, setStatus] = useState<AsyncActionStatus>("loading");
-  const [result, setResult] = useState<UpdateCheckResult | null>(null);
+  const { workspace, updateStore } = useApp();
+  const { isEn, t, formatTime } = useI18n();
+  const { buildInfo, checkResult, checking, flowState, progress } = updateStore;
+  const [btnStatus, setBtnStatus] = useState<AsyncActionStatus>("idle");
 
-  const runCheck = useCallback(async () => {
-    setStatus("loading");
-    if (!isWailsDesktop()) {
-      await new Promise((r) => window.setTimeout(r, 380));
-      setResult({
-        currentVersion: "v0.0.1",
-        latestVersion: "v0.0.1",
-        channel: "stable",
-        hasUpdate: false,
-        releaseUrl: "https://github.com/omnimail-org/omnimail/releases",
-        releaseNotes: t("overlays.updatePreviewNotes"),
-        checkedAt: formatUnixTimestamp(Date.now(), lang),
-      });
-      setStatus("success");
-      return;
-    }
-    try {
-      const res = await CheckForUpdates();
-      setResult(res);
-      setStatus("success");
-    } catch {
-      setStatus("error");
-    }
-  }, [lang, t]);
+  const triggerManualCheck = useCallback(async () => {
+    setBtnStatus("loading");
+    const res = await updateStore.runCheck({ manual: true });
+    setBtnStatus(res ? "success" : "error");
+  }, [updateStore]);
 
   useEffect(() => {
-    void _initialStage;
-    const timer = window.setTimeout(() => {
-      void runCheck();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [_initialStage, runCheck]);
+    if (initialStage === "checking" || !checkResult) {
+      const timer = window.setTimeout(() => {
+        void triggerManualCheck();
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, [checkResult, initialStage, triggerManualCheck]);
 
-  const checking = status === "loading";
-  const rawNotes = result?.releaseNotes ?? "";
-  const localizedNotes = !rawNotes
+  const curVer = formatVersionTag(
+    checkResult?.currentVersion || buildInfo.version,
+  );
+  const latestVer = formatVersionTag(
+    progress?.version || checkResult?.latestVersion || curVer,
+  );
+  const checkedSuffix = checkResult?.checkedAt
+    ? ` · ${formatTime(checkResult.checkedAt)}`
+    : "";
+  const rawNotes = checkResult?.releaseNotes ?? "";
+  const notesText = !rawNotes
     ? t("overlays.updateNoNotesFallback")
     : isEn && rawNotes.startsWith("当前运行的是 OmniMail 开源")
       ? t("overlays.updatePreviewNotes")
       : rawNotes;
-  const checkedSuffix = result?.checkedAt
-    ? ` · ${formatTime(result.checkedAt)}`
-    : "";
+
+  const isDownloading =
+    flowState === "downloading" || flowState === "verifying";
+  const isReady = flowState === "ready" || flowState === "installing";
+  const releaseUrl =
+    checkResult?.releaseUrl ||
+    "https://github.com/omnimail-org/omnimail/releases";
 
   return (
     <ModalShell
       heading={t("overlays.updateHeading")}
       subtitle={`${t("overlays.updateSubtitle", {
-        version: formatVersionTag(result?.currentVersion),
-        beta: result?.channel === "beta" ? " (Beta)" : "",
+        version: curVer,
+        beta:
+          (checkResult?.channel || buildInfo.channel) === "beta"
+            ? " (Beta)"
+            : "",
       })}${checkedSuffix}`}
-      maxWidth={540}
+      maxWidth={600}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
         <>
-          <AsyncActionButton
-            size="sm"
-            variant="secondary"
-            status={status}
-            idleIcon="refresh"
-            idleLabel={t("overlays.updateRecheckIdle")}
-            loadingLabel={t("overlays.updateRecheckLoading")}
-            successLabel={
-              result?.hasUpdate
-                ? t("overlays.updateHasNewBtn")
-                : t("overlays.updateUpToDateBtn")
-            }
-            errorLabel={t("overlays.updateQueryError")}
-            successHoldMs={1000}
-            onSuccessHoldEnd={() => setStatus("idle")}
-            onClick={() => void runCheck()}
-          />
           <div className="row" style={{ gap: 8 }}>
-            {result?.releaseUrl && (
+            <AsyncActionButton
+              size="sm"
+              variant="secondary"
+              status={checking ? "loading" : btnStatus}
+              idleIcon="refresh"
+              idleLabel={t("overlays.updateRecheckIdle")}
+              loadingLabel={t("overlays.updateRecheckLoading")}
+              successLabel={
+                checkResult?.hasUpdate
+                  ? t("overlays.updateHasNewBtn")
+                  : t("overlays.updateUpToDateBtn")
+              }
+              errorLabel={t("updater.modalErrorRetryBtn")}
+              successHoldMs={1000}
+              onSuccessHoldEnd={() => setBtnStatus("idle")}
+              onClick={() => void triggerManualCheck()}
+            />
+            {isReady && progress?.filePath && (
               <button
                 type="button"
-                className="btn btn-secondary"
-                onClick={() => void openSafeExternalUrl(result.releaseUrl)}
+                className="btn btn-secondary btn-sm"
+                onClick={() => void updateStore.openDownloadFolder()}
               >
-                <Icon name="external" size={14} />{" "}
-                {t("overlays.updateOpenGithubBtn")}
+                <Icon name="folder" size={14} />
+                <span>{t("updater.modalOpenDownloadDirBtn")}</span>
               </button>
             )}
+          </div>
+
+          <div className="row" style={{ gap: 8 }}>
             <button
               type="button"
-              className="btn btn-primary"
-              onClick={() => workspace.setOverlay({ type: "none" })}
+              className="btn btn-secondary btn-sm"
+              onClick={() => void openSafeExternalUrl(releaseUrl)}
             >
-              {t("common.close")}
+              <Icon name="external" size={14} />
+              <span>{t("overlays.updateOpenGithubBtn")}</span>
             </button>
+            {isDownloading ? (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => void updateStore.cancelDownload()}
+              >
+                {t("updater.popCancelDownloadBtn")}
+              </button>
+            ) : isReady ? (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm tup-btn-ready"
+                disabled={flowState === "installing"}
+                onClick={() => void updateStore.installReadyUpdate(true)}
+              >
+                <Icon name="checkCircle" size={14} />
+                <span>{t("updater.popSilentRestartBtn")}</span>
+              </button>
+            ) : checkResult?.hasUpdate ? (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => void updateStore.startSilentUpdate(true)}
+              >
+                <Icon name="zap" size={14} />
+                <span>{t("updater.popSilentUpdateBtn")}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => workspace.setOverlay({ type: "none" })}
+              >
+                {t("common.close")}
+              </button>
+            )}
           </div>
         </>
       }
     >
-      <div className="settings-card">
-        <div className="row-between">
-          <strong>
-            {checking
-              ? t("overlays.updateCheckingGithubTitle")
-              : result?.hasUpdate
-                ? t("overlays.updateFoundVersionTitle", {
-                    version: formatVersionTag(result.latestVersion),
-                  })
-                : t("overlays.updateCurrentLatestTitle")}
-          </strong>
-          <span
-            className={`pill ${checking ? "pill-accent" : result?.hasUpdate ? "pill-warning" : "pill-success"}`}
-          >
-            {checking
-              ? t("overlays.updateBadgeChecking")
-              : result?.hasUpdate
-                ? t("overlays.updateBadgeHasUpdate")
-                : t("overlays.updateBadgeLatest")}
-          </span>
-        </div>
-        <div
-          className="text-xs text-muted"
-          style={{ lineHeight: 1.65, whiteSpace: "pre-line" }}
-        >
-          {checking ? t("overlays.updateCheckingDesc") : localizedNotes}
-        </div>
-      </div>
+      <UpdateFlowModalBody latestVer={latestVer} notesText={notesText} />
     </ModalShell>
   );
 }

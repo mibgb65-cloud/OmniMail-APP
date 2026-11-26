@@ -11,6 +11,7 @@ import { ComposeTab } from "./ComposeTab";
 import { GeneralTab } from "./GeneralTab";
 import { PrivacyTab } from "./PrivacyTab";
 import { RulesTab } from "./RulesTab";
+import { SettingsSidebarNav } from "./SettingsSidebarNav";
 import { AboutTab, ShortcutsTab } from "./ShortcutsAndAboutTabs";
 import { StorageTab } from "./StorageTab";
 import { SyncTab } from "./SyncTab";
@@ -38,6 +39,7 @@ export function SettingsModal({
     item.label.toLowerCase().includes(query.trim().toLowerCase()),
   );
   const activeMeta = navItems.find((item) => item.id === tab) ?? navItems[0];
+
   const renderTabBody = () => {
     switch (tab) {
       case "general":
@@ -72,6 +74,7 @@ export function SettingsModal({
         return <AboutTab />;
     }
   };
+
   return (
     <div
       className="modal-backdrop"
@@ -86,69 +89,16 @@ export function SettingsModal({
         aria-modal="true"
         aria-label={t("settings.modalAria")}
       >
-        <nav className="settings-nav" aria-label={t("settings.navAria")}>
-          <div className="settings-nav-top">
-            <div className="settings-nav-title">{t("settings.navTitle")}</div>
-            <input
-              type="search"
-              className="input"
-              style={{ height: 32 }}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("settings.searchPlaceholder")}
-            />
-          </div>
-          <FadeScroll
-            className="settings-nav-scroll"
-            surface="--bg-surface"
-            label={t("settings.navScrollLabel")}
-          >
-            {visibleTabs.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`nav-item${tab === item.id ? " active" : ""}`}
-                onClick={() => {
-                  setTab(item.id);
-                  if (item.id !== "accounts") setAccountId(undefined);
-                }}
-              >
-                <span className="nav-item-main">
-                  <Icon name={item.icon} size={14} />
-                  <span className="nav-item-label">{item.label}</span>
-                </span>
-                {item.id === "accounts" && (
-                  <span className="nav-count">{workspace.accounts.length}</span>
-                )}
-              </button>
-            ))}
-          </FadeScroll>
-
-          <button
-            type="button"
-            className="sidebar-footer-card"
-            style={{ width: "100%", textAlign: "left", flexShrink: 0 }}
-            onClick={() => setTab("about")}
-          >
-            <div
-              className="truncate"
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: "var(--text-ink)",
-                width: "100%",
-              }}
-            >
-              {t("settings.footerAboutTitle")}
-            </div>
-            <div
-              className="text-xs text-muted truncate"
-              style={{ width: "100%" }}
-            >
-              {t("settings.footerVersion", { version: "0.1.0" })}
-            </div>
-          </button>
-        </nav>
+        <SettingsSidebarNav
+          tab={tab}
+          query={query}
+          visibleTabs={visibleTabs}
+          onQueryChange={setQuery}
+          onSelectTab={(nextTab) => {
+            setTab(nextTab);
+            if (nextTab !== "accounts") setAccountId(undefined);
+          }}
+        />
 
         <section className="settings-content">
           <div className="modal-header">
@@ -160,7 +110,9 @@ export function SettingsModal({
               <div className="modal-sub truncate">
                 {tab === "ai"
                   ? t("settings.headerSubAi")
-                  : t("settings.headerSubDefault")}
+                  : tab === "about"
+                    ? t("updater.aboutHeaderSub")
+                    : t("settings.headerSubDefault")}
               </div>
             </div>
             <button

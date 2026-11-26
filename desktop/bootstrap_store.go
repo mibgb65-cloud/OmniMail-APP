@@ -27,6 +27,10 @@ type DesktopPreferences struct {
 	CloseToTray       bool   `json:"closeToTray"`
 	LaunchAtStartup   bool   `json:"launchAtStartup"`
 	SilentStartToTray bool   `json:"silentStartToTray,omitempty"`
+	AutoCheckUpdates  bool   `json:"autoCheckUpdates"`
+	UpdateChannel     string `json:"updateChannel,omitempty"`
+	SkippedVersion    string `json:"skippedVersion,omitempty"`
+	LastUpdateCheckAt int64  `json:"lastUpdateCheckAt,omitempty"`
 }
 
 type DesktopStateStore struct {

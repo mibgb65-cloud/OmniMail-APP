@@ -14,6 +14,8 @@ import { useMuseMailStore } from "./useMuseMailStore";
 import { useSendMailAction } from "./useSendMailAction";
 import { useGlobalShortcuts } from "./useShortcuts";
 import { useToasts } from "./useToasts";
+import { useUpdateActions } from "./useUpdateActions";
+import { useUpdateStore } from "./useUpdateStore";
 import { useViewportMode } from "./useViewportMode";
 import { useWorkBuddyStore } from "./useWorkBuddyStore";
 import { useWorkspaceStore } from "./useWorkspaceStore";
@@ -46,6 +48,11 @@ function useAppController() {
     workspace.settings.defaultSendAccountId,
     `${workspace.activeProfileId}:${mailStore.selectedMail?.id ?? ""}`,
   );
+  const updateCore = useUpdateStore({
+    hasActiveComposeDraft: Boolean(composeStore.draft),
+    pushToast: toastStore.pushToast,
+  });
+  const updateStore = useUpdateActions(updateCore, toastStore.pushToast);
 
   const { leftNavOpen, setLeftNavOpen, overlay } = workspace;
   const { resetForWorkspaceSwitch } = museStore;
@@ -153,6 +160,7 @@ function useAppController() {
     museStore,
     workBuddyStore,
     composeStore,
+    updateStore,
     aiStore,
     toastStore,
     triggerSyncAll,

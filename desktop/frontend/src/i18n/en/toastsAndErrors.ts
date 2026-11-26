@@ -106,7 +106,6 @@ export const toasts = {
   clearedAttCacheDetail:
     "Message bodies and file metadata remain intact; download again anytime",
   clearAttCacheFailed: "Failed to clear attachment cache",
-  switchedBannerMode: "Switched runtime banner: {label}",
   connectSaveAccountFailed: "Failed to connect or save account",
   copiedAuthUrl: "Copied authorization URL",
   saveManualImapFailed: "Failed to save manual IMAP account",

@@ -126,7 +126,8 @@ func (s *DesktopStateStore) commitInitialSetup(rawDataDir string, prefs DesktopP
 	}
 	s.mu.Unlock()
 
-	savedPrefs, err := s.savePreferences(prefs)
+	mergedPrefs := mergeGeneralPreferences(s.readPreferences(), prefs)
+	savedPrefs, err := s.savePreferences(mergedPrefs)
 	if err != nil {
 		return BootstrapConfig{}, DesktopPreferences{}, err
 	}

@@ -1,12 +1,9 @@
-import { useEffect, useState } from "react";
-import { GetAppBuildInfo } from "../../../bindings/omnimail/desktopservice";
-import type { AppBuildInfo } from "../../../bindings/omnimail/models";
 import { getShortcutGroups, useI18n } from "../../i18n";
 import { useApp } from "../../state/AppContext";
-import { isWailsDesktop } from "../../state/storageHelpers";
-import type { RuntimeBannerMode } from "../../types/ui";
-import { BrandLogo } from "../common/BrandLogo";
+import { openSafeExternalUrl } from "../../state/desktopActions";
 import { Icon } from "../common/Icon";
+import { AboutVersionCard } from "./AboutVersionCard";
+import { SwitchRow } from "./SwitchRow";
 
 export function ShortcutsTab() {
   const { lang } = useI18n();
@@ -36,89 +33,109 @@ export function ShortcutsTab() {
 }
 
 export function AboutTab() {
-  const { workspace, toastStore } = useApp();
-  const { t, formatTime } = useI18n();
-  const [buildInfo, setBuildInfo] = useState<AppBuildInfo>({
-    version: "v0.0.1",
-    channel: "stable",
-    buildTime: "dev",
-    isBeta: false,
-  });
-
-  useEffect(() => {
-    if (!isWailsDesktop()) return;
-    let active = true;
-    void GetAppBuildInfo()
-      .then((info) => {
-        if (active && info?.version) setBuildInfo(info);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const bannerOptions: Array<{ id: RuntimeBannerMode; label: string }> = [
-    { id: "none", label: t("settings.bannerNone") },
-    { id: "offline", label: t("settings.bannerOffline") },
-    { id: "auth-expired", label: t("settings.bannerAuthExpired") },
-    { id: "auto-reply", label: t("settings.bannerAutoReply") },
-    { id: "partial-sync", label: t("settings.bannerPartialSync") },
-  ];
-
-  const builtAt =
-    buildInfo.buildTime && buildInfo.buildTime !== "dev"
-      ? t("settings.aboutBuiltAtPart", {
-          time: formatTime(buildInfo.buildTime),
-        })
-      : "";
+  const { workspace, updateStore } = useApp();
+  const { t } = useI18n();
+  const { prefs, checkResult } = updateStore;
+  const activeChannel = prefs.updateChannel === "beta" ? "beta" : "stable";
+  const githubReleaseUrl =
+    checkResult?.releaseUrl ||
+    "https://github.com/omnimail-org/omnimail/releases";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <AboutVersionCard />
+
       <div className="settings-card">
-        <div className="row-between">
-          <div className="row" style={{ gap: 12 }}>
-            <BrandLogo size={40} />
-            <div>
-              <div className="row" style={{ gap: 8 }}>
-                <span style={{ fontSize: 17, fontWeight: 800 }}>
-                  OmniMail Desktop
-                </span>
-                <span
-                  className={`pill ${buildInfo.isBeta ? "pill-warning" : "pill-accent"}`}
-                >
-                  {buildInfo.isBeta
-                    ? t("settings.aboutBetaBadge")
-                    : t("settings.aboutStableBadge")}
-                </span>
-              </div>
-              <div className="text-xs text-muted">
-                {t("settings.aboutVersionRow", {
-                  version: buildInfo.version,
-                  builtAt,
-                })}
-              </div>
+        <strong style={{ fontSize: 14 }}>
+          {t("updater.aboutPrefsCardTitle")}
+        </strong>
+
+        <SwitchRow
+          heading={t("updater.aboutAutoCheckTitle")}
+          desc={t("updater.aboutAutoCheckDesc")}
+          checked={prefs.autoCheckUpdates}
+          onChange={(v) => void updateStore.setAutoCheck(v)}
+        />
+
+        <div className="settings-row">
+          <div>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "var(--text-ink)",
+              }}
+            >
+              {t("updater.aboutChannelTitle")}
+            </div>
+            <div
+              className="text-xs text-muted"
+              style={{ marginTop: 2, lineHeight: 1.5 }}
+            >
+              {t("updater.aboutChannelDesc")}
             </div>
           </div>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() =>
-              workspace.setOverlay({ type: "update-flow", stage: "checking" })
-            }
+
+          <div
+            className="about-channel-seg"
+            role="group"
+            aria-label={t("updater.aboutChannelTitle")}
           >
-            <Icon name="refresh" size={14} />{" "}
-            {t("settings.aboutCheckUpdatesBtn")}
-          </button>
+            <button
+              type="button"
+              className={`about-channel-seg-btn${activeChannel === "stable" ? " active" : ""}`}
+              onClick={() => void updateStore.setChannel("stable")}
+            >
+              {t("updater.aboutChannelStable")}
+            </button>
+            <button
+              type="button"
+              className={`about-channel-seg-btn${activeChannel === "beta" ? " active" : ""}`}
+              onClick={() => void updateStore.setChannel("beta")}
+            >
+              {t("updater.aboutChannelBeta")}
+            </button>
+          </div>
         </div>
 
         <div className="settings-row">
-          <span className="text-xs text-muted">
-            {t("settings.aboutSummary")}
+          <div>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "var(--text-ink)",
+              }}
+            >
+              {t("updater.aboutSecurityTitle")}
+            </div>
+            <div
+              className="text-xs text-muted"
+              style={{ marginTop: 2, lineHeight: 1.5 }}
+            >
+              {t("updater.aboutSecurityDesc")}
+            </div>
+          </div>
+          <span className="pill pill-success" style={{ flexShrink: 0 }}>
+            <Icon name="shield" size={13} />
+            <span>{t("updater.aboutSecurityBadge")}</span>
           </span>
         </div>
+      </div>
 
+      <div className="settings-card">
+        <strong style={{ fontSize: 14 }}>
+          {t("updater.aboutLinksCardTitle")}
+        </strong>
         <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => void openSafeExternalUrl(githubReleaseUrl)}
+          >
+            <Icon name="external" size={13} />
+            <span>{t("updater.aboutGithubReleasesBtn")}</span>
+          </button>
           <button
             type="button"
             className="btn btn-secondary btn-sm"
@@ -126,7 +143,7 @@ export function AboutTab() {
               workspace.setOverlay({ type: "legal-doc", doc: "terms" })
             }
           >
-            {t("settings.aboutViewTermsBtn")}
+            {t("updater.aboutTermsCleanBtn")}
           </button>
           <button
             type="button"
@@ -135,7 +152,7 @@ export function AboutTab() {
               workspace.setOverlay({ type: "legal-doc", doc: "privacy" })
             }
           >
-            {t("settings.aboutViewPrivacyBtn")}
+            {t("updater.aboutPrivacyCleanBtn")}
           </button>
           <button
             type="button"
@@ -149,37 +166,6 @@ export function AboutTab() {
           >
             {t("settings.aboutExportDiagBtn")}
           </button>
-        </div>
-      </div>
-
-      <div className="settings-card">
-        <strong style={{ fontSize: 14 }}>
-          {t("settings.aboutBannerPreviewTitle")}
-        </strong>
-        <div className="text-xs text-muted">
-          {t("settings.aboutBannerPreviewDesc")}
-        </div>
-        <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
-          {bannerOptions.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              className={`btn btn-sm ${
-                workspace.bannerMode === opt.id
-                  ? "btn-primary"
-                  : "btn-secondary"
-              }`}
-              onClick={() => {
-                workspace.setBannerMode(opt.id);
-                toastStore.pushToast({
-                  tone: "info",
-                  title: t("toasts.switchedBannerMode", { label: opt.label }),
-                });
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
         </div>
       </div>
     </div>

@@ -90,7 +90,6 @@ export const toasts = {
   clearedAttCacheTitle: "已清理本地附件缓存（释放 {size}）",
   clearedAttCacheDetail: "邮件正文与附件元数据已保留，需要时可随时按需重新下载",
   clearAttCacheFailed: "清理附件缓存失败",
-  switchedBannerMode: "已切换顶部横幅状态：{label}",
   connectSaveAccountFailed: "连接或保存账户失败",
   copiedAuthUrl: "已复制授权链接",
   saveManualImapFailed: "保存手动邮箱失败",

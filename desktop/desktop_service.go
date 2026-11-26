@@ -48,10 +48,11 @@ func (s *DesktopService) GetBootstrapState() BootstrapStateDTO {
 	}
 }
 
-// UpdateDesktopPreferences 校验并保存桌面端通用偏好（含开机自启与关闭到托盘）。
+// UpdateDesktopPreferences 校验并保存桌面端通用偏好（保留自动更新与渠道偏好不丢失）。
 func (s *DesktopService) UpdateDesktopPreferences(in DesktopPreferences) (DesktopPreferences, error) {
 	store := s.ensureStore()
-	saved, err := store.savePreferences(in)
+	merged := mergeGeneralPreferences(store.readPreferences(), in)
+	saved, err := store.savePreferences(merged)
 	if err != nil {
 		return DesktopPreferences{}, err
 	}

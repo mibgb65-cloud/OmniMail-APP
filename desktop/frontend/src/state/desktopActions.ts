@@ -24,6 +24,7 @@ export async function syncDesktopPreferences(next: AppSettings): Promise<void> {
     closeToTray: next.closeToTray,
     launchAtStartup: next.launchAtStartup,
     silentStartToTray: Boolean(next.silentStartToTray),
+    autoCheckUpdates: true,
   }).catch(() => undefined);
 }
 

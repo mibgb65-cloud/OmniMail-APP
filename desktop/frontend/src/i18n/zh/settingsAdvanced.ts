@@ -152,12 +152,4 @@ export const settingsAdvanced = {
   aboutViewTermsBtn: "查看《用户协议》草案",
   aboutViewPrivacyBtn: "查看《隐私政策》草案",
   aboutExportDiagBtn: "导出脱敏诊断日志",
-  aboutBannerPreviewTitle: "工作台运行态横幅预览（界面验收入口）",
-  aboutBannerPreviewDesc:
-    "一键切换工作台顶部横幅状态，快速校验离线、授权失效、自动回复与部分同步失败视图",
-  bannerNone: "正常无横幅",
-  bannerOffline: "离线模式",
-  bannerAuthExpired: "授权失效",
-  bannerAutoReply: "休假自动回复中",
-  bannerPartialSync: "部分同步失败",
 };

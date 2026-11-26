@@ -97,6 +97,7 @@ export function useDesktopStorageOps(
           closeToTray: settings.closeToTray,
           launchAtStartup: settings.launchAtStartup,
           silentStartToTray: Boolean(settings.silentStartToTray),
+          autoCheckUpdates: true,
         },
       });
       setStorage(dto.storage);

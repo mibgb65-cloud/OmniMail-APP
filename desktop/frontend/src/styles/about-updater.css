@@ -1,0 +1,159 @@
+/* 设置 → 关于 OmniMail 三卡片、左下角真实版本胶囊与更新详情弹窗样式 */
+.settings-nav-update-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand-accent);
+  flex-shrink: 0;
+}
+
+.settings-nav-update-dot[data-tone="ready"] {
+  background: var(--status-success);
+}
+
+.settings-footer-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-ink);
+}
+
+.settings-footer-update-pill {
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  color: var(--brand-accent);
+}
+
+[data-theme="dark"] .settings-footer-update-pill {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(96, 165, 250, 0.36);
+  color: #93c5fd;
+}
+
+.settings-footer-update-pill[data-tone="ready"] {
+  background: var(--status-success-bg);
+  border-color: rgba(22, 163, 74, 0.32);
+  color: var(--status-success);
+}
+
+.about-product-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-ink);
+  letter-spacing: -0.015em;
+}
+
+.about-update-subbanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  color: var(--brand-accent);
+}
+
+[data-theme="dark"] .about-update-subbanner {
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(96, 165, 250, 0.3);
+  color: #93c5fd;
+}
+
+.about-update-subbanner[data-tone="ready"] {
+  background: var(--status-success-bg);
+  border-color: rgba(22, 163, 74, 0.26);
+  color: var(--status-success);
+}
+
+[data-theme="dark"] .about-update-subbanner[data-tone="ready"] {
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #86efac;
+}
+
+.about-update-subbanner[data-tone="error"] {
+  background: var(--status-danger-bg);
+  border-color: rgba(220, 38, 38, 0.26);
+  color: var(--status-danger);
+}
+
+.about-update-subbanner-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  flex: 1;
+  min-width: 200px;
+}
+
+.about-channel-seg {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  gap: 3px;
+  border-radius: 9px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  flex-shrink: 0;
+}
+
+.about-channel-seg-btn {
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.about-channel-seg-btn.active {
+  background: var(--bg-card);
+  color: var(--text-ink);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.ufm-error-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: var(--status-danger-bg);
+  border: 1px solid rgba(220, 38, 38, 0.28);
+  color: var(--status-danger);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ufm-sha-line {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--status-success);
+}
+
+.ufm-notes-scroll {
+  max-height: min(300px, calc(100vh - 340px));
+}
+
+.ufm-notes-body {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--text-body);
+  white-space: pre-line;
+  word-break: break-word;
+}

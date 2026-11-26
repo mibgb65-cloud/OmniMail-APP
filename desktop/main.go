@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -41,9 +42,7 @@ func main() {
 	calResponder := services.NewCalendarResponder(outboxSched)
 	aiGateway := ai.NewGateway(bus)
 	museMgr := musemail.NewManager()
-	defer museMgr.Close()
 	wbMgr := workbuddymail.NewManager()
-	defer wbMgr.Close()
 
 	profMgr.RegisterHook(syncMgr)
 	profMgr.RegisterHook(outboxSched)
@@ -52,9 +51,18 @@ func main() {
 
 	store.SetMigrationHooks(profMgr.PauseForMigration, profMgr.ResumeAfterMigration)
 	_ = profMgr.InitStartup()
-	defer profMgr.Close()
+	var closeOnce sync.Once
+	closeAllRuntime := func() {
+		closeOnce.Do(func() {
+			museMgr.Close()
+			wbMgr.Close()
+			profMgr.Close()
+		})
+	}
+	defer closeAllRuntime()
 
 	desktopSvc := NewDesktopService(store, initialIntent)
+	desktopSvc.attachUpdaterHooks(bus, closeAllRuntime)
 	profileSvc := services.NewProfileService(profMgr)
 	accountSvc := services.NewAccountService(profMgr, bus, tokenMgr)
 	mailSvc := services.NewMailService(profMgr, bus, tokenMgr)

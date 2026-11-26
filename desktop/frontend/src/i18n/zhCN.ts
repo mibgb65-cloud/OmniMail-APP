@@ -16,6 +16,7 @@ import { settingsGeneral } from "./zh/settingsGeneral.ts";
 import { syncStatus } from "./zh/syncStatus.ts";
 import { errors, toasts } from "./zh/toastsAndErrors.ts";
 import { ai, translation } from "./zh/translationAndAi.ts";
+import { updater } from "./zh/updater.ts";
 import { workbuddy, workbuddyErrors } from "./zh/workBuddy.ts";
 
 export const zhCN = {
@@ -52,6 +53,7 @@ export const zhCN = {
   },
   muse,
   workbuddy,
+  updater,
   toasts,
   errors: {
     ...errors,

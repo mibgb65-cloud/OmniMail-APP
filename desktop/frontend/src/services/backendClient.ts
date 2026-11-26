@@ -36,6 +36,7 @@ export {
 export { parseBackendError, type ParsedBackendError } from "./errorParser";
 export { mailApi, mapMailDTO, type MailSearchQuery } from "./mailApi";
 export { museMailApi } from "./museMailApi";
+export { updaterApi, type UpdaterProgressEvent } from "./updaterApi";
 export { workBuddyMailApi } from "./workBuddyMailApi";
 export {
   mapBackendSettings,

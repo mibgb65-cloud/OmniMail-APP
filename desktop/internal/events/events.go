@@ -18,6 +18,7 @@ const (
 	AiDone             = "omnimail:ai:done"
 	AiError            = "omnimail:ai:error"
 	DesktopIntent      = "omnimail:desktop:intent"
+	UpdaterProgress    = "updater:progress"
 )
 
 type ProfileSwitchedPayload struct {

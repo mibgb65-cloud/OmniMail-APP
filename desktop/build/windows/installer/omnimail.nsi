@@ -46,7 +46,6 @@ SetCompressor /SOLID lzma
 !endif
 
 !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\OmniMail"
-
 !define MULTIUSER_EXECUTIONLEVEL Highest
 !define MULTIUSER_MUI
 !define MULTIUSER_INSTALLMODE_COMMANDLINE
@@ -83,7 +82,6 @@ VIAddVersionKey "LegalCopyright" "Copyright (c) 2026 ${APP_PUBLISHER}"
 !define MUI_UNICON "${APP_ICON}"
 !define MUI_ABORTWARNING
 !define MUI_COMPONENTSPAGE_SMALLDESC
-
 !define MUI_WELCOMEPAGE_TITLE "$(WELCOME_TITLE)"
 !define MUI_WELCOMEPAGE_TEXT "$(WELCOME_TEXT)"
 !insertmacro MUI_PAGE_WELCOME
@@ -116,6 +114,7 @@ UninstPage custom un.UninstDataPageCreate un.UninstDataPageLeave
 Var OmniRoamingDir
 Var OmniLocalDir
 Var PrevAutostartSel
+Var RelaunchAfterInstall
 
 Function .onInit
   ${IfNot} ${RunningX64}
@@ -130,10 +129,16 @@ Function .onInit
   StrCpy $OmniRoamingDir "$APPDATA"
   StrCpy $OmniLocalDir "$LOCALAPPDATA"
   StrCpy $PrevAutostartSel 0
-
+  StrCpy $RelaunchAfterInstall 0
   !insertmacro MULTIUSER_INIT
 
   ${GetParameters} $R0
+  ClearErrors
+  ${GetOptions} "$R0" "/RELAUNCH" $R2
+  ${IfNot} ${Errors}
+    StrCpy $RelaunchAfterInstall 1
+  ${EndIf}
+
   ClearErrors
   ${GetOptions} "$R0" "/INSTDIR=" $R1
   ${IfNot} ${Errors}
@@ -169,15 +174,26 @@ Function .onInit
   !insertmacro OMNIMAIL_ENSURE_CLOSED
 FunctionEnd
 
+Function .onInstSuccess
+  ${If} ${Silent}
+  ${AndIf} $RelaunchAfterInstall == 1
+  ${AndIf} ${FileExists} "$INSTDIR\${APP_EXE}"
+    ${If} $MultiUser.InstallMode == "AllUsers"
+    ${AndIf} ${FileExists} "$WINDIR\explorer.exe"
+      Exec '"$WINDIR\explorer.exe" "$INSTDIR\${APP_EXE}"'
+    ${Else}
+      Exec '"$INSTDIR\${APP_EXE}"'
+    ${EndIf}
+  ${EndIf}
+FunctionEnd
+
 Function un.onInit
   SetRegView 64
   SetShellVarContext current
   StrCpy $OmniRoamingDir "$APPDATA"
   StrCpy $OmniLocalDir "$LOCALAPPDATA"
   StrCpy $DeleteLocalUserData ${BST_UNCHECKED}
-
   !insertmacro MULTIUSER_UNINIT
-
   !insertmacro OMNIMAIL_READ_BOOTSTRAP_DATADIR "$OmniRoamingDir\OmniMail\bootstrap.json" $UninstDataDir
   ${If} $UninstDataDir == ""
     ReadRegStr $UninstDataDir HKCU "Software\OmniMail" "DataDir"
@@ -185,7 +201,6 @@ Function un.onInit
   ${If} $UninstDataDir == ""
     StrCpy $UninstDataDir "$OmniLocalDir\OmniMail\Data"
   ${EndIf}
-
   !insertmacro OMNIMAIL_ENSURE_CLOSED
 FunctionEnd
 

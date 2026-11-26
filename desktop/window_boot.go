@@ -22,6 +22,17 @@ func isValidLanguage(lang string) bool {
 	return lang == "zh-CN" || lang == "en-US"
 }
 
+func sanitizeUpdateChannel(ch string) string {
+	low := strings.ToLower(strings.TrimSpace(ch))
+	if low == "beta" {
+		return "beta"
+	}
+	if low == "stable" {
+		return "stable"
+	}
+	return normalizedReleaseChannel()
+}
+
 func resolveEffectiveTheme(themePref string) string {
 	if themePref == "dark" {
 		return "dark"
@@ -37,11 +48,13 @@ func resolveEffectiveTheme(themePref string) string {
 
 func defaultDesktopPreferences() DesktopPreferences {
 	return DesktopPreferences{
-		ThemePreference: "system",
-		ResolvedTheme:   resolveEffectiveTheme("system"),
-		Language:        "zh-CN",
-		CloseToTray:     true,
-		LaunchAtStartup: false,
+		ThemePreference:  "system",
+		ResolvedTheme:    resolveEffectiveTheme("system"),
+		Language:         "zh-CN",
+		CloseToTray:      true,
+		LaunchAtStartup:  false,
+		AutoCheckUpdates: true,
+		UpdateChannel:    normalizedReleaseChannel(),
 	}
 }
 
@@ -58,6 +71,10 @@ func sanitizePreferences(in DesktopPreferences) (DesktopPreferences, error) {
 	} else if !isValidThemeMode(resolved) {
 		resolved = resolveEffectiveTheme("system")
 	}
+	skipped := strings.TrimSpace(in.SkippedVersion)
+	if skipped != "" && !strings.HasPrefix(skipped, "v") && !strings.HasPrefix(skipped, "V") {
+		skipped = "v" + skipped
+	}
 	return DesktopPreferences{
 		ThemePreference:   in.ThemePreference,
 		ResolvedTheme:     resolved,
@@ -65,7 +82,21 @@ func sanitizePreferences(in DesktopPreferences) (DesktopPreferences, error) {
 		CloseToTray:       in.CloseToTray,
 		LaunchAtStartup:   in.LaunchAtStartup,
 		SilentStartToTray: in.SilentStartToTray,
+		AutoCheckUpdates:  in.AutoCheckUpdates,
+		UpdateChannel:     sanitizeUpdateChannel(in.UpdateChannel),
+		SkippedVersion:    skipped,
+		LastUpdateCheckAt: max(0, in.LastUpdateCheckAt),
 	}, nil
+}
+
+func mergeGeneralPreferences(cur DesktopPreferences, in DesktopPreferences) DesktopPreferences {
+	cur.ThemePreference = in.ThemePreference
+	cur.ResolvedTheme = in.ResolvedTheme
+	cur.Language = in.Language
+	cur.CloseToTray = in.CloseToTray
+	cur.LaunchAtStartup = in.LaunchAtStartup
+	cur.SilentStartToTray = in.SilentStartToTray
+	return cur
 }
 
 func (s *DesktopStateStore) preferencesFilePath() string {
@@ -78,7 +109,7 @@ func (s *DesktopStateStore) readPreferences() DesktopPreferences {
 	if err != nil {
 		return def
 	}
-	var loaded DesktopPreferences
+	loaded := def
 	if err := json.Unmarshal(raw, &loaded); err != nil {
 		return def
 	}

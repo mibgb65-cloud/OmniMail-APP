@@ -2,14 +2,11 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"omnimail/internal/apperr"
 )
@@ -19,16 +16,6 @@ type PickedFileInfo struct {
 	Name      string `json:"name"`
 	SizeBytes int64  `json:"sizeBytes"`
 	SizeText  string `json:"sizeText"`
-}
-
-type UpdateCheckResult struct {
-	CurrentVersion string `json:"currentVersion"`
-	LatestVersion  string `json:"latestVersion"`
-	Channel        string `json:"channel"`
-	HasUpdate      bool   `json:"hasUpdate"`
-	ReleaseURL     string `json:"releaseUrl"`
-	ReleaseNotes   string `json:"releaseNotes"`
-	CheckedAt      string `json:"checkedAt"`
 }
 
 func (s *DesktopService) SetLaunchAtLogin(enabled bool, silentToTray bool) error {
@@ -105,65 +92,6 @@ func (s *DesktopService) PickLocalFiles(title string, multi bool) ([]PickedFileI
 		})
 	}
 	return out, nil
-}
-
-func (s *DesktopService) CheckForUpdates() (UpdateCheckResult, error) {
-	nowStr := time.Now().Format("2006-01-02 15:04")
-	curVer := normalizedAppVersion()
-	channel := normalizedReleaseChannel()
-	channelDesc := "稳定版"
-	if channel == "beta" {
-		channelDesc = "Beta 测试版"
-	}
-	res := UpdateCheckResult{
-		CurrentVersion: curVer,
-		LatestVersion:  curVer,
-		Channel:        channel,
-		HasUpdate:      false,
-		ReleaseURL:     "https://github.com/omnimail-org/omnimail/releases",
-		ReleaseNotes:   fmt.Sprintf("当前运行的是 OmniMail 开源%s（%s）。", channelDesc, curVer),
-		CheckedAt:      nowStr,
-	}
-	apiURL := strings.TrimSpace(os.Getenv("OMNIMAIL_RELEASE_FEED_URL"))
-	if apiURL == "" {
-		apiURL = "https://api.github.com/repos/omnimail-org/omnimail/releases/latest"
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
-	if err != nil {
-		return res, nil
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "OmniMail-Desktop/"+curVer)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		if resp != nil {
-			_ = resp.Body.Close()
-		}
-		return res, nil
-	}
-	defer resp.Body.Close()
-	var gh struct {
-		TagName string `json:"tag_name"`
-		HTMLURL string `json:"html_url"`
-		Body    string `json:"body"`
-	}
-	if json.NewDecoder(resp.Body).Decode(&gh) == nil && gh.TagName != "" {
-		ver := strings.TrimSpace(gh.TagName)
-		if ver != "" && !strings.HasPrefix(ver, "v") {
-			ver = "v" + ver
-		}
-		res.LatestVersion = ver
-		res.HasUpdate = isNewerReleaseVersion(curVer, ver)
-		if gh.HTMLURL != "" {
-			res.ReleaseURL = gh.HTMLURL
-		}
-		if gh.Body != "" {
-			res.ReleaseNotes = gh.Body
-		}
-	}
-	return res, nil
 }
 
 func (s *DesktopService) SendTestNotification(ctx context.Context) error {

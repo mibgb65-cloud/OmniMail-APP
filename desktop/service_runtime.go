@@ -5,6 +5,9 @@ import (
 	"sync/atomic"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+
+	"omnimail/internal/events"
+	"omnimail/internal/updater"
 )
 
 type BootstrapStateDTO struct {
@@ -25,6 +28,9 @@ type DesktopService struct {
 	app           *application.App
 	win           *application.WebviewWindow
 	tray          *application.SystemTray
+	bus           *events.Bus
+	updaterMgr    *updater.Manager
+	beforeQuit    func()
 	pendingIntent LaunchIntent
 	quitting      atomic.Bool
 }
@@ -33,9 +39,34 @@ func NewDesktopService(store *DesktopStateStore, initialIntent LaunchIntent) *De
 	if store == nil {
 		store = newDefaultStateStore()
 	}
-	return &DesktopService{
+	svc := &DesktopService{
 		store:         store,
 		pendingIntent: initialIntent,
+	}
+	svc.updaterMgr = updater.NewManager(func(p updater.ProgressPayload) {
+		svc.emitUpdaterProgress(p)
+	})
+	return svc
+}
+
+func (s *DesktopService) attachUpdaterHooks(bus *events.Bus, beforeQuit func()) {
+	s.mu.Lock()
+	s.bus = bus
+	s.beforeQuit = beforeQuit
+	s.mu.Unlock()
+}
+
+func (s *DesktopService) emitUpdaterProgress(p updater.ProgressPayload) {
+	s.mu.Lock()
+	bus := s.bus
+	app := s.app
+	s.mu.Unlock()
+	if bus != nil {
+		bus.Emit(events.UpdaterProgress, p)
+		return
+	}
+	if app != nil {
+		app.Event.Emit(events.UpdaterProgress, p)
 	}
 }
 
@@ -46,6 +77,17 @@ func (s *DesktopService) ensureStore() *DesktopStateStore {
 		s.store = newDefaultStateStore()
 	}
 	return s.store
+}
+
+func (s *DesktopService) ensureUpdater() *updater.Manager {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.updaterMgr == nil {
+		s.updaterMgr = updater.NewManager(func(p updater.ProgressPayload) {
+			s.emitUpdaterProgress(p)
+		})
+	}
+	return s.updaterMgr
 }
 
 func (s *DesktopService) bindRuntime(app *application.App, win *application.WebviewWindow) {
@@ -74,6 +116,12 @@ func (s *DesktopService) mainWindow() *application.WebviewWindow {
 
 func (s *DesktopService) requestQuit() {
 	s.quitting.Store(true)
+	s.mu.Lock()
+	fn := s.beforeQuit
+	s.mu.Unlock()
+	if fn != nil {
+		fn()
+	}
 }
 
 func (s *DesktopService) isQuitting() bool {

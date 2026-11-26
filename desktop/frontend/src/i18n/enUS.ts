@@ -16,6 +16,7 @@ import { settingsGeneral } from "./en/settingsGeneral.ts";
 import { syncStatus } from "./en/syncStatus.ts";
 import { errors, toasts } from "./en/toastsAndErrors.ts";
 import { ai, translation } from "./en/translationAndAi.ts";
+import { updater } from "./en/updater.ts";
 import { workbuddy, workbuddyErrors } from "./en/workBuddy.ts";
 import type { zhCN } from "./zhCN.ts";
 
@@ -53,6 +54,7 @@ export const enUS = {
   },
   muse,
   workbuddy,
+  updater,
   toasts,
   errors: {
     ...errors,

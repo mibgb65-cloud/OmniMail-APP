@@ -171,12 +171,4 @@ export const settingsAdvanced = {
   aboutViewTermsBtn: "Terms of Service (Draft)",
   aboutViewPrivacyBtn: "Privacy Policy (Draft)",
   aboutExportDiagBtn: "Export redacted diagnostics",
-  aboutBannerPreviewTitle: "Runtime Banner Preview (UI QA)",
-  aboutBannerPreviewDesc:
-    "Preview top runtime banners for offline, expired auth, vacation auto-reply, and partial sync",
-  bannerNone: "None (Normal)",
-  bannerOffline: "Offline",
-  bannerAuthExpired: "Auth Expired",
-  bannerAutoReply: "Auto-Reply Active",
-  bannerPartialSync: "Partial Sync Issue",
 } satisfies typeof zhSettingsAdvanced;
