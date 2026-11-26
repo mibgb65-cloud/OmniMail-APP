@@ -1,7 +1,7 @@
 # TASK-20261126-012 · 修复后台同步或单账户同步后顶栏胶囊卡死「正在同步…」与手动刷新锁死
 
 - 状态：Completed
-- 实现提交：未提交（待用户确认后提交）
+- 实现提交：`59d143d4489cb5c06559afeb02fce4b49d0da2db`
 - 范围：
   1. 解耦「前端主动发起的手动同步期（`manualSyncPending`）」与「真实账户运行态（`syncingAccounts.length > 0`）」，消除 `syncLabel === "正在同步…"` 导致的单向卡死；
   2. 修复 `useDesktopBridge.ts` 中 `onAccountStatus` / `onSyncProgress` 仅处理 `=== "syncing"` 单边分支的问题，并在 `onSyncProgress` 收到终态时推进残留乐观 `syncing` 账户与触发校准；
