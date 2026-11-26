@@ -22,11 +22,15 @@ var (
 )
 
 func extractAndSanitizeStyleBlocks(rawHTML string) (htmlWithoutStyles string, cleanCSS string, hasRemote bool) {
-	if !strings.Contains(strings.ToLower(rawHTML), "<style") {
-		return rawHTML, "", false
+	source := rawHTML
+	if strings.Contains(source, "<!--") {
+		source = stripHTMLCommentsOutsideStyle(source)
+	}
+	if !strings.Contains(strings.ToLower(source), "<style") {
+		return source, "", false
 	}
 	var cssParts []string
-	stripped := reStyleBlock.ReplaceAllStringFunc(rawHTML, func(block string) string {
+	stripped := reStyleBlock.ReplaceAllStringFunc(source, func(block string) string {
 		m := reStyleBlock.FindStringSubmatch(block)
 		if len(m) == 2 {
 			san, rem := SanitizeMailCSS(m[1])

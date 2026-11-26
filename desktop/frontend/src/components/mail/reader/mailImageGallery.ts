@@ -1,5 +1,6 @@
 import type { AttachmentItem } from "../../../types/mail.ts";
 import type { LightboxImageItem } from "../../../types/ui.ts";
+import { isTrackingPixelImgTag } from "./trackingPixelGuard.ts";
 
 export const MIN_ZOOMABLE_IMAGE_DIM = 48;
 
@@ -88,7 +89,7 @@ export function extractBodyImagesFromHtml(
     for (const tag of tags) {
       const sm = ATTR_SRC_RE.exec(tag);
       const src = (sm?.[1] ?? sm?.[2] ?? "").trim();
-      if (!src) continue;
+      if (!src || isTrackingPixelImgTag(tag, src)) continue;
       const cm = ATTR_CID_RE.exec(tag);
       const am = ATTR_ALT_RE.exec(tag);
       const attachmentId = extractAttachmentIdFromSrc(src, cm?.[1] ?? cm?.[2]);

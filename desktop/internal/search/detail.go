@@ -20,7 +20,12 @@ func GetThreadDetail(db *sql.DB, idOrThreadID string, blockRemoteImages bool) (M
 	var msgID string
 	err := db.QueryRow(`SELECT id FROM messages WHERE id = ? LIMIT 1`, idOrThreadID).Scan(&msgID)
 	if err != nil {
-		err = db.QueryRow(`SELECT id FROM messages WHERE thread_id = ? ORDER BY received_at DESC LIMIT 1`, idOrThreadID).Scan(&msgID)
+		err = db.QueryRow(`
+			SELECT id FROM messages
+			WHERE thread_id = ?
+			ORDER BY CASE WHEN folder = 'archive' THEN 1 ELSE 0 END ASC, received_at DESC
+			LIMIT 1
+		`, idOrThreadID).Scan(&msgID)
 	}
 	if err != nil || msgID == "" {
 		return MailItemDTO{}, apperr.New(apperr.CodeNotFound, "未找到对应的邮件或会话记录")
@@ -98,25 +103,40 @@ func GetMessageItem(db *sql.DB, msgID string, includeThread bool, blockRemoteIma
 	}
 
 	tRows, err := db.Query(`
-		SELECT id, sender_name, sender_email, to_json, cc_json, sent_at, body_text, body_html_sanitized, remote_images_allowed, security_json
-		FROM messages WHERE thread_id = ? ORDER BY sent_at ASC, received_at ASC
+		SELECT id, folder, rfc_message_id, raw_blob_sha256,
+		       sender_name, sender_email, to_json, cc_json, sent_at, received_at,
+		       body_text, body_html_sanitized, remote_images_allowed, security_json
+		FROM messages WHERE thread_id = ? ORDER BY sent_at ASC, received_at ASC, rowid ASC
 	`, m.ThreadID)
 	if err != nil {
 		m.Messages = []ThreadMessageDTO{buildSingleThreadMsg(db, m.ID, m.SenderName, m.SenderEmail, m.Recipients, m.Cc, m.FullTimeText, bodyText, bodyHTML, m.RemoteImagesAllowed, false)}
 		return m, nil
 	}
 	defer tRows.Close()
-	var list []ThreadMessageDTO
+
+	var rawRows []rawThreadMsgRow
 	for tRows.Next() {
-		var tid, sName, sEmail, tTo, tCc, tTxt, tHTML, tSecurity string
-		var sentAt int64
-		var tAllow int
-		if tRows.Scan(&tid, &sName, &sEmail, &tTo, &tCc, &sentAt, &tTxt, &tHTML, &tAllow, &tSecurity) == nil {
-			_, fullT := formatMailTimes(sentAt)
-			warning := decodeSecurityWarning(tSecurity)
-			msgAllow := (!blockRemoteImages || tAllow != 0) && !highRisk && (warning == nil || warning.Level != "danger")
-			list = append(list, buildSingleThreadMsg(db, tid, sName, sEmail, formatAddrJSON(tTo), formatAddrJSON(tCc), fullT, tTxt, tHTML, msgAllow, true))
+		var r rawThreadMsgRow
+		if tRows.Scan(
+			&r.id, &r.folder, &r.rfcMsgID, &r.rawBlobSHA,
+			&r.senderName, &r.senderMail, &r.toJSON, &r.ccJSON, &r.sentAt, &r.receivedAt,
+			&r.bodyText, &r.bodyHTML, &r.allowInt, &r.securityJ,
+		) == nil {
+			rawRows = append(rawRows, r)
 		}
+	}
+
+	deduped := dedupThreadMessageRows(rawRows, m.ID)
+	list := make([]ThreadMessageDTO, 0, len(deduped))
+	for _, r := range deduped {
+		_, fullT := formatMailTimes(r.sentAt)
+		warning := decodeSecurityWarning(r.securityJ)
+		msgAllow := (!blockRemoteImages || r.allowInt != 0) && !highRisk && (warning == nil || warning.Level != "danger")
+		list = append(list, buildSingleThreadMsg(
+			db, r.id, r.senderName, r.senderMail,
+			formatAddrJSON(r.toJSON), formatAddrJSON(r.ccJSON),
+			fullT, r.bodyText, r.bodyHTML, msgAllow, true,
+		))
 	}
 	if len(list) > 0 {
 		list[len(list)-1].Collapsed = false
@@ -134,7 +154,7 @@ func decodeSecurityWarning(raw string) *SecurityWarningDTO {
 }
 
 func buildSingleThreadMsg(db *sql.DB, id, sName, sEmail, to, cc, timeTxt, bodyTxt, bodyHTML string, allowRemote, collapsed bool) ThreadMessageDTO {
-	renderedHTML := repairLegacyInlineCIDHTML(db, id, bodyHTML)
+	renderedHTML := security.RewriteLegacyColorSchemeHTML(repairLegacyInlineCIDHTML(db, id, bodyHTML))
 	if allowRemote && renderedHTML != "" {
 		renderedHTML = security.RestoreRemoteImages(renderedHTML)
 	}

@@ -3,6 +3,10 @@ package security
 import "strings"
 
 func sanitizeCSSStatements(css string, allowMedia bool) string {
+	return sanitizeCSSStatementsScoped(css, allowMedia, nil)
+}
+
+func sanitizeCSSStatementsScoped(css string, allowMedia bool, scopes []string) string {
 	var out []string
 	for i, n := 0, len(css); i < n; {
 		for i < n && (css[i] <= ' ' || css[i] == ';') {
@@ -27,8 +31,17 @@ func sanitizeCSSStatements(css string, allowMedia bool) string {
 				lowHead := strings.ToLower(head)
 				if allowMedia && (strings.HasPrefix(lowHead, "@media") || strings.HasPrefix(lowHead, "@supports")) {
 					cleanHead := sanitizeAtRulePrelude(head)
-					inner := sanitizeCSSStatements(body, false)
-					if cleanHead != "" && inner != "" {
+					if cleanHead == "" {
+						continue
+					}
+					if rewritten, handled := rewriteColorSchemeMediaRule(cleanHead, body); handled {
+						if rewritten != "" {
+							out = append(out, rewritten)
+						}
+						continue
+					}
+					inner := sanitizeCSSStatementsScoped(body, false, scopes)
+					if inner != "" {
 						out = append(out, cleanHead+" {\n"+inner+"\n}")
 					}
 				} else if strings.HasPrefix(lowHead, "@font-face") {
@@ -55,12 +68,42 @@ func sanitizeCSSStatements(css string, allowMedia bool) string {
 		body, nextIdx := readBalancedBraces(css, i)
 		i = nextIdx
 		cleanSel := rewriteAndValidateSelectors(rawSel)
+		if len(scopes) > 0 && cleanSel != "" {
+			cleanSel = scopeSelectorList(cleanSel, scopes)
+		}
 		cleanDecls := sanitizeCSSDeclarationList(body)
 		if cleanSel != "" && cleanDecls != "" {
 			out = append(out, cleanSel+" { "+cleanDecls+" }")
 		}
 	}
 	return strings.Join(out, "\n")
+}
+
+func scopeSelectorList(cleanSel string, scopes []string) string {
+	parts := splitTopLevelCommas(cleanSel)
+	var scoped []string
+	for _, rawPart := range parts {
+		sel := strings.TrimSpace(rawPart)
+		if sel == "" {
+			continue
+		}
+		for _, sc := range scopes {
+			scoped = append(scoped, scopeSingleSelector(sel, sc))
+		}
+	}
+	return strings.Join(scoped, ", ")
+}
+
+func scopeSingleSelector(sel, scope string) string {
+	const rootCls = ".mail-html-inner"
+	attrPart := strings.TrimPrefix(scope, rootCls)
+	if strings.HasPrefix(sel, rootCls) {
+		rest := sel[len(rootCls):]
+		if rest == "" || !isCSSIdentChar(rest[0]) {
+			return rootCls + attrPart + rest
+		}
+	}
+	return scope + " " + sel
 }
 
 func readBalancedBraces(s string, openIdx int) (string, int) {

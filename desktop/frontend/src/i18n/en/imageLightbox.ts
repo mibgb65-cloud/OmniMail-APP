@@ -2,6 +2,7 @@ import type { imageLightbox as zhImageLightbox } from "../zh/imageLightbox.ts";
 
 export const imageLightbox = {
   inlineImageFallbackText: "Inline image not cached or failed to load",
+  remoteImageFallbackText: "Remote image failed to load",
   inlineImageRetryBtn: "Retry",
   inlineImageRetrying: "Reloading…",
   inlineImageDefaultName: "Inline image",

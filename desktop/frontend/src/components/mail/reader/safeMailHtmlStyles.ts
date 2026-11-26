@@ -150,11 +150,17 @@ export const SHADOW_DARK_PAPER_CSS = `
 }
 `;
 
+export const SHADOW_LIGHT_CSS = `
+:host, .mail-html-inner {
+  color-scheme: light;
+}
+`;
+
 export function getMailHtmlThemeCss(
   theme: ThemeMode,
   htmlThemeMode: DarkHtmlMode,
 ): string {
-  if (theme !== "dark") return "";
+  if (theme !== "dark") return SHADOW_LIGHT_CSS;
   return htmlThemeMode === "paper"
     ? SHADOW_DARK_PAPER_CSS
     : SHADOW_DARK_ADAPTIVE_CSS;

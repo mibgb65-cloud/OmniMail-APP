@@ -1,12 +1,19 @@
-import type { LightboxImageItem } from "../../../types/ui";
+import type { LightboxImageItem } from "../../../types/ui.ts";
 import {
   extractAttachmentIdFromSrc,
   inferImageNameFromSrc,
   isZoomableImageSize,
-} from "./mailImageGallery";
+} from "./mailImageGallery.ts";
+import {
+  classifyFailedImageKind,
+  isHiddenOrTrackingPixel,
+} from "./trackingPixelGuard.ts";
+
+export { isHiddenOrTrackingPixel };
 
 export interface ShadowImageOptions {
   fallbackText: string;
+  remoteFallbackText?: string;
   retryLabel: string;
   retryingLabel: string;
   defaultImageName: string;
@@ -27,32 +34,51 @@ function showFallbackCard(
   opts: ShadowImageOptions,
   cleanups: Array<() => void>,
 ): void {
+  if (isHiddenOrTrackingPixel(img)) {
+    img.style.display = "none";
+    img.removeAttribute("data-zoomable");
+    return;
+  }
+
+  const kind = classifyFailedImageKind(img);
+  if (kind === "blocked-or-empty") {
+    return;
+  }
+
   const existing = img.nextElementSibling;
   if (existing?.classList.contains("omnimail-img-fallback")) return;
 
   img.style.display = "none";
   img.removeAttribute("data-zoomable");
 
-  const card = document.createElement("span");
+  const doc = img.ownerDocument;
+  const card = doc.createElement("span");
   card.className = "omnimail-img-fallback";
   card.setAttribute("role", "status");
 
-  const icon = document.createElement("span");
+  const icon = doc.createElement("span");
   icon.className = "omnimail-img-fallback-icon";
   icon.innerHTML = BROKEN_IMG_SVG;
 
-  const text = document.createElement("span");
-  text.textContent = opts.fallbackText;
+  const text = doc.createElement("span");
+  text.textContent =
+    kind === "remote"
+      ? opts.remoteFallbackText || opts.fallbackText
+      : opts.fallbackText;
   card.append(icon, text);
 
-  const origSrc = img.dataset.omnimailOrigSrc || img.getAttribute("src") || "";
+  const origSrc = (
+    img.dataset.omnimailOrigSrc ||
+    img.getAttribute("src") ||
+    ""
+  ).trim();
   const attId = extractAttachmentIdFromSrc(
     origSrc,
     img.getAttribute("data-omnimail-cid"),
   );
 
   if (origSrc || attId) {
-    const btn = document.createElement("button");
+    const btn = doc.createElement("button");
     btn.type = "button";
     btn.className = "omnimail-img-retry-btn";
     btn.textContent = opts.retryLabel;
@@ -75,7 +101,7 @@ function showFallbackCard(
         const nextSrc = base.startsWith("data:")
           ? base
           : `${base}${sep}retry=${Date.now()}`;
-        img.style.display = "";
+        clearFallbackCard(img);
         img.removeAttribute("data-omnimail-cid-missing");
         img.setAttribute("src", nextSrc);
       };
@@ -105,7 +131,7 @@ function clearFallbackCard(img: HTMLImageElement): void {
 }
 
 export function attachShadowImageEnhancements(
-  root: ShadowRoot,
+  root: ShadowRoot | HTMLElement,
   opts: ShadowImageOptions,
 ): () => void {
   const cleanups: Array<() => void> = [];
@@ -114,6 +140,7 @@ export function attachShadowImageEnhancements(
   const markIfZoomable = (img: HTMLImageElement) => {
     clearFallbackCard(img);
     if (
+      !isHiddenOrTrackingPixel(img) &&
       isZoomableImageSize(img.naturalWidth, img.naturalHeight) &&
       !isInsideLink(img)
     ) {

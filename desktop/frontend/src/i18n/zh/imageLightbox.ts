@@ -1,5 +1,6 @@
 export const imageLightbox = {
   inlineImageFallbackText: "内嵌图片暂未缓存或加载失败",
+  remoteImageFallbackText: "远程图片加载失败",
   inlineImageRetryBtn: "重试",
   inlineImageRetrying: "正在加载…",
   inlineImageDefaultName: "正文图片",

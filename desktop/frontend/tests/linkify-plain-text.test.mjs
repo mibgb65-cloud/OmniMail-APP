@@ -114,8 +114,14 @@ test("XSS 文本与非安全协议保持纯文本输出，绝不产生可执行�
 });
 
 test("暗黑模式 Shadow DOM 双模式样式：护眼适配不反色媒体，原始白底保真", () => {
-  assert.equal(getMailHtmlThemeCss("light", "adaptive"), "");
-  assert.equal(getMailHtmlThemeCss("light", "paper"), "");
+  assert.match(
+    getMailHtmlThemeCss("light", "adaptive"),
+    /:host,\s*\.mail-html-inner\s*\{\s*color-scheme:\s*light;\s*\}/i,
+  );
+  assert.match(
+    getMailHtmlThemeCss("light", "paper"),
+    /:host,\s*\.mail-html-inner\s*\{\s*color-scheme:\s*light;\s*\}/i,
+  );
 
   const adaptive = getMailHtmlThemeCss("dark", "adaptive");
   assert.match(adaptive, /#E2E8F0/i);

@@ -28,6 +28,7 @@ func repairLegacyInlineCIDHTML(db *sql.DB, msgID, htmlBody string) string {
 			out = rebuilt
 		}
 	}
+	out = security.RewriteLegacyColorSchemeHTML(out)
 	if reLegacyCidSrc.MatchString(out) {
 		cidMap := loadMessageCIDMap(db, msgID)
 		if len(cidMap) > 0 {

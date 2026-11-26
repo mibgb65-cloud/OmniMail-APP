@@ -90,11 +90,14 @@ test("正文图片与图片附件合并画廊并按 attachmentId / src 去重", 
   assert.equal(merged[2].sourceLabel, "邮件附件");
 });
 
-test("从邮件 HTML 列表提取正文图片并去重", () => {
+test("从邮件 HTML 列表提取正文图片并去重，同时过滤 1x1 追踪像素与隐藏信标", () => {
   const imgs = extractBodyImagesFromHtml(
     [
       '<p><img src="/omnimail-cid/m1-att-1" data-omnimail-cid="m1-att-1" alt="报表" /></p>',
       '<p><img src="/omnimail-cid/m1-att-1" /><img src="https://img.example.com/photo.webp" /></p>',
+      '<img src="https://auth.meta.com/collect/?ndid=abc" style="border:0;width:1px;height:1px;" />',
+      '<img src="https://count.mail.163.com/beacon/upoint.gif" />',
+      '<img src="https://track.example.com/pixel.png" style="display:none" />',
     ],
     "正文图片",
     "邮件正文内嵌图",

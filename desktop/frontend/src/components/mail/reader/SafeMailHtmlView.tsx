@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useI18n } from "../../../i18n";
 import { openSafeExternalUrl } from "../../../state/desktopActions";
 import scrollbarReset from "../../../styles/scrollbar-reset.css?raw";
@@ -8,6 +8,7 @@ import {
   createBodyTranslationRenderer,
   type BodyTranslation,
 } from "../translation/translatedText";
+import { normalizeMailHtmlColorScheme } from "./safeMailHtmlColorScheme";
 import { attachShadowImageEnhancements } from "./safeMailHtmlImages";
 import { getMailHtmlThemeCss, SHADOW_BASE_CSS } from "./safeMailHtmlStyles";
 
@@ -35,14 +36,18 @@ export function SafeMailHtmlView({
   const renderTranslation = useRef<ReturnType<
     typeof createBodyTranslationRenderer
   > | null>(null);
+  const normalizedHtml = useMemo(
+    () => normalizeMailHtmlColorScheme(html),
+    [html],
+  );
 
   useLayoutEffect(() => {
     const host = hostRef.current;
     if (!host) return;
     const root = host.shadowRoot ?? host.attachShadow({ mode: "open" });
-    root.innerHTML = `<style>${scrollbarReset}\n${SHADOW_BASE_CSS}</style><div class="mail-html-inner">${html}</div><style class="omnimail-theme-style"></style>`;
+    root.innerHTML = `<style>${scrollbarReset}\n${SHADOW_BASE_CSS}</style><div class="mail-html-inner">${normalizedHtml}</div><style class="omnimail-theme-style"></style>`;
     renderTranslation.current = null;
-  }, [html]);
+  }, [normalizedHtml]);
 
   useLayoutEffect(() => {
     // 切换深色适配 / 原始白底只更新独立主题样式节点，绝不重建 DOM、重载图片或破坏译文。
@@ -59,7 +64,7 @@ export function SafeMailHtmlView({
       inner.dataset.theme = theme;
       inner.dataset.htmlMode = htmlThemeMode;
     }
-  }, [html, theme, htmlThemeMode]);
+  }, [normalizedHtml, theme, htmlThemeMode]);
 
   useEffect(() => {
     const root = hostRef.current?.shadowRoot;
@@ -97,6 +102,7 @@ export function SafeMailHtmlView({
     if (!root) return;
     return attachShadowImageEnhancements(root, {
       fallbackText: t("imageLightbox.inlineImageFallbackText"),
+      remoteFallbackText: t("imageLightbox.remoteImageFallbackText"),
       retryLabel: t("imageLightbox.inlineImageRetryBtn"),
       retryingLabel: t("imageLightbox.inlineImageRetrying"),
       defaultImageName: t("imageLightbox.inlineImageDefaultName"),
@@ -104,7 +110,7 @@ export function SafeMailHtmlView({
       onOpenImage,
       onRetryInlineCid,
     });
-  }, [html, onOpenImage, onRetryInlineCid, t]);
+  }, [normalizedHtml, onOpenImage, onRetryInlineCid, t]);
 
   useLayoutEffect(() => {
     // 切换模式或接收新批次只改已有文字节点，不重新加载图片或替换原有结构。
@@ -117,7 +123,7 @@ export function SafeMailHtmlView({
         renderTranslation.current = createBodyTranslationRenderer(inner);
     }
     renderTranslation.current?.(translation);
-  }, [html, translation]);
+  }, [normalizedHtml, translation]);
 
   return <div ref={hostRef} />;
 }
