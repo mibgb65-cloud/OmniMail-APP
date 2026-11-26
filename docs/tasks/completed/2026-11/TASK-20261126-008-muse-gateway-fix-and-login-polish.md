@@ -1,7 +1,7 @@
 # TASK-20261126-008 · 修复 Muse Mail 网关通信异常、WebView2 登录窗口沉浸式美化与自动闭环
 
 - 状态：Completed
-- 实现提交：未提交（按协作规则，未明确要求不创建 Git 提交）
+- 实现提交：`76a0a5639e213cd3913bf29b574e176c0b8fc91e`
 - 范围：
   1. 修复 `ERR_MUSE_GATEWAY_FAILED` 三项根因：uTLS ALPN 限定 `http/1.1`（并剥离 `h2` ALPS 扩展与握手后协议校验）、环境变量 + Windows WinINet 注册表系统代理（HTTP `CONNECT` / `SOCKS5`）隧道拨号、全阶段脱敏诊断信息（`[session]`、`[auth_check]`、`[hatch_token]`、`[ws_dial]`、`[noise_xx]`、`[mailbox_get]` 等）；
   2. 对齐 OpenPencil `31 · 智能体邮箱统一主界面规范`（`261906429:37`、`261906429:159`），基于纯 Win32 + DWM + GDI + WebView2 实现独立登录窗口沉浸式暗色标题栏与圆角、深色无白闪画刷、`ICoreWebView2Controller2.PutDefaultBackgroundColor`、EXE 内嵌图标加载与移除最大化按钮、DPI 感知 `480×680`（最小 `420×580`）与主窗居中偏左不遮挡定位、顶部 `30px` 原生 GDI 安全信任条与 WebView2 `Bounds` 偏移；
