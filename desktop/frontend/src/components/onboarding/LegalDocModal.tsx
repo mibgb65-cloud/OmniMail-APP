@@ -11,8 +11,9 @@ export function LegalDocModal({ doc }: { doc: "terms" | "privacy" }) {
   return (
     <ModalShell
       heading={`OmniMail ${data.title}`}
-      subtitle={`${data.badge} · ${data.updatedAt}`}
-      maxWidth={600}
+      badge={<span className="pill pill-accent">{data.badge}</span>}
+      subtitle={data.updatedAt}
+      maxWidth={640}
       onClose={() => workspace.setOverlay({ type: "none" })}
       footer={
         <>
@@ -46,9 +47,13 @@ export function LegalDocModal({ doc }: { doc: "terms" | "privacy" }) {
         </>
       }
     >
-      <div className="pill pill-warning" style={{ alignSelf: "flex-start" }}>
-        <Icon name="info" size={13} />
-        {t("onboarding.legalDraftWarning")}
+      <div className="pill pill-success" style={{ alignSelf: "flex-start" }}>
+        <Icon name="shield" size={13} />
+        <span>
+          {doc === "terms"
+            ? t("onboarding.legalTermsPledge")
+            : t("onboarding.legalPrivacyPledge")}
+        </span>
       </div>
 
       {data.sections.map((sec) => (
