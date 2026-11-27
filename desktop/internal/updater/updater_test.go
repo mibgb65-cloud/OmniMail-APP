@@ -18,35 +18,25 @@ import (
 
 func TestDualChannelReleaseSelectionAndErrors(t *testing.T) {
 	releases := []map[string]any{
+		{"tag_name": "v0.0.1.beta.18", "draft": true, "prerelease": true},
 		{
-			"tag_name":   "v0.0.1.beta.18",
-			"draft":      true,
-			"prerelease": true,
-		},
-		{
-			"tag_name":   "v0.0.1.beta.17",
-			"html_url":   "https://github.com/omnimail-org/omnimail/releases/tag/v0.0.1.beta.17",
-			"body":       "- 新增静默更新闭环\n- 重构关于页",
-			"draft":      false,
-			"prerelease": true,
+			"tag_name": "v0.0.1.beta.17", "draft": false, "prerelease": true,
+			"html_url": "https://github.com/mibgb65-cloud/OmniMail-APP/releases/tag/v0.0.1.beta.17",
+			"body":     "- 新增静默更新闭环\n- 重构关于页",
 			"assets": []map[string]any{
 				{
 					"name":                 "OmniMail-Setup-v0.0.1.beta.17-windows-amd64.exe",
-					"browser_download_url": "https://github.com/omnimail-org/omnimail/releases/download/v0.0.1.beta.17/OmniMail-Setup-v0.0.1.beta.17-windows-amd64.exe",
+					"browser_download_url": "https://github.com/mibgb65-cloud/OmniMail-APP/releases/download/v0.0.1.beta.17/OmniMail-Setup-v0.0.1.beta.17-windows-amd64.exe",
 					"size":                 7586923,
 				},
 				{
 					"name":                 "SHA256SUMS.txt",
-					"browser_download_url": "https://github.com/omnimail-org/omnimail/releases/download/v0.0.1.beta.17/SHA256SUMS.txt",
+					"browser_download_url": "https://github.com/mibgb65-cloud/OmniMail-APP/releases/download/v0.0.1.beta.17/SHA256SUMS.txt",
 					"size":                 112,
 				},
 			},
 		},
-		{
-			"tag_name":   "v0.0.0",
-			"draft":      false,
-			"prerelease": false,
-		},
+		{"tag_name": "v0.0.0", "draft": false, "prerelease": false},
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +92,7 @@ func TestDownloadSHA256VerifyAndUntrustedDomainIntercept(t *testing.T) {
 	if err := ValidateTrustedDownloadURL("https://evil.example.com/OmniMail-Setup.exe", ""); err == nil {
 		t.Fatal("第三方非授信域名必须被拦截")
 	}
-	if err := ValidateTrustedDownloadURL("http://github.com/omnimail-org/omnimail/setup.exe", ""); err == nil {
+	if err := ValidateTrustedDownloadURL("http://github.com/mibgb65-cloud/OmniMail-APP/setup.exe", ""); err == nil {
 		t.Fatal("明文 HTTP 下载链接必须被拦截")
 	}
 	if err := ValidateTrustedDownloadURL("https://release-assets.githubusercontent.com/pkg/OmniMail-Setup.exe", ""); err != nil {

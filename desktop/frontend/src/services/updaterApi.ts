@@ -36,6 +36,9 @@ export interface UpdaterProgressEvent {
   error?: string;
 }
 
+export const DEFAULT_GITHUB_RELEASES_URL =
+  "https://github.com/mibgb65-cloud/OmniMail-APP/releases";
+
 const DEFAULT_BUILD_INFO: AppBuildInfo = {
   version: "v0.0.1",
   channel: "stable",
@@ -88,7 +91,7 @@ export const updaterApi = {
         channel: channel || "stable",
         hasUpdate: false,
         skipped: false,
-        releaseUrl: "https://github.com/omnimail-org/omnimail/releases",
+        releaseUrl: DEFAULT_GITHUB_RELEASES_URL,
         releaseNotes: "",
         publishedAt: "",
         checkedAt: new Date().toISOString(),

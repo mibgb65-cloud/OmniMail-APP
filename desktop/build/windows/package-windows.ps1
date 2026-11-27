@@ -1,5 +1,6 @@
 ﻿param(
-  [string]$Version = "v0.0.1"
+  [string]$Version = "v0.0.1",
+  [string]$ReleaseRepo = "mibgb65-cloud/OmniMail-APP"
 )
 
 $ErrorActionPreference = "Stop"
@@ -95,7 +96,7 @@ try {
     $env:GOOS = "windows"
     $env:GOARCH = "amd64"
     $env:CGO_ENABLED = "0"
-    $ldflags = "-s -w -H windowsgui -X main.AppVersion=$Version -X main.ReleaseChannel=$channel -X main.BuildTime=$buildTime"
+    $ldflags = "-s -w -H windowsgui -X main.AppVersion=$Version -X main.ReleaseChannel=$channel -X main.BuildTime=$buildTime -X main.ReleaseRepo=$ReleaseRepo"
     go build -tags production -trimpath -buildvcs=false -ldflags="$ldflags" -o $exeOut .
     if ($LASTEXITCODE -ne 0) { throw "Go 生产编译失败" }
   } finally {

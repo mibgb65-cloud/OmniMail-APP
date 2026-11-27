@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
+import { DEFAULT_GITHUB_RELEASES_URL } from "../../services/updaterApi";
 import { useApp } from "../../state/AppContext";
 import { openSafeExternalUrl } from "../../state/desktopActions";
 import type { UpdateStage } from "../../types/ui";
@@ -56,9 +57,7 @@ export function UpdateFlowModal({
   const isDownloading =
     flowState === "downloading" || flowState === "verifying";
   const isReady = flowState === "ready" || flowState === "installing";
-  const releaseUrl =
-    checkResult?.releaseUrl ||
-    "https://github.com/omnimail-org/omnimail/releases";
+  const releaseUrl = checkResult?.releaseUrl || DEFAULT_GITHUB_RELEASES_URL;
 
   return (
     <ModalShell

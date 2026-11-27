@@ -1,0 +1,140 @@
+name: Release
+
+on:
+  push:
+    branches: [test, prod]
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 发布通道（beta 对应测试预发布，stable 对应正式发布）
+        required: true
+        default: beta
+        type: choice
+        options:
+          - beta
+          - stable
+      version:
+        description: 可选显式版本号（留空则自动按仓库已有 Tag 递增，如 v0.0.1 或 v0.0.1.beta.25）
+        required: false
+        default: ''
+        type: string
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: desktop/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: 安装 pnpm、Task、Wails 与 NSIS
+        shell: pwsh
+        run: |
+          npm install -g pnpm@12.6.0
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          go install github.com/go-task/task/v3/cmd/task@v3.53.1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue) -and -not (Test-Path "C:\Program Files (x86)\NSIS\makensis.exe")) {
+            choco install nsis -y --no-progress
+          }
+
+      - name: 解析版本号与通道（跳过尚未产生业务 PR 的初始基线推送）
+        id: meta
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_CHANNEL: ${{ inputs.channel }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $isDispatch = "${{ github.event_name }}" -eq "workflow_dispatch"
+          if (-not $isDispatch -and "${{ github.event.before }}" -eq "0000000000000000000000000000000000000000") {
+            Write-Host "首次初始化创建环境分支，跳过自动发版；后续合入 PR 或手动触发将正常发版。"
+            "skip=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            exit 0
+          }
+
+          $channel = if ($isDispatch) { $env:INPUT_CHANNEL } elseif ("${{ github.ref_name }}" -eq "prod") { "stable" } else { "beta" }
+          $explicit = $env:INPUT_VERSION.Trim()
+          $tags = @(git tag -l "v*")
+
+          if ($explicit -ne "") {
+            $ver = $explicit
+          } elseif ($channel -eq "stable") {
+            $maxPatch = -1
+            foreach ($t in $tags) {
+              if ($t -match '^v0\.0\.(\d+)$') {
+                $p = [int]$Matches[1]
+                if ($p -gt $maxPatch) { $maxPatch = $p }
+              }
+            }
+            $nextPatch = if ($maxPatch -lt 1) { 1 } else { $maxPatch + 1 }
+            $ver = "v0.0.$nextPatch"
+          } else {
+            $maxStablePatch = 1
+            foreach ($t in $tags) {
+              if ($t -match '^v0\.0\.(\d+)$') {
+                $p = [int]$Matches[1]
+                if ($p + 1 -gt $maxStablePatch) { $maxStablePatch = $p + 1 }
+              }
+            }
+            $prefix = "v0.0.$maxStablePatch.beta."
+            $maxBeta = if ($maxStablePatch -eq 1) { 24 } else { 0 }
+            foreach ($t in $tags) {
+              if ($t.StartsWith($prefix)) {
+                $numStr = $t.Substring($prefix.Length)
+                if ($numStr -match '^\d+$' -and [int]$numStr -gt $maxBeta) {
+                  $maxBeta = [int]$numStr
+                }
+              }
+            }
+            $ver = "$prefix$($maxBeta + 1)"
+          }
+
+          "skip=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "channel=$channel" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Resolved release: version=$ver channel=$channel"
+
+      - name: 执行全量门禁验证并构建 Windows NSIS 安装包
+        if: steps.meta.outputs.skip != 'true'
+        shell: pwsh
+        run: |
+          task verify
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1 `
+            -Version "${{ steps.meta.outputs.version }}" `
+            -ReleaseRepo "${{ github.repository }}"
+
+      - name: 创建 GitHub Release 并上传安装包与 SHA256SUMS.txt
+        if: steps.meta.outputs.skip != 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ver = "${{ steps.meta.outputs.version }}"
+          $ch  = "${{ steps.meta.outputs.channel }}"
+          $dir = "dist/release/$ver"
+          $exe = "$dir/OmniMail-Setup-$ver-windows-amd64.exe"
+          $sum = "$dir/SHA256SUMS.txt"
+          $flags = @("--generate-notes", "--target", "${{ github.sha }}", "--title", "OmniMail $ver")
+          if ($ch -eq "beta") { $flags += "--prerelease" } else { $flags += "--latest" }
+          gh release create $ver $exe $sum @flags

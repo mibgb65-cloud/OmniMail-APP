@@ -57,7 +57,7 @@ test("extractReleaseHighlights 提取前 3~5 条干净要点并格式化速度�
 - 重构「设置 → 关于 OmniMail」三卡片布局
 1. 新增顶栏四档自适应更新胶囊与紧凑悬浮卡
 * 清理早期运行态横幅预览卡片
-- [查看仓库详情](https://github.com/omnimail-org/omnimail)
+- [查看仓库详情](https://github.com/mibgb65-cloud/OmniMail-APP)
 - 第六条冗余说明不应超限
 `;
   const list = extractReleaseHighlights(md, 5);
@@ -92,4 +92,11 @@ test("关于页与设置弹窗已移除运行态横幅预览卡片并接入真�
   assert.doesNotMatch(settingsSrc, /"0\.1\.0"/);
   assert.doesNotMatch(settingsNavSrc, /"0\.1\.0"/);
   assert.match(settingsNavSrc, /updateStore\.buildInfo\.version/);
+
+  const updaterApiSrc = readFileSync(
+    path.join(rootDir, "src/services/updaterApi.ts"),
+    "utf8",
+  );
+  assert.match(updaterApiSrc, /mibgb65-cloud\/OmniMail-APP\/releases/);
+  assert.doesNotMatch(updaterApiSrc, /omnimail-org\/omnimail/);
 });

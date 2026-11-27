@@ -45,7 +45,7 @@ func CheckRelease(ctx context.Context, cfg CheckConfig) (UpdateCheckResult, erro
 	channel := NormalizeChannel(cfg.Channel, curVer)
 	repo := strings.Trim(strings.TrimSpace(cfg.Repo), "/")
 	if repo == "" {
-		repo = "omnimail-org/omnimail"
+		repo = "mibgb65-cloud/OmniMail-APP"
 	}
 
 	res := UpdateCheckResult{

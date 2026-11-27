@@ -1,4 +1,5 @@
 import { getShortcutGroups, useI18n } from "../../i18n";
+import { DEFAULT_GITHUB_RELEASES_URL } from "../../services/updaterApi";
 import { useApp } from "../../state/AppContext";
 import { openSafeExternalUrl } from "../../state/desktopActions";
 import { Icon } from "../common/Icon";
@@ -38,8 +39,7 @@ export function AboutTab() {
   const { prefs, checkResult } = updateStore;
   const activeChannel = prefs.updateChannel === "beta" ? "beta" : "stable";
   const githubReleaseUrl =
-    checkResult?.releaseUrl ||
-    "https://github.com/omnimail-org/omnimail/releases";
+    checkResult?.releaseUrl || DEFAULT_GITHUB_RELEASES_URL;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

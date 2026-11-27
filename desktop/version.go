@@ -12,7 +12,7 @@ var (
 	AppVersion     = "v0.0.1"
 	ReleaseChannel = "stable"
 	BuildTime      = "dev"
-	ReleaseRepo    = "omnimail-org/omnimail"
+	ReleaseRepo    = "mibgb65-cloud/OmniMail-APP"
 )
 
 type AppBuildInfo struct {
@@ -36,7 +36,7 @@ func normalizedReleaseRepo() string {
 	}
 	repo := strings.Trim(strings.TrimSpace(ReleaseRepo), "/")
 	if repo == "" {
-		return "omnimail-org/omnimail"
+		return "mibgb65-cloud/OmniMail-APP"
 	}
 	return repo
 }
