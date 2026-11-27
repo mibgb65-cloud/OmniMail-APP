@@ -108,21 +108,6 @@
   gap: 8px;
 }
 
-.provider-ent-badge {
-  background: var(--ent-bg-light, var(--bg-card));
-  border: 1px solid var(--ent-bd-light, var(--border-default));
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-
-[data-theme="dark"] .provider-ent-badge {
-  background: var(--ent-bg-dark, var(--bg-card));
-  border-color: var(--ent-bd-dark, var(--border-default));
-}
-
 .aam-ent-extras {
   margin-top: 10px;
   display: flex;

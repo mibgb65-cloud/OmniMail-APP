@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -151,4 +151,45 @@ test("接入弹窗双栏布局与亮暗双色关键设计令牌与窄屏断点�
   assert.match(modalCss, /#edf4ff/i);
   assert.match(modalCss, /#1b2842/i);
   assert.match(extrasCss, /min-height:\s*64px/);
+});
+
+test("6 家企业邮箱统一接入 128x128 RGBA 官方品牌透明 PNG 并与 OFFICIAL_ICONS 共享管线", () => {
+  const enterpriseIcons = [
+    ["tencent_exmail", "tencent_exmail.png"],
+    ["aliyun_exmail", "aliyun_exmail.png"],
+    ["netease_exmail", "netease_exmail.png"],
+    ["feishu", "feishu.png"],
+    ["mail263", "mail263.png"],
+    ["zoho_exmail", "zoho_exmail.png"],
+  ];
+  const glyphPath = path.join(
+    rootDir,
+    "src/components/common/EnterpriseProviderGlyph.tsx",
+  );
+  const iconCompSrc = readFileSync(
+    path.join(rootDir, "src/components/common/ProviderIcon.tsx"),
+    "utf8",
+  );
+  const cardsCss = readFileSync(
+    path.join(rootDir, "src/styles/add-account-cards.css"),
+    "utf8",
+  );
+
+  assert.equal(existsSync(glyphPath), false);
+  assert.doesNotMatch(
+    iconCompSrc,
+    /EnterpriseProviderGlyph|provider-ent-badge/,
+  );
+  assert.doesNotMatch(cardsCss, /provider-ent-badge/);
+
+  for (const [providerId, filename] of enterpriseIcons) {
+    const png = readFileSync(
+      path.join(rootDir, "src/assets/providers", filename),
+    );
+    assert.equal(png.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+    assert.equal(png.readUInt32BE(16), 128);
+    assert.equal(png.readUInt32BE(20), 128);
+    assert.equal(png[25], 6);
+    assert.match(iconCompSrc, new RegExp(`\\b${providerId}:\\s*\\w+`));
+  }
 });

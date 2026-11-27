@@ -1,23 +1,24 @@
-import type { CSSProperties } from "react";
+import aliyunExmailPng from "../../assets/providers/aliyun_exmail.png";
+import feishuPng from "../../assets/providers/feishu.png";
 import gmailPng from "../../assets/providers/gmail.png";
 import icloudPng from "../../assets/providers/icloud.png";
 import linuxdoPng from "../../assets/providers/linuxdo.png";
+import mail263Png from "../../assets/providers/mail263.png";
 import museSvg from "../../assets/providers/muse.svg";
 import naverPng from "../../assets/providers/naver.png";
 import neteasePng from "../../assets/providers/netease.png";
+import neteaseExmailPng from "../../assets/providers/netease_exmail.png";
 import outlookPng from "../../assets/providers/outlook.png";
 import qqPng from "../../assets/providers/qq.png";
+import tencentExmailPng from "../../assets/providers/tencent_exmail.png";
 import workbuddyPng from "../../assets/providers/workbuddy.png";
 import yahooPng from "../../assets/providers/yahoo.png";
 import yandexPng from "../../assets/providers/yandex.png";
+import zohoExmailPng from "../../assets/providers/zoho_exmail.png";
 import type { ProviderId } from "../../types/account";
-import {
-  ENTERPRISE_BADGE_THEMES,
-  renderEnterpriseGlyph,
-} from "./EnterpriseProviderGlyph";
 import { Icon } from "./Icon";
 
-const OFFICIAL_ICONS: Partial<Record<ProviderId, string>> = {
+export const OFFICIAL_ICONS: Partial<Record<ProviderId, string>> = {
   gmail: gmailPng,
   outlook: outlookPng,
   qq: qqPng,
@@ -29,6 +30,12 @@ const OFFICIAL_ICONS: Partial<Record<ProviderId, string>> = {
   nevermail: naverPng,
   muse: museSvg,
   workbuddy: workbuddyPng,
+  tencent_exmail: tencentExmailPng,
+  aliyun_exmail: aliyunExmailPng,
+  netease_exmail: neteaseExmailPng,
+  feishu: feishuPng,
+  mail263: mail263Png,
+  zoho_exmail: zohoExmailPng,
 };
 
 interface ProviderIconProps {
@@ -37,7 +44,7 @@ interface ProviderIconProps {
   bare?: boolean;
 }
 
-/** 内置服务商使用官方 PNG 或企业邮箱品牌矢量徽标；通用 IMAP 使用中性服务器矢量图标 */
+/** 内置个人、企业与智能体服务商统一使用官方高清图标资产；通用 IMAP 使用中性服务器矢量图标 */
 export function ProviderIcon({
   provider,
   size = 24,
@@ -78,38 +85,6 @@ export function ProviderIcon({
           height={Math.round(size * 0.72)}
           style={{ objectFit: "contain", display: "block" }}
         />
-      </span>
-    );
-  }
-
-  const entTheme = ENTERPRISE_BADGE_THEMES[provider];
-  if (entTheme) {
-    if (bare) {
-      return (
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          {renderEnterpriseGlyph(provider, size)}
-        </span>
-      );
-    }
-    const entStyle = {
-      width: size,
-      height: size,
-      borderRadius: Math.max(5, Math.round(size * 0.25)),
-      "--ent-bg-light": entTheme.lightBg,
-      "--ent-bd-light": entTheme.lightBd,
-      "--ent-bg-dark": entTheme.darkBg,
-      "--ent-bd-dark": entTheme.darkBd,
-    } as CSSProperties;
-    return (
-      <span className="provider-ent-badge" style={entStyle}>
-        {renderEnterpriseGlyph(provider, Math.round(size * 0.72))}
       </span>
     );
   }
