@@ -10,6 +10,7 @@
 | 安装、热更新、开发 EXE | [构建与启动](development/BUILD.md) |
 | 编码、测试和提交 | [编码](development/CODING_RULES.md) · [测试](development/TESTING.md) · [Git](development/GIT_WORKFLOW.md) |
 | 正在推进什么 | [当前状态](plans/CURRENT.md) |
+| 各版本更新说明与发版规范 | [版本更新文档](releases/README.md) |
 | 如何开始和归档任务 | [任务流程](tasks/README.md) |
 | 为什么做出架构选择 | [架构决策](decisions/README.md) |
 
