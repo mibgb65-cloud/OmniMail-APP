@@ -115,15 +115,28 @@ jobs:
             choco install nsis -y --no-progress
           }
 
-      - name: 执行全量门禁验证并构建 Windows NSIS 安装包
+      - name: 执行全量门禁验证并构建带 OmniMail 签名的 Windows NSIS 安装包
         if: steps.meta.outputs.skip != 'true'
         shell: pwsh
+        env:
+          WINDOWS_SIGN_PFX_BASE64: ${{ secrets.WINDOWS_SIGN_PFX_BASE64 }}
+          WINDOWS_SIGN_PFX_PASSWORD: ${{ secrets.WINDOWS_SIGN_PFX_PASSWORD }}
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_SIGN_PFX_BASE64)) {
+            throw "缺少仓库密钥 WINDOWS_SIGN_PFX_BASE64，无法为发布包签入 OmniMail 发布者证书。"
+          }
           task verify
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1 `
             -Version "${{ steps.meta.outputs.tag }}" `
             -ReleaseRepo "${{ github.repository }}"
+
+          $exe = "dist/release/${{ steps.meta.outputs.tag }}/${{ steps.meta.outputs.pkg_file }}"
+          $sig = Get-AuthenticodeSignature -FilePath $exe
+          if (-not $sig.SignerCertificate -or $sig.SignerCertificate.Subject -notmatch "CN=OmniMail") {
+            throw "构建产物未通过 CN=OmniMail 数字签名复核：$exe"
+          }
+          Write-Host "Verified installer signature: $($sig.SignerCertificate.Subject) ($($sig.SignerCertificate.Thumbprint))"
 
       - name: 由机器人读取更新文档自动创建并发布 GitHub Release
         if: steps.meta.outputs.skip != 'true'

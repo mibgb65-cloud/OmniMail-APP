@@ -59,6 +59,7 @@ Write-Host "==> 发布构建元数据：Version=$Version | PackageVer=$pkgVer | 
 $tempInfoJson = Join-Path $desktopDir "build\windows\.info.generated.json"
 $sysoOut = Join-Path $desktopDir "omnimail_windows_amd64.syso"
 $exeOut = Join-Path $stageBinDir "OmniMail.exe"
+$signScript = Join-Path $scriptDir "sign-windows-binary.ps1"
 
 try {
   Push-Location $desktopDir
@@ -109,6 +110,7 @@ try {
     $ldflags = "-s -w -H windowsgui -X main.AppVersion=$Version -X main.ReleaseChannel=$channel -X main.BuildTime=$buildTime -X main.ReleaseRepo=$ReleaseRepo"
     go build -tags production -trimpath -buildvcs=false -ldflags="$ldflags" -o $exeOut .
     if ($LASTEXITCODE -ne 0) { throw "Go 生产编译失败" }
+    & $signScript -FilePath $exeOut
   } finally {
     if (Test-Path $tempInfoJson) { Remove-Item $tempInfoJson -Force }
     if (Test-Path $sysoOut) { Remove-Item $sysoOut -Force }
@@ -150,6 +152,7 @@ try {
     "/DINSTALLER_OUT=$installerExe" `
     $nsiScript
   if ($LASTEXITCODE -ne 0) { throw "NSIS 安装包编译失败（含零警告门禁 /WX）" }
+  & $signScript -FilePath $installerExe
 
   $installerHash = (Get-FileHash $installerExe -Algorithm SHA256).Hash.ToLower()
   $installerLeaf = Split-Path -Leaf $installerExe

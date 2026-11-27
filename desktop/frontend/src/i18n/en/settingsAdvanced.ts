@@ -168,7 +168,7 @@ export const settingsAdvanced = {
   aboutCheckUpdatesBtn: "Check for updates",
   aboutSummary:
     "Local-first multi-account desktop email workspace with light/dark themes, sender identity lock, and privacy-clear Omni AI.",
-  aboutViewTermsBtn: "Terms of Service (Draft)",
-  aboutViewPrivacyBtn: "Privacy Policy (Draft)",
+  aboutViewTermsBtn: "Terms of Service",
+  aboutViewPrivacyBtn: "Privacy Policy",
   aboutExportDiagBtn: "Export redacted diagnostics",
 } satisfies typeof zhSettingsAdvanced;

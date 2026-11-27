@@ -16,7 +16,7 @@ SetCompressor /SOLID lzma
   !define APP_CHANNEL "stable"
 !endif
 !ifndef APP_PUBLISHER
-  !define APP_PUBLISHER "OmniMail Studio"
+  !define APP_PUBLISHER "OmniMail"
 !endif
 !ifndef APP_URL
   !define APP_URL "https://github.com/mibgb65-cloud/OmniMail-APP"
