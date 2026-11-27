@@ -3,8 +3,6 @@ name: CI
 on:
   pull_request:
     branches: [dev, test, prod]
-  push:
-    branches: [dev, test, prod]
   workflow_dispatch:
 
 concurrency:
@@ -20,20 +18,79 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           persist-credentials: false
+
+      - name: 识别变更范围（纯文档快通道检查）
+        id: scope
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ("${{ github.event_name }}" -ne "pull_request") {
+            "docs_only=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            exit 0
+          }
+
+          $baseSha = "${{ github.event.pull_request.base.sha }}"
+          $headSha = "${{ github.sha }}"
+          $changed = @(git diff --name-only "$baseSha...$headSha" | Where-Object { $_.Trim() -ne "" })
+          Write-Host "Changed files ($($changed.Count)):"
+          $changed | ForEach-Object { Write-Host "  - $_" }
+
+          $docPattern = '^(README\.md|AGENTS\.md|LICENSE|\.gitignore|\.editorconfig|docs/.*\.md)$'
+          $isDocsOnly = ($changed.Count -gt 0)
+          foreach ($f in $changed) {
+            if ($f -notmatch $docPattern) {
+              $isDocsOnly = $false
+              break
+            }
+          }
+
+          if ($isDocsOnly) {
+            foreach ($md in $changed) {
+              if ($md -notmatch '\.md$' -or -not (Test-Path -LiteralPath $md)) { continue }
+              $mdDir = Split-Path -Parent (Resolve-Path -LiteralPath $md).Path
+              $raw = Get-Content -LiteralPath $md -Raw -Encoding UTF8
+              $rawNoCode = [regex]::Replace($raw, '(?s)```.*?```', '')
+              $links = [regex]::Matches($rawNoCode, '\]\(([^)]+)\)') | ForEach-Object { $_.Groups[1].Value.Trim() }
+              foreach ($lnk in $links) {
+                if ($lnk -match '^(https?://|mailto:|#)') { continue }
+                $relPath = ($lnk -split '#')[0]
+                if (-not $relPath) { continue }
+                $fullTarget = Join-Path $mdDir $relPath
+                if (-not (Test-Path -LiteralPath $fullTarget)) {
+                  throw "文档 $md 中存在失效的本地相对链接：$lnk"
+                }
+              }
+            }
+            Write-Host "纯文档 MR 相对链接核验通过，跳过代码编译与单测流程。"
+            "docs_only=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          } else {
+            "docs_only=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
+
       - uses: actions/setup-go@v5
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           go-version: '1.26.x'
           cache-dependency-path: desktop/go.sum
+
       - uses: actions/setup-node@v4
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version-file: .nvmrc
+
       - name: 安装 pnpm
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm install -g pnpm@12.6.0
+
       - name: 安装 Task 和 Wails
+        if: steps.scope.outputs.docs_only != 'true'
         run: |
           go install github.com/go-task/task/v3/cmd/task@v3.53.1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
-      - name: 验证
+
+      - name: 全量代码质量验证
+        if: steps.scope.outputs.docs_only != 'true'
         run: task verify
