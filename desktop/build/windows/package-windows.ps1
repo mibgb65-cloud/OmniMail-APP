@@ -7,7 +7,8 @@ $ErrorActionPreference = "Stop"
 
 $Version = $Version.Trim()
 $stableRegex = '^v(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)$'
-$betaRegex   = '^v(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)\.beta\.(?<beta>[1-9]\d*)$'
+$betaRegex   = '^v(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)[.-]beta\.(?<pre>[1-9]\d*)$'
+$alphaRegex  = '^v(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)[.-]alpha\.(?<pre>[1-9]\d*)$'
 
 if ($Version -match $stableRegex) {
   $channel = "stable"
@@ -15,14 +16,23 @@ if ($Version -match $stableRegex) {
   $min = [int]$Matches.minor
   $pat = [int]$Matches.patch
   $rev = 0
+  $pkgVer = "v$maj.$min.$pat"
 } elseif ($Version -match $betaRegex) {
   $channel = "beta"
   $maj = [int]$Matches.major
   $min = [int]$Matches.minor
   $pat = [int]$Matches.patch
-  $rev = [int]$Matches.beta
+  $rev = [int]$Matches.pre
+  $pkgVer = "v$maj.$min.$pat.beta.$rev"
+} elseif ($Version -match $alphaRegex) {
+  $channel = "alpha"
+  $maj = [int]$Matches.major
+  $min = [int]$Matches.minor
+  $pat = [int]$Matches.patch
+  $rev = [int]$Matches.pre
+  $pkgVer = "v$maj.$min.$pat.alpha.$rev"
 } else {
-  throw "非法版本号格式 '$Version'。仅支持双轨格式：正式版 v<major>.<minor>.<patch>（如 v0.0.1）或测试版 v<major>.<minor>.<patch>.beta.<n>（如 v0.0.1.beta.1）。"
+  throw "非法版本号格式 '$Version'。支持三轨格式：正式版 vX.Y.Z（如 v0.0.1）、测试版 vX.Y.Z-beta.N（如 v1.2.0-beta.1）或本地开发版 vX.Y.Z-alpha.N（如 v1.2.0-alpha.1）。"
 }
 
 foreach ($seg in @($maj, $min, $pat, $rev)) {
@@ -44,7 +54,7 @@ if (-not (Test-Path $licenseFile)) {
   throw "仓库根目录缺少 LICENSE 开源许可协议文件：$licenseFile"
 }
 
-Write-Host "==> 发布构建元数据：Version=$Version | Channel=$channel | FileVersion=$fileVersion | OutDir=$releaseDir" -ForegroundColor Magenta
+Write-Host "==> 发布构建元数据：Version=$Version | PackageVer=$pkgVer | Channel=$channel | FileVersion=$fileVersion | OutDir=$releaseDir" -ForegroundColor Magenta
 
 $tempInfoJson = Join-Path $desktopDir "build\windows\.info.generated.json"
 $sysoOut = Join-Path $desktopDir "omnimail_windows_amd64.syso"
@@ -71,7 +81,7 @@ try {
     $infoObj = Get-Content (Join-Path $desktopDir "build\windows\info.json") -Raw -Encoding UTF8 | ConvertFrom-Json
     $infoObj.fixed.file_version = $fileVersion
     $infoObj.fixed.product_version = $fileVersion
-    $prodName = if ($channel -eq "beta") { "OmniMail (Beta)" } else { "OmniMail" }
+    $prodName = if ($channel -eq "beta") { "OmniMail (Beta)" } elseif ($channel -eq "alpha") { "OmniMail (Alpha)" } else { "OmniMail" }
     $infoObj.info."0804".FileVersion = $Version
     $infoObj.info."0804".ProductVersion = $Version
     $infoObj.info."0804".ProductName = $prodName
@@ -127,7 +137,7 @@ try {
     throw "未检测到 NSIS (makensis.exe)，请先安装 NSIS 3.x"
   }
 
-  $installerExe = Join-Path $releaseDir "OmniMail-Setup-$Version-windows-amd64.exe"
+  $installerExe = Join-Path $releaseDir "OmniMail-windows-Setup-$pkgVer.exe"
   $nsiScript = Join-Path $desktopDir "build\windows\installer\omnimail.nsi"
   & $makensis `
     /WX `

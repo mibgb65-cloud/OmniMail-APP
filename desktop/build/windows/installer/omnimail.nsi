@@ -19,7 +19,7 @@ SetCompressor /SOLID lzma
   !define APP_PUBLISHER "OmniMail Studio"
 !endif
 !ifndef APP_URL
-  !define APP_URL "https://github.com/omnimail-org/omnimail"
+  !define APP_URL "https://github.com/mibgb65-cloud/OmniMail-APP"
 !endif
 !ifndef APP_EXE
   !define APP_EXE "OmniMail.exe"
@@ -34,15 +34,20 @@ SetCompressor /SOLID lzma
   !define LICENSE_FILE "..\..\..\..\LICENSE"
 !endif
 !ifndef INSTALLER_OUT
-  !define INSTALLER_OUT "..\..\..\..\dist\release\${APP_VERSION}\OmniMail-Setup-${APP_VERSION}-windows-amd64.exe"
+  !define INSTALLER_OUT "..\..\..\..\dist\release\${APP_VERSION}\OmniMail-windows-Setup-${APP_VERSION}.exe"
 !endif
 
 !if "${APP_CHANNEL}" == "beta"
   !define APP_DISPLAY_TITLE "${APP_VERSION} (Beta)"
   !define APP_UNINST_DISPLAY_NAME "${APP_NAME} ${APP_VERSION} (Beta)"
 !else
-  !define APP_DISPLAY_TITLE "${APP_VERSION}"
-  !define APP_UNINST_DISPLAY_NAME "${APP_NAME}"
+  !if "${APP_CHANNEL}" == "alpha"
+    !define APP_DISPLAY_TITLE "${APP_VERSION} (Alpha)"
+    !define APP_UNINST_DISPLAY_NAME "${APP_NAME} ${APP_VERSION} (Alpha)"
+  !else
+    !define APP_DISPLAY_TITLE "${APP_VERSION}"
+    !define APP_UNINST_DISPLAY_NAME "${APP_NAME}"
+  !endif
 !endif
 
 !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\OmniMail"

@@ -43,6 +43,9 @@ func CheckRelease(ctx context.Context, cfg CheckConfig) (UpdateCheckResult, erro
 	now := time.Now()
 	curVer := NormalizeVersion(cfg.CurrentVersion)
 	channel := NormalizeChannel(cfg.Channel, curVer)
+	if channel != "beta" {
+		channel = "stable"
+	}
 	repo := strings.Trim(strings.TrimSpace(cfg.Repo), "/")
 	if repo == "" {
 		repo = "mibgb65-cloud/OmniMail-APP"
@@ -60,11 +63,7 @@ func CheckRelease(ctx context.Context, cfg CheckConfig) (UpdateCheckResult, erro
 
 	apiURL := strings.TrimSpace(cfg.FeedURL)
 	if apiURL == "" {
-		if channel == "stable" {
-			apiURL = fmt.Sprintf("https://api.github.com/repos/%s/releases?per_page=15", repo)
-		} else {
-			apiURL = fmt.Sprintf("https://api.github.com/repos/%s/releases?per_page=15", repo)
-		}
+		apiURL = fmt.Sprintf("https://api.github.com/repos/%s/releases?per_page=15", repo)
 	}
 
 	timeout := cfg.Timeout
@@ -155,7 +154,7 @@ func selectBestRelease(list []ghRelease, channel string) (ghRelease, bool) {
 	var best ghRelease
 	found := false
 	for _, r := range list {
-		if r.Draft || strings.TrimSpace(r.TagName) == "" {
+		if r.Draft || strings.TrimSpace(r.TagName) == "" || IsAlphaVersion(r.TagName) {
 			continue
 		}
 		if channel == "stable" && (r.Prerelease || IsBetaVersion(r.TagName)) {
@@ -172,8 +171,9 @@ func selectBestRelease(list []ghRelease, channel string) (ghRelease, bool) {
 func matchWindowsAssets(rawTag string, normVer string, assets []ghAsset) (string, string, int64, string) {
 	var exeAsset *ghAsset
 	var sumsURL string
-	exactA := fmt.Sprintf("OmniMail-Setup-%s-windows-amd64.exe", strings.TrimSpace(rawTag))
-	exactB := fmt.Sprintf("OmniMail-Setup-%s-windows-amd64.exe", normVer)
+	canonical := InstallerAssetFileName(rawTag)
+	altRaw := fmt.Sprintf("OmniMail-windows-Setup-%s.exe", strings.TrimSpace(rawTag))
+	legacyExact := fmt.Sprintf("OmniMail-Setup-%s-windows-amd64.exe", normVer)
 
 	for i := range assets {
 		a := &assets[i]
@@ -183,12 +183,12 @@ func matchWindowsAssets(rawTag string, normVer string, assets []ghAsset) (string
 			sumsURL = strings.TrimSpace(a.BrowserDownloadURL)
 			continue
 		}
-		if strings.EqualFold(name, exactA) || strings.EqualFold(name, exactB) {
+		if strings.EqualFold(name, canonical) || strings.EqualFold(name, altRaw) || strings.EqualFold(name, legacyExact) {
 			exeAsset = a
 			continue
 		}
 		if exeAsset == nil && strings.HasSuffix(low, ".exe") &&
-			(strings.Contains(low, "windows-amd64") || strings.Contains(low, "setup")) {
+			(strings.Contains(low, "omnimail-windows-setup") || strings.Contains(low, "windows-amd64") || strings.Contains(low, "setup")) {
 			exeAsset = a
 		}
 	}
