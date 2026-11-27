@@ -28,7 +28,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 校验发布标签语义与所属受保护分支
+      - name: 校验发布标签语义、所属分支与版本更新文档
         id: meta
         shell: pwsh
         env:
@@ -76,13 +76,19 @@ jobs:
           git checkout --detach $tagSha
           if ($LASTEXITCODE -ne 0) { throw "检出标签提交 $tagSha 失败" }
 
+          $notesFile = "docs/releases/$tag.md"
+          if (-not (Test-Path -LiteralPath $notesFile) -or (Get-Item -LiteralPath $notesFile).Length -lt 20) {
+            throw "缺少版本更新文档 '$notesFile'。按项目发版规范，必须先在 docs/releases/ 新增对应版本更新文档并合入目标分支，再推送标签触发机器人发版。"
+          }
+
           $pkgFile = "OmniMail-windows-Setup-$pkgVer.exe"
           "skip=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "sha=$tagSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "channel=$channel" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "pkg_file=$pkgFile" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          Write-Host "Verified release tag: tag=$tag sha=$tagSha channel=$channel pkg_file=$pkgFile"
+          "notes_file=$notesFile" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Verified release tag: tag=$tag sha=$tagSha channel=$channel pkg_file=$pkgFile notes=$notesFile"
 
       - uses: actions/setup-go@v5
         if: steps.meta.outputs.skip != 'true'
@@ -119,19 +125,20 @@ jobs:
             -Version "${{ steps.meta.outputs.tag }}" `
             -ReleaseRepo "${{ github.repository }}"
 
-      - name: 创建或更新 GitHub Release 并上传安装包与 SHA256SUMS.txt
+      - name: 由机器人读取更新文档自动创建并发布 GitHub Release
         if: steps.meta.outputs.skip != 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $tag = "${{ steps.meta.outputs.tag }}"
-          $sha = "${{ steps.meta.outputs.sha }}"
-          $ch  = "${{ steps.meta.outputs.channel }}"
-          $dir = "dist/release/$tag"
-          $exe = "$dir/${{ steps.meta.outputs.pkg_file }}"
-          $sum = "$dir/SHA256SUMS.txt"
+          $tag   = "${{ steps.meta.outputs.tag }}"
+          $sha   = "${{ steps.meta.outputs.sha }}"
+          $ch    = "${{ steps.meta.outputs.channel }}"
+          $notes = "${{ steps.meta.outputs.notes_file }}"
+          $dir   = "dist/release/$tag"
+          $exe   = "$dir/${{ steps.meta.outputs.pkg_file }}"
+          $sum   = "$dir/SHA256SUMS.txt"
 
           if (-not (Test-Path -LiteralPath $exe)) { throw "未找到安装包产物：$exe" }
           if (-not (Test-Path -LiteralPath $sum)) { throw "未找到校验文件：$sum" }
@@ -139,8 +146,9 @@ jobs:
           gh release view $tag >$null 2>&1
           if ($LASTEXITCODE -eq 0) {
             gh release upload $tag $exe $sum --clobber
+            gh release edit $tag --title "OmniMail $tag" --notes-file $notes
           } else {
-            $flags = @("--generate-notes", "--target", $sha, "--title", "OmniMail $tag")
+            $flags = @("--notes-file", $notes, "--target", $sha, "--title", "OmniMail $tag")
             if ($ch -eq "beta") { $flags += "--prerelease" } else { $flags += "--latest" }
             gh release create $tag $exe $sum @flags
           }
