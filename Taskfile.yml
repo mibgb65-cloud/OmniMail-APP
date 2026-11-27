@@ -35,14 +35,19 @@ tasks:
       - powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1 -Version "{{.VERSION | default "v0.0.1"}}"
 
   package:windows:stable:
-    desc: 构建 Windows 正式稳定版 NSIS 安装包（默认 VERSION=v0.0.1）
+    desc: 构建 Windows 正式生产版 NSIS 安装包（默认 VERSION=v0.0.1，对应 prod 分支）
     cmds:
       - powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1 -Version "{{.VERSION | default "v0.0.1"}}"
 
   package:windows:beta:
-    desc: 构建 Windows Beta 测试版 NSIS 安装包（默认 VERSION=v0.0.1.beta.1）
+    desc: 构建 Windows Beta 测试版 NSIS 安装包（默认 VERSION=v0.0.1-beta.1，对应 test 分支）
     cmds:
-      - powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1 -Version "{{.VERSION | default "v0.0.1.beta.1"}}"
+      - powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1 -Version "{{.VERSION | default "v0.0.1-beta.1"}}"
+
+  package:windows:alpha:
+    desc: 构建 Windows Alpha 本地开发版 NSIS 安装包（默认 VERSION=v0.0.1-alpha.1，仅本地 dev 使用）
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1 -Version "{{.VERSION | default "v0.0.1-alpha.1"}}"
 
   run:
     desc: 运行已经构建的开发版程序
