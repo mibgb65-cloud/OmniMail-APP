@@ -149,7 +149,7 @@ export const settingsAdvanced = {
   aboutCheckUpdatesBtn: "检查更新",
   aboutSummary:
     "本地优先的多邮箱桌面客户端，支持亮暗双模式、原收件账户锁定与透明边界 AI 助手。",
-  aboutViewTermsBtn: "查看《用户协议》草案",
-  aboutViewPrivacyBtn: "查看《隐私政策》草案",
+  aboutViewTermsBtn: "查看《用户协议》",
+  aboutViewPrivacyBtn: "查看《隐私政策》",
   aboutExportDiagBtn: "导出脱敏诊断日志",
 };

@@ -56,8 +56,8 @@ task package:windows:stable VERSION=v1.2.0
 1. 生成最新 Wails v3 TypeScript 绑定；
 2. 执行前端 `tsc --noEmit` 与 Vite 生产压缩打包；
 3. 动态生成临时 PE 版本描述并调用 `wails3 generate syso` 嵌入多尺寸图标与版本信息（构建后自动清理临时文件，不污染 Git 模板）；
-4. 纯 Go 生产编译（`CGO_ENABLED=0`、`-tags production`、`-ldflags "-s -w -H windowsgui -X main.AppVersion=... -X main.ReleaseChannel=... -X main.BuildTime=..."`），封装完成后自动清理临时主程序；
-5. 调用 `makensis /WX`（零警告门禁）按版本号创建独立目录 `dist/release/<Version>/`，输出对应版本的 Unicode High-DPI 交互式安装向导（`LZMA /SOLID`）与 `SHA256SUMS.txt`。
+4. 纯 Go 生产编译（`CGO_ENABLED=0`、`-tags production`、`-ldflags "-s -w -H windowsgui -X main.AppVersion=... -X main.ReleaseChannel=... -X main.BuildTime=..."`），并对内层主程序 `OmniMail.exe` 执行 `CN=OmniMail` Authenticode 代码签名与时间戳固化；
+5. 调用 `makensis /WX`（零警告门禁）按版本号创建独立目录 `dist/release/<Version>/`，输出对应版本的 Unicode High-DPI 交互式安装向导（`LZMA /SOLID`），先对安装包执行 `CN=OmniMail` 数字签名（公开验证证书位于 `desktop/build/windows/OmniMail-CodeSigning.cer`），再计算最终 `SHA256SUMS.txt`。
 
 每次发版均输出至对应版本名的独立目录 `dist/release/<Version>/`（例如 `dist/release/v0.0.1/` 或 `dist/release/v1.2.0-beta.1/`）：
 

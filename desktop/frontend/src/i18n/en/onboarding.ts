@@ -133,6 +133,8 @@ export const onboarding = {
   legalTermsTab: "Terms of Service",
   legalPrivacyTab: "Privacy Policy",
   legalGotItBtn: "Got it",
-  legalDraftWarning:
-    "Design preview draft — will be replaced by finalized legal copy before public release.",
+  legalTermsPledge:
+    "MIT Open Source · No Cloud Account · Full Local Data Ownership",
+  legalPrivacyPledge:
+    "100% Encrypted Local Storage · Zero Telemetry · Strictly Opt-In AI & Translation",
 } satisfies typeof zhOnboarding;
