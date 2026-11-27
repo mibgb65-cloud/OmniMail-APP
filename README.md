@@ -280,6 +280,7 @@ task package:windows:stable VERSION=v0.0.1          # 生产环境正式版安�
 | 文档 | 内容说明 |
 | :--- | :--- |
 | [文档总索引 (`docs/README.md`)](docs/README.md) | 产品、架构、开发、测试与架构决策（ADR）完整入口 |
+| [版本更新文档 (`docs/releases/README.md`)](docs/releases/README.md) | 历史版本发布记录与客户端更新说明源 |
 | [产品范围 (`docs/product/PRD.md`)](docs/product/PRD.md) | 当前已实现验收范围与功能边界定义 |
 | [架构概览 (`docs/architecture/OVERVIEW.md`)](docs/architecture/OVERVIEW.md) | React → Wails v3 → 11 个 Go Services 与本地存储数据流 |
 | [技术栈说明 (`docs/architecture/TECH_STACK.md`)](docs/architecture/TECH_STACK.md) | 核心依赖选型与纯 Go 零 CGO 工程约束 |
