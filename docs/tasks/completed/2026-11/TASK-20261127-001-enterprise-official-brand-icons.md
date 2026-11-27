@@ -1,7 +1,7 @@
 # TASK-20261127-001 · 企业邮箱官方品牌高清透明图标替换与 `ProviderIcon` 统一管线
 
 - 状态：Completed
-- 实现提交：待提交（工作区已通过全量验证）
+- 实现提交：`9acfab4f45805a1803d09ef81d55cfaa8263e984`
 - 实际改动：
   1. **6 枚企业邮箱官方高清透明 PNG 资产入库**（`desktop/frontend/src/assets/providers/`）：拷贝 `128×128` 32-bit RGBA 抗锯齿透明官方品牌图标 `tencent_exmail.png`、`aliyun_exmail.png`、`netease_exmail.png`、`feishu.png`、`mail263.png`、`zoho_exmail.png`；
   2. **统一接入 `OFFICIAL_ICONS` 渲染管线**（`desktop/frontend/src/components/common/ProviderIcon.tsx`）：将 6 家企业邮箱全部注册进 `OFFICIAL_ICONS`，与 Gmail / Outlook / QQ / 网易等服务商共享标准中性圆角徽标容器（`background: var(--bg-card)` + `border: 1px solid var(--border-default)` + `0.72 * size` 居中 `contain` 及 `bare` 原图模式），使添加邮箱卡片、左侧边栏、写信发件人选择器、设置账户列表在亮色与暗色主题下全局统一生效且无白边；

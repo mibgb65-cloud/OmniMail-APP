@@ -1,7 +1,7 @@
 # TASK-20261126-020 · 修复邮件 CSS/HTML 远程背景图放行空白并支持存量 `.eml.zst` 按需恢复
 
 - 状态：Completed
-- 实现提交：待提交（工作区已通过全量验证）
+- 实现提交：`7ce7722e2d6891ae96bc7bb86347f06629b85a90`
 - 实际改动：
   1. **入库清洗阶段可逆暂存远程背景图**（`desktop/internal/security/html_sanitizer.go`、`desktop/internal/security/html_bg_attrs.go`、`desktop/internal/security/html_img_attrs.go`、`desktop/internal/security/css_sanitizer.go`）：
      - 在 `bluemonday` 邮件白名单中放行全局 `data-omnimail-bg` 属性，并在 `sanitizeRemoteImageURL` 中额外拦截 `()` 与 `\` 防范 CSS 注入；
