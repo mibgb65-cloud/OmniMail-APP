@@ -54,7 +54,12 @@ func SanitizeMailCSS(rawCSS string) (cleanCSS string, hasRemoteImages bool) {
 	if len(rawCSS) > maxMailCSSBytes {
 		rawCSS = rawCSS[:maxMailCSSBytes]
 	}
-	s := reCSSComment.ReplaceAllString(rawCSS, " ")
+	s := reCSSComment.ReplaceAllStringFunc(rawCSS, func(c string) string {
+		if reCSSUrlMarker.MatchString("none" + c) {
+			return c
+		}
+		return " "
+	})
 	s = strings.ReplaceAll(strings.ReplaceAll(s, "<!--", " "), "-->", " ")
 	s = decodeCSSEscapes(s)
 	// 若包含 </style 等标签闭合注入，直接截断闭合点之后的恶意载荷
@@ -74,7 +79,10 @@ func SanitizeMailCSS(rawCSS string) (cleanCSS string, hasRemoteImages bool) {
 		u := strings.TrimSpace(firstNonEmpty(m[1], m[2], m[3]))
 		low := strings.ToLower(u)
 		if strings.HasPrefix(low, "http://") || strings.HasPrefix(low, "https://") || strings.HasPrefix(low, "//") {
-			hasRemoteImages = true
+			if cleanURL, valid := sanitizeRemoteImageURL(u); valid {
+				hasRemoteImages = true
+				return encodeStashedCSSURL(cleanURL)
+			}
 			return "none"
 		}
 		if strings.HasPrefix(low, "data:") {
@@ -86,7 +94,6 @@ func SanitizeMailCSS(rawCSS string) (cleanCSS string, hasRemoteImages bool) {
 	})
 
 	cleaned := strings.TrimSpace(sanitizeCSSStatements(s, true))
-	cleaned = strings.ReplaceAll(cleaned, "</", "")
 	return cleaned, hasRemoteImages
 }
 

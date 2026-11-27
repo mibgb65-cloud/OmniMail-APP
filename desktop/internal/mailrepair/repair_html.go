@@ -49,7 +49,8 @@ func RebuildMessageHTMLFromBlob(db *sql.DB, blobs *storage.BlobStore, msgID, raw
 		return ""
 	}
 	lowRaw := strings.ToLower(rawHTML)
-	if !strings.Contains(lowRaw, "<style") && !strings.Contains(lowRaw, "class=") && !strings.Contains(lowRaw, "scope=") {
+	if !strings.Contains(lowRaw, "<style") && !strings.Contains(lowRaw, "class=") &&
+		!strings.Contains(lowRaw, "scope=") && !strings.Contains(lowRaw, "url(") && !strings.Contains(lowRaw, "background=") {
 		return ""
 	}
 	sanitized, hasRemote := security.SanitizeMailHTML(rawHTML, loadMessageCIDs(db, msgID))

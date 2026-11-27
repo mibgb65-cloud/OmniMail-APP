@@ -28,7 +28,7 @@ func getMailPolicy() *bluemonday.Policy {
 	sanitizerOnce.Do(func() {
 		p := bluemonday.UGCPolicy()
 		p.AllowAttrs("class", "id").Matching(reSafeClassOrID).Globally()
-		p.AllowAttrs("style", "align", "valign", "width", "height", "bgcolor", "cellpadding", "cellspacing", "border").Globally()
+		p.AllowAttrs("style", "align", "valign", "width", "height", "bgcolor", "cellpadding", "cellspacing", "border", "data-omnimail-bg").Globally()
 		p.AllowAttrs("scope", "colspan", "rowspan", "headers").OnElements("th", "td")
 		p.AllowAttrs("src", "alt", "title", "width", "height", "data-omnimail-src", "data-omnimail-cid", "data-omnimail-cid-missing").OnElements("img")
 		p.AllowURLSchemes("http", "https", "mailto", "cid")
@@ -144,6 +144,11 @@ func SanitizeMailHTML(rawHTML string, cidMap map[string]string) (sanitized strin
 		return replaceAttrSpan(tag, mStart, mEnd, "")
 	})
 
+	var bgRemote bool
+	rewritten, bgRemote = sanitizeElementRemoteBackgrounds(rewritten)
+	if bgRemote {
+		remoteFound = true
+	}
 	if reCssExternalURL.MatchString(rewritten) {
 		remoteFound = true
 		rewritten = reCssExternalURL.ReplaceAllString(rewritten, "none")
@@ -157,22 +162,23 @@ func SanitizeMailHTML(rawHTML string, cidMap map[string]string) (sanitized strin
 	return cleaned, remoteFound
 }
 
-// RestoreRemoteImages 在全局允许外链或单封邮件放行时，安全地将 data-omnimail-src 还原为干净的 src（兼容存量残留引号污染）。
+// RestoreRemoteImages 在全局允许外链或单封邮件放行时，安全地将 data-omnimail-src、data-omnimail-bg 与 CSS 占位还原。
 func RestoreRemoteImages(sanitizedHTML string) string {
-	if !strings.Contains(sanitizedHTML, "data-omnimail-src=") {
-		return sanitizedHTML
+	out := sanitizedHTML
+	if strings.Contains(out, "data-omnimail-src=") {
+		out = reDataOmniSrc.ReplaceAllStringFunc(out, func(attr string) string {
+			m := reDataOmniSrc.FindStringSubmatch(attr)
+			if len(m) < 2 {
+				return ""
+			}
+			cleanURL, ok := sanitizeRemoteImageURL(m[1])
+			if !ok {
+				return ""
+			}
+			return `src="` + html.EscapeString(cleanURL) + `"`
+		})
 	}
-	return reDataOmniSrc.ReplaceAllStringFunc(sanitizedHTML, func(attr string) string {
-		m := reDataOmniSrc.FindStringSubmatch(attr)
-		if len(m) < 2 {
-			return ""
-		}
-		cleanURL, ok := sanitizeRemoteImageURL(m[1])
-		if !ok {
-			return ""
-		}
-		return `src="` + html.EscapeString(cleanURL) + `"`
-	})
+	return restoreStashedBackgrounds(out)
 }
 
 func PlainTextToHTML(plain string) string {

@@ -106,3 +106,65 @@ func TestSanitizeMailHTMLMalformedMissingOpeningQuoteAndLegacyRestore(t *testing
 		}
 	})
 }
+
+func TestSanitizeAndRestoreRemoteBackgroundImages(t *testing.T) {
+	t.Run("instagram_inline_style_background_block_and_restore", func(t *testing.T) {
+		raw := `<table><tr><td style="background:url(https://scontent.cdninstagram.com/v/photo.jpg?a=1&amp;b=2) no-repeat center / cover; width:300px"></td></tr></table>`
+		cleaned, hasRemote := SanitizeMailHTML(raw, nil)
+		if !hasRemote {
+			t.Fatalf("Instagram 内联背景图应标记 hasRemoteImages=true")
+		}
+		if strings.Contains(strings.ToLower(cleaned), "url(https://") || strings.Contains(strings.ToLower(cleaned), "url(\"https://") {
+			t.Fatalf("拦截态不得残留真实 url(https://...): %s", cleaned)
+		}
+		if !strings.Contains(cleaned, `data-omnimail-bg="`) {
+			t.Fatalf("拦截态应暂存 data-omnimail-bg: %s", cleaned)
+		}
+		restored := RestoreRemoteImages(cleaned)
+		if strings.Contains(restored, "data-omnimail-bg") {
+			t.Fatalf("放行还原后应移除 data-omnimail-bg: %s", restored)
+		}
+		wantStyleFrag := `url(&#34;https://scontent.cdninstagram.com/v/photo.jpg?a=1&amp;b=2&#34;) no-repeat center / cover`
+		wantRawFrag := `url("https://scontent.cdninstagram.com/v/photo.jpg?a=1&b=2") no-repeat center / cover`
+		if !strings.Contains(restored, wantStyleFrag) && !strings.Contains(restored, wantRawFrag) {
+			t.Fatalf("放行后未精准还原 Instagram 背景图及 no-repeat center / cover: %s", restored)
+		}
+	})
+
+	t.Run("style_block_and_html_background_attr_restore", func(t *testing.T) {
+		raw := `<style>.ig-hero { background-image: url('//cdn.example.com/banner.webp?x=1'); }</style>` +
+			`<table background="https://cdn.example.com/tile.png"><tr><td>Hi</td></tr></table>`
+		cleaned, hasRemote := SanitizeMailHTML(raw, nil)
+		if !hasRemote {
+			t.Fatalf("应标记 hasRemoteImages=true")
+		}
+		if strings.Contains(strings.ToLower(cleaned), "url(") || strings.Contains(strings.ToLower(cleaned), `background="`) {
+			t.Fatalf("拦截态不得残留真实 url(...) 或 background=\"...\": %s", cleaned)
+		}
+		if !strings.Contains(cleaned, `data-omnimail-bg="https://cdn.example.com/tile.png"`) {
+			t.Fatalf("HTML background 属性应暂存至 data-omnimail-bg: %s", cleaned)
+		}
+		restored := RestoreRemoteImages(cleaned)
+		if !strings.Contains(restored, `url("https://cdn.example.com/banner.webp?x=1")`) {
+			t.Fatalf("<style> 块远程背景图未正确还原: %s", restored)
+		}
+		if !strings.Contains(restored, `https://cdn.example.com/tile.png`) || !strings.Contains(restored, "background-image") {
+			t.Fatalf("HTML background 属性未还原为安全内联 background-image: %s", restored)
+		}
+	})
+
+	t.Run("reject_javascript_and_forged_bg_payloads", func(t *testing.T) {
+		raw := `<div data-omnimail-bg="javascript:alert(1)" style="background:url(javascript:alert(1))">X</div>`
+		cleaned, hasRemote := SanitizeMailHTML(raw, nil)
+		if hasRemote {
+			t.Fatalf("恶意 javascript: URL 不应标记为合法远程图片")
+		}
+		if strings.Contains(strings.ToLower(cleaned), "javascript:") || strings.Contains(cleaned, "data-omnimail-bg") {
+			t.Fatalf("恶意协议或伪造 data-omnimail-bg 必须彻底清除: %s", cleaned)
+		}
+		restored := RestoreRemoteImages(`<div data-omnimail-bg="javascript:alert(9)" style="background:none">X</div>`)
+		if strings.Contains(strings.ToLower(restored), "javascript:") {
+			t.Fatalf("RestoreRemoteImages 绝不能还原非 http/https 协议: %s", restored)
+		}
+	})
+}

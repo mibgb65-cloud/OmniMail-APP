@@ -12,18 +12,19 @@ import (
 )
 
 var (
-	reLegacyCidSrc   = regexp.MustCompile(`(?is)<img\b[^>]*\bsrc\s*=\s*(?:"cid:[^"]*"|'cid:[^']*')[^>]*>`)
-	reOmniCidImg     = regexp.MustCompile(`(?is)<img\b[^>]*\bsrc\s*=\s*"(/omnimail-cid/([^"?#]+))"[^>]*>`)
-	reHasOmniCidAttr = regexp.MustCompile(`(?i)\bdata-omnimail-cid\s*=`)
+	reLegacyCidSrc     = regexp.MustCompile(`(?is)<img\b[^>]*\bsrc\s*=\s*(?:"cid:[^"]*"|'cid:[^']*')[^>]*>`)
+	reOmniCidImg       = regexp.MustCompile(`(?is)<img\b[^>]*\bsrc\s*=\s*"(/omnimail-cid/([^"?#]+))"[^>]*>`)
+	reHasOmniCidAttr   = regexp.MustCompile(`(?i)\bdata-omnimail-cid\s*=`)
+	reLegacyStrippedBg = regexp.MustCompile(`(?i)\bbackground(?:-image)?\s*:\s*[^;"'>]*\bnone\b`)
 )
 
-// repairLegacyInlineCIDHTML 兼容存量邮件：补齐旧版缺失的 <style>/class 以及 cid 映射与 data-omnimail-cid 属性。
+// repairLegacyInlineCIDHTML 兼容存量邮件：补齐旧版缺失的 <style>/class、被抹除的远程背景图以及 cid 映射。
 func repairLegacyInlineCIDHTML(db *sql.DB, msgID, htmlBody string) string {
 	if db == nil || strings.TrimSpace(htmlBody) == "" {
 		return htmlBody
 	}
 	out := htmlBody
-	if !strings.Contains(strings.ToLower(out), "<style") {
+	if needsLegacyHTMLBlobRebuild(out) {
 		if rebuilt := mailrepair.TryLazyRebuildHTML(db, msgID); rebuilt != "" {
 			out = rebuilt
 		}
@@ -60,6 +61,15 @@ func repairLegacyInlineCIDHTML(db *sql.DB, msgID, htmlBody string) string {
 		})
 	}
 	return out
+}
+
+func needsLegacyHTMLBlobRebuild(htmlBody string) bool {
+	if !strings.Contains(strings.ToLower(htmlBody), "<style") {
+		return true
+	}
+	return !strings.Contains(htmlBody, "data-omnimail-bg=") &&
+		!strings.Contains(htmlBody, "omnimail-css-url:") &&
+		reLegacyStrippedBg.MatchString(htmlBody)
 }
 
 func loadMessageCIDMap(db *sql.DB, msgID string) map[string]string {

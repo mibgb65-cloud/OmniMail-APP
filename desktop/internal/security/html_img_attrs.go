@@ -120,7 +120,7 @@ func sanitizeRemoteImageURL(raw string) (string, bool) {
 	if strings.HasPrefix(s, "//") {
 		s = "https:" + s
 	}
-	if strings.ContainsAny(s, " \t\r\n\"'<>") {
+	if strings.ContainsAny(s, " \t\r\n\"'<>()\\") {
 		return "", false
 	}
 	u, err := url.Parse(s)

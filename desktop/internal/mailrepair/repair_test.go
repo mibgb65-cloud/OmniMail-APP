@@ -104,3 +104,62 @@ func TestLegacyMailRepairFixesGarbledExmailAndNeteaseHTMLStyles(t *testing.T) {
 		t.Fatalf("expected CID mapping and remote image blocking preserved after rebuild, got: %s", htmlOut)
 	}
 }
+
+func TestLazyRebuildRestoresLegacyInstagramBackgroundImagesFromBlob(t *testing.T) {
+	dir := t.TempDir()
+	db, err := storage.OpenProfileDB(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer storage.CheckpointAndClose(db)
+	blobs := storage.NewBlobStore(dir)
+
+	var igEML bytes.Buffer
+	igEML.WriteString("From: Instagram <no-reply@mail.instagram.com>\r\n")
+	igEML.WriteString("Subject: New posts\r\n")
+	igEML.WriteString("MIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\n\r\n")
+	igEML.WriteString(`<html><head><style>.ig-wrap { width: 100%; }</style></head><body>` +
+		`<table><tr><td style="background:url(https://scontent.cdninstagram.com/v/post1.jpg?oe=1&amp;oh=2) no-repeat center / cover; height:320px;"></td></tr></table>` +
+		`</body></html>`)
+	rawSHA, err := blobs.PutRawEML(igEML.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// 模拟存量邮件：此前已被写入含 <style> 但外链背景图被抹成 background:none 且无 data-omnimail-bg 的 HTML
+	legacySanitized := `<style>.ig-wrap { width: 100% }</style><table><tbody><tr><td style="background:none no-repeat center / cover; height:320px;"></td></tr></tbody></table>`
+	_, err = db.Exec(`
+		INSERT INTO accounts(id,name,short_tag,email,provider,provider_label,auth_mode,imap_host,imap_port,imap_security,smtp_host,smtp_port,smtp_security,created_at)
+		VALUES ('acc-ig','IG','IG','me@example.com','imap','IMAP','password','imap.example.com',993,'SSL/TLS','smtp.example.com',465,'SSL/TLS',1000);
+		INSERT INTO threads(id,account_id,subject,snippet,last_msg_at,msg_count,unread_count)
+		VALUES ('th-ig','acc-ig','New posts','IG',2000,1,1);
+		INSERT INTO messages(id,account_id,thread_id,folder,sender_name,sender_email,to_json,cc_json,subject,snippet,body_text,body_html_sanitized,raw_blob_sha256,raw_headers,sent_at,received_at,has_remote_images,remote_images_allowed)
+		VALUES ('msg-ig','acc-ig','th-ig','inbox','Instagram','no-reply@mail.instagram.com','[]','[]','New posts','IG','IG',?,?, 'Authentication-Results: mx; spf=pass; dkim=pass; dmarc=pass',2000,2000,1,1);
+	`, legacySanitized, rawSHA)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// 1. 拦截态读取：触发从 .eml.zst 重建 data-omnimail-bg，但单封已允许(remote_images_allowed=1)或全局拦截验证
+	_, _ = db.Exec(`UPDATE messages SET remote_images_allowed = 0 WHERE id = 'msg-ig'`)
+	blockedItem, err := search.GetThreadDetail(db, "msg-ig", true)
+	if err != nil {
+		t.Fatalf("GetThreadDetail blocked failed: %v", err)
+	}
+	if strings.Contains(blockedItem.Messages[0].BodyHTML, "scontent.cdninstagram.com") && !strings.Contains(blockedItem.Messages[0].BodyHTML, "data-omnimail-bg=") {
+		t.Fatalf("blocked mode must not expose live url(...): %s", blockedItem.Messages[0].BodyHTML)
+	}
+	if strings.Contains(blockedItem.Messages[0].BodyHTML, "url(") {
+		t.Fatalf("blocked mode must not contain live url(...): %s", blockedItem.Messages[0].BodyHTML)
+	}
+
+	// 2. 放行态读取：无需重新拉取邮件，直接还原完整 Instagram 照片背景 URL
+	allowedItem, err := search.GetThreadDetail(db, "msg-ig", false)
+	if err != nil {
+		t.Fatalf("GetThreadDetail allowed failed: %v", err)
+	}
+	gotHTML := allowedItem.Messages[0].BodyHTML
+	if !strings.Contains(gotHTML, "https://scontent.cdninstagram.com/v/post1.jpg") || !strings.Contains(gotHTML, "no-repeat center / cover") {
+		t.Fatalf("expected legacy Instagram background URL restored from .eml.zst, got: %s", gotHTML)
+	}
+}
