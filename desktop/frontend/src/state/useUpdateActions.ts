@@ -91,11 +91,14 @@ export function useUpdateActions(
       }
       setFlowState("downloading");
       try {
+        const fallbackVer = formatVersionTag(checkResult.latestVersion)
+          .replace(/-beta\./i, ".beta.")
+          .replace(/-alpha\./i, ".alpha.");
         await updaterApi.downloadUpdate({
           version: checkResult.latestVersion,
           assetName:
             checkResult.assetName ||
-            `OmniMail-Setup-${formatVersionTag(checkResult.latestVersion)}-windows-amd64.exe`,
+            `OmniMail-windows-Setup-${fallbackVer}.exe`,
           assetUrl: checkResult.assetUrl,
           assetSize: checkResult.assetSize || 0,
           sumsUrl: checkResult.sumsUrl,

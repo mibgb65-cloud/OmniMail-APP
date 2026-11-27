@@ -1,11 +1,18 @@
 package updater
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
 
-// NormalizeVersion 规范化版本号为 vX.Y.Z 或 vX.Y.Z.beta.N 形态。
+const (
+	stageAlpha  = 0
+	stageBeta   = 1
+	stageStable = 2
+)
+
+// NormalizeVersion 规范化版本号前缀为小写 v 开头。
 func NormalizeVersion(raw string) string {
 	v := strings.TrimSpace(raw)
 	if v == "" {
@@ -18,34 +25,56 @@ func NormalizeVersion(raw string) string {
 	return v
 }
 
-// NormalizeChannel 将渠道名归一化为 stable 或 beta。
+// NormalizeChannel 将渠道名归一化为 stable、beta 或 alpha（本地开发构建）。
 func NormalizeChannel(raw string, fallbackVersion string) string {
 	ch := strings.ToLower(strings.TrimSpace(raw))
-	if ch == "beta" {
-		return "beta"
+	if ch == "alpha" || ch == "beta" || ch == "stable" {
+		return ch
 	}
-	if ch == "stable" {
-		return "stable"
+	if IsAlphaVersion(fallbackVersion) {
+		return "alpha"
 	}
-	lowVer := strings.ToLower(strings.TrimSpace(fallbackVersion))
-	if strings.Contains(lowVer, ".beta.") || strings.Contains(lowVer, "-beta.") {
+	if IsBetaVersion(fallbackVersion) {
 		return "beta"
 	}
 	return "stable"
 }
 
-// IsBetaVersion 判断版本号是否带有 beta 预发布标识。
+// IsAlphaVersion 判断版本号是否带有 alpha 本地开发预发布标识。
+func IsAlphaVersion(raw string) bool {
+	low := strings.ToLower(strings.TrimSpace(raw))
+	return strings.Contains(low, "-alpha.") || strings.Contains(low, ".alpha.")
+}
+
+// IsBetaVersion 判断版本号是否带有 beta 测试预发布标识。
 func IsBetaVersion(raw string) bool {
 	low := strings.ToLower(strings.TrimSpace(raw))
-	return strings.Contains(low, ".beta.") || strings.Contains(low, "-beta.")
+	return strings.Contains(low, "-beta.") || strings.Contains(low, ".beta.")
+}
+
+// InstallerAssetFileName 按规范生成 Windows 安装包标准文件名：
+// OmniMail-windows-Setup-vX.Y.Z.exe / .beta.N.exe / .alpha.N.exe。
+func InstallerAssetFileName(raw string) string {
+	p, ok := parseVersion(raw)
+	if !ok {
+		return fmt.Sprintf("OmniMail-windows-Setup-%s.exe", NormalizeVersion(raw))
+	}
+	switch p.stage {
+	case stageAlpha:
+		return fmt.Sprintf("OmniMail-windows-Setup-v%d.%d.%d.alpha.%d.exe", p.major, p.minor, p.patch, p.pre)
+	case stageBeta:
+		return fmt.Sprintf("OmniMail-windows-Setup-v%d.%d.%d.beta.%d.exe", p.major, p.minor, p.patch, p.pre)
+	default:
+		return fmt.Sprintf("OmniMail-windows-Setup-v%d.%d.%d.exe", p.major, p.minor, p.patch)
+	}
 }
 
 type parsedVer struct {
-	major  int
-	minor  int
-	patch  int
-	isBeta bool
-	beta   int
+	major int
+	minor int
+	patch int
+	stage int
+	pre   int
 }
 
 func parseVersion(raw string) (parsedVer, bool) {
@@ -55,22 +84,29 @@ func parseVersion(raw string) (parsedVer, bool) {
 	if s == "" {
 		return parsedVer{}, false
 	}
-	s = strings.ReplaceAll(strings.ToLower(s), "-beta.", ".beta.")
-	var betaNum int
-	isBeta := false
-	if idx := strings.Index(s, ".beta."); idx > 0 {
-		betaPart := s[idx+len(".beta."):]
-		n, err := strconv.Atoi(betaPart)
+	low := strings.ToLower(s)
+	low = strings.ReplaceAll(low, "-alpha.", ".alpha.")
+	low = strings.ReplaceAll(low, "-beta.", ".beta.")
+
+	stage := stageStable
+	preNum := 0
+	if idx := strings.Index(low, ".alpha."); idx > 0 {
+		n, err := strconv.Atoi(low[idx+len(".alpha."):])
 		if err != nil || n < 0 {
 			return parsedVer{}, false
 		}
-		isBeta = true
-		betaNum = n
-		s = s[:idx]
-	} else if dash := strings.IndexByte(s, '-'); dash > 0 {
-		s = s[:dash]
+		stage, preNum, low = stageAlpha, n, low[:idx]
+	} else if idx := strings.Index(low, ".beta."); idx > 0 {
+		n, err := strconv.Atoi(low[idx+len(".beta."):])
+		if err != nil || n < 0 {
+			return parsedVer{}, false
+		}
+		stage, preNum, low = stageBeta, n, low[:idx]
+	} else if dash := strings.IndexByte(low, '-'); dash > 0 {
+		return parsedVer{}, false
 	}
-	parts := strings.Split(s, ".")
+
+	parts := strings.Split(low, ".")
 	if len(parts) != 3 {
 		return parsedVer{}, false
 	}
@@ -80,16 +116,10 @@ func parseVersion(raw string) (parsedVer, bool) {
 	if err1 != nil || err2 != nil || err3 != nil || maj < 0 || min < 0 || pat < 0 {
 		return parsedVer{}, false
 	}
-	return parsedVer{
-		major:  maj,
-		minor:  min,
-		patch:  pat,
-		isBeta: isBeta,
-		beta:   betaNum,
-	}, true
+	return parsedVer{major: maj, minor: min, patch: pat, stage: stage, pre: preNum}, true
 }
 
-// IsNewerVersion 判断 candidate 是否比 current 更新（同主次修订号正式版高于 beta）。
+// IsNewerVersion 判断 candidate 是否比 current 更新（同主次修订号 alpha < beta < stable）。
 func IsNewerVersion(current, candidate string) bool {
 	cur, ok1 := parseVersion(current)
 	cand, ok2 := parseVersion(candidate)
@@ -107,14 +137,11 @@ func IsNewerVersion(current, candidate string) bool {
 	if cand.patch != cur.patch {
 		return cand.patch > cur.patch
 	}
-	if cur.isBeta && !cand.isBeta {
-		return true
+	if cand.stage != cur.stage {
+		return cand.stage > cur.stage
 	}
-	if !cur.isBeta && cand.isBeta {
-		return false
-	}
-	if cur.isBeta && cand.isBeta {
-		return cand.beta > cur.beta
+	if cand.stage != stageStable {
+		return cand.pre > cur.pre
 	}
 	return false
 }

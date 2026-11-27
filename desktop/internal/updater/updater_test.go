@@ -18,20 +18,21 @@ import (
 
 func TestDualChannelReleaseSelectionAndErrors(t *testing.T) {
 	releases := []map[string]any{
-		{"tag_name": "v0.0.1.beta.18", "draft": true, "prerelease": true},
+		{"tag_name": "v0.0.2-alpha.1", "draft": false, "prerelease": true},
+		{"tag_name": "v0.0.1-beta.18", "draft": true, "prerelease": true},
 		{
-			"tag_name": "v0.0.1.beta.17", "draft": false, "prerelease": true,
-			"html_url": "https://github.com/mibgb65-cloud/OmniMail-APP/releases/tag/v0.0.1.beta.17",
+			"tag_name": "v0.0.1-beta.17", "draft": false, "prerelease": true,
+			"html_url": "https://github.com/mibgb65-cloud/OmniMail-APP/releases/tag/v0.0.1-beta.17",
 			"body":     "- 新增静默更新闭环\n- 重构关于页",
 			"assets": []map[string]any{
 				{
-					"name":                 "OmniMail-Setup-v0.0.1.beta.17-windows-amd64.exe",
-					"browser_download_url": "https://github.com/mibgb65-cloud/OmniMail-APP/releases/download/v0.0.1.beta.17/OmniMail-Setup-v0.0.1.beta.17-windows-amd64.exe",
+					"name":                 "OmniMail-windows-Setup-v0.0.1.beta.17.exe",
+					"browser_download_url": "https://github.com/mibgb65-cloud/OmniMail-APP/releases/download/v0.0.1-beta.17/OmniMail-windows-Setup-v0.0.1.beta.17.exe",
 					"size":                 7586923,
 				},
 				{
 					"name":                 "SHA256SUMS.txt",
-					"browser_download_url": "https://github.com/mibgb65-cloud/OmniMail-APP/releases/download/v0.0.1.beta.17/SHA256SUMS.txt",
+					"browser_download_url": "https://github.com/mibgb65-cloud/OmniMail-APP/releases/download/v0.0.1-beta.17/SHA256SUMS.txt",
 					"size":                 112,
 				},
 			},
@@ -52,23 +53,23 @@ func TestDualChannelReleaseSelectionAndErrors(t *testing.T) {
 	defer srv.Close()
 
 	stableRes, err := CheckRelease(context.Background(), CheckConfig{
-		CurrentVersion: "v0.0.1.beta.16",
+		CurrentVersion: "v0.0.1-beta.16",
 		Channel:        "stable",
 		FeedURL:        srv.URL + "/ok",
 	})
 	if err != nil || stableRes.HasUpdate {
-		t.Fatalf("stable 通道不应命中 beta 预发布包：res=%+v err=%v", stableRes, err)
+		t.Fatalf("stable 通道不应命中 alpha/beta 预发布包：res=%+v err=%v", stableRes, err)
 	}
 
 	betaRes, err := CheckRelease(context.Background(), CheckConfig{
-		CurrentVersion: "v0.0.1.beta.16",
+		CurrentVersion: "v0.0.1-beta.16",
 		Channel:        "beta",
 		FeedURL:        srv.URL + "/ok",
 	})
-	if err != nil || !betaRes.HasUpdate || betaRes.LatestVersion != "v0.0.1.beta.17" {
-		t.Fatalf("beta 通道应选出最高非草稿版本 v0.0.1.beta.17：res=%+v err=%v", betaRes, err)
+	if err != nil || !betaRes.HasUpdate || betaRes.LatestVersion != "v0.0.1-beta.17" {
+		t.Fatalf("beta 通道应忽略 alpha 并选出最高非草稿版本 v0.0.1-beta.17：res=%+v err=%v", betaRes, err)
 	}
-	if betaRes.AssetName != "OmniMail-Setup-v0.0.1.beta.17-windows-amd64.exe" || betaRes.SumsURL == "" {
+	if betaRes.AssetName != "OmniMail-windows-Setup-v0.0.1.beta.17.exe" || betaRes.SumsURL == "" {
 		t.Fatalf("资产匹配不完整：%+v", betaRes)
 	}
 

@@ -2,25 +2,19 @@ name: Release
 
 on:
   push:
-    branches: [test, prod]
+    tags:
+      - 'v*.*.*'
+      - '!*-alpha.*'
+      - '!*.alpha.*'
   workflow_dispatch:
     inputs:
-      channel:
-        description: 发布通道（beta 对应测试预发布，stable 对应正式发布）
+      tag:
+        description: 已推送的远端标签名（prod 正式版 vX.Y.Z 或 test 测试版 vX.Y.Z-beta.N；alpha 标签不线上打包）
         required: true
-        default: beta
-        type: choice
-        options:
-          - beta
-          - stable
-      version:
-        description: 可选显式版本号（留空则自动按仓库已有 Tag 递增，如 v0.0.1 或 v0.0.1.beta.25）
-        required: false
-        default: ''
         type: string
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 permissions:
@@ -34,16 +28,75 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: 校验发布标签语义与所属受保护分支
+        id: meta
+        shell: pwsh
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git fetch origin prod:refs/remotes/origin/prod test:refs/remotes/origin/test --tags --force
+
+          $isDispatch = "${{ github.event_name }}" -eq "workflow_dispatch"
+          $tag = if ($isDispatch) { $env:INPUT_TAG.Trim() } else { "${{ github.ref_name }}".Trim() }
+
+          if ($tag -match '[.-]alpha\.') {
+            Write-Host "检测到 alpha 标签 '$tag'：按分支治理规范仅保留标签，跳过线上打包。"
+            "skip=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            exit 0
+          }
+
+          $tagSha = (git rev-list -n 1 "refs/tags/$tag" 2>$null)
+          if ($LASTEXITCODE -ne 0 -or -not $tagSha) {
+            throw "远端未找到标签 'refs/tags/$tag'，请先在对应分支创建并推送标签。"
+          }
+          $tagSha = $tagSha.Trim()
+
+          $stableRegex = '^v(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)$'
+          $betaRegex   = '^v(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)[.-]beta\.(?<pre>[1-9]\d*)$'
+
+          if ($tag -match $stableRegex) {
+            $channel = "stable"
+            $pkgVer = "v$($Matches.major).$($Matches.minor).$($Matches.patch)"
+            git merge-base --is-ancestor $tagSha refs/remotes/origin/prod
+            if ($LASTEXITCODE -ne 0) {
+              throw "正式生产版标签 '$tag' ($tagSha) 不属于 prod 分支提交历史，已拒绝发版。"
+            }
+          } elseif ($tag -match $betaRegex) {
+            $channel = "beta"
+            $pkgVer = "v$($Matches.major).$($Matches.minor).$($Matches.patch).beta.$($Matches.pre)"
+            git merge-base --is-ancestor $tagSha refs/remotes/origin/test
+            if ($LASTEXITCODE -ne 0) {
+              throw "Beta 测试版标签 '$tag' ($tagSha) 不属于 test 分支提交历史，已拒绝发版。"
+            }
+          } else {
+            throw "非法发布标签 '$tag'。仅支持 prod 正式版 vX.Y.Z 或 test 测试版 vX.Y.Z-beta.N。"
+          }
+
+          git checkout --detach $tagSha
+          if ($LASTEXITCODE -ne 0) { throw "检出标签提交 $tagSha 失败" }
+
+          $pkgFile = "OmniMail-windows-Setup-$pkgVer.exe"
+          "skip=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "sha=$tagSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "channel=$channel" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "pkg_file=$pkgFile" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Verified release tag: tag=$tag sha=$tagSha channel=$channel pkg_file=$pkgFile"
+
       - uses: actions/setup-go@v5
+        if: steps.meta.outputs.skip != 'true'
         with:
           go-version: '1.26.x'
           cache-dependency-path: desktop/go.sum
 
       - uses: actions/setup-node@v4
+        if: steps.meta.outputs.skip != 'true'
         with:
           node-version-file: .nvmrc
 
       - name: 安装 pnpm、Task、Wails 与 NSIS
+        if: steps.meta.outputs.skip != 'true'
         shell: pwsh
         run: |
           npm install -g pnpm@12.6.0
@@ -56,64 +109,6 @@ jobs:
             choco install nsis -y --no-progress
           }
 
-      - name: 解析版本号与通道（跳过尚未产生业务 PR 的初始基线推送）
-        id: meta
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          INPUT_CHANNEL: ${{ inputs.channel }}
-          INPUT_VERSION: ${{ inputs.version }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $isDispatch = "${{ github.event_name }}" -eq "workflow_dispatch"
-          if (-not $isDispatch -and "${{ github.event.before }}" -eq "0000000000000000000000000000000000000000") {
-            Write-Host "首次初始化创建环境分支，跳过自动发版；后续合入 PR 或手动触发将正常发版。"
-            "skip=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-            exit 0
-          }
-
-          $channel = if ($isDispatch) { $env:INPUT_CHANNEL } elseif ("${{ github.ref_name }}" -eq "prod") { "stable" } else { "beta" }
-          $explicit = $env:INPUT_VERSION.Trim()
-          $tags = @(git tag -l "v*")
-
-          if ($explicit -ne "") {
-            $ver = $explicit
-          } elseif ($channel -eq "stable") {
-            $maxPatch = -1
-            foreach ($t in $tags) {
-              if ($t -match '^v0\.0\.(\d+)$') {
-                $p = [int]$Matches[1]
-                if ($p -gt $maxPatch) { $maxPatch = $p }
-              }
-            }
-            $nextPatch = if ($maxPatch -lt 1) { 1 } else { $maxPatch + 1 }
-            $ver = "v0.0.$nextPatch"
-          } else {
-            $maxStablePatch = 1
-            foreach ($t in $tags) {
-              if ($t -match '^v0\.0\.(\d+)$') {
-                $p = [int]$Matches[1]
-                if ($p + 1 -gt $maxStablePatch) { $maxStablePatch = $p + 1 }
-              }
-            }
-            $prefix = "v0.0.$maxStablePatch.beta."
-            $maxBeta = if ($maxStablePatch -eq 1) { 24 } else { 0 }
-            foreach ($t in $tags) {
-              if ($t.StartsWith($prefix)) {
-                $numStr = $t.Substring($prefix.Length)
-                if ($numStr -match '^\d+$' -and [int]$numStr -gt $maxBeta) {
-                  $maxBeta = [int]$numStr
-                }
-              }
-            }
-            $ver = "$prefix$($maxBeta + 1)"
-          }
-
-          "skip=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          "channel=$channel" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          Write-Host "Resolved release: version=$ver channel=$channel"
-
       - name: 执行全量门禁验证并构建 Windows NSIS 安装包
         if: steps.meta.outputs.skip != 'true'
         shell: pwsh
@@ -121,20 +116,31 @@ jobs:
           task verify
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           powershell -NoProfile -ExecutionPolicy Bypass -File ./desktop/build/windows/package-windows.ps1 `
-            -Version "${{ steps.meta.outputs.version }}" `
+            -Version "${{ steps.meta.outputs.tag }}" `
             -ReleaseRepo "${{ github.repository }}"
 
-      - name: 创建 GitHub Release 并上传安装包与 SHA256SUMS.txt
+      - name: 创建或更新 GitHub Release 并上传安装包与 SHA256SUMS.txt
         if: steps.meta.outputs.skip != 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $ver = "${{ steps.meta.outputs.version }}"
+          $ErrorActionPreference = 'Stop'
+          $tag = "${{ steps.meta.outputs.tag }}"
+          $sha = "${{ steps.meta.outputs.sha }}"
           $ch  = "${{ steps.meta.outputs.channel }}"
-          $dir = "dist/release/$ver"
-          $exe = "$dir/OmniMail-Setup-$ver-windows-amd64.exe"
+          $dir = "dist/release/$tag"
+          $exe = "$dir/${{ steps.meta.outputs.pkg_file }}"
           $sum = "$dir/SHA256SUMS.txt"
-          $flags = @("--generate-notes", "--target", "${{ github.sha }}", "--title", "OmniMail $ver")
-          if ($ch -eq "beta") { $flags += "--prerelease" } else { $flags += "--latest" }
-          gh release create $ver $exe $sum @flags
+
+          if (-not (Test-Path -LiteralPath $exe)) { throw "未找到安装包产物：$exe" }
+          if (-not (Test-Path -LiteralPath $sum)) { throw "未找到校验文件：$sum" }
+
+          gh release view $tag >$null 2>&1
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $exe $sum --clobber
+          } else {
+            $flags = @("--generate-notes", "--target", $sha, "--title", "OmniMail $tag")
+            if ($ch -eq "beta") { $flags += "--prerelease" } else { $flags += "--latest" }
+            gh release create $tag $exe $sum @flags
+          }

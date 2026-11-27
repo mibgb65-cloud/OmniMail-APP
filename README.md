@@ -192,8 +192,8 @@ OmniMail-APP/
 ### 方式一：下载官方安装包（推荐普通用户）
 
 1. 前往 [**GitHub Releases**](https://github.com/mibgb65-cloud/OmniMail-APP/releases) 下载最新版本安装程序：
-   - **正式稳定版（Stable）**：`OmniMail-Setup-vX.Y.Z-windows-amd64.exe`
-   - **抢先测试版（Beta）**：`OmniMail-Setup-vX.Y.Z.beta.N-windows-amd64.exe`
+   - **正式生产版（Stable）**：`OmniMail-windows-Setup-vX.Y.Z.exe`
+   - **抢先测试版（Beta）**：`OmniMail-windows-Setup-vX.Y.Z.beta.N.exe`
 2. （可选）核对同版本发布页附带的 `SHA256SUMS.txt` 校验值。
 3. 运行安装向导（需 64 位 Windows 10 / 11 及系统内置 Microsoft Edge WebView2 Runtime）：
    - 支持选择**程序安装目录**与独立的**本地邮件数据存储目录**（如将海量邮件数据放在 `D:\OmniMailData`）；
@@ -204,7 +204,7 @@ OmniMail-APP/
 <summary><b>高级：命令行静默部署参数</b></summary>
 
 ```powershell
-OmniMail-Setup-v0.0.1-windows-amd64.exe /S /CurrentUser /INSTDIR="C:\Apps\OmniMail" /DATADIR="D:\OmniMailData"
+OmniMail-windows-Setup-v0.0.1.exe /S /CurrentUser /INSTDIR="C:\Apps\OmniMail" /DATADIR="D:\OmniMailData"
 ```
 
 </details>
@@ -246,8 +246,9 @@ task verify
 task build
 
 # 封装生产级 Windows x64 NSIS 安装包与 SHA256SUMS.txt（输出至 dist/release/<VERSION>/）
-task package:windows:stable VERSION=v0.0.1
-task package:windows:beta VERSION=v0.0.1.beta.1
+task package:windows:alpha VERSION=v0.0.1-alpha.1   # 本地 dev 开发验证包
+task package:windows:beta VERSION=v0.0.1-beta.1     # 测试环境 Beta 预发布包
+task package:windows:stable VERSION=v0.0.1          # 生产环境正式版安装包
 ```
 
 ---
@@ -258,13 +259,13 @@ task package:windows:beta VERSION=v0.0.1.beta.1
 
 非常欢迎提交 Issue 反馈问题、补充更多邮局兼容性预设或提交 Pull Request！
 
-仓库常驻三条受 GitHub Ruleset 保护的环境分支（**禁止直接推送，统一通过 PR 且 `CI / verify` 全绿后合入**），完整细则见 [Git 与分支晋级工作流](docs/development/GIT_WORKFLOW.md)：
+仓库常驻三条受 GitHub Ruleset 保护的环境分支（**禁止直接推送，常规 PR 合入仅执行 `CI / verify` 门禁，线上发版由对应分支推送版本标签显式触发**），完整细则见 [Git 与分支晋级工作流](docs/development/GIT_WORKFLOW.md)：
 
 ```text
 本地功能分支 (feat/* · fix/* · docs/*)
-  ──PR──▶ dev（日常开发集成分支）
-            ──PR (Merge Commit)──▶ test（测试预发分支 · 自动构建发布 Beta Pre-release）
-                                     ──PR (Merge Commit)──▶ prod（默认生产分支 · 自动构建发布 Stable Release）
+  ──PR──▶ dev（开发分支 · 本地构建 vX.Y.Z-alpha.N，线上不打包）
+            ──PR (Merge Commit)──▶ test（测试分支 · 推送标签 vX.Y.Z-beta.N 触发 Beta Pre-release）
+                                     ──PR (Merge Commit)──▶ prod（生产分支 · 推送标签 vX.Y.Z 触发 Stable Release）
 ```
 
 1. 基于最新 `origin/dev` 创建功能分支：`git switch -c feat/your-feature origin/dev`；
