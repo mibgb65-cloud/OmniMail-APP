@@ -124,6 +124,8 @@ export const onboarding = {
   legalTermsTab: "用户协议",
   legalPrivacyTab: "隐私政策",
   legalGotItBtn: "我已知晓",
-  legalDraftWarning:
-    "本协议文本为界面设计预览草案，正式发版前将替换为法务定稿版本。",
+  legalTermsPledge:
+    "MIT 开源许可 · 无中心化云账号 · 本地数据主权完全归用户所有",
+  legalPrivacyPledge:
+    "100% 本地加密存储 · 零遥测行为埋点 · AI 与翻译严格按需受控外发",
 };
