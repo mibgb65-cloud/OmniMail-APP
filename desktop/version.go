@@ -53,7 +53,7 @@ func (s *DesktopService) GetAppBuildInfo() AppBuildInfo {
 		Version:   ver,
 		Channel:   ch,
 		BuildTime: bt,
-		IsBeta:    ch == "beta",
+		IsBeta:    ch == "beta" || ch == "alpha",
 	}
 }
 
